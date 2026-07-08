@@ -78,3 +78,29 @@ Milestone 1: Project Infrastructure.
 ### Notes
 
 The repository now contains an explicit governance layer for startup, shutdown, state recovery, and next-session handoff.
+
+## 2026-07-07 - Session ceremony invocation clarified
+
+### Summary
+
+Clarified how to run session-start and session-end ceremonies in a repository that is not yet using stack-control.
+
+### Completed
+
+- Confirmed that session ceremonies are invoked manually through repository governance files.
+- Recorded the direct invocation pattern: `run session start` and `run session end`.
+- Refreshed `governance/STATE.yaml` so current focus now reflects the remaining infrastructure work rather than the completed governance setup.
+
+### Current focus
+
+Milestone 1: Project Infrastructure.
+
+### Next actions
+
+- Add issue templates.
+- Document the source acquisition workflow.
+- Begin Milestone 2 work on `La Nouvelle France`.
+
+### Notes
+
+For now, the ceremony is file-driven rather than tool-driven: start by reading repo state, end by writing repo state back and pushing it.

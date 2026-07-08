@@ -15,3 +15,9 @@ This file records durable project decisions. Each entry should state what change
 - Status: accepted
 - Basis: uncommitted work is easy to lose and hard to reconstruct.
 - Consequence: agents should make small coherent commits, push frequently, and prefer preserving partial progress over keeping work ephemeral.
+
+### Invoke session ceremonies manually until automation exists
+
+- Status: accepted
+- Basis: this repository is not using stack-control, but it still needs explicit session-start and session-end behavior.
+- Consequence: contributors may trigger the ceremony with direct instructions such as "run session start" and "run session end", and the agent should execute the repository's file-driven governance workflow.
