@@ -266,3 +266,28 @@ Milestone 2 acquisition work on `PB-P001`.
 ### Notes
 
 The repo now distinguishes between a complete holdings claim, which we do not yet have, and a minimum verified span, which we do.
+
+## 2026-07-07 - La Nouvelle France issue endpoints captured
+
+### Summary
+
+Converted part of the minimum coverage picture into stable issue-level identifiers.
+
+### Completed
+
+- Recorded verified Gallica issue endpoints for `1879-07-15`, `1879-12-15`, and `1881-08-15`.
+- Refined the tracker so the next action is to extend that verified issue list rather than restate the same broad coverage claim.
+
+### Current focus
+
+Milestone 2 acquisition work on `PB-P001`.
+
+### Next actions
+
+- Find additional verified issue endpoints between the current start and end dates.
+- Keep distinguishing exact issue evidence from inferred run completeness.
+- Continue using Gallica as the lead candidate for archive review.
+
+### Notes
+
+Stable issue endpoints make the next pass cheaper: we can now add to a growing census instead of restarting discovery from the title level each time.

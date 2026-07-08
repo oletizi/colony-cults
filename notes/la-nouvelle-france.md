@@ -37,6 +37,12 @@ Current minimum coverage picture:
 - Search-visible Gallica issue pages confirm at least `1879-07-15`, `1879-12-15`, and `1881-08-15`.
 - An external catalogue record at the National Library of New Zealand notes an introductory `No. specimen` dated `15 June 1879` and `No. 1` starting in July 1879.
 
+Verified Gallica issue endpoints now captured:
+
+- `1879-07-15`: `ark:/12148/bpt6k5603637g`
+- `1879-12-15`: `ark:/12148/bpt6k56068447`
+- `1881-08-15`: `ark:/12148/bpt6k56068536`
+
 Relevant rights guidance now captured:
 
 - State Library of Queensland says all text on its website is under `CC BY 4.0`, but other website material may be used for private study, research, criticism, and review, and commercial use requires permission from the copyright holder.
