@@ -28,6 +28,12 @@ function fakeClaudeCli(canned: string): { claude: ClaudeCli; calls: FakeCall[] }
   return { claude, calls };
 }
 
+// A canned corrected-French output long enough to clear the transform
+// degenerate-output ratio guard against `rawText` (prompt-shape tests only
+// assert on the request, not this value).
+const CANNED_FR =
+  'Ceci est un exemple de texte OCR corrigé, dépourvu de coupures de lignes.';
+
 describe('cleanupPage (T014)', () => {
   const rawText =
     'Ceci est un exemple de tex-\nte OCR bru-\ntal avec des cou-\npures de li-\ngnes.\nContraste insuffisant';
@@ -43,7 +49,7 @@ describe('cleanupPage (T014)', () => {
   });
 
   it('forwards the raw page text unchanged as sourceText and forwards the model', async () => {
-    const { claude, calls } = fakeClaudeCli('corrected');
+    const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
     await cleanupPage(claude, rawText, 'some-model');
 
@@ -53,7 +59,7 @@ describe('cleanupPage (T014)', () => {
   });
 
   it('omits the model when none is given', async () => {
-    const { claude, calls } = fakeClaudeCli('corrected');
+    const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
     await cleanupPage(claude, rawText);
 
@@ -61,7 +67,7 @@ describe('cleanupPage (T014)', () => {
   });
 
   it('builds a prompt instructing dehyphenation of line-broken words', async () => {
-    const { claude, calls } = fakeClaudeCli('corrected');
+    const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
     await cleanupPage(claude, rawText);
 
@@ -69,7 +75,7 @@ describe('cleanupPage (T014)', () => {
   });
 
   it('builds a prompt instructing joining broken lines into natural paragraphs', async () => {
-    const { claude, calls } = fakeClaudeCli('corrected');
+    const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
     await cleanupPage(claude, rawText);
 
@@ -77,7 +83,7 @@ describe('cleanupPage (T014)', () => {
   });
 
   it('builds a prompt instructing repair of obvious OCR scan errors', async () => {
-    const { claude, calls } = fakeClaudeCli('corrected');
+    const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
     await cleanupPage(claude, rawText);
 
@@ -85,7 +91,7 @@ describe('cleanupPage (T014)', () => {
   });
 
   it('builds a prompt instructing removal of OCR condition/artifact markers', async () => {
-    const { claude, calls } = fakeClaudeCli('corrected');
+    const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
     await cleanupPage(claude, rawText);
 
@@ -93,7 +99,7 @@ describe('cleanupPage (T014)', () => {
   });
 
   it('builds a prompt that requires faithfulness -- no translate/summarize/add/remove', async () => {
-    const { claude, calls } = fakeClaudeCli('corrected');
+    const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
     await cleanupPage(claude, rawText);
 
@@ -102,7 +108,7 @@ describe('cleanupPage (T014)', () => {
   });
 
   it('builds a prompt that requires outputting only the corrected French text', async () => {
-    const { claude, calls } = fakeClaudeCli('corrected');
+    const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
     await cleanupPage(claude, rawText);
 
@@ -111,7 +117,7 @@ describe('cleanupPage (T014)', () => {
   });
 
   it('appends the output-only transformation system prompt', async () => {
-    const { claude, calls } = fakeClaudeCli('corrected');
+    const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
     await cleanupPage(claude, rawText, 'some-model');
 

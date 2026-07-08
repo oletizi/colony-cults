@@ -1,5 +1,6 @@
 import type { ClaudeCli } from '@/claude/client';
 import { TRANSFORMATION_SYSTEM_PROMPT } from '@/claude/client';
+import { runFaithfulTransformation } from '@/translate/transform';
 
 /**
  * Instruction sent to the engine for the translation pass (T015, spec.md
@@ -31,7 +32,8 @@ export async function translatePage(
   correctedFrench: string,
   model?: string,
 ): Promise<string> {
-  return await claude.run(
+  return await runFaithfulTransformation(
+    claude,
     TRANSLATION_PROMPT,
     correctedFrench,
     model,

@@ -1,5 +1,6 @@
 import type { ClaudeCli } from '@/claude/client';
 import { TRANSFORMATION_SYSTEM_PROMPT } from '@/claude/client';
+import { runFaithfulTransformation } from '@/translate/transform';
 
 /**
  * Instruction prompt for the cleanup pass (T014, FR-003): turns one page of
@@ -45,7 +46,8 @@ export async function cleanupPage(
   pageText: string,
   model?: string,
 ): Promise<string> {
-  return await claude.run(
+  return await runFaithfulTransformation(
+    claude,
     CLEANUP_INSTRUCTION,
     pageText,
     model,
