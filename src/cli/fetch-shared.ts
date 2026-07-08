@@ -55,10 +55,23 @@ export interface FetchDeps {
   ocrRunner: OcrCommandRunner;
 }
 
+/**
+ * Gentle pacing for bulk IIIF image fetching. Full-resolution page images are
+ * large (multiple MB) and Gallica rate-limits (HTTP 429) a burst of them, so
+ * the fetch path serializes downloads (`maxConcurrent: 1`) and spaces them
+ * further apart than the small XML service calls. Backoff + `Retry-After`
+ * handling in HttpClient recover from a throttle if one still occurs.
+ */
+const IMAGE_FETCH_CONCURRENCY = 1;
+const IMAGE_FETCH_MIN_INTERVAL_MS = 2000;
+
 /** Build the default (real network + disk) dependencies. */
 export function defaultFetchDeps(): FetchDeps {
   const repoRoot = process.cwd();
-  const http = new HttpClient();
+  const http = new HttpClient({
+    maxConcurrent: IMAGE_FETCH_CONCURRENCY,
+    minRequestIntervalMs: IMAGE_FETCH_MIN_INTERVAL_MS,
+  });
   return {
     client: new GallicaHttpClient(http),
     repoRoot,
