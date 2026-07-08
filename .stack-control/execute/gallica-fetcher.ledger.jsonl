@@ -5,3 +5,4 @@
 {"id":"T011-T016","tierLabel":"powerful","model":"opus","commitRange":"4a5ab4d","reviewClean":true,"note":"US1 census MVP; live 78 issues 1879-1885; resolves #2"}
 {"id":"T017-T022,T026,T027","tierLabel":"powerful","model":"opus","commitRange":"558e6aa","reviewClean":true,"note":"US2 archive+rights core; realpath guard; YAML+manifest convention"}
 {"id":"T023-T025,T028","tierLabel":"powerful","model":"opus","commitRange":"acbf30a","reviewClean":true,"note":"US2 fetch pipeline; live e2e 10 pages; 429 finding captured"}
+{"id":"T029-T033,T038","tierLabel":"balanced","model":"sonnet","commitRange":"8e68cb2","reviewClean":true,"note":"US3 self-OCR; preflight fail-loud verified; 50 tests"}
