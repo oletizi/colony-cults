@@ -50,7 +50,7 @@ year.
 A small reusable `tsx` CLI, structured in layers with single responsibilities:
 
 - **`GallicaClient`** — thin typed wrapper over the web services (`Issues`,
-  `Pagination`, IIIF image). Owns politeness: descriptive User-Agent, rate
+  `Pagination`, `OAIRecord`, IIIF image). Owns politeness: descriptive User-Agent, rate
   limiting, exponential backoff, and fail-loud on non-retryable errors. Pure I/O,
   independently testable against recorded fixtures.
 - **Census layer** — periodical ark → complete issue list (ark, date, page
@@ -68,7 +68,8 @@ A small reusable `tsx` CLI, structured in layers with single responsibilities:
 - **Archive writer** — lays image/PDF/OCR assets into the sibling private repo
   `../colony-cults-archive` with the metadata `AGENTS.md` mandates (local path,
   retrieval date, original URL, checksum, file format, OCR status).
-- **CLI entry** — `census <ark>`, `fetch-issue <ark>`, `fetch-source <ark>`.
+- **CLI entry** — `census <ark>`, `fetch-issue <ark>`, `fetch-source <ark>`,
+  `ocr <ark>`. Global flags: `--dry-run`, `--force`, `--verify`, `--ocr`.
 
 Rationale: the API path is *proven open* (200s above); it is polite, deterministic,
 and reproducible; self-OCR sidesteps the one blocked endpoint while producing a
@@ -110,15 +111,46 @@ text we can produce ourselves deterministically. Optional future enhancement onl
 6. **Storage split**: census/metadata (small) → **public** `colony-cults` repo;
    page images + PDF/A + OCR text (heavy preservation assets) → **private**
    `colony-cults-archive`, cloned as sibling `../colony-cults-archive`.
-7. **Rights gate (no fallback / fail loud)**: mirror only items Gallica labels
-   `domaine public`, verified per-item from item metadata **before** download.
-   On any other rights status, **throw** with a descriptive error — never
-   silently skip or guess.
+7. **Rights gate (no fallback / fail loud)**: read `dc:rights` from
+   `services/OAIRecord?ark=<ark>` (verified live: returns `domaine public` /
+   `public domain`, HTTP 200) **before** any download; require the public-domain
+   value. On any other rights status, **throw** with a descriptive error — never
+   silently skip or guess. **Save the raw OAIRecord response in provenance.** Do
+   NOT use the IIIF manifest `license` field: it is a generic conditions-of-use
+   URL identical across items, not a per-item rights status.
 8. **Politeness**: descriptive User-Agent identifying the project + contact,
    rate limiting, exponential backoff; treat `403` as retry-with-backoff then
    fail loud, never silent.
 9. **Checksums**: `sha256` per asset, recorded in the provenance metadata.
 10. **Playwright** stays a documented manual last resort, not part of this tool.
+
+### Operational decisions (from third-party review, 2026-07-08)
+
+11. **Resumability**: skip an asset when it already exists *and* its `sha256` is
+    recorded in provenance (no re-download to compare). `--force` re-fetches;
+    `--verify` re-hashes existing assets against provenance. Required for a long
+    78-issue x ~10-page x OCR run to be restart-safe.
+12. **Dry-run**: `census`, `fetch-issue`, and `fetch-source` accept `--dry-run`,
+    reporting intended arks, target paths, per-item rights status, and estimated
+    size (page counts from `Pagination`, byte sizes sampled via HTTP HEAD) before
+    any write.
+13. **OCR is opt-in and decoupled**: `fetch-*` defaults to images-only; `--ocr`
+    opts into OCR in the same run; a separate `ocr <ark>` subcommand OCRs
+    already-fetched issues without re-downloading. (Rejected the reviewer's
+    `--images-only` / `--skip-ocr` pair as redundant — one switch, `--ocr`.)
+14. **Hard public-repo guard (non-overridable)**: the archive writer refuses to
+    write any image/PDF/OCR asset to a path outside the resolved
+    `colony-cults-archive` location. There is deliberately **no override flag** —
+    heavy/rights-sensitive assets must never land in the public repo. Only census
+    metadata is written publicly.
+15. **Dependency preflight**: before OCR, validate `ocrmypdf`, `img2pdf`,
+    `pdftotext`, and Tesseract with the `fra` language pack; fail loud with
+    install guidance. Gated **only when OCR is requested** — an images-only run
+    must not fail on a missing OCR toolchain.
+16. **Deterministic census**: emit one census file **per source**, with stable
+    ordering (by issue date) and fixed key order for clean git diffs; warn on
+    unexpected census size. Year-sharding is **not** built now (YAGNI at 78
+    rows); revisit only if a real source's census grows large.
 
 ## Open questions
 
@@ -132,10 +164,11 @@ _Carry into `/stack-control:define`; none are blockers._
 - **Archive repo layout + metadata schema**: inspect `colony-cults-archive` after
   cloning; conform the archive writer to any existing directory/metadata
   convention rather than inventing a new one.
-- **OCR toolchain install**: local box has Tesseract 5.5.1 but only `eng`;
-  `ocrmypdf`, `img2pdf`, `pdftotext`, and the `fra` language pack are missing.
-  Spec must capture the install step (`brew install ocrmypdf tesseract-lang
-  img2pdf poppler` or equivalent) as a prerequisite.
+- **OCR toolchain install** (now a decided preflight, decision 15): local box has
+  Tesseract 5.5.1 but only `eng`; `ocrmypdf`, `img2pdf`, `pdftotext`, and the
+  `fra` language pack are missing. Spec captures the install step (`brew install
+  ocrmypdf tesseract-lang img2pdf poppler` or equivalent) as a prerequisite the
+  preflight enforces.
 - **Scanner library viewer reuse**: scanner has a PDF/A library viewer
   (searchable / image-only badges). Out of scope for the fetcher; note as a
   possible later surface for browsing the archive.
@@ -151,5 +184,10 @@ _Carry into `/stack-control:define`; none are blockers._
 - OCR method sourced from the operator's pointer to `~/work/scanner` (`hpscan`),
   whose `scan-manuscript.sh` supplies the `img2pdf` + `ocrmypdf --output-type
   pdfa` recipe reused here.
+- Operational decisions 11–16 sourced from a third-party review, 2026-07-08.
+  Items 1/3/4/6/7 accepted outright; item 2 accepted minus year-sharding (YAGNI);
+  item 5 accepted with a de-duplicated flag set (`--ocr` + an `ocr` subcommand).
+  The rights endpoint (`services/OAIRecord`, `dc:rights`) and the finding that the
+  IIIF `license` field is unsuitable were both verified by live probe this session.
 - Handoff target: `/stack-control:define` (authors the Spec Kit spec from this
   record).
