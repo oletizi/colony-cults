@@ -28,11 +28,13 @@ Two concrete digital access paths are now confirmed:
 
 - State Library of Queensland says it holds two bound volumes of issues published between 1879 and 1881 and that those volumes have been digitised and can be viewed online.
 - Gallica provides issue-level access, with at least the 15 July 1879 issue confirmed.
+- Gallica metadata for the verified issue identifies it as a press fascicle, shelfmark `JO-3094`, source `Bibliotheque nationale de France`, and rights status `domaine public`.
 
 Relevant rights guidance now captured:
 
 - State Library of Queensland says all text on its website is under `CC BY 4.0`, but other website material may be used for private study, research, criticism, and review, and commercial use requires permission from the copyright holder.
 - State Library of Queensland also says many digitised collections are out of copyright and may be printed, copied, or downloaded without permission, but this should still be confirmed against the specific record before mirroring.
+- Gallica's verified issue metadata labels the issue itself as `domaine public`, which is the clearest mirrorability signal found so far for a host copy.
 
 ## People mentioned
 
@@ -69,7 +71,7 @@ This is a core primary source for recruitment claims, but it is also a promotion
 
 The current uncertainty is not whether the nineteenth-century newspaper itself is public domain, but whether the digital reproductions currently available from host institutions may be mirrored in the private archive without further rights review.
 
-This note distinguishes between the underlying nineteenth-century publication and host-specific statements about the digitized files. Further record-level review is still needed before any mirror decision.
+This note distinguishes between the underlying nineteenth-century publication and host-specific statements about the digitized files. The strongest current signal favors Gallica for lawful preservation review, while SLQ still needs record-level confirmation before any mirror decision based on its copy.
 
 ## Cross-references
 

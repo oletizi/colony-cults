@@ -213,3 +213,29 @@ Milestone 2 acquisition work on `PB-P001`.
 ### Notes
 
 The underlying newspaper is likely public domain by age, but the archive decision still depends on the host institutions' terms for the digitized copies we can access.
+
+## 2026-07-07 - La Nouvelle France host-rights split clarified
+
+### Summary
+
+Clarified the difference between Gallica's item-level public-domain signal and SLQ's more general host-level reuse guidance.
+
+### Completed
+
+- Recorded that the verified Gallica issue is labeled `domaine public` in page metadata.
+- Recorded that SLQ's publicly visible rights guidance is broader and still needs item-level confirmation before mirroring.
+- Updated the acquisition tracker to prioritize Gallica for mirror-rights review while keeping SLQ in link-and-catalog mode.
+
+### Current focus
+
+Milestone 2 acquisition work on `PB-P001`.
+
+### Next actions
+
+- Compare SLQ's two bound volumes against Gallica's issue-level availability.
+- If Gallica continues to expose public-domain issue records, use that path as the leading archive candidate.
+- Treat SLQ as access-confirmed but mirror-unverified until the item record says more.
+
+### Notes
+
+This is a useful governance test: the repo now preserves not just a rights conclusion, but the distinction between host-specific evidence levels.

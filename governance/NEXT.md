@@ -2,7 +2,7 @@
 
 ## Active
 
-1. Work issue `#1` for `La Nouvelle France`: locate the best available run and verify rights.
+1. Work issue `#1` for `La Nouvelle France`: compare SLQ coverage against Gallica and verify record-level rights.
 2. Open follow-on acquisition or research issues for Baudouin, de Groote, and French trial records.
 3. Use `La Nouvelle France` as the first test case for the new acquisition workflow.
 
