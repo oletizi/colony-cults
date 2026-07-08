@@ -29,6 +29,8 @@ Reusable TypeScript/tsx tool to fetch Gallica public-domain sources via document
 
 ## impl:feature/source-translation
 - status: in-flight
+- analyze-clean: yes
+- spec: specs/002-source-translation
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-08-source-translation-design.md
 - depends-on: impl:feature/gallica-fetcher

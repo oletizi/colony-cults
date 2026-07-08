@@ -1,5 +1,5 @@
 <!-- SPECKIT START -->
-Active plan: specs/001-gallica-fetcher/plan.md
+Active plan: specs/002-source-translation/plan.md
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the active plan above.
 <!-- SPECKIT END -->
