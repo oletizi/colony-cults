@@ -368,3 +368,30 @@ Milestone 2 acquisition work on `PB-P001`, with the easy discovery routes now la
 ### Notes
 
 This closes the current easy-to-medium inquiry loop on `PB-P001` without pretending the run is complete.
+
+## 2026-07-07 - Browser tooling path restored
+
+### Summary
+
+Resolved the browser-automation tooling blocker by adding and validating a repo-local Playwright CLI wrapper.
+
+### Completed
+
+- Added `scripts/playwright-cli.sh` as a repo-local fallback to `npx @playwright/cli`.
+- Added `notes/browser-tooling.md` documenting the workflow and why the fallback exists.
+- Installed a usable Playwright Chromium browser in the environment.
+- Validated `open`, `snapshot`, and `requests` through the repo-local wrapper against `https://example.com`.
+
+### Current focus
+
+Tooling blocker removed; browser-based follow-up is now available when needed.
+
+### Next actions
+
+- Use the repo-local wrapper for future Gallica or SLQ browser sessions.
+- Re-open `PB-P001` only when a manual browser pass is worth the remaining friction.
+- Continue parallel source acquisition work with the tooling gap now closed.
+
+### Notes
+
+The original blocker was not lack of Playwright itself, but the absence of the expected wrapper path. The repo now owns a stable fallback.

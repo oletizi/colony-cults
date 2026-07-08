@@ -31,6 +31,10 @@ research/
 notes/
   source-notes-template.md
   source-acquisition-workflow.md
+  browser-tooling.md
+
+scripts/
+  playwright-cli.sh
 ```
 
 ## Legal and citation note
