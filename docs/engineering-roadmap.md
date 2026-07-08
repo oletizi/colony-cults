@@ -20,5 +20,7 @@ edit this file directly, then run `stackctl roadmap order` to revalidate the
 graph (it fails loud on a cycle / dangling ref / duplicate id).
 
 ## impl:feature/gallica-fetcher
-- status: planned
+- status: in-flight
+- design-approved: yes
+- design: docs/superpowers/specs/2026-07-08-gallica-fetcher-design.md
 Reusable TypeScript/tsx tool to fetch Gallica public-domain sources via documented web-service and IIIF APIs (Issues census, Pagination, IIIF images, OCR text) with provenance and checksums into the private archive; first target La Nouvelle France PB-P001
