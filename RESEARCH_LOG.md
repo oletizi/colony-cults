@@ -186,3 +186,30 @@ Milestone 2 startup through `PB-P001`.
 ### Notes
 
 This is the first live test of the repository's documented acquisition workflow and issue structure.
+
+## 2026-07-07 - La Nouvelle France access points confirmed
+
+### Summary
+
+Confirmed the first concrete digital access points for `PB-P001` and narrowed the next rights-review step.
+
+### Completed
+
+- Confirmed that State Library of Queensland reports two bound digitized volumes covering 1879-1881.
+- Confirmed Gallica issue-level access, with at least the 15 July 1879 issue verified.
+- Added a dedicated source note: `notes/la-nouvelle-france.md`.
+- Added the finding back to GitHub issue `#1` and sharpened the acquisition tracker next action.
+
+### Current focus
+
+Milestone 2 acquisition work on `PB-P001`.
+
+### Next actions
+
+- Compare SLQ and Gallica holdings for completeness.
+- Check record-level rights or download statements before mirroring any files.
+- Keep the public repo in link-and-catalog mode until mirror rights are explicit.
+
+### Notes
+
+The underlying newspaper is likely public domain by age, but the archive decision still depends on the host institutions' terms for the digitized copies we can access.
