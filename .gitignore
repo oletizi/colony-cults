@@ -16,3 +16,6 @@ build/
 # stack-control / speckit runtime caches (not source)
 .stack-control/state/
 .specify/extensions/.cache/
+
+# audit-barrage run dirs are prunable runtime artifacts (stackctl audit-runs)
+.stack-control/audit-runs/

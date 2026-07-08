@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/gallica-fetcher",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults",
+  "override": true,
+  "overrideReason": "operator-authorized override (user directive 2026-07-08): the cross-model barrage converges only over a DEGRADED fleet (sonnet lane repeatedly times out; claude+codex meet the floor of 2) and the full whole-feature barrage exceeds this environment's background-process runtime limit (killed at ~25min). All 4 HIGH audit findings fixed manually in commit 9a036f8 (mixed-rights fail-closed, ARK validation, census completeness, manifest-on-skip); mediums/lows captured to backlog TASK-1..5. Operator accepts graduation under override."
+}
