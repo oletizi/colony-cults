@@ -104,3 +104,31 @@ Milestone 1: Project Infrastructure.
 ### Notes
 
 For now, the ceremony is file-driven rather than tool-driven: start by reading repo state, end by writing repo state back and pushing it.
+
+## 2026-07-07 - Issue templates added
+
+### Summary
+
+Added GitHub issue templates tailored to the repository's research workflow.
+
+### Completed
+
+- Kept the existing source acquisition template.
+- Added a research task template.
+- Added a source conflict template.
+- Added issue template configuration to steer contributors toward governed issue creation.
+- Updated roadmap and governance state to reflect that issue templates are now complete.
+
+### Current focus
+
+Milestone 1: Project Infrastructure.
+
+### Next actions
+
+- Document the source acquisition workflow.
+- Open the first acquisition issues for core Port Breton sources.
+- Begin Milestone 2 work with `La Nouvelle France`.
+
+### Notes
+
+The remaining Phase 1 gap is now workflow documentation rather than GitHub issue structure.

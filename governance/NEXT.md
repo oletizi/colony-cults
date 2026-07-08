@@ -2,9 +2,9 @@
 
 ## Active
 
-1. Add issue templates to complete the remaining infrastructure task in Phase 1.
-2. Document the source acquisition workflow for public and private repositories.
-3. Begin Milestone 2 acquisition work with `La Nouvelle France`.
+1. Document the source acquisition workflow for public and private repositories.
+2. Begin Milestone 2 acquisition work with `La Nouvelle France`.
+3. Open the first acquisition and research issues using the new templates.
 
 ## Ready after active work
 

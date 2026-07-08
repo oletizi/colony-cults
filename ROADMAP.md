@@ -14,7 +14,7 @@ Milestones:
 - [x] Create decision log.
 - [x] Create research log.
 - [x] Create governance files.
-- [ ] Add issue templates.
+- [x] Add issue templates.
 
 ## Phase 2: Port Breton Source Acquisition
 
