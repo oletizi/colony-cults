@@ -1,4 +1,5 @@
 import type { ClaudeCli } from '@/claude/client';
+import { TRANSFORMATION_SYSTEM_PROMPT } from '@/claude/client';
 
 /**
  * Instruction sent to the engine for the translation pass (T015, spec.md
@@ -9,9 +10,12 @@ import type { ClaudeCli } from '@/claude/client';
 const TRANSLATION_PROMPT =
   'Translate the following corrected French text into readable, natural ' +
   'English. Be faithful to the source: preserve its meaning and structure, ' +
-  'and do not summarize, add, or omit any content. ' +
-  'Output ONLY the English translation -- no preamble, no commentary, and ' +
-  'no notes before or after the translation.';
+  'and do not summarize, add, or omit any content. Translate the COMPLETE ' +
+  'text from its first word to its last -- do not stop early or return only ' +
+  'a fragment or a single heading. ' +
+  'Your entire reply must be the English translation and nothing else: no ' +
+  'preamble, no acknowledgement, no commentary, no notes, no Markdown fences, ' +
+  'and no separator lines. Begin with the first word of the English translation.';
 
 /**
  * Translates one page of CORRECTED French OCR text into readable English
@@ -27,5 +31,10 @@ export async function translatePage(
   correctedFrench: string,
   model?: string,
 ): Promise<string> {
-  return await claude.run(TRANSLATION_PROMPT, correctedFrench, model);
+  return await claude.run(
+    TRANSLATION_PROMPT,
+    correctedFrench,
+    model,
+    TRANSFORMATION_SYSTEM_PROMPT,
+  );
 }

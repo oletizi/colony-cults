@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { translatePage } from '@/translate/translate-page';
 import type { ClaudeCli } from '@/claude/client';
+import { TRANSFORMATION_SYSTEM_PROMPT } from '@/claude/client';
 
 /**
  * Unit coverage for `translatePage` (T015): turns one page of CORRECTED
@@ -12,13 +13,14 @@ interface FakeCall {
   prompt: string;
   sourceText: string;
   model?: string;
+  systemPrompt?: string;
 }
 
 function fakeClaudeCli(canned: string): { cli: ClaudeCli; calls: FakeCall[] } {
   const calls: FakeCall[] = [];
   const cli: ClaudeCli = {
-    run: async (prompt, sourceText, model) => {
-      calls.push({ prompt, sourceText, model });
+    run: async (prompt, sourceText, model, systemPrompt) => {
+      calls.push({ prompt, sourceText, model, systemPrompt });
       return canned;
     },
   };
@@ -78,7 +80,16 @@ describe('translatePage (T015)', () => {
 
     await translatePage(cli, 'Texte français', 'some-model');
 
-    expect(calls[0].prompt).toMatch(/only the (english )?translation/i);
+    expect(calls[0].prompt).toMatch(/english translation and nothing else/i);
     expect(calls[0].prompt).toMatch(/no preamble|no commentary|without (any )?(preamble|commentary)/i);
+  });
+
+  it('appends the output-only transformation system prompt', async () => {
+    const { cli, calls } = fakeClaudeCli('English output');
+
+    await translatePage(cli, 'Texte français', 'some-model');
+
+    expect(calls[0].systemPrompt).toBe(TRANSFORMATION_SYSTEM_PROMPT);
+    expect(calls[0].systemPrompt).toMatch(/never write any preamble/i);
   });
 });

@@ -76,6 +76,34 @@ describe('createClaudeCli (T006)', () => {
     expect(calls[0].args).not.toContain('--model');
   });
 
+  it('appends --append-system-prompt with the given system prompt', async () => {
+    const { runner, calls } = fakeRunner({
+      stdout: 'translated output',
+      stderr: '',
+      exitCode: 0,
+    });
+    const cli = createClaudeCli(runner);
+
+    await cli.run('Translate to English', 'bonjour', 'some-model', 'BE TERSE');
+
+    const idx = calls[0].args.indexOf('--append-system-prompt');
+    expect(idx).toBeGreaterThanOrEqual(0);
+    expect(calls[0].args[idx + 1]).toBe('BE TERSE');
+  });
+
+  it('omits --append-system-prompt when no system prompt is given', async () => {
+    const { runner, calls } = fakeRunner({
+      stdout: 'translated output',
+      stderr: '',
+      exitCode: 0,
+    });
+    const cli = createClaudeCli(runner);
+
+    await cli.run('Translate to English', 'bonjour');
+
+    expect(calls[0].args).not.toContain('--append-system-prompt');
+  });
+
   it('returns the runner stdout on exit code 0 with non-empty output', async () => {
     const { runner } = fakeRunner({
       stdout: '  some translated text  ',

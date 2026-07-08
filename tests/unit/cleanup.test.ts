@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { cleanupPage } from '@/translate/cleanup';
 import type { ClaudeCli } from '@/claude/client';
+import { TRANSFORMATION_SYSTEM_PROMPT } from '@/claude/client';
 
 /**
  * Unit coverage for `cleanupPage` (T014): builds a French-cleanup
@@ -13,13 +14,14 @@ interface FakeCall {
   prompt: string;
   sourceText: string;
   model: string | undefined;
+  systemPrompt: string | undefined;
 }
 
 function fakeClaudeCli(canned: string): { claude: ClaudeCli; calls: FakeCall[] } {
   const calls: FakeCall[] = [];
   const claude: ClaudeCli = {
-    run: async (prompt, sourceText, model) => {
-      calls.push({ prompt, sourceText, model });
+    run: async (prompt, sourceText, model, systemPrompt) => {
+      calls.push({ prompt, sourceText, model, systemPrompt });
       return canned;
     },
   };
@@ -104,7 +106,16 @@ describe('cleanupPage (T014)', () => {
 
     await cleanupPage(claude, rawText);
 
-    expect(calls[0].prompt).toMatch(/output only/i);
+    expect(calls[0].prompt).toMatch(/corrected french text and nothing else/i);
     expect(calls[0].prompt).toMatch(/no preamble/i);
+  });
+
+  it('appends the output-only transformation system prompt', async () => {
+    const { claude, calls } = fakeClaudeCli('corrected');
+
+    await cleanupPage(claude, rawText, 'some-model');
+
+    expect(calls[0].systemPrompt).toBe(TRANSFORMATION_SYSTEM_PROMPT);
+    expect(calls[0].systemPrompt).toMatch(/never write any preamble/i);
   });
 });

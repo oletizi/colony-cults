@@ -1,4 +1,5 @@
 import type { ClaudeCli } from '@/claude/client';
+import { TRANSFORMATION_SYSTEM_PROMPT } from '@/claude/client';
 
 /**
  * Instruction prompt for the cleanup pass (T014, FR-003): turns one page of
@@ -24,9 +25,9 @@ Apply these corrections:
 - Repair obvious OCR scan errors (misrecognized characters, garbled words) where the intended word is clear from context.
 - Drop OCR condition markers and scan artifact annotations that are not part of the source text (e.g. "Contraste insuffisant").
 
-Stay faithful to the source: do not translate, summarize, add, or remove content. Preserve the original French wording and meaning exactly.
+Stay faithful to the source: do not translate, summarize, add, or remove content. Preserve the original French wording and meaning exactly. Correct the COMPLETE page from its first line to its last -- do not stop early or return only a fragment.
 
-Output only the corrected French text. No preamble, no commentary, no explanation -- just the corrected French text.`;
+Your entire reply must be the corrected French text and nothing else: no preamble, no acknowledgement, no commentary, no explanation, no Markdown fences, and no separator lines. Begin with the first word of the corrected French.`;
 
 /**
  * Corrects one page of raw French OCR text into a faithful French
@@ -44,5 +45,10 @@ export async function cleanupPage(
   pageText: string,
   model?: string,
 ): Promise<string> {
-  return await claude.run(CLEANUP_INSTRUCTION, pageText, model);
+  return await claude.run(
+    CLEANUP_INSTRUCTION,
+    pageText,
+    model,
+    TRANSFORMATION_SYSTEM_PROMPT,
+  );
 }
