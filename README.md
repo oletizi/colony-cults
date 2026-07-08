@@ -30,6 +30,7 @@ research/
 
 notes/
   source-notes-template.md
+  source-acquisition-workflow.md
 ```
 
 ## Legal and citation note
