@@ -30,3 +30,23 @@ Milestone 1: Project Infrastructure.
 ### Notes
 
 The repository should be treated as the project memory. Future sessions should begin by reading the project dashboard, roadmap, and research log.
+
+## 2026-07-07 - Governance principles captured
+
+### Added operating principle
+
+Commit early. Commit often. Push frequently.
+
+Uncommitted work is temporary. Committed work is durable. Pushed work is recoverable. It is safer to commit and push a small imperfect change and roll it back later than to leave valuable work trapped in memory, a browser tab, a local scratch file, or a chat transcript.
+
+### Related principles
+
+- The repository is the project's memory.
+- The project must survive a complete context wipe.
+- Optimize for durable commits, not chat responses.
+- Never make the same discovery twice.
+- Leave the project in a better state than it was found.
+
+### Implementation note
+
+These principles still need to be promoted into dedicated governance files. Attempts to create new governance files were blocked by connector/safety errors, so this log entry captures the principle durably first.
