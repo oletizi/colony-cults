@@ -2,9 +2,9 @@
 
 ## Active
 
-1. Open the first acquisition issue for `La Nouvelle France`.
-2. Begin Milestone 2 acquisition work with `La Nouvelle France`.
-3. Open follow-on acquisition or research issues for Baudouin, de Groote, and French trial records.
+1. Work issue `#1` for `La Nouvelle France`: locate the best available run and verify rights.
+2. Open follow-on acquisition or research issues for Baudouin, de Groote, and French trial records.
+3. Use `La Nouvelle France` as the first test case for the new acquisition workflow.
 
 ## Ready after active work
 

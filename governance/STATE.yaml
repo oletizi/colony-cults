@@ -1,13 +1,13 @@
 as_of: 2026-07-07
 phase: "Phase 1: Foundation and Source Acquisition"
-milestone: "Milestone 1: Project Infrastructure"
+milestone: "Milestone 2: Port Breton Public-Domain Acquisition"
 status: active
 focus:
-  - "Open the first acquisition issues for core Port Breton sources."
   - "Begin Milestone 2 work with La Nouvelle France."
+  - "Work issue #1 for La Nouvelle France acquisition and rights review."
   - "Prepare a repeatable pattern for lawful public/private source intake."
 blocking_issues:
-  - "Core Port Breton source acquisition work has not started."
+  - "Rights status and mirrorability for La Nouvelle France are still unverified."
 authoritative_files:
   - PROJECT.md
   - ROADMAP.md

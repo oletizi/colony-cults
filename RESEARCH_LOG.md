@@ -160,3 +160,29 @@ Milestone 1: Project Infrastructure, transitioning into Milestone 2 preparation.
 ### Notes
 
 The repository now has an explicit intake process for deciding what is cataloged publicly, what may be mirrored privately, and how provenance is preserved across both.
+
+## 2026-07-07 - First acquisition issue opened
+
+### Summary
+
+Started Milestone 2 execution by opening the first source acquisition issue for `La Nouvelle France`.
+
+### Completed
+
+- Created GitHub issue `#1`: `Acquire: La Nouvelle France (PB-P001)`.
+- Updated `bibliography/acquisition-tracker.csv` so `PB-P001` now points to the live issue and is marked in progress.
+- Refreshed governance state so current work is centered on rights review and run discovery for `La Nouvelle France`.
+
+### Current focus
+
+Milestone 2 startup through `PB-P001`.
+
+### Next actions
+
+- Search for the best available digitized run of `La Nouvelle France`.
+- Verify whether any discovered copy may be lawfully mirrored in the private archive.
+- Open follow-on acquisition issues for other core Port Breton sources.
+
+### Notes
+
+This is the first live test of the repository's documented acquisition workflow and issue structure.

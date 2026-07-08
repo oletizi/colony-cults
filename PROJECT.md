@@ -17,16 +17,6 @@ The current priority is to establish research infrastructure and acquire/catalog
 
 ## Active milestone
 
-**Milestone 1: Project Infrastructure**
-
-Completion criteria:
-
-- Public repository contains project dashboard, roadmap, research log, decision log, and agent/contributor guidance.
-- Private archive repository contains preservation policy, acquisition register, and metadata stubs for initial primary sources.
-- Source acquisition workflow is documented.
-
-## Next milestone
-
 **Milestone 2: Port Breton Public-Domain Acquisition**
 
 Initial targets:
@@ -37,6 +27,16 @@ Initial targets:
 4. French trial/legal pamphlets.
 5. Australian newspaper coverage via Trove.
 6. Nineteenth-century maps of New Ireland and surrounding region.
+
+## Completed milestone
+
+**Milestone 1: Project Infrastructure**
+
+Completion criteria met:
+
+- Public repository contains project dashboard, roadmap, research log, decision log, and agent/contributor guidance.
+- Private archive repository contains preservation policy, acquisition register, and metadata stubs for initial primary sources.
+- Source acquisition workflow is documented.
 
 ## Working rules
 
