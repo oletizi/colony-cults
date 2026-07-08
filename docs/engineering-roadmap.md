@@ -18,3 +18,7 @@ dependency chain:
 For an edit that has no verb yet (e.g. moving a `part-of` / `depends-on` edge):
 edit this file directly, then run `stackctl roadmap order` to revalidate the
 graph (it fails loud on a cycle / dangling ref / duplicate id).
+
+## impl:feature/gallica-fetcher
+- status: planned
+Reusable TypeScript/tsx tool to fetch Gallica public-domain sources via documented web-service and IIIF APIs (Issues census, Pagination, IIIF images, OCR text) with provenance and checksums into the private archive; first target La Nouvelle France PB-P001
