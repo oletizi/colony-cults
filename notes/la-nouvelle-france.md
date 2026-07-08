@@ -129,6 +129,7 @@ That discrepancy should be preserved rather than flattened.
 - Direct Gallica search and SRU endpoints triggered anti-bot verification, preventing a clean extraction of the full `issue by date` sequence from the live site.
 - SLQ's JavaScript-heavy catalogue did not yield readable full-record metadata directly through terminal fetches, but the media page and Queensland open-data export exposed stable title-record identifiers and a direct delivery URL.
 - A browser-automation pass was considered, but the expected local Playwright wrapper referenced by the skill was not present in this environment.
+- After the repo-local Playwright path was restored, browser navigation reached the Gallica serial run page and exposed year-level counts, but direct year-page navigation remained intermittent and could still fall back to `403 Access Interdit` on repeated requests.
 
 At this point, the remaining unknowns are not due to untried simple discovery routes. They are mainly blocked by host-side interface and bot protections.
 

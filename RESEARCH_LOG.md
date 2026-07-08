@@ -423,3 +423,29 @@ Milestone 2 acquisition work on `PB-P001`, now with browser-based Gallica access
 ### Notes
 
 This is the most important `PB-P001` breakthrough so far because it upgrades the inquiry from scattered issue hits to a host-confirmed serial run structure.
+
+## 2026-07-07 - PB-P001 browser follow-up reached host-instability limit
+
+### Summary
+
+Tried to push beyond year-level counts into exact per-issue dates through the live Gallica year pages, but hit intermittent access instability.
+
+### Completed
+
+- Confirmed that the browser route can reach the serial run page and expose year-level counts.
+- Confirmed that repeated direct navigation to year pages such as `date1879` can still fall back to `403 Access Interdit`.
+- Preserved that intermittent blocked-state in the source note and acquisition tracker.
+
+### Current focus
+
+`PB-P001` now has a materially improved run structure, but exact issue-by-issue extraction remains host-limited.
+
+### Next actions
+
+- Treat the current Gallica run structure and verified issue endpoints as the durable stopping point for now.
+- Resume only if a future manual session can tolerate intermittent blocking or if another host provides cleaner per-issue metadata.
+- Advance parallel source work instead of grinding the same unstable interface.
+
+### Notes
+
+This is a different class of stop than earlier: the tooling blocker is solved, but the host itself is now the limiting factor.
