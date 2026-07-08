@@ -1,0 +1,17 @@
+as_of: 2026-07-07
+phase: "Phase 1: Foundation and Source Acquisition"
+milestone: "Milestone 1: Project Infrastructure"
+status: active
+focus:
+  - "Establish durable governance and session workflow files."
+  - "Keep project state recoverable from the repository alone."
+blocking_issues:
+  - "Issue templates are not yet present."
+  - "Core Port Breton source acquisition work has not started."
+authoritative_files:
+  - PROJECT.md
+  - ROADMAP.md
+  - DECISIONS.md
+  - RESEARCH_LOG.md
+  - GOVERNANCE.md
+  - governance/NEXT.md
