@@ -29,9 +29,9 @@ This feature REUSES the shipped fetcher modules — do not reimplement: `@/archi
 
 **Purpose**: Wire the second bin and module skeleton.
 
-- [ ] T001 [tier:fast] Add `bin: { "translate": "src/translate-index.ts" }` and a `"translate": "tsx src/translate-index.ts"` script to `package.json` (leave the existing `gallica` bin/script untouched).
-- [ ] T002 [P] [tier:fast] Create module directories with `.gitkeep`: `src/claude/`, `src/translate/`, and confirm `tests/unit/` and `tests/integration/` exist.
-- [ ] T003 [P] [tier:fast] Add a real `issue.txt` fixture (a small excerpt containing at least two `\f` page breaks) at `tests/fixtures/issue-sample.txt` for the page-split unit test, plus a minimal page-provenance `.yml` fixture at `tests/fixtures/page-provenance.yml` (rights_status: public-domain).
+- [x] T001 [tier:fast] Add `bin: { "translate": "src/translate-index.ts" }` and a `"translate": "tsx src/translate-index.ts"` script to `package.json` (leave the existing `gallica` bin/script untouched).
+- [x] T002 [P] [tier:fast] Create module directories with `.gitkeep`: `src/claude/`, `src/translate/`, and confirm `tests/unit/` and `tests/integration/` exist.
+- [x] T003 [P] [tier:fast] Add a real `issue.txt` fixture (a small excerpt containing at least two `\f` page breaks) at `tests/fixtures/issue-sample.txt` for the page-split unit test, plus a minimal page-provenance `.yml` fixture at `tests/fixtures/page-provenance.yml` (rights_status: public-domain).
 
 ---
 
@@ -39,19 +39,19 @@ This feature REUSES the shipped fetcher modules — do not reimplement: `@/archi
 
 **Purpose**: The shared translation primitives every user story depends on. MUST complete before US1/US2/US3.
 
-- [ ] T004 [P] [tier:balanced] Implement the Claude CLI adapter `src/claude/exec.ts` — re-export/reuse the generic `execCommand` from `@/ocr/exec` (per research R8) with a `ClaudeCommandRunner` interface (`run(command, args, stdin?)`), so tests can inject a fake. Confirm `execCommand` supports passing stdin; if not, extend the reused runner minimally (document the touch to shipped code).
-- [ ] T005 [P] [tier:balanced] Implement `src/claude/preflight.ts` — `assertClaudeAvailable(deps)` modeled on `@/ocr/preflight` `assertOcrToolchain`: fail loud naming `claude` + how to install/authenticate when absent; PATH lookup + runner injected. Fires only when translation runs (wired later), never on dry-run.
-- [ ] T006 [tier:balanced] Implement `src/claude/client.ts` — `ClaudeCli` with `run(prompt: string, sourceText: string, model?: string): Promise<string>`: one `claude --print` invocation, sourceText on stdin, prompt as instruction, capture stdout, throw a descriptive error on non-zero exit or empty output (no fallback). Model recorded for provenance.
-- [ ] T007 [P] [tier:fast] Implement `src/translate/pages.ts` — `splitPages(issueText: string): string[]` splitting on `\f`, dropping a trailing empty final element; `assemble(pages: string[]): string` joining page text in order. Pure functions.
-- [ ] T008 [P] [tier:balanced] Implement `src/translate/rights.ts` — `readIssueRights(sourceId, issueArk, archiveRoot)`: locate the issue dir via `findIssueDir` (offline), `readProvenance` the first page `.yml`, return `{ rights_status, citation: {title, catalog_url, language} }`; fail loud if no provenance found (per research R3).
-- [ ] T009 [tier:powerful] Decide + implement the provenance machine-assisted fields (data-model.md "Provenance additions"): extend `ProvenanceFields` in `@/archive/provenance` with additive OPTIONAL keys `engine?`, `model?`, `translation?` (keeping existing fetcher records valid), and include them in `KEY_ORDER`/`emitField`/`parseProvenance`. If the additive change is judged too invasive, fall back to a structured `notes` line — document the choice in the task. Update `@/archive/provenance` tests accordingly.
-- [ ] T010 [P] [tier:balanced] Implement `src/translate/artifacts.ts` — path helpers for `issue.fr.txt`, `issue.en.txt` (whole-issue, in the issue dir) and per-page intermediates `translation/pNNN.fr.txt` / `translation/pNNN.en.txt`; and a `buildTranslationProvenance(base, kind, model, retrieved)` that populates the FR-006 fields (engine=`claude-code-cli`, model, date, translation=`machine-assisted`, citation, rights_status, type, format=`text/plain`) reusing the source page provenance as base.
+- [x] T004 [P] [tier:balanced] Implement the Claude CLI adapter `src/claude/exec.ts` — re-export/reuse the generic `execCommand` from `@/ocr/exec` (per research R8) with a `ClaudeCommandRunner` interface (`run(command, args, stdin?)`), so tests can inject a fake. Confirm `execCommand` supports passing stdin; if not, extend the reused runner minimally (document the touch to shipped code).
+- [x] T005 [P] [tier:balanced] Implement `src/claude/preflight.ts` — `assertClaudeAvailable(deps)` modeled on `@/ocr/preflight` `assertOcrToolchain`: fail loud naming `claude` + how to install/authenticate when absent; PATH lookup + runner injected. Fires only when translation runs (wired later), never on dry-run.
+- [x] T006 [tier:balanced] Implement `src/claude/client.ts` — `ClaudeCli` with `run(prompt: string, sourceText: string, model?: string): Promise<string>`: one `claude --print` invocation, sourceText on stdin, prompt as instruction, capture stdout, throw a descriptive error on non-zero exit or empty output (no fallback). Model recorded for provenance.
+- [x] T007 [P] [tier:fast] Implement `src/translate/pages.ts` — `splitPages(issueText: string): string[]` splitting on `\f`, dropping a trailing empty final element; `assemble(pages: string[]): string` joining page text in order. Pure functions.
+- [x] T008 [P] [tier:balanced] Implement `src/translate/rights.ts` — `readIssueRights(sourceId, issueArk, archiveRoot)`: locate the issue dir via `findIssueDir` (offline), `readProvenance` the first page `.yml`, return `{ rights_status, citation: {title, catalog_url, language} }`; fail loud if no provenance found (per research R3).
+- [x] T009 [tier:powerful] Decide + implement the provenance machine-assisted fields (data-model.md "Provenance additions"): extend `ProvenanceFields` in `@/archive/provenance` with additive OPTIONAL keys `engine?`, `model?`, `translation?` (keeping existing fetcher records valid), and include them in `KEY_ORDER`/`emitField`/`parseProvenance`. If the additive change is judged too invasive, fall back to a structured `notes` line — document the choice in the task. Update `@/archive/provenance` tests accordingly.
+- [x] T010 [P] [tier:balanced] Implement `src/translate/artifacts.ts` — path helpers for `issue.fr.txt`, `issue.en.txt` (whole-issue, in the issue dir) and per-page intermediates `translation/pNNN.fr.txt` / `translation/pNNN.en.txt`; and a `buildTranslationProvenance(base, kind, model, retrieved)` that populates the FR-006 fields (engine=`claude-code-cli`, model, date, translation=`machine-assisted`, citation, rights_status, type, format=`text/plain`) reusing the source page provenance as base.
 
 ### Foundational tests
 
-- [ ] T011 [P] [tier:fast] Unit test `tests/unit/pages.test.ts` — `splitPages` on the `issue-sample.txt` fixture asserts the page count (== form-feeds + 1, trailing-empty dropped) and `assemble` round-trips.
-- [ ] T012 [P] [tier:balanced] Unit test `tests/unit/rights.test.ts` — `readIssueRights` returns public-domain + citation from the fixture; fails loud when provenance is absent.
-- [ ] T013 [P] [tier:balanced] Unit test `tests/unit/claude-preflight.test.ts` — `assertClaudeAvailable` passes when the injected PATH lookup finds `claude`, throws a descriptive error naming install/auth when absent.
+- [x] T011 [P] [tier:fast] Unit test `tests/unit/pages.test.ts` — `splitPages` on the `issue-sample.txt` fixture asserts the page count (== form-feeds + 1, trailing-empty dropped) and `assemble` round-trips.
+- [x] T012 [P] [tier:balanced] Unit test `tests/unit/rights.test.ts` — `readIssueRights` returns public-domain + citation from the fixture; fails loud when provenance is absent.
+- [x] T013 [P] [tier:balanced] Unit test `tests/unit/claude-preflight.test.ts` — `assertClaudeAvailable` passes when the injected PATH lookup finds `claude`, throws a descriptive error naming install/auth when absent.
 
 **Checkpoint**: primitives exist and are unit-tested; user stories can start.
 
