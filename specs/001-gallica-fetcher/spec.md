@@ -8,6 +8,14 @@
 
 **Input**: Reusable command-line tool to fetch nineteenth-century public-domain sources from the BnF Gallica digital library for the Colony Cults research archive. Design source of truth: `docs/superpowers/specs/2026-07-08-gallica-fetcher-design.md`.
 
+## Clarifications
+
+### Session 2026-07-08
+
+- Q: Image derivative policy for mirrored pages? → A: Full-resolution native image per page only. Rationale: OCR/data-extraction accuracy scales with input resolution; the host's native page images (~2515×3218 px for *La Nouvelle France*, ≈300 DPI for a newspaper page) sit in the sweet spot for reliable text recognition, so a capped/smaller derivative would degrade the extracted text. Preservation-optimal and extraction-optimal coincide; no access derivative is generated in v1.
+- Q: How is the private archive location resolved for the non-overridable write-guard? → A: A fixed sibling path, `../colony-cults-archive` relative to the public repository root. Zero configuration; the guard refuses any preservation-asset write outside it.
+- Q: On-disk layout + provenance format in the private archive? → A: A per-source / per-issue directory tree, with one provenance sidecar file (JSON) stored next to each asset. Default is subject to conforming to any existing convention discovered when the archive repository is cloned.
+
 ## User Scenarios & Testing *(mandatory)*
 
 The "user" is a researcher or research agent building the Colony Cults archive. The first concrete target is *La Nouvelle France* (`PB-P001`), a promotional newspaper for the Port Breton colony scheme, held by Gallica as a periodical of 78 issues spanning 1879–1885.
@@ -71,11 +79,11 @@ A researcher turns already-fetched page images into a searchable PDF/A plus a pl
 
 - **FR-001**: The tool MUST build a per-source census of a Gallica periodical listing every issue with its stable identifier, publication date, and page count, sourced from the host's documented issue-listing service (not the interactive web UI).
 - **FR-002**: The census MUST be written to the public research repository as a deterministic, per-source file (stable ordering by date, stable formatting) suitable for clean version-control diffs.
-- **FR-003**: The tool MUST fetch full-resolution page images for a given issue, and for an entire source (iterating its census).
+- **FR-003**: The tool MUST fetch page images at the host's full native resolution (no downscaling, no capped derivative) for a given issue, and for an entire source (iterating its census), because extraction quality depends on it.
 - **FR-004**: Before any download of an item, the tool MUST verify the item's rights status from the host's per-item rights metadata endpoint and proceed only when it is confirmed public-domain; on any other or absent status it MUST refuse with a descriptive error and download nothing. It MUST NOT rely on a generic, non-item-specific licensing statement.
 - **FR-005**: The tool MUST store the raw rights-metadata response in the item's provenance record.
-- **FR-006**: The tool MUST write image, PDF, and text preservation assets ONLY within the resolved private archive location, and MUST refuse (with no override) to write any such asset to any other location, including the public repository.
-- **FR-007**: Every mirrored asset MUST have a provenance record capturing at least: local path, retrieval date, original source URL, checksum, file format, and OCR status.
+- **FR-006**: The tool MUST resolve the private archive location as the fixed sibling path `../colony-cults-archive` (relative to the public repository root), and MUST write image, PDF, and text preservation assets ONLY within it. It MUST refuse (with no override) to write any such asset to any other location, including the public repository.
+- **FR-007**: Every mirrored asset MUST have a provenance record — stored as a per-asset sidecar file (JSON) alongside the asset within a per-source / per-issue directory tree — capturing at least: local path, retrieval date, original source URL, checksum, file format, and OCR status. (The default layout is subject to conforming to any existing archive-repository convention once that repository is available.)
 - **FR-008**: The tool MUST compute and record a content checksum for every mirrored asset, and MUST support re-verifying existing assets against their recorded checksums.
 - **FR-009**: The tool MUST be resumable: it MUST skip an asset that already exists and whose checksum is already recorded, unless re-fetching is explicitly forced.
 - **FR-010**: The tool MUST provide a dry-run mode for the census and all fetch operations that reports intended actions — identifiers, target paths, per-item rights status, and estimated total size — and writes nothing.
@@ -93,7 +101,7 @@ A researcher turns already-fetched page images into a searchable PDF/A plus a pl
 - **Census**: the enumerated set of issues for a periodical source — each entry an issue identifier, date, and page count — persisted publicly.
 - **Issue**: one fascicle of a periodical (or one monograph), comprising an ordered set of pages, with a rights status.
 - **Asset**: a single mirrored file (page image, searchable PDF/A, or plain-text sidecar) held in the private archive.
-- **Provenance record**: metadata bound to an asset — local path, retrieval date, original URL, checksum, format, OCR status, and the raw rights response for its issue.
+- **Provenance record**: metadata bound to an asset, stored as a per-asset JSON sidecar next to the asset — local path, retrieval date, original URL, checksum, format, OCR status, and the raw rights response for its issue.
 
 ## Success Criteria *(mandatory)*
 
@@ -115,5 +123,6 @@ A researcher turns already-fetched page images into a searchable PDF/A plus a pl
 - The private archive is a sibling repository/location resolvable from the tool's working context; only assets that may be lawfully mirrored are written there.
 - The census (metadata) is safe to hold in the public repository; heavy and rights-sensitive assets are not.
 - French is the primary OCR language for the first sources; the recognition data for it must be installed for OCR runs.
+- The host's native page images are of sufficient resolution (≈300 DPI equivalent) for reliable OCR; no upscaling is performed.
 - The tool runs in an environment where the OCR toolchain can be installed by the operator when OCR is desired.
 - Stack-control owns branching (single long-lived feature branch); this spec's directory name is independent of the git branch.
