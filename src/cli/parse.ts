@@ -34,12 +34,25 @@ export interface ParsedFlags {
   ocr: boolean;
 }
 
+/**
+ * Named string options. Not every command needs these; the census command
+ * requires both and throws (fail loud) if either is missing -- there is no
+ * magic default (see contracts/cli.md).
+ */
+export interface ParsedOptions {
+  /** Colony Cults source ID, e.g. `PB-P001` (census: required). */
+  sourceId?: string;
+  /** Filename slug, e.g. `la-nouvelle-france` (census: required). */
+  slug?: string;
+}
+
 /** Result of parsing argv into a single command invocation. */
 export interface ParsedArgs {
   command: Command;
   /** Positional arguments after the command (e.g. the periodical/issue ark). */
   positional: string[];
   flags: ParsedFlags;
+  options: ParsedOptions;
 }
 
 /**
@@ -59,6 +72,8 @@ export function parse(argv: string[]): ParsedArgs {
       force: { type: 'boolean', default: false },
       verify: { type: 'boolean', default: false },
       ocr: { type: 'boolean', default: false },
+      'source-id': { type: 'string' },
+      slug: { type: 'string' },
     },
     allowPositionals: true,
     strict: true,
@@ -92,6 +107,10 @@ export function parse(argv: string[]): ParsedArgs {
       force: Boolean(values.force),
       verify: Boolean(values.verify),
       ocr: Boolean(values.ocr),
+    },
+    options: {
+      sourceId: values['source-id'],
+      slug: values.slug,
     },
   };
 }

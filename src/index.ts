@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { parse } from '@/cli/parse';
 import type { Command, ParsedArgs } from '@/cli/parse';
+import { runCensus } from '@/cli/census';
 
 /** A command handler: given the parsed invocation, performs the command. */
 type Handler = (args: ParsedArgs) => Promise<void>;
@@ -19,7 +20,7 @@ function notImplemented(command: Command): Handler {
 }
 
 const HANDLERS: Record<Command, Handler> = {
-  census: notImplemented('census'),
+  census: (args) => runCensus(args),
   'fetch-issue': notImplemented('fetch-issue'),
   'fetch-source': notImplemented('fetch-source'),
   ocr: notImplemented('ocr'),
