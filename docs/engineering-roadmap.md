@@ -20,7 +20,7 @@ edit this file directly, then run `stackctl roadmap order` to revalidate the
 graph (it fails loud on a cycle / dangling ref / duplicate id).
 
 ## impl:feature/gallica-fetcher
-- status: in-flight
+- status: shipped
 - analyze-clean: yes
 - spec: specs/001-gallica-fetcher
 - design-approved: yes
