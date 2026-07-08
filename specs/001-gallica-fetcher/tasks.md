@@ -106,6 +106,8 @@ Single project at repo root: `src/`, `tests/`, `data/`.
 - [ ] T034 [P] Generalize to monograph sources — `kind === 'monograph'` skips census, fetches the single document (FR-016) in `src/fetch/issue.ts` + census guard
 - [ ] T035 [P] Author `README.md` usage referencing the quickstart scenarios
 - [ ] T036 Run full `vitest` suite + typecheck; confirm quickstart Scenarios 1–7 each map to a passing test; verify no file exceeds ~500 lines
+- [ ] T037 [P] [US2] Unit test dry-run writes nothing (asserts no filesystem writes; SC-006) in `tests/unit/dry-run.test.ts`
+- [ ] T038 [P] [US3] Integration test images-only run succeeds with OCR toolchain absent (SC-008) in `tests/integration/images-only-no-ocr.test.ts`
 
 ---
 
@@ -130,4 +132,4 @@ Single project at repo root: `src/`, `tests/`, `data/`.
 - **Increment 3**: US3 (OCR) — the searchable-text layer, optional and decoupled.
 - Each increment is independently testable via its quickstart scenario and vitest suite.
 
-**Total tasks**: 36 (Setup 5, Foundational 5, US1 6, US2 12, US3 5, Polish 3).
+**Total tasks**: 38 (Setup 5, Foundational 5, US1 6, US2 13, US3 6, Polish 3). T037/T038 added by `/speckit-analyze` to close SC-006 / SC-008 test coverage.

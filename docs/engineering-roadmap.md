@@ -21,6 +21,8 @@ graph (it fails loud on a cycle / dangling ref / duplicate id).
 
 ## impl:feature/gallica-fetcher
 - status: in-flight
+- analyze-clean: yes
+- spec: specs/001-gallica-fetcher
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-08-gallica-fetcher-design.md
 Reusable TypeScript/tsx tool to fetch Gallica public-domain sources via documented web-service and IIIF APIs (Issues census, Pagination, IIIF images, OCR text) with provenance and checksums into the private archive; first target La Nouvelle France PB-P001
