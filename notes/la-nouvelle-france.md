@@ -6,7 +6,7 @@
 
 ## Citation
 
-*La Nouvelle France : journal de la colonie libre de Port-Breton, Océanie*. Marseille: Typographie Blanc et Bernard, 1879-1882.
+*La Nouvelle France : journal de la colonie libre de Port-Breton, Océanie*. Marseille: Typographie Blanc et Bernard, publication span disputed in current host records.
 
 ## Source type
 
@@ -36,6 +36,14 @@ Current minimum coverage picture:
 - The same SLQ post also shows `Volume 2` examples from issues `13`, `20`, and `21`.
 - Search-visible Gallica issue pages confirm at least `1879-07-15`, `1879-11-15`, `1879-12-15`, `1880-02-15`, `1880-03-15`, `1880-04-15`, and `1881-08-15`.
 - An external catalogue record at the National Library of New Zealand notes an introductory `No. specimen` dated `15 June 1879` and `No. 1` starting in July 1879.
+- Live browser access to Gallica's serial run page reports `7 années disponibles - 78 numéros` with the following year counts:
+  - `1879`: 6 issues
+  - `1880`: 8 issues
+  - `1881`: 8 issues
+  - `1882`: 12 issues
+  - `1883`: 21 issues
+  - `1884`: 13 issues
+  - `1885`: 10 issues
 
 Verified Gallica issue endpoints now captured:
 
@@ -55,6 +63,10 @@ Verified SLQ title-level identifiers now captured:
 - Data-export date span: `1879- 1881?`
 - Public delivery URL exposed in Queensland open data: `https://digital.slq.qld.gov.au/delivery/DeliveryManagerServlet?dps_func=stream&dps_pid=FL3270958`
 - Delivery response observed from that URL: inline JPEG with filename `18397808630-v001-0007.jpg`
+
+Verified Gallica serial-level identifier now captured:
+
+- Serial run page: `https://gallica.bnf.fr/ark:/12148/cb328261098/date`
 
 Relevant rights guidance now captured:
 
@@ -88,6 +100,7 @@ Relevant rights guidance now captured:
 - State Library of Queensland describes its holding as two bound volumes covering 1879-1881.
 - Verified issue-date evidence shows Gallica access reaching at least August 1881.
 - Verified issue-date evidence now includes a clustered sequence from `1879-11-15` through `1880-04-15`, except that `1880-01-15` has not yet been verified.
+- Gallica's live serial page reports a much longer available run, extending through `1885`.
 
 ## Quotations
 
@@ -101,7 +114,14 @@ The current uncertainty is not whether the nineteenth-century newspaper itself i
 
 This note distinguishes between the underlying nineteenth-century publication and host-specific statements about the digitized files. The strongest current signal favors Gallica for lawful preservation review, while SLQ still needs record-level confirmation before any mirror decision based on its copy.
 
-Coverage is still a minimum verified picture, not a complete issue census. The next task is to turn these scattered date and issue references into an exact holdings comparison.
+Coverage is no longer only a minimum verified span: Gallica's live serial page exposes year-level counts through 1885. What remains incomplete is the exact issue-by-issue census inside those yearly buckets.
+
+There is now an explicit source conflict about run length:
+
+- Earlier working assumptions and some host cues suggested `1879-1881` or `1879-1882`.
+- Gallica's live serial page says `La Nouvelle France (Marseille) 1879-1885` with 78 issues across 7 years.
+
+That discrepancy should be preserved rather than flattened.
 
 ## Exhausted avenues in this pass
 
@@ -117,5 +137,6 @@ At this point, the remaining unknowns are not due to untried simple discovery ro
 - `bibliography/sources.csv`
 - `bibliography/acquisition-tracker.csv`
 - GitHub issue `#1`
+- GitHub issue `#2`
 - `PB-P002`
 - `PB-P003`

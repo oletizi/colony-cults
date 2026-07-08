@@ -395,3 +395,31 @@ Tooling blocker removed; browser-based follow-up is now available when needed.
 ### Notes
 
 The original blocker was not lack of Playwright itself, but the absence of the expected wrapper path. The repo now owns a stable fallback.
+
+## 2026-07-07 - Gallica serial run page reached in browser
+
+### Summary
+
+Used the restored browser tooling to break past the static discovery ceiling on `PB-P001`.
+
+### Completed
+
+- Reached Gallica's live search UI and navigated from search results to the serial run page for `La Nouvelle France (Marseille)`.
+- Confirmed the Gallica serial page `https://gallica.bnf.fr/ark:/12148/cb328261098/date`.
+- Recorded Gallica's year-level run counts: `1879` 6, `1880` 8, `1881` 8, `1882` 12, `1883` 21, `1884` 13, `1885` 10.
+- Identified a substantive run-length conflict between Gallica's `1879-1885` serial page and the narrower SLQ-based picture.
+- Opened GitHub issue `#2`: `Conflict: La Nouvelle France run length`.
+
+### Current focus
+
+Milestone 2 acquisition work on `PB-P001`, now with browser-based Gallica access proven.
+
+### Next actions
+
+- Extract exact issue dates from the yearly Gallica pages.
+- Preserve the `1879-1885` vs `1879-1881/1882` conflict explicitly.
+- Keep the verified issue-endpoint list growing from the live serial page.
+
+### Notes
+
+This is the most important `PB-P001` breakthrough so far because it upgrades the inquiry from scattered issue hits to a host-confirmed serial run structure.

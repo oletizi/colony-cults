@@ -2,7 +2,7 @@
 
 ## Active
 
-1. Decide whether to spend a manual browser session on the remaining `PB-P001` gaps now that the repo-local Playwright path works.
+1. Continue `PB-P001` from the new Gallica browser breakthrough: extract exact issue dates from the year pages and record the run-length conflict with SLQ.
 2. Open follow-on acquisition or research issues for Baudouin, de Groote, and French trial records.
 3. Use `La Nouvelle France` as the first test case for the new acquisition workflow.
 
