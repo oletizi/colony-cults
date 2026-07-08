@@ -36,6 +36,16 @@ export interface ProvenanceFields {
   format: string;
   /** OCR outcome: `none` | `searchable` | `failed`. */
   ocr_status: string;
+  /**
+   * Machine-assistance engine that produced a derived artifact, e.g.
+   * `claude-code-cli` (FR-006/FR-007). Additive OPTIONAL key: absent on
+   * existing fetcher records, which must re-serialize byte-identically.
+   */
+  engine?: string;
+  /** Resolved model id for a machine-assisted run, e.g. the `--model` value. */
+  model?: string;
+  /** Translation provenance label, e.g. `machine-assisted` (FR-007). */
+  translation?: string;
   /** Full raw OAIRecord XML (FR-005) -- emitted as a YAML block scalar. */
   rights_raw: string;
   /** Free-text notes (nullable). */
@@ -43,9 +53,12 @@ export interface ProvenanceFields {
 }
 
 /**
- * Fixed key emission order (determinism, FR-007). The two potentially
- * multi-line fields (`notes`, `rights_raw`) come last so the file reads
- * cleanly; `rights_raw` (the big XML block) is dead last.
+ * Fixed key emission order (determinism, FR-007). The machine-assistance keys
+ * (`engine`, `model`, `translation`) sit after `ocr_status` and before the two
+ * potentially multi-line fields (`notes`, `rights_raw`), which come last so the
+ * file reads cleanly; `rights_raw` (the big XML block) is dead last. The three
+ * machine-assistance keys are OPTIONAL and are OMITTED entirely when
+ * `undefined`, so existing records that lack them re-serialize byte-identically.
  */
 const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'id',
@@ -62,6 +75,9 @@ const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'sha256',
   'format',
   'ocr_status',
+  'engine',
+  'model',
+  'translation',
   'notes',
   'rights_raw',
 ];
@@ -89,8 +105,20 @@ function blockScalar(key: string, text: string): string {
   return `${key}: |2\n${body}`;
 }
 
-/** Emit one `key: value` line (or block), choosing scalar vs block by shape. */
-function emitField(key: keyof ProvenanceFields, value: string | null): string {
+/**
+ * Emit one `key: value` line (or block), choosing scalar vs block by shape.
+ * Returns `undefined` to signal the line must be OMITTED entirely: this happens
+ * only for absent OPTIONAL keys (`engine`/`model`/`translation`), whose value is
+ * `undefined`. A `null` value (e.g. `notes`) is distinct and still emits
+ * `key: null`, preserving byte-identical output for existing records.
+ */
+function emitField(
+  key: keyof ProvenanceFields,
+  value: string | null | undefined,
+): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
   if (value === null) {
     return `${key}: null`;
   }
@@ -103,10 +131,14 @@ function emitField(key: keyof ProvenanceFields, value: string | null): string {
 /**
  * Deterministically serialize the provenance fields to YAML. Re-serializing
  * identical input yields byte-identical output. Ends with exactly one trailing
- * newline.
+ * newline. Optional keys that are `undefined` are omitted (no blank line, no
+ * `key: null`), so a record lacking the machine-assistance keys serializes
+ * exactly as it did before those keys existed.
  */
 export function serializeProvenance(fields: ProvenanceFields): string {
-  const body = KEY_ORDER.map((key) => emitField(key, fields[key])).join('\n');
+  const body = KEY_ORDER.map((key) => emitField(key, fields[key]))
+    .filter((line): line is string => line !== undefined)
+    .join('\n');
   return `${body}\n`;
 }
 
@@ -233,6 +265,12 @@ export function parseProvenance(text: string): ProvenanceFields {
     sha256: requireField(raw, 'sha256'),
     format: requireField(raw, 'format'),
     ocr_status: requireField(raw, 'ocr_status'),
+    // Additive OPTIONAL keys: present -> string, absent -> undefined (omitted
+    // on re-serialize). `?? undefined` also normalizes a stray `null` to
+    // undefined, keeping these keys out of the serialized output when unset.
+    engine: raw.get('engine') ?? undefined,
+    model: raw.get('model') ?? undefined,
+    translation: raw.get('translation') ?? undefined,
     notes: raw.get('notes') ?? null,
     rights_raw: requireField(raw, 'rights_raw'),
   };
