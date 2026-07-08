@@ -69,7 +69,7 @@ export async function runOcr(
   });
 
   deps.log(
-    `ocr: ${issueArk} -> ${result.pdf.path} (${result.pdf.skipped ? 'skipped' : 'written'}), ` +
-      `${result.text.path} (${result.text.skipped ? 'skipped' : 'written'})`,
+    `ocr: ${issueArk} -> ${result.text.path} ` +
+      `(${result.text.skipped ? 'skipped' : 'written'})`,
   );
 }

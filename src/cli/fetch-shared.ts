@@ -228,8 +228,7 @@ export async function runOcrForIssue(
     log: deps.log,
   });
   deps.log(
-    `  ocr   ${result.pdf.path} (${result.pdf.skipped ? 'skipped' : 'written'}), ` +
-      `${result.text.path} (${result.text.skipped ? 'skipped' : 'written'})`,
+    `  ocr   ${result.text.path} (${result.text.skipped ? 'skipped' : 'written'})`,
   );
 }
 
