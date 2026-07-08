@@ -315,3 +315,56 @@ Milestone 2 acquisition work on `PB-P001`.
 ### Notes
 
 Even one additional verified issue matters here because it starts to reveal the cadence of surviving online fascicles.
+
+## 2026-07-07 - 1880 Gallica cluster and SLQ identifiers captured
+
+### Summary
+
+Extended the verified `PB-P001` census into early 1880 and captured the stable SLQ title-level identifiers that were still reachable despite catalogue rendering barriers.
+
+### Completed
+
+- Confirmed and recorded `1880-02-15` as `ark:/12148/bpt6k56068462`.
+- Confirmed and recorded `1880-03-15` as `ark:/12148/bpt6k5606847g`.
+- Confirmed and recorded `1880-04-15` as `ark:/12148/bpt6k5606848w`.
+- Captured the SLQ One Search permalink, library system id `slq_alma99183978086302061`, call number `RBS 919.5 004`, and direct delivery URL exposed through Queensland open data.
+
+### Current focus
+
+Milestone 2 acquisition work on `PB-P001`.
+
+### Next actions
+
+- Consolidate the verified census and decide whether the remaining gaps are worth a future manual browser session.
+- Treat direct Gallica run extraction and richer SLQ catalogue parsing as currently blocked rather than merely unfinished.
+- Move parallel acquisition work forward on other core sources while retaining the current `PB-P001` evidence set.
+
+### Notes
+
+The verified Gallica list now forms a meaningful cluster from November 1879 through April 1880, plus an August 1881 anchor, but it is still not a complete run.
+
+## 2026-07-07 - PB-P001 inquiry substantially exhausted
+
+### Summary
+
+Reached the point where the remaining `La Nouvelle France` gaps are mostly host-interface and anti-bot constraints rather than missed straightforward discovery paths.
+
+### Completed
+
+- Documented the blocked-state of direct Gallica search and SRU access.
+- Documented that SLQ's JavaScript-heavy catalogue remained difficult to parse directly, even though stable identifiers were recovered by other means.
+- Documented that the expected local Playwright wrapper was not present, limiting automated browser follow-up in this environment.
+
+### Current focus
+
+Milestone 2 acquisition work on `PB-P001`, with the easy discovery routes now largely exhausted.
+
+### Next actions
+
+- Preserve the blocked-state knowledge in the repo and issue thread.
+- Decide later whether a higher-friction manual browser session is justified.
+- In the meantime, keep project momentum by advancing parallel source acquisition work.
+
+### Notes
+
+This closes the current easy-to-medium inquiry loop on `PB-P001` without pretending the run is complete.

@@ -15,7 +15,7 @@ Primary / newspaper / propaganda periodical.
 ## Access
 
 - Archive or vendor: State Library of Queensland; Bibliotheque nationale de France (Gallica)
-- URL or catalog record: https://www.slq.qld.gov.au/blog/la-nouvelle-france-nineteenth-century-propaganda ; https://gallica.bnf.fr/ark:/12148/bpt6k5603637g
+- URL or catalog record: https://www.slq.qld.gov.au/blog/la-nouvelle-france-nineteenth-century-propaganda ; https://onesearch.slq.qld.gov.au/permalink/61SLQ_INST/tqqf2h/alma99183978086302061 ; https://gallica.bnf.fr/ark:/12148/bpt6k5603637g
 - Date accessed: 2026-07-07
 - Rights/copyright status: likely public domain by publication date; mirrorability of the currently available digital copies remains unverified
 - Local copy stored? no
@@ -34,7 +34,7 @@ Current minimum coverage picture:
 
 - SLQ blog evidence explicitly shows `Volume 1` material from issues `1-10`.
 - The same SLQ post also shows `Volume 2` examples from issues `13`, `20`, and `21`.
-- Search-visible Gallica issue pages confirm at least `1879-07-15`, `1879-11-15`, `1879-12-15`, and `1881-08-15`.
+- Search-visible Gallica issue pages confirm at least `1879-07-15`, `1879-11-15`, `1879-12-15`, `1880-02-15`, `1880-03-15`, `1880-04-15`, and `1881-08-15`.
 - An external catalogue record at the National Library of New Zealand notes an introductory `No. specimen` dated `15 June 1879` and `No. 1` starting in July 1879.
 
 Verified Gallica issue endpoints now captured:
@@ -42,7 +42,19 @@ Verified Gallica issue endpoints now captured:
 - `1879-07-15`: `ark:/12148/bpt6k5603637g`
 - `1879-11-15`: `ark:/12148/bpt6k5606843t`
 - `1879-12-15`: `ark:/12148/bpt6k56068447`
+- `1880-02-15`: `ark:/12148/bpt6k56068462`
+- `1880-03-15`: `ark:/12148/bpt6k5606847g`
+- `1880-04-15`: `ark:/12148/bpt6k5606848w`
 - `1881-08-15`: `ark:/12148/bpt6k56068536`
+
+Verified SLQ title-level identifiers now captured:
+
+- One Search permalink: `https://onesearch.slq.qld.gov.au/permalink/61SLQ_INST/tqqf2h/alma99183978086302061`
+- Library system ID: `slq_alma99183978086302061`
+- Call number: `RBS 919.5 004`
+- Data-export date span: `1879- 1881?`
+- Public delivery URL exposed in Queensland open data: `https://digital.slq.qld.gov.au/delivery/DeliveryManagerServlet?dps_func=stream&dps_pid=FL3270958`
+- Delivery response observed from that URL: inline JPEG with filename `18397808630-v001-0007.jpg`
 
 Relevant rights guidance now captured:
 
@@ -75,7 +87,7 @@ Relevant rights guidance now captured:
 - The paper was used as a propaganda and recruitment vehicle for the colony.
 - State Library of Queensland describes its holding as two bound volumes covering 1879-1881.
 - Verified issue-date evidence shows Gallica access reaching at least August 1881.
-- Verified issue-date evidence now includes multiple 1879 anchors plus August 1881.
+- Verified issue-date evidence now includes a clustered sequence from `1879-11-15` through `1880-04-15`, except that `1880-01-15` has not yet been verified.
 
 ## Quotations
 
@@ -90,6 +102,15 @@ The current uncertainty is not whether the nineteenth-century newspaper itself i
 This note distinguishes between the underlying nineteenth-century publication and host-specific statements about the digitized files. The strongest current signal favors Gallica for lawful preservation review, while SLQ still needs record-level confirmation before any mirror decision based on its copy.
 
 Coverage is still a minimum verified picture, not a complete issue census. The next task is to turn these scattered date and issue references into an exact holdings comparison.
+
+## Exhausted avenues in this pass
+
+- Search-engine discovery produced stable Gallica issue hits for selected dates, but not a full run listing.
+- Direct Gallica search and SRU endpoints triggered anti-bot verification, preventing a clean extraction of the full `issue by date` sequence from the live site.
+- SLQ's JavaScript-heavy catalogue did not yield readable full-record metadata directly through terminal fetches, but the media page and Queensland open-data export exposed stable title-record identifiers and a direct delivery URL.
+- A browser-automation pass was considered, but the expected local Playwright wrapper referenced by the skill was not present in this environment.
+
+At this point, the remaining unknowns are not due to untried simple discovery routes. They are mainly blocked by host-side interface and bot protections.
 
 ## Cross-references
 

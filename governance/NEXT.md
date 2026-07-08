@@ -2,7 +2,7 @@
 
 ## Active
 
-1. Work issue `#1` for `La Nouvelle France`: extend the verified Gallica issue list and turn the SLQ/Gallica references into an exact issue census.
+1. Work issue `#1` for `La Nouvelle France`: consolidate the verified census and decide whether the remaining gaps justify manual browser review against blocked host interfaces.
 2. Open follow-on acquisition or research issues for Baudouin, de Groote, and French trial records.
 3. Use `La Nouvelle France` as the first test case for the new acquisition workflow.
 
