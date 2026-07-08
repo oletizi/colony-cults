@@ -77,7 +77,14 @@ A single mirrored file in the private archive.
 
 ## Provenance record
 
-Per-asset JSON sidecar written next to the asset (`<asset>.provenance.json`).
+**Reconciled to the archive repository's existing convention (2026-07-08):** the
+`colony-cults-archive` repo already defines a **companion YAML** metadata file per
+asset (fields: id, title, type, case, language, source_archive, catalog_url,
+rights_status, retrieved, local_path, checksum, notes) plus a repo-level
+`manifests/MANIFEST.sha256`. The fetcher conforms to that — companion **`.yml`**
+(not `.provenance.json`), extended with the fields FR-005/007 require (retrieval
+date, original URL, sha256, format, ocr_status, and the raw OAIRecord rights
+response). The tree below is likewise reconciled to the archive's layout.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -89,16 +96,17 @@ Per-asset JSON sidecar written next to the asset (`<asset>.provenance.json`).
 | `rights` | `Rights` | includes `rawResponse` (raw OAIRecord) — FR-005 |
 | `tool` | string | `gallica-fetcher@<version>` |
 
-## On-disk layout (default; conform to archive-repo convention once cloned)
+## On-disk layout (reconciled to the archive repo convention, 2026-07-08)
 
 ```text
 ../colony-cults-archive/
-└── PB-P001-la-nouvelle-france/
-    └── 1879-07-15_bpt6k5603637g/
-        ├── f001.jpg  + f001.jpg.provenance.json
-        ├── …
-        ├── issue.pdf + issue.pdf.provenance.json      # when OCR run
-        └── issue.txt + issue.txt.provenance.json      # when OCR run
+├── archive/cases/port-breton/newspapers/la-nouvelle-france/
+│   └── 1879-07-15_bpt6k5603637g/
+│       ├── f001.jpg  + f001.yml
+│       ├── ...
+│       ├── issue.pdf + issue.pdf.yml   (when OCR run)
+│       └── issue.txt + issue.txt.yml   (when OCR run)
+└── manifests/MANIFEST.sha256           (updated when assets are added/changed)
 ```
 
 ## Relationships
