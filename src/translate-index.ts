@@ -3,22 +3,18 @@
 import { readFileSync } from 'node:fs';
 import { parse } from '@/cli/parse';
 import type { Command, ParsedArgs } from '@/cli/parse';
-import { runCensus } from '@/cli/census';
-import { runFetchIssue, runFetchSource } from '@/cli/fetch';
-import { runOcr } from '@/cli/ocr';
+import { runTranslate } from '@/cli/translate';
 
 /** A command handler: given the parsed invocation, performs the command. */
 type Handler = (args: ParsedArgs) => Promise<void>;
 
-// Partial: the shared `Command` union also carries the `translate` /
-// `translate-source` verbs, which belong to the separate `translate` bin
-// (src/translate-index.ts). The gallica bin does not wire them and fails
-// loud (see main) if one is invoked here.
+/**
+ * `translate-source` is wired by T024 (`runTranslateSource`); left absent
+ * here so an invocation falls through to the same "no handler" throw as any
+ * other unrecognized command, rather than silently no-oping.
+ */
 const HANDLERS: Partial<Record<Command, Handler>> = {
-  census: (args) => runCensus(args),
-  'fetch-issue': (args) => runFetchIssue(args),
-  'fetch-source': (args) => runFetchSource(args),
-  ocr: (args) => runOcr(args),
+  translate: (args) => runTranslate(args),
 };
 
 /** Read this package's version from package.json (no hardcoded duplicate). */
@@ -36,28 +32,25 @@ function readPackageVersion(): string {
     return parsed.version;
   }
   throw new Error(
-    `gallica: could not read a valid "version" from ${url.pathname}`,
+    `translate: could not read a valid "version" from ${url.pathname}`,
   );
 }
 
-const HELP_TEXT = `gallica - Mirror public-domain BnF Gallica sources
+const HELP_TEXT = `translate - Turn archived French OCR into corrected French + English (via the Claude Code CLI)
 
 Usage:
-  gallica <command> <ark> [options]
+  translate <command> <id> [options]
 
 Commands:
-  census <periodicalArk>        Build/refresh the per-source census
-  fetch-issue <issueArk>        Fetch one issue's page images (private archive)
-  fetch-source <periodicalArk>  Fetch every issue in a source's census
-  ocr <issueArk>                OCR already-fetched images for an issue
+  translate <issueArk>        Translate one archived issue
+  translate-source <sourceId> Translate every archived issue of a source
 
 Options:
-  --help, -h     Show this help message
-  --version, -v  Show version
-  --dry-run      Report intended actions; write nothing
-  --force        Re-fetch/regenerate assets that already exist
-  --verify       Re-hash existing assets against recorded checksums
-  --ocr          Opt into OCR during a fetch
+  --help, -h      Show this help message
+  --version, -v   Show version
+  --dry-run       Report intended work + rights; write nothing
+  --force         Re-translate artifacts that already exist
+  --model <name>  Claude model to pin (recorded in provenance)
 `;
 
 function wantsHelp(argv: string[]): boolean {
@@ -83,8 +76,7 @@ async function main(argv: string[]): Promise<void> {
   const handler = HANDLERS[parsed.command];
   if (handler === undefined) {
     throw new Error(
-      `command "${parsed.command}" is not a gallica command ` +
-        `(did you mean the "translate" bin?)`,
+      `translate: command "${parsed.command}" is not wired to a handler yet`,
     );
   }
   await handler(parsed);
@@ -92,6 +84,6 @@ async function main(argv: string[]): Promise<void> {
 
 main(process.argv.slice(2)).catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(`gallica: ${message}`);
+  console.error(`translate: ${message}`);
   process.exitCode = 1;
 });

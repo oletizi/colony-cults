@@ -1,13 +1,21 @@
 import { parseArgs as nodeParseArgs } from 'node:util';
 
 /** Commands recognized by the gallica CLI (see contracts/cli.md). */
-export type Command = 'census' | 'fetch-issue' | 'fetch-source' | 'ocr';
+export type Command =
+  | 'census'
+  | 'fetch-issue'
+  | 'fetch-source'
+  | 'ocr'
+  | 'translate'
+  | 'translate-source';
 
 const COMMANDS: readonly Command[] = [
   'census',
   'fetch-issue',
   'fetch-source',
   'ocr',
+  'translate',
+  'translate-source',
 ];
 
 function isCommand(value: string): value is Command {
@@ -20,6 +28,8 @@ const REQUIRED_POSITIONAL_NAME: Record<Command, string> = {
   'fetch-issue': 'issueArk',
   'fetch-source': 'periodicalArk',
   ocr: 'issueArk',
+  translate: 'issueArk',
+  'translate-source': 'sourceId',
 };
 
 /** Global boolean flags shared by every command (contracts/cli.md). */
@@ -44,6 +54,8 @@ export interface ParsedOptions {
   sourceId?: string;
   /** Filename slug, e.g. `la-nouvelle-france` (census: required). */
   slug?: string;
+  /** Claude model alias/id to pin for a translation run (contracts/cli.md). */
+  model?: string;
 }
 
 /** Result of parsing argv into a single command invocation. */
@@ -74,6 +86,7 @@ export function parse(argv: string[]): ParsedArgs {
       ocr: { type: 'boolean', default: false },
       'source-id': { type: 'string' },
       slug: { type: 'string' },
+      model: { type: 'string' },
     },
     allowPositionals: true,
     strict: true,
@@ -111,6 +124,7 @@ export function parse(argv: string[]): ParsedArgs {
     options: {
       sourceId: values['source-id'],
       slug: values.slug,
+      model: values.model,
     },
   };
 }
