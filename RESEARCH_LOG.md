@@ -132,3 +132,31 @@ Milestone 1: Project Infrastructure.
 ### Notes
 
 The remaining Phase 1 gap is now workflow documentation rather than GitHub issue structure.
+
+## 2026-07-07 - Source acquisition workflow documented
+
+### Summary
+
+Documented the acquisition workflow that connects public research tracking to private lawful mirroring.
+
+### Completed
+
+- Added `notes/source-acquisition-workflow.md`.
+- Defined the public/private repository split for source intake.
+- Documented the sequence for source identification, rights evaluation, cataloging, mirroring, note creation, and issue tracking.
+- Updated the README repository structure to include the workflow document.
+- Refreshed governance state so the next work now points at the first concrete acquisition issues rather than missing process documentation.
+
+### Current focus
+
+Milestone 1: Project Infrastructure, transitioning into Milestone 2 preparation.
+
+### Next actions
+
+- Open the first acquisition issue for `La Nouvelle France`.
+- Begin Milestone 2 source acquisition work.
+- Use the new workflow document as the default intake path.
+
+### Notes
+
+The repository now has an explicit intake process for deciding what is cataloged publicly, what may be mirrored privately, and how provenance is preserved across both.

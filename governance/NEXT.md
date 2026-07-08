@@ -2,9 +2,9 @@
 
 ## Active
 
-1. Document the source acquisition workflow for public and private repositories.
+1. Open the first acquisition issue for `La Nouvelle France`.
 2. Begin Milestone 2 acquisition work with `La Nouvelle France`.
-3. Open the first acquisition and research issues using the new templates.
+3. Open follow-on acquisition or research issues for Baudouin, de Groote, and French trial records.
 
 ## Ready after active work
 
@@ -16,3 +16,4 @@
 
 1. Keep `RESEARCH_LOG.md`, `DECISIONS.md`, and `governance/STATE.yaml` aligned.
 2. Prefer source-specific next actions over broad reminders when new evidence arrives.
+3. Use `notes/source-acquisition-workflow.md` as the default intake process.

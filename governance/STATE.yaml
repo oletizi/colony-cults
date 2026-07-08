@@ -3,11 +3,10 @@ phase: "Phase 1: Foundation and Source Acquisition"
 milestone: "Milestone 1: Project Infrastructure"
 status: active
 focus:
-  - "Document the source acquisition workflow for public and private repositories."
-  - "Prepare the transition into Port Breton source acquisition."
   - "Open the first acquisition issues for core Port Breton sources."
+  - "Begin Milestone 2 work with La Nouvelle France."
+  - "Prepare a repeatable pattern for lawful public/private source intake."
 blocking_issues:
-  - "The source acquisition workflow is not yet documented."
   - "Core Port Breton source acquisition work has not started."
 authoritative_files:
   - PROJECT.md
