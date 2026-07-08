@@ -11,8 +11,9 @@ Milestones:
 - [x] Create initial bibliography and acquisition tracker.
 - [x] Create project dashboard.
 - [x] Create agent/contributor guidance.
-- [ ] Create decision log.
-- [ ] Create research log.
+- [x] Create decision log.
+- [x] Create research log.
+- [x] Create governance files.
 - [ ] Add issue templates.
 
 ## Phase 2: Port Breton Source Acquisition

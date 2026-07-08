@@ -49,4 +49,32 @@ Uncommitted work is temporary. Committed work is durable. Pushed work is recover
 
 ### Implementation note
 
-These principles still need to be promoted into dedicated governance files. Attempts to create new governance files were blocked by connector/safety errors, so this log entry captures the principle durably first.
+These principles were later promoted into dedicated governance files in the same day's follow-up session.
+
+## 2026-07-07 - Governance files created
+
+### Summary
+
+Created the repository governance layer so session continuity and project state no longer depend on chat context alone.
+
+### Completed
+
+- Added `GOVERNANCE.md`.
+- Added root `DECISIONS.md`.
+- Added governance charter, start, end, next-actions, state, checklist, and governance-decision files under `governance/`.
+- Updated the roadmap to reflect that the decision log, research log, and governance files now exist.
+- Pushed the governance work in small coherent commits.
+
+### Current focus
+
+Milestone 1: Project Infrastructure.
+
+### Next actions
+
+- Add issue templates.
+- Document the source acquisition workflow.
+- Begin Milestone 2 work on `La Nouvelle France`.
+
+### Notes
+
+The repository now contains an explicit governance layer for startup, shutdown, state recovery, and next-session handoff.
