@@ -50,6 +50,47 @@ export interface GallicaClient {
 }
 
 /**
+ * Parsed rights view of an issue's OAIRecord: the full raw XML (kept verbatim
+ * for provenance, FR-005) plus the extracted `dc:rights` values the gate
+ * inspects.
+ */
+export interface OaiRecordRights {
+  /** The full OAIRecord XML response, byte-for-byte as fetched. */
+  rawResponse: string;
+  /** The parsed `dc:rights` values (empty when none are present). */
+  dcRights: string[];
+}
+
+/**
+ * The per-item rights capability the rights gate (`src/rights/gate.ts`)
+ * depends on. Segregated from {@link GallicaClient} so the gate depends only
+ * on what it uses.
+ */
+export interface OaiRecordClient {
+  /** Raw OAIRecord XML for an issue (verbatim; stored in provenance). */
+  oaiRecord(issueArk: string): Promise<string>;
+  /** Raw OAIRecord XML plus its parsed `dc:rights` values. */
+  oaiRights(issueArk: string): Promise<OaiRecordRights>;
+}
+
+/** Dimensions reported by an IIIF `info.json` for one page image. */
+export interface IiifInfo {
+  width: number;
+  height: number;
+}
+
+/**
+ * The full-resolution image capability the fetch tasks depend on. `page`
+ * is 1-based (`1..nbVueImages`).
+ */
+export interface IiifClient {
+  /** IIIF `info.json` dimensions for a page. */
+  iiifInfo(issueArk: string, page: number): Promise<IiifInfo>;
+  /** Full native-resolution JPEG bytes for a page. */
+  iiifImage(issueArk: string, page: number): Promise<Uint8Array>;
+}
+
+/**
  * Reduce a periodical ark to its bare identifier root (drops the
  * `ark:/12148/` namespace and a trailing `/date`), so URL construction is
  * uniform regardless of how the caller wrote the ark.
@@ -80,6 +121,51 @@ function issueRoot(issueArk: string): string {
   return root;
 }
 
+/** Reject a non-positive or non-integer page ordinal (fail loud, no clamp). */
+function requirePage(page: number, issueArk: string): number {
+  if (!Number.isInteger(page) || page < 1) {
+    throw new Error(
+      `GallicaClient: page must be a 1-based integer, got ${page} ` +
+        `(issue ${issueArk})`,
+    );
+  }
+  return page;
+}
+
+/**
+ * Extract the `dc:rights` values from a parsed OAIRecord document.
+ *
+ * Navigation: `results > notice > record > metadata > oai_dc:dc > dc:rights`.
+ * A `dc:rights` element carries an `xml:lang` attribute, so fast-xml-parser
+ * models it as `{ '@_xml:lang': ..., '#text': value }`; a bare string is also
+ * tolerated. Absent `dc:rights` yields `[]` (the gate then treats it as not
+ * public-domain -- FR-004), never a throw.
+ */
+function extractDcRights(
+  doc: Record<string, unknown>,
+  url: string,
+): string[] {
+  const results = childRecord(doc, 'results', `OAIRecord ${url}`);
+  const notice = childRecord(results, 'notice', `OAIRecord ${url}`);
+  const record = childRecord(notice, 'record', `OAIRecord ${url}`);
+  const metadata = childRecord(record, 'metadata', `OAIRecord ${url}`);
+  const dc = childRecord(metadata, 'oai_dc:dc', `OAIRecord ${url}`);
+  return toArray(dc['dc:rights']).map((raw, index) => {
+    if (typeof raw === 'string' && raw.length > 0) {
+      return raw;
+    }
+    const element = requireRecord(
+      raw,
+      `OAIRecord ${url} > dc:rights[${index}]`,
+    );
+    return childString(
+      element,
+      '#text',
+      `OAIRecord ${url} > dc:rights[${index}]`,
+    );
+  });
+}
+
 /**
  * Live Gallica client: builds the documented service URLs, fetches through the
  * injected {@link HttpClient} (which owns User-Agent, pacing, and backoff), and
@@ -87,7 +173,9 @@ function issueRoot(issueArk: string): string {
  *
  * No inheritance: the HttpClient is injected via the constructor.
  */
-export class GallicaHttpClient implements GallicaClient {
+export class GallicaHttpClient
+  implements GallicaClient, OaiRecordClient, IiifClient
+{
   private readonly http: HttpClient;
   private readonly parser: XMLParser;
 
@@ -174,6 +262,57 @@ export class GallicaHttpClient implements GallicaClient {
     const livre = childRecord(doc, 'livre', 'Pagination');
     const structure = childRecord(livre, 'structure', 'Pagination');
     return childNumber(structure, 'nbVueImages', 'Pagination');
+  }
+
+  async oaiRecord(issueArk: string): Promise<string> {
+    const root = issueRoot(issueArk);
+    const url = `${BASE}/services/OAIRecord?ark=${root}`;
+    const xml = await this.http.getText(url);
+    if (xml.trim().length === 0) {
+      throw new Error(`OAIRecord: empty response body from ${url}`);
+    }
+    return xml;
+  }
+
+  async oaiRights(issueArk: string): Promise<OaiRecordRights> {
+    const root = issueRoot(issueArk);
+    const url = `${BASE}/services/OAIRecord?ark=${root}`;
+    const rawResponse = await this.oaiRecord(issueArk);
+    const doc = this.parse(rawResponse, url);
+    return { rawResponse, dcRights: extractDcRights(doc, url) };
+  }
+
+  async iiifInfo(issueArk: string, page: number): Promise<IiifInfo> {
+    const root = issueRoot(issueArk);
+    const n = requirePage(page, issueArk);
+    const url = `${BASE}/iiif/ark:/12148/${root}/f${n}/info.json`;
+    const body = await this.http.getText(url);
+    if (body.trim().length === 0) {
+      throw new Error(`IIIF info.json: empty response body from ${url}`);
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(body);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`IIIF info.json: malformed JSON from ${url}: ${message}`);
+    }
+    const record = requireRecord(parsed, `IIIF info.json from ${url}`);
+    return {
+      width: childNumber(record, 'width', `IIIF info.json from ${url}`),
+      height: childNumber(record, 'height', `IIIF info.json from ${url}`),
+    };
+  }
+
+  async iiifImage(issueArk: string, page: number): Promise<Uint8Array> {
+    const root = issueRoot(issueArk);
+    const n = requirePage(page, issueArk);
+    const url = `${BASE}/iiif/ark:/12148/${root}/f${n}/full/full/0/native.jpg`;
+    const bytes = await this.http.getBytes(url);
+    if (bytes.byteLength === 0) {
+      throw new Error(`IIIF image: empty response body from ${url}`);
+    }
+    return bytes;
   }
 
   /** Parse XML into a record, failing loud on empty/malformed payloads. */
