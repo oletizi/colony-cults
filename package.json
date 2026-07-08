@@ -4,10 +4,12 @@
   "type": "module",
   "description": "TypeScript CLI for mirroring public-domain BnF Gallica sources",
   "bin": {
-    "gallica": "src/index.ts"
+    "gallica": "src/index.ts",
+    "translate": "src/translate-index.ts"
   },
   "scripts": {
     "gallica": "tsx src/index.ts",
+    "translate": "tsx src/translate-index.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
