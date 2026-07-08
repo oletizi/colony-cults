@@ -7,26 +7,49 @@ const ARCHIVE_DIR_NAME = 'colony-cults-archive';
 /**
  * The archive-relative layout for a source. There is no fallback: an unknown
  * source ID throws (the layout is authoritative metadata, not a default).
+ *
+ * `kind` (FR-016) distinguishes a periodical (many dated issues, enumerated by
+ * a census) from a monograph (a single Gallica document ark with no census --
+ * one "issue" is the whole document). It determines which directory shape a
+ * source's pages are written into: {@link issueDir} (dated per-issue
+ * subdirectories) for `periodical`, {@link monographDir} (one flat directory)
+ * for `monograph`.
  */
 export interface SourceLayout {
   /** Case folder, e.g. `port-breton`. */
   case: string;
-  /** Material-type folder, e.g. `newspapers`. */
+  /** Material-type folder, e.g. `newspapers`, `books`. */
   type: string;
   /** Source slug, e.g. `la-nouvelle-france`. */
   slug: string;
+  /** Periodical (census-driven, dated issue dirs) or monograph (single doc). */
+  kind: 'periodical' | 'monograph';
 }
 
 /**
  * Known source -> archive layout mapping, conforming to the archive repo's
- * existing on-disk convention (see specs/.../data-model.md § On-disk layout).
- * Extended per source as new sources are onboarded.
+ * existing on-disk convention (see specs/.../data-model.md § On-disk layout
+ * and the archive's `acquisition-register.csv`). Extended per source as new
+ * sources are onboarded.
  */
 const SOURCE_LAYOUTS: Readonly<Record<string, SourceLayout>> = {
   'PB-P001': {
     case: 'port-breton',
     type: 'newspapers',
     slug: 'la-nouvelle-france',
+    kind: 'periodical',
+  },
+  'PB-P002': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'nouvelle-france-colonie-libre-port-breton',
+    kind: 'monograph',
+  },
+  'PB-P003': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'baudouin-aventure-port-breton-1883',
+    kind: 'monograph',
   },
 };
 
@@ -89,6 +112,32 @@ export function issueDir(
     layout.type,
     layout.slug,
     `${issue.date}_${issue.ark}`,
+  );
+}
+
+/**
+ * Absolute path of a monograph source's single document directory (FR-016):
+ * `<archiveRoot>/archive/cases/<case>/<type>/<slug>/`. Unlike {@link issueDir}
+ * there is no dated subdirectory -- a monograph source has exactly one
+ * document, so its slug directory holds the pages directly. Throws (fail
+ * loud) for a source ID with no registered layout, or one not registered as
+ * `kind: 'monograph'`.
+ */
+export function monographDir(sourceId: string, archiveRoot: string): string {
+  const layout = sourceLayout(sourceId);
+  if (layout.kind !== 'monograph') {
+    throw new Error(
+      `monographDir: source "${sourceId}" is registered as kind ` +
+        `"${layout.kind}", not "monograph"`,
+    );
+  }
+  return path.join(
+    archiveRoot,
+    'archive',
+    'cases',
+    layout.case,
+    layout.type,
+    layout.slug,
   );
 }
 

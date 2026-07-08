@@ -73,6 +73,16 @@ export interface OaiRecordClient {
   oaiRights(issueArk: string): Promise<OaiRecordRights>;
 }
 
+/**
+ * The per-issue date capability. Segregated so the fetch CLI can resolve an
+ * issue's `YYYY-MM-DD` date (for its archive directory name) from the host when
+ * a census is not on disk, depending only on what it uses.
+ */
+export interface IssueMetaClient {
+  /** Normalized issue date (`YYYY-MM-DD`) from OAIRecord `dc:date`. */
+  issueDate(issueArk: string): Promise<string>;
+}
+
 /** Dimensions reported by an IIIF `info.json` for one page image. */
 export interface IiifInfo {
   width: number;
@@ -133,6 +143,27 @@ function requirePage(page: number, issueArk: string): number {
 }
 
 /**
+ * The documented full-native IIIF JPEG URL for one page of an issue. Exported
+ * so the fetch layer can record it verbatim as an asset's `original_url`
+ * (FR-007) -- a single source of truth shared with {@link GallicaHttpClient.iiifImage}.
+ */
+export function iiifImageUrl(issueArk: string, page: number): string {
+  const root = issueRoot(issueArk);
+  const n = requirePage(page, issueArk);
+  return `${BASE}/iiif/ark:/12148/${root}/f${n}/full/full/0/native.jpg`;
+}
+
+/**
+ * The issue's human landing / catalog URL, e.g.
+ * `https://gallica.bnf.fr/ark:/12148/bpt6k5603637g` -- recorded as an asset's
+ * `catalog_url` in provenance.
+ */
+export function issueLandingUrl(issueArk: string): string {
+  const root = issueRoot(issueArk);
+  return `${BASE}/ark:/12148/${root}`;
+}
+
+/**
  * Extract the `dc:rights` values from a parsed OAIRecord document.
  *
  * Navigation: `results > notice > record > metadata > oai_dc:dc > dc:rights`.
@@ -167,6 +198,26 @@ function extractDcRights(
 }
 
 /**
+ * Extract the single `dc:date` value from a parsed OAIRecord document. Gallica
+ * emits it already normalized to `YYYY-MM-DD` (e.g. `1879-07-15`). Fails loud
+ * when absent or malformed -- there is no fallback date.
+ */
+function extractDcDate(doc: Record<string, unknown>, url: string): string {
+  const results = childRecord(doc, 'results', `OAIRecord ${url}`);
+  const notice = childRecord(results, 'notice', `OAIRecord ${url}`);
+  const record = childRecord(notice, 'record', `OAIRecord ${url}`);
+  const metadata = childRecord(record, 'metadata', `OAIRecord ${url}`);
+  const dc = childRecord(metadata, 'oai_dc:dc', `OAIRecord ${url}`);
+  const value = childString(dc, 'dc:date', `OAIRecord ${url}`).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error(
+      `OAIRecord ${url} > dc:date: expected YYYY-MM-DD, got "${value}"`,
+    );
+  }
+  return value;
+}
+
+/**
  * Live Gallica client: builds the documented service URLs, fetches through the
  * injected {@link HttpClient} (which owns User-Agent, pacing, and backoff), and
  * parses the XML with `fast-xml-parser`. Malformed/empty payloads throw.
@@ -174,7 +225,7 @@ function extractDcRights(
  * No inheritance: the HttpClient is injected via the constructor.
  */
 export class GallicaHttpClient
-  implements GallicaClient, OaiRecordClient, IiifClient
+  implements GallicaClient, OaiRecordClient, IiifClient, IssueMetaClient
 {
   private readonly http: HttpClient;
   private readonly parser: XMLParser;
@@ -304,10 +355,16 @@ export class GallicaHttpClient
     };
   }
 
-  async iiifImage(issueArk: string, page: number): Promise<Uint8Array> {
+  async issueDate(issueArk: string): Promise<string> {
     const root = issueRoot(issueArk);
-    const n = requirePage(page, issueArk);
-    const url = `${BASE}/iiif/ark:/12148/${root}/f${n}/full/full/0/native.jpg`;
+    const url = `${BASE}/services/OAIRecord?ark=${root}`;
+    const rawResponse = await this.oaiRecord(issueArk);
+    const doc = this.parse(rawResponse, url);
+    return extractDcDate(doc, url);
+  }
+
+  async iiifImage(issueArk: string, page: number): Promise<Uint8Array> {
+    const url = iiifImageUrl(issueArk, page);
     const bytes = await this.http.getBytes(url);
     if (bytes.byteLength === 0) {
       throw new Error(`IIIF image: empty response body from ${url}`);

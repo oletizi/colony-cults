@@ -1,0 +1,251 @@
+import { existsSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import type { ParsedFlags } from '@/cli/parse';
+import type { GallicaClient, IssueMetaClient } from '@/gallica/gallica-client';
+import { GallicaHttpClient } from '@/gallica/gallica-client';
+import { HttpClient } from '@/gallica/http-client';
+import { resolveArchiveRoot, sourceLayout } from '@/archive/location';
+import { verifyAsset } from '@/archive/store';
+import { resolveRights } from '@/rights/gate';
+import {
+  fetchIssue,
+  fetchMonograph,
+  type FetchClient,
+  type FetchIssueResult,
+} from '@/fetch/issue';
+import { estimateIssue } from '@/fetch/estimate';
+import { assertOcrToolchain } from '@/ocr/preflight';
+import { ocrIssue, defaultOcrCommandRunner } from '@/ocr/run';
+import type { OcrCommandRunner } from '@/ocr/types';
+
+/**
+ * Shared types, dependencies, and helpers used by BOTH `fetch-issue`
+ * (`src/cli/fetch-issue.ts`) and `fetch-source` (`src/cli/fetch-source.ts`) --
+ * split out from a single `fetch.ts` (T034/T036) to keep each file under the
+ * project's file-size guideline.
+ */
+
+/**
+ * Composed client the fetch commands depend on: the rights + pagination + IIIF
+ * capabilities `fetchIssue`/`estimateIssue` need, plus census enumeration
+ * (`GallicaClient`) and single-issue date resolution (`IssueMetaClient`).
+ */
+export type FetchCliClient = FetchClient & GallicaClient & IssueMetaClient;
+
+/** Injectable side effects for the fetch commands (real network + disk by default). */
+export interface FetchDeps {
+  client: FetchCliClient;
+  /** Public-repo root the census path is resolved against. */
+  repoRoot: string;
+  /** Private-archive root (`../colony-cults-archive`). */
+  archiveRoot: string;
+  /** Retrieval-timestamp clock (injected for determinism/testability). */
+  clock: () => Date;
+  /** ISO date stamped into a census built on demand. */
+  builtAt: string;
+  /** Line-oriented output sink (stdout in production). */
+  log: (message: string) => void;
+  /**
+   * OCR toolchain preflight (T029/FR-013). Invoked ONLY when `--ocr` is set,
+   * before any fetch work -- an images-only run must never call this
+   * (SC-008). Injected so tests can simulate an absent toolchain.
+   */
+  ocrPreflight: () => Promise<void>;
+  /** Injected OCR command runner (T030), used when `--ocr` wires OCR in. */
+  ocrRunner: OcrCommandRunner;
+}
+
+/** Build the default (real network + disk) dependencies. */
+export function defaultFetchDeps(): FetchDeps {
+  const repoRoot = process.cwd();
+  const http = new HttpClient();
+  return {
+    client: new GallicaHttpClient(http),
+    repoRoot,
+    archiveRoot: resolveArchiveRoot(repoRoot),
+    clock: () => new Date(),
+    builtAt: new Date().toISOString().slice(0, 10),
+    log: (message) => {
+      console.log(message);
+    },
+    ocrPreflight: () => assertOcrToolchain(),
+    ocrRunner: defaultOcrCommandRunner(),
+  };
+}
+
+/** Require a named string option, failing loud when absent/blank. */
+export function requireOption(
+  value: string | undefined,
+  name: string,
+  command: string,
+): string {
+  if (value === undefined || value.trim().length === 0) {
+    throw new Error(`${command}: --${name} is required`);
+  }
+  return value;
+}
+
+/** The slug for a source: explicit `--slug` wins, else the registered layout's. */
+export function resolveSlug(sourceId: string, explicit: string | undefined): string {
+  if (explicit !== undefined && explicit.trim().length > 0) {
+    return explicit;
+  }
+  return sourceLayout(sourceId).slug;
+}
+
+/** Human-readable byte size, e.g. `12.3 MB`. */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let value = bytes / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(1)} ${units[unit]}`;
+}
+
+/** Drop the `ark:/12148/` namespace so directory names use the bare ark. */
+export function bareArk(issueArk: string): string {
+  return issueArk.replace(/^ark:\/12148\//, '');
+}
+
+/**
+ * Dry-run report for one document (a periodical issue or a monograph):
+ * resolve (non-throwing) rights, print status and the target directory, and —
+ * for public-domain documents — a sampled size estimate. Returns the
+ * estimated bytes to accumulate (0 when not PD). Shared between the
+ * periodical and monograph dry-run paths so the reporting logic is not
+ * duplicated between the two source kinds.
+ */
+export async function dryRunDocument(
+  deps: FetchDeps,
+  documentArk: string,
+  dir: string,
+): Promise<number> {
+  const rights = await resolveRights(documentArk, deps.client);
+  if (rights.status !== 'public-domain') {
+    deps.log(
+      `  ${documentArk}  rights=${rights.status}  -> REFUSE (no download)  ${dir}`,
+    );
+    return 0;
+  }
+  const estimate = await estimateIssue(documentArk, deps.client);
+  deps.log(
+    `  ${documentArk}  rights=public-domain  ${estimate.pageCount} page(s)  ` +
+      `~${formatBytes(estimate.estimatedBytes)}  ${dir}`,
+  );
+  return estimate.estimatedBytes;
+}
+
+/** Fetch one periodical issue's images into the archive; logs a per-issue summary. */
+export async function realFetchIssue(
+  deps: FetchDeps,
+  sourceId: string,
+  issueArk: string,
+  date: string,
+  flags: ParsedFlags,
+): Promise<FetchIssueResult> {
+  const result = await fetchIssue(issueArk, {
+    client: deps.client,
+    sourceId,
+    date,
+    archiveRoot: deps.archiveRoot,
+    clock: deps.clock,
+    force: flags.force,
+    log: deps.log,
+  });
+  deps.log(
+    `fetch-issue: ${result.issueArk} -> ${result.dir} :: ` +
+      `${result.pageCount} page(s), ` +
+      `${result.pages.length - result.skippedCount} written ` +
+      `(${formatBytes(result.bytesWritten)}), ` +
+      `${result.skippedCount} skipped`,
+  );
+  return result;
+}
+
+/**
+ * Fetch a monograph source's single document into the archive (FR-016); logs
+ * a summary. Reuses {@link fetchMonograph}, which shares its per-page
+ * pipeline with {@link fetchIssue} (see `src/fetch/issue.ts`).
+ */
+export async function realFetchMonograph(
+  deps: FetchDeps,
+  sourceId: string,
+  documentArk: string,
+  flags: ParsedFlags,
+): Promise<FetchIssueResult> {
+  const result = await fetchMonograph(documentArk, {
+    client: deps.client,
+    sourceId,
+    archiveRoot: deps.archiveRoot,
+    clock: deps.clock,
+    force: flags.force,
+    log: deps.log,
+  });
+  deps.log(
+    `fetch-source (monograph): ${result.issueArk} -> ${result.dir} :: ` +
+      `${result.pageCount} page(s), ` +
+      `${result.pages.length - result.skippedCount} written ` +
+      `(${formatBytes(result.bytesWritten)}), ` +
+      `${result.skippedCount} skipped`,
+  );
+  return result;
+}
+
+/**
+ * Run OCR (T030) against a just-fetched issue/document directory, wired in
+ * via `--ocr` (T031). The preflight (T029) has already run by the time this
+ * is called -- see the `runFetchIssue`/`runFetchSource` callers.
+ */
+export async function runOcrForIssue(
+  deps: FetchDeps,
+  issueDirPath: string,
+  flags: ParsedFlags,
+): Promise<void> {
+  const result = await ocrIssue(issueDirPath, {
+    runner: deps.ocrRunner,
+    archiveRoot: deps.archiveRoot,
+    clock: deps.clock,
+    force: flags.force,
+    log: deps.log,
+  });
+  deps.log(
+    `  ocr   ${result.pdf.path} (${result.pdf.skipped ? 'skipped' : 'written'}), ` +
+      `${result.text.path} (${result.text.skipped ? 'skipped' : 'written'})`,
+  );
+}
+
+/** Re-hash every `f<NNN>.jpg` present in a directory; returns mismatch count. */
+export async function verifyIssueDir(
+  dir: string,
+  log: (message: string) => void,
+): Promise<number> {
+  if (!existsSync(dir)) {
+    log(`  verify: no archive directory ${dir} (nothing fetched yet)`);
+    return 0;
+  }
+  const pageFiles = readdirSync(dir)
+    .filter((name) => /^f\d+\.jpg$/.test(name))
+    .sort();
+  if (pageFiles.length === 0) {
+    log(`  verify: no page images in ${dir}`);
+    return 0;
+  }
+  let mismatches = 0;
+  for (const name of pageFiles) {
+    const result = await verifyAsset(path.join(dir, name));
+    if (result.ok) {
+      log(`  ok    ${name}`);
+    } else {
+      mismatches += 1;
+      log(`  BAD   ${name} recorded=${result.recorded} actual=${result.actual}`);
+    }
+  }
+  log(`  verify: ${pageFiles.length} page(s), ${mismatches} mismatch(es)`);
+  return mismatches;
+}

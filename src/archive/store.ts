@@ -97,6 +97,25 @@ async function updateManifest(
 }
 
 /**
+ * True when an asset is already fully recorded: the file exists AND its
+ * companion YAML records a sha256 that matches the file's current bytes. This
+ * lets a resumable fetch skip the DOWNLOAD (not merely the write) for pages it
+ * has already completed and verified (FR-009 / SC-005). Never throws for a
+ * missing or partial asset -- those are simply "not recorded" and get fetched.
+ */
+export async function isAssetRecorded(targetPath: string): Promise<boolean> {
+  if (!existsSync(targetPath)) {
+    return false;
+  }
+  const recorded = await readRecordedSha(companionYamlPath(targetPath));
+  if (recorded === null) {
+    return false;
+  }
+  const onDisk = await sha256OfFile(targetPath);
+  return onDisk === recorded;
+}
+
+/**
  * Store one asset's bytes into the private archive, with its companion YAML
  * provenance and an updated integrity manifest (T022, FR-006..009).
  *

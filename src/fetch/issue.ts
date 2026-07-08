@@ -5,7 +5,7 @@ import type {
 } from '@/gallica/gallica-client';
 import { iiifImageUrl, issueLandingUrl } from '@/gallica/gallica-client';
 import { assertPublicDomain } from '@/rights/gate';
-import { issueDir, sourceLayout } from '@/archive/location';
+import { issueDir, monographDir, sourceLayout } from '@/archive/location';
 import { sourceMeta } from '@/archive/source-registry';
 import {
   isAssetRecorded,
@@ -43,8 +43,30 @@ export interface FetchIssueContext {
   log?: (message: string) => void;
 }
 
-/** Per-issue fetch outcome. */
+/**
+ * Everything `fetchMonograph` needs beyond the document ark; all injectable.
+ * Unlike {@link FetchIssueContext} there is no `date` -- a monograph source
+ * has exactly one document, so its archive directory (FR-016) is fixed by
+ * the source layout alone (see {@link monographDir}).
+ */
+export interface FetchMonographContext {
+  /** The Gallica client (rights + pagination + IIIF images). */
+  client: FetchClient;
+  /** Colony Cults source ID, e.g. `PB-P002` (must be `kind: 'monograph'`). */
+  sourceId: string;
+  /** Absolute private-archive root (`../colony-cults-archive`). */
+  archiveRoot: string;
+  /** Injected clock for the retrieval timestamp (testability, determinism). */
+  clock: () => Date;
+  /** Re-fetch pages that already exist and are checksum-recorded. */
+  force?: boolean;
+  /** Optional line-oriented progress sink. */
+  log?: (message: string) => void;
+}
+
+/** Per-document (issue or monograph) fetch outcome. */
 export interface FetchIssueResult {
+  /** The issue ark (periodical) or document ark (monograph) fetched. */
   issueArk: string;
   /** Absolute archive directory the pages were written into. */
   dir: string;
@@ -58,6 +80,18 @@ export interface FetchIssueResult {
   bytesWritten: number;
   /** Count of pages skipped because already recorded (resumability). */
   skippedCount: number;
+}
+
+/** Internal context for the shared per-document page pipeline. */
+interface DocumentFetchContext {
+  client: FetchClient;
+  sourceId: string;
+  /** Absolute archive directory to write pages into (already resolved). */
+  dir: string;
+  archiveRoot: string;
+  clock: () => Date;
+  force?: boolean;
+  log?: (message: string) => void;
 }
 
 /** Zero-padded page ordinal for the `f<NNN>.jpg` asset name. */
@@ -75,47 +109,46 @@ function bareIssueArk(issueArk: string): string {
 }
 
 /**
- * Fetch one issue's full-resolution page images into the private archive
- * (T023, FR-003/004/006/007/009).
+ * The shared per-document page pipeline (T023/T034, FR-003/004/006/007/009):
+ * rights gate first, then fetch+store every page. Used by both {@link
+ * fetchIssue} (a periodical's issue, dated subdirectory) and {@link
+ * fetchMonograph} (a monograph's single document, flat directory) -- the two
+ * differ only in HOW their target directory is resolved before calling this.
  *
  * Order matters for safety: the rights gate runs FIRST, so a non-public-domain
- * (or absent-rights) issue throws before anything is downloaded or written.
- * Then, for each page `1..pageCount`, the full-native IIIF JPEG is fetched and
- * stored as `f<NNN>.jpg` with a companion provenance YAML. Resumability: a page
- * already present with a matching recorded checksum is skipped WITHOUT
- * re-downloading, unless `force` is set. Images only — no OCR here.
+ * (or absent-rights) document throws before anything is downloaded or
+ * written. Then, for each page `1..pageCount`, the full-native IIIF JPEG is
+ * fetched and stored as `f<NNN>.jpg` with a companion provenance YAML.
+ * Resumability: a page already present with a matching recorded checksum is
+ * skipped WITHOUT re-downloading, unless `force` is set. Images only — no OCR
+ * here.
  */
-export async function fetchIssue(
-  issueArk: string,
-  ctx: FetchIssueContext,
+async function fetchDocumentPages(
+  documentArk: string,
+  ctx: DocumentFetchContext,
 ): Promise<FetchIssueResult> {
   // FR-004: rights gate FIRST — throws (and downloads nothing) if not PD.
-  const rights = await assertPublicDomain(issueArk, ctx.client);
+  const rights = await assertPublicDomain(documentArk, ctx.client);
 
-  const pageCount = await ctx.client.pagination(issueArk);
+  const pageCount = await ctx.client.pagination(documentArk);
   if (!Number.isInteger(pageCount) || pageCount < 1) {
     throw new Error(
-      `fetchIssue: issue ${issueArk} reported a non-positive page count ` +
-        `(${pageCount})`,
+      `fetchDocumentPages: document ${documentArk} reported a non-positive ` +
+        `page count (${pageCount})`,
     );
   }
 
   const layout = sourceLayout(ctx.sourceId);
   const meta = sourceMeta(ctx.sourceId);
-  const dir = issueDir(
-    ctx.sourceId,
-    { ark: bareIssueArk(issueArk), date: ctx.date },
-    ctx.archiveRoot,
-  );
   const retrieved = ctx.clock().toISOString();
-  const catalogUrl = issueLandingUrl(issueArk);
+  const catalogUrl = issueLandingUrl(documentArk);
 
   const pages: StoreResult[] = [];
   let bytesWritten = 0;
   let skippedCount = 0;
 
   for (let page = 1; page <= pageCount; page += 1) {
-    const targetPath = path.join(dir, pageFileName(page));
+    const targetPath = path.join(ctx.dir, pageFileName(page));
 
     // Resumability (FR-009 / SC-005): skip the download itself for a page
     // already present with a matching recorded checksum.
@@ -126,8 +159,8 @@ export async function fetchIssue(
       continue;
     }
 
-    const originalUrl = iiifImageUrl(issueArk, page);
-    const bytes = await ctx.client.iiifImage(issueArk, page);
+    const originalUrl = iiifImageUrl(documentArk, page);
+    const bytes = await ctx.client.iiifImage(documentArk, page);
 
     const provenance: ProvenanceFields = {
       id: ctx.sourceId,
@@ -167,12 +200,44 @@ export async function fetchIssue(
   }
 
   return {
-    issueArk,
-    dir,
+    issueArk: documentArk,
+    dir: ctx.dir,
     pageCount,
     rights,
     pages,
     bytesWritten,
     skippedCount,
   };
+}
+
+/**
+ * Fetch one periodical issue's full-resolution page images into the private
+ * archive, into its dated `<date>_<ark>` subdirectory (T023). See {@link
+ * fetchDocumentPages} for the shared per-page pipeline this wraps.
+ */
+export async function fetchIssue(
+  issueArk: string,
+  ctx: FetchIssueContext,
+): Promise<FetchIssueResult> {
+  const dir = issueDir(
+    ctx.sourceId,
+    { ark: bareIssueArk(issueArk), date: ctx.date },
+    ctx.archiveRoot,
+  );
+  return fetchDocumentPages(issueArk, { ...ctx, dir });
+}
+
+/**
+ * Fetch a monograph source's single document into its flat archive directory
+ * (T034, FR-016) -- same rights-gated, resumable, guarded per-page pipeline
+ * as {@link fetchIssue}, reused via {@link fetchDocumentPages} rather than
+ * duplicated. Throws (fail loud) when `sourceId` is not registered as
+ * `kind: 'monograph'`.
+ */
+export async function fetchMonograph(
+  documentArk: string,
+  ctx: FetchMonographContext,
+): Promise<FetchIssueResult> {
+  const dir = monographDir(ctx.sourceId, ctx.archiveRoot);
+  return fetchDocumentPages(documentArk, { ...ctx, dir });
 }

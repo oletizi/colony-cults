@@ -28,6 +28,24 @@ function describeObserved(dcRights: string[]): string {
 }
 
 /**
+ * Resolve an issue's rights from its OAIRecord WITHOUT deciding whether to
+ * download. Returns a fully-populated {@link Rights} (status + raw response +
+ * parsed values) and never throws on an `other`/absent status -- so dry-run
+ * reporting can surface the status of every issue, including non-public-domain
+ * ones, before {@link assertPublicDomain} would refuse it.
+ */
+export async function resolveRights(
+  issueArk: string,
+  client: OaiRecordClient,
+): Promise<Rights> {
+  const { rawResponse, dcRights } = await client.oaiRights(issueArk);
+  const status: Rights['status'] = isPublicDomain(dcRights)
+    ? 'public-domain'
+    : 'other';
+  return { ark: issueArk, status, rawResponse, dcRights };
+}
+
+/**
  * The rights gate (FR-004/FR-005): resolve an issue's rights from its
  * OAIRecord and permit a download ONLY when a `dc:rights` value confirms the
  * public domain.
@@ -43,17 +61,12 @@ export async function assertPublicDomain(
   issueArk: string,
   client: OaiRecordClient,
 ): Promise<Rights> {
-  const { rawResponse, dcRights } = await client.oaiRights(issueArk);
-  const status: Rights['status'] = isPublicDomain(dcRights)
-    ? 'public-domain'
-    : 'other';
+  const rights = await resolveRights(issueArk, client);
 
-  const rights: Rights = { ark: issueArk, status, rawResponse, dcRights };
-
-  if (status !== 'public-domain') {
+  if (rights.status !== 'public-domain') {
     throw new Error(
       `rights gate: issue ${issueArk} is not confirmed public-domain ` +
-        `(observed dc:rights: ${describeObserved(dcRights)}); ` +
+        `(observed dc:rights: ${describeObserved(rights.dcRights)}); ` +
         `refusing to download anything`,
     );
   }
