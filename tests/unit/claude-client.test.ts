@@ -76,6 +76,22 @@ describe('createClaudeCli (T006)', () => {
     expect(calls[0].args).not.toContain('--model');
   });
 
+  it('isolates the engine: disables skills and agentic tools', async () => {
+    const { runner, calls } = fakeRunner({
+      stdout: 'translated output',
+      stderr: '',
+      exitCode: 0,
+    });
+    const cli = createClaudeCli(runner);
+
+    await cli.run('Translate to English', 'bonjour');
+
+    expect(calls[0].args).toContain('--disable-slash-commands');
+    const toolsIdx = calls[0].args.indexOf('--tools');
+    expect(toolsIdx).toBeGreaterThanOrEqual(0);
+    expect(calls[0].args[toolsIdx + 1]).toBe('');
+  });
+
   it('appends --append-system-prompt with the given system prompt', async () => {
     const { runner, calls } = fakeRunner({
       stdout: 'translated output',

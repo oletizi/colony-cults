@@ -69,7 +69,20 @@ export function createClaudeCli(runner: ClaudeCommandRunner): ClaudeCli {
       model?: string,
       systemPrompt?: string,
     ): Promise<string> {
-      const args = ['--print', prompt];
+      // Drive claude as an isolated text-transformation engine: no skills
+      // (`--disable-slash-commands`) and no agentic tools (`--tools ""`). Live
+      // acceptance showed that in `--print` mode the default skill/agent
+      // scaffolding leaks deliberation into ~35% of outputs (e.g. "I'll
+      // invoke the required skill first", "Here is the English translation:"),
+      // which an appended system prompt alone cannot suppress. Disabling both
+      // eliminated the leak across every observed run.
+      const args = [
+        '--print',
+        prompt,
+        '--disable-slash-commands',
+        '--tools',
+        '',
+      ];
       if (systemPrompt !== undefined) {
         args.push('--append-system-prompt', systemPrompt);
       }
