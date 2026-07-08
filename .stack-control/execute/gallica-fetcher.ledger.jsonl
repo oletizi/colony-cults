@@ -2,3 +2,4 @@
 {"id":"T006-T008","tierLabel":"powerful","model":"opus","commitRange":"93389de","reviewClean":true,"note":"model types + HttpClient (test-first); tsconfig->Bundler"}
 {"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"c23fa24","reviewClean":true,"note":"CLI skeleton + dispatch"}
 {"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"7ed9659","reviewClean":true,"note":"recorded Gallica fixtures + synthetic non-PD"}
+{"id":"T011-T016","tierLabel":"powerful","model":"opus","commitRange":"4a5ab4d","reviewClean":true,"note":"US1 census MVP; live 78 issues 1879-1885; resolves #2"}
