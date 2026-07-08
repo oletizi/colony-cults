@@ -23,4 +23,11 @@
 {"id": "T023", "tierLabel": "powerful", "model": "opus", "commitRange": "6076c73", "reviewClean": true}
 {"id": "T025", "tierLabel": "balanced", "model": "sonnet", "commitRange": "6076c73", "reviewClean": true, "note": "bundled test-first into opus T023 dispatch"}
 {"id": "T026", "tierLabel": "balanced", "model": "sonnet", "commitRange": "6076c73", "reviewClean": true, "note": "bundled test-first into opus T023 dispatch"}
-{"id": "T024", "tierLabel": "balanced", "model": "sonnet", "commitRange": "PENDING", "reviewClean": true}
+{"id": "T024", "tierLabel": "balanced", "model": "sonnet", "commitRange": "0ddb967", "reviewClean": true}
+{"id": "T027", "tierLabel": "balanced", "model": "sonnet", "commitRange": "ac78c67", "reviewClean": true}
+{"id": "T028", "tierLabel": "balanced", "model": "sonnet", "commitRange": "ac78c67", "reviewClean": true, "note": "bundled with T027 (dry-run vertical slice)"}
+{"id": "T029", "tierLabel": "balanced", "model": "sonnet", "commitRange": "ac78c67", "reviewClean": true, "note": "bundled with T027"}
+{"id": "T030", "tierLabel": "fast", "model": "haiku", "commitRange": "PENDING", "reviewClean": true, "note": "help text already matched contract; no change"}
+{"id": "T031", "tierLabel": "fast", "model": "haiku", "commitRange": "PENDING", "reviewClean": true, "note": "verification only: 0 violations, tsc+tests green"}
+{"id": "T032", "tierLabel": "powerful", "model": "opus", "commitRange": null, "reviewClean": false, "note": "MANUAL/operator acceptance [~]: full suite auto-verified green (162); claude --print/--model flag spelling confirmed (R1); real-archive+real-claude quickstart A-F walk is operator live acceptance"}
+{"id": "T033", "tierLabel": "fast", "model": "haiku", "commitRange": "PENDING", "reviewClean": true, "note": "README translate section; controller fixed pNNN path"}

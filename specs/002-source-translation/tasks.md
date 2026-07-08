@@ -104,12 +104,12 @@ This feature REUSES the shipped fetcher modules — do not reimplement: `@/archi
 
 **Independent test**: Run both commands with `--dry-run` over a tmp archive; assert zero files written and a report distinguishing would-translate / would-skip / refuse-on-rights, with no `claude` preflight required.
 
-- [ ] T027 [US3] [tier:balanced] Implement dry-run in `translateIssue`/`translateSource` — when `ctx.dryRun`, compute rights status + page/issue counts + skip/translate/refuse classification WITHOUT calling `assertClaudeAvailable` or `ClaudeCli` and WITHOUT any write; return the same report shape (FR-010).
-- [ ] T028 [US3] [tier:balanced] Surface the dry-run report in `src/cli/translate.ts` for both commands (per-issue translate/skip/refuse + rights status).
+- [x] T027 [US3] [tier:balanced] Implement dry-run in `translateIssue`/`translateSource` — when `ctx.dryRun`, compute rights status + page/issue counts + skip/translate/refuse classification WITHOUT calling `assertClaudeAvailable` or `ClaudeCli` and WITHOUT any write; return the same report shape (FR-010).
+- [x] T028 [US3] [tier:balanced] Surface the dry-run report in `src/cli/translate.ts` for both commands (per-issue translate/skip/refuse + rights status).
 
 ### US3 tests
 
-- [ ] T029 [P] [US3] [tier:balanced] Integration test `tests/integration/translate-dry-run.test.ts` — dry-run writes zero files (archive byte-identical), reports intended work + rights, and does not require `claude` present (preflight not called) (FR-010/SC-007/FR-009).
+- [x] T029 [P] [US3] [tier:balanced] Integration test `tests/integration/translate-dry-run.test.ts` — dry-run writes zero files (archive byte-identical), reports intended work + rights, and does not require `claude` present (preflight not called) (FR-010/SC-007/FR-009).
 
 **Checkpoint**: all three user stories independently testable.
 
@@ -117,10 +117,10 @@ This feature REUSES the shipped fetcher modules — do not reimplement: `@/archi
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T030 [P] [tier:fast] Add `translate`/`translate-source` help text to `src/translate-index.ts` matching contracts/cli.md; verify `--help`/`--version` and exit codes.
-- [ ] T031 [P] [tier:fast] Confirm every new file is ≤ 300–500 lines, `@/` imports only, no `any`/`as`/`@ts-ignore`; run `npm run typecheck`.
-- [ ] T032 [tier:powerful] Run the full suite `npm test` (vitest) green; walk quickstart.md Scenarios A–F manually against the real archive (`/Users/orion/work/colony-cults-archive`, `PB-P001`) with a real `claude` for at least one issue (verify actual `claude --print` flag spelling on the installed version — research R1 open item).
-- [ ] T033 [P] [tier:fast] Update `README.md` with the `translate` CLI usage; note the machine-assisted labeling + PD-only policy (AGENTS.md).
+- [x] T030 [P] [tier:fast] Add `translate`/`translate-source` help text to `src/translate-index.ts` matching contracts/cli.md; verify `--help`/`--version` and exit codes.
+- [x] T031 [P] [tier:fast] Confirm every new file is ≤ 300–500 lines, `@/` imports only, no `any`/`as`/`@ts-ignore`; run `npm run typecheck`.
+- [~] T032 [tier:powerful] Run the full suite `npm test` (vitest) green; walk quickstart.md Scenarios A–F manually against the real archive (`/Users/orion/work/colony-cults-archive`, `PB-P001`) with a real `claude` for at least one issue (verify actual `claude --print` flag spelling on the installed version — research R1 open item).
+- [x] T033 [P] [tier:fast] Update `README.md` with the `translate` CLI usage; note the machine-assisted labeling + PD-only policy (AGENTS.md).
 
 ---
 
