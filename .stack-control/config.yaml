@@ -1,3 +1,7 @@
 version: 1
 paths:
   roadmap: docs/engineering-roadmap.md
+tier_map:
+  fast: haiku
+  balanced: sonnet
+  powerful: opus

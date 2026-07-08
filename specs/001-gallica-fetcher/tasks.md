@@ -10,10 +10,11 @@ description: "Task list for Gallica Fetcher implementation"
 
 **Organization**: grouped by user story (US1 census → US2 image mirror → US3 OCR) so each is independently implementable and testable.
 
-## Format: `[ID] [P?] [Story] Description with file path`
+## Format: `[ID] [P?] [Story] [tier:label] Description with file path`
 
 - **[P]**: parallelizable (different files, no incomplete-task dependency)
 - **[Story]**: US1/US2/US3 (setup, foundational, polish carry no story label)
+- **[tier:label]**: model tier for dispatch — `fast`=haiku (mechanical), `balanced`=sonnet (standard impl/tests), `powerful`=opus (safety-critical correctness). Resolved via `.stack-control/config.yaml` `tier_map`.
 
 ## Path Conventions
 
@@ -23,11 +24,11 @@ Single project at repo root: `src/`, `tests/`, `data/`.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Create the source/test/data tree per plan.md (`src/{model,gallica,rights,census,archive,fetch,ocr,cli}`, `tests/{unit,integration,fixtures}`, `data/census/`)
-- [ ] T002 Initialize `package.json` at repo root (ESM, `tsx`, `vitest`, dependency `fast-xml-parser`, bin → `src/index.ts`, scripts `gallica`/`test`)
-- [ ] T003 [P] Configure `tsconfig.json` — strict, `paths: { "@/*": ["src/*"] }`, no implicit `any`
-- [ ] T004 [P] Configure `vitest.config.ts` with the matching `@/` alias
-- [ ] T005 [P] Add `.gitignore` for `node_modules/`, and confirm `data/census/` is tracked but archive assets never live here
+- [ ] T001 [tier:fast] Create the source/test/data tree per plan.md (`src/{model,gallica,rights,census,archive,fetch,ocr,cli}`, `tests/{unit,integration,fixtures}`, `data/census/`)
+- [ ] T002 [tier:fast] Initialize `package.json` at repo root (ESM, `tsx`, `vitest`, dependency `fast-xml-parser`, bin → `src/index.ts`, scripts `gallica`/`test`)
+- [ ] T003 [P] [tier:fast] Configure `tsconfig.json` — strict, `paths: { "@/*": ["src/*"] }`, no implicit `any`
+- [ ] T004 [P] [tier:fast] Configure `vitest.config.ts` with the matching `@/` alias
+- [ ] T005 [P] [tier:fast] Add `.gitignore` for `node_modules/`, and confirm `data/census/` is tracked but archive assets never live here
 
 ---
 
@@ -35,11 +36,11 @@ Single project at repo root: `src/`, `tests/`, `data/`.
 
 **Purpose**: shared building blocks every story needs. Complete before Phase 3.
 
-- [ ] T006 [P] Define model types in `src/model/` (`Source`, `Census`, `CensusIssue`, `Issue`, `Rights`, `Asset`, `Provenance`) per data-model.md — types only, no logic, no inheritance
-- [ ] T007 Implement `HttpClient` in `src/gallica/http-client.ts` — `fetch` wrapper with the project User-Agent, ≤2 concurrent + ~1 req/s rate limit, exponential backoff on 429/403/5xx then throw (fail loud, no silent skip)
-- [ ] T008 [P] Unit test rate-limit + backoff-then-throw in `tests/unit/http-client.test.ts`
-- [ ] T009 Implement CLI skeleton `src/index.ts` + `src/cli/parse.ts` — `node:util.parseArgs`, global flags `--dry-run`/`--force`/`--verify`/`--ocr`, command dispatch, stderr+non-zero on error
-- [ ] T010 [P] Add recorded fixtures in `tests/fixtures/` — `Issues` (years + 1879) XML, `Pagination` XML, `OAIRecord` XML (public-domain + a non-public-domain variant), a tiny IIIF JPEG
+- [ ] T006 [P] [tier:balanced] Define model types in `src/model/` (`Source`, `Census`, `CensusIssue`, `Issue`, `Rights`, `Asset`, `Provenance`) per data-model.md — types only, no logic, no inheritance
+- [ ] T007 [tier:powerful] Implement `HttpClient` in `src/gallica/http-client.ts` — `fetch` wrapper with the project User-Agent, ≤2 concurrent + ~1 req/s rate limit, exponential backoff on 429/403/5xx then throw (fail loud, no silent skip)
+- [ ] T008 [P] [tier:balanced] Unit test rate-limit + backoff-then-throw in `tests/unit/http-client.test.ts`
+- [ ] T009 [tier:balanced] Implement CLI skeleton `src/index.ts` + `src/cli/parse.ts` — `node:util.parseArgs`, global flags `--dry-run`/`--force`/`--verify`/`--ocr`, command dispatch, stderr+non-zero on error
+- [ ] T010 [P] [tier:fast] Add recorded fixtures in `tests/fixtures/` — `Issues` (years + 1879) XML, `Pagination` XML, `OAIRecord` XML (public-domain + a non-public-domain variant), a tiny IIIF JPEG
 
 **Checkpoint**: network boundary, types, CLI dispatch, and fixtures exist.
 
@@ -51,12 +52,12 @@ Single project at repo root: `src/`, `tests/`, `data/`.
 
 **Independent test**: run `census` against `ark:/12148/cb328261098/date` → 78 issues 1879–1885 with ark/date/pageCount; re-run byte-identical.
 
-- [ ] T011 [P] [US1] `GallicaClient.issues()` + `.pagination()` in `src/gallica/gallica-client.ts` — parse via `fast-xml-parser` per contracts/gallica-api.md
-- [ ] T012 [US1] Census builder in `src/census/build.ts` — periodical ark → `Census`; normalize host dates to `YYYY-MM-DD`; attach `pageCount`; sort issues by date
-- [ ] T013 [US1] Deterministic serializer in `src/census/serialize.ts` — fixed key order, sorted issues, 2-space indent, trailing newline (FR-002)
-- [ ] T014 [US1] `census` command in `src/cli/census.ts` — write `data/census/<sourceId>-<slug>.json`; `--dry-run` reports target + issue count, writes nothing
-- [ ] T015 [P] [US1] Unit test parse + serialize determinism in `tests/unit/census.test.ts` (fixtures)
-- [ ] T016 [US1] Integration test `census` against fixtures → 78 issues / 1879–1885 in `tests/integration/census.test.ts`
+- [ ] T011 [P] [US1] [tier:balanced] `GallicaClient.issues()` + `.pagination()` in `src/gallica/gallica-client.ts` — parse via `fast-xml-parser` per contracts/gallica-api.md
+- [ ] T012 [US1] [tier:balanced] Census builder in `src/census/build.ts` — periodical ark → `Census`; normalize host dates to `YYYY-MM-DD`; attach `pageCount`; sort issues by date
+- [ ] T013 [US1] [tier:powerful] Deterministic serializer in `src/census/serialize.ts` — fixed key order, sorted issues, 2-space indent, trailing newline (FR-002)
+- [ ] T014 [US1] [tier:balanced] `census` command in `src/cli/census.ts` — write `data/census/<sourceId>-<slug>.json`; `--dry-run` reports target + issue count, writes nothing
+- [ ] T015 [P] [US1] [tier:balanced] Unit test parse + serialize determinism in `tests/unit/census.test.ts` (fixtures)
+- [ ] T016 [US1] [tier:balanced] Integration test `census` against fixtures → 78 issues / 1879–1885 in `tests/integration/census.test.ts`
 
 **Checkpoint**: US1 shippable on its own (metadata-only, no archive/rights/OCR).
 
@@ -68,18 +69,18 @@ Single project at repo root: `src/`, `tests/`, `data/`.
 
 **Independent test**: `fetch-issue ark:/12148/bpt6k5603637g` → 12 images + sidecars inside `../colony-cults-archive`, none outside; re-run skips; rights-fail item throws.
 
-- [ ] T017 [P] [US2] `GallicaClient.oaiRecord()` + `.iiifInfo()` + `.iiifImage()` in `src/gallica/gallica-client.ts`
-- [ ] T018 [P] [US2] Rights gate in `src/rights/gate.ts` — parse `dc:rights`, `assertPublicDomain(ark)` throws on non-public-domain/absent, capture `rawResponse` (FR-004/005)
-- [ ] T019 [US2] Archive location + non-overridable guard in `src/archive/location.ts` — resolve `../colony-cults-archive`; `assertInsideArchive(path)` throws on escape (FR-006, no override)
-- [ ] T020 [P] [US2] sha256 checksum util in `src/archive/checksum.ts`
-- [ ] T021 [US2] Provenance sidecar writer in `src/archive/provenance.ts` — `<asset>.provenance.json` per data-model.md
-- [ ] T022 [US2] Asset store in `src/archive/store.ts` — write asset + sidecar inside archive; skip-if-checksum-recorded resumability; `--force` re-fetch; `--verify` re-hash (FR-008/009)
-- [ ] T023 [US2] Fetch pipeline in `src/fetch/issue.ts` — rights gate → enumerate pages → fetch full-native JPEG → store (images-only)
-- [ ] T024 [P] [US2] Dry-run size estimation in `src/fetch/estimate.ts` — page counts + sampled HEAD sizes
-- [ ] T025 [US2] `fetch-issue` + `fetch-source` commands in `src/cli/fetch.ts` — `--dry-run` prints per-issue rights status, paths, estimated size (FR-010)
-- [ ] T026 [P] [US2] Unit test guard refusal on escape path in `tests/unit/archive-guard.test.ts`
-- [ ] T027 [P] [US2] Unit test rights gate (public-domain passes / other throws) in `tests/unit/rights.test.ts`
-- [ ] T028 [US2] Integration test fetch-issue flow + resumability + guard against fixtures in `tests/integration/fetch.test.ts`
+- [ ] T017 [P] [US2] [tier:balanced] `GallicaClient.oaiRecord()` + `.iiifInfo()` + `.iiifImage()` in `src/gallica/gallica-client.ts`
+- [ ] T018 [P] [US2] [tier:powerful] Rights gate in `src/rights/gate.ts` — parse `dc:rights`, `assertPublicDomain(ark)` throws on non-public-domain/absent, capture `rawResponse` (FR-004/005)
+- [ ] T019 [US2] [tier:powerful] Archive location + non-overridable guard in `src/archive/location.ts` — resolve `../colony-cults-archive`; `assertInsideArchive(path)` throws on escape (FR-006, no override)
+- [ ] T020 [P] [US2] [tier:balanced] sha256 checksum util in `src/archive/checksum.ts`
+- [ ] T021 [US2] [tier:balanced] Provenance sidecar writer in `src/archive/provenance.ts` — `<asset>.provenance.json` per data-model.md
+- [ ] T022 [US2] [tier:powerful] Asset store in `src/archive/store.ts` — write asset + sidecar inside archive; skip-if-checksum-recorded resumability; `--force` re-fetch; `--verify` re-hash (FR-008/009)
+- [ ] T023 [US2] [tier:powerful] Fetch pipeline in `src/fetch/issue.ts` — rights gate → enumerate pages → fetch full-native JPEG → store (images-only)
+- [ ] T024 [P] [US2] [tier:balanced] Dry-run size estimation in `src/fetch/estimate.ts` — page counts + sampled HEAD sizes
+- [ ] T025 [US2] [tier:balanced] `fetch-issue` + `fetch-source` commands in `src/cli/fetch.ts` — `--dry-run` prints per-issue rights status, paths, estimated size (FR-010)
+- [ ] T026 [P] [US2] [tier:balanced] Unit test guard refusal on escape path in `tests/unit/archive-guard.test.ts`
+- [ ] T027 [P] [US2] [tier:balanced] Unit test rights gate (public-domain passes / other throws) in `tests/unit/rights.test.ts`
+- [ ] T028 [US2] [tier:balanced] Integration test fetch-issue flow + resumability + guard against fixtures in `tests/integration/fetch.test.ts`
 
 **Checkpoint**: US2 independently deliverable via `fetch-issue`; `fetch-source` iterates the US1 census.
 
@@ -91,11 +92,11 @@ Single project at repo root: `src/`, `tests/`, `data/`.
 
 **Independent test**: `ocr ark:/12148/bpt6k5603637g` on an issue with images → `issue.pdf` (searchable) + `issue.txt` + provenance; missing toolchain fails loud.
 
-- [ ] T029 [P] [US3] OCR dependency preflight in `src/ocr/preflight.ts` — check `ocrmypdf`/`img2pdf`/`pdftotext`/Tesseract-`fra`; throw with install guidance; only when OCR requested (FR-013)
-- [ ] T030 [US3] OCR pipeline in `src/ocr/run.ts` — `img2pdf` → `ocrmypdf --deskew --rotate-pages --language fra --output-type pdfa` → `pdftotext`; store PDF/A + txt + provenance; set `ocrStatus` (FR-011/012)
-- [ ] T031 [US3] Wire `--ocr` into fetch and add `ocr` command in `src/cli/ocr.ts` — OCR an already-fetched issue without re-download
-- [ ] T032 [P] [US3] Unit test preflight failure message in `tests/unit/ocr-preflight.test.ts`
-- [ ] T033 [US3] Integration test `ocr` (stubbed tool presence) in `tests/integration/ocr.test.ts`
+- [ ] T029 [P] [US3] [tier:balanced] OCR dependency preflight in `src/ocr/preflight.ts` — check `ocrmypdf`/`img2pdf`/`pdftotext`/Tesseract-`fra`; throw with install guidance; only when OCR requested (FR-013)
+- [ ] T030 [US3] [tier:balanced] OCR pipeline in `src/ocr/run.ts` — `img2pdf` → `ocrmypdf --deskew --rotate-pages --language fra --output-type pdfa` → `pdftotext`; store PDF/A + txt + provenance; set `ocrStatus` (FR-011/012)
+- [ ] T031 [US3] [tier:balanced] Wire `--ocr` into fetch and add `ocr` command in `src/cli/ocr.ts` — OCR an already-fetched issue without re-download
+- [ ] T032 [P] [US3] [tier:balanced] Unit test preflight failure message in `tests/unit/ocr-preflight.test.ts`
+- [ ] T033 [US3] [tier:balanced] Integration test `ocr` (stubbed tool presence) in `tests/integration/ocr.test.ts`
 
 **Checkpoint**: full census + image + OCR pipeline complete.
 
@@ -103,21 +104,21 @@ Single project at repo root: `src/`, `tests/`, `data/`.
 
 ## Phase 6: Polish & Cross-Cutting
 
-- [ ] T034 [P] Generalize to monograph sources — `kind === 'monograph'` skips census, fetches the single document (FR-016) in `src/fetch/issue.ts` + census guard
-- [ ] T035 [P] Author `README.md` usage referencing the quickstart scenarios
-- [ ] T036 Run full `vitest` suite + typecheck; confirm quickstart Scenarios 1–7 each map to a passing test; verify no file exceeds ~500 lines
-- [ ] T037 [P] [US2] Unit test dry-run writes nothing (asserts no filesystem writes; SC-006) in `tests/unit/dry-run.test.ts`
-- [ ] T038 [P] [US3] Integration test images-only run succeeds with OCR toolchain absent (SC-008) in `tests/integration/images-only-no-ocr.test.ts`
+- [ ] T034 [P] [tier:balanced] Generalize to monograph sources — `kind === 'monograph'` skips census, fetches the single document (FR-016) in `src/fetch/issue.ts` + census guard
+- [ ] T035 [P] [tier:fast] Author `README.md` usage referencing the quickstart scenarios
+- [ ] T036 [tier:balanced] Run full `vitest` suite + typecheck; confirm quickstart Scenarios 1–7 each map to a passing test; verify no file exceeds ~500 lines
+- [ ] T037 [P] [US2] [tier:balanced] Unit test dry-run writes nothing (asserts no filesystem writes; SC-006) in `tests/unit/dry-run.test.ts`
+- [ ] T038 [P] [US3] [tier:balanced] Integration test images-only run succeeds with OCR toolchain absent (SC-008) in `tests/integration/images-only-no-ocr.test.ts`
 
 ---
 
 ## Dependencies & Story Order
 
-- **Setup (P1 tasks T001–T005)** → **Foundational (T006–T010)** → stories.
+- **Setup (T001–T005)** → **Foundational (T006–T010)** → stories.
 - **US1 (T011–T016)**: needs Foundational only. **MVP.**
 - **US2 (T017–T028)**: needs Foundational; `fetch-source` also consumes US1's census (but `fetch-issue` is testable without US1).
 - **US3 (T029–T033)**: needs US2 (operates on fetched images).
-- **Polish (T034–T036)**: after the stories it touches.
+- **Polish (T034–T038)**: after the stories it touches.
 
 ## Parallel Execution Examples
 
@@ -131,5 +132,11 @@ Single project at repo root: `src/`, `tests/`, `data/`.
 - **Increment 2**: US2 (image mirror) — the preservation core, gated + guarded + resumable.
 - **Increment 3**: US3 (OCR) — the searchable-text layer, optional and decoupled.
 - Each increment is independently testable via its quickstart scenario and vitest suite.
+
+## Model tiers (risk-based)
+
+- **powerful (opus)**: safety-critical correctness — T007 (politeness/backoff), T013 (determinism), T018 (rights gate), T019 (non-overridable guard), T022 (resumability/integrity), T023 (fetch orchestration).
+- **fast (haiku)**: mechanical — T001–T005 (scaffolding/config), T010 (fixtures), T035 (README).
+- **balanced (sonnet)**: everything else (standard implementation + tests).
 
 **Total tasks**: 38 (Setup 5, Foundational 5, US1 6, US2 13, US3 6, Polish 3). T037/T038 added by `/speckit-analyze` to close SC-006 / SC-008 test coverage.
