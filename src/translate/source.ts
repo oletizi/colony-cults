@@ -142,6 +142,13 @@ export interface TranslateSourceCtx {
   preflight: () => Promise<void>;
   /** Polite pacing between engine-invoking issues (injected; see pacing rule). */
   delay: () => Promise<void>;
+  /**
+   * Report intended per-issue work instead of performing it (FR-010),
+   * forwarded to each {@link TranslateIssueCtx}. See {@link translateSource}'s
+   * DRY-RUN note for how this suppresses pacing and the consecutive-failure
+   * abort. Defaults to `false` (the normal, executing path) when omitted.
+   */
+  dryRun?: boolean;
 }
 
 /**
@@ -183,6 +190,19 @@ export interface TranslateSourceCtx {
  *    call ran before the page pipeline broke), so it paces.
  *  - No delay after the final processed issue, and none after an abort (the
  *    abort returns before the pacing step).
+ *
+ * DRY-RUN (FR-010):
+ *  - `ctx.dryRun` is forwarded into every per-issue {@link TranslateIssueCtx};
+ *    {@link translateIssue} classifies rather than executes, so no issue ever
+ *    "invokes the engine" in a dry-run.
+ *  - Pacing is therefore suppressed outright: `ctx.delay()` is never awaited
+ *    in a dry-run (there is no engine call to be polite around).
+ *  - The FR-017 consecutive-failure counter and abort are suppressed too: a
+ *    dry-run's per-issue outcomes are a classification report, not an
+ *    execution/fault stream, so even a synthesized `failed` entry (from a
+ *    thrown hard precondition such as a missing `issue.txt`) does not count
+ *    toward, or trip, the abort. `abortedOnConsecutiveFailures` is therefore
+ *    always `false` for a dry-run report.
  */
 export async function translateSource(
   sourceId: string,
@@ -209,6 +229,7 @@ export async function translateSource(
       model: ctx.model,
       log: ctx.log,
       preflight: ctx.preflight,
+      dryRun: ctx.dryRun,
     };
 
     // 2. Translate one issue. A thrown error is a hard per-issue precondition
@@ -230,6 +251,15 @@ export async function translateSource(
 
     // 3. Record in discovery order.
     report.issues.push(result);
+
+    // DRY-RUN (FR-010): a dry-run's per-issue outcomes are a classification
+    // report, not an execution/fault stream -- no issue invoked the engine,
+    // so there is nothing to pace around, and the FR-017 consecutive-failure
+    // counter/abort do not apply (see the DRY-RUN doc note above). Skip
+    // straight to the next issue.
+    if (ctx.dryRun === true) {
+      continue;
+    }
 
     // 4. Consecutive-failure rule (FR-017). `failed`/`incomplete` (and thrown
     //    preconditions, recorded above as `failed`) are FAILURES; everything

@@ -60,7 +60,8 @@ export interface TranslateIssueResult {
  * `preflight` is a thunk so the caller decides what "check the engine" means:
  * the CLI passes `() => assertClaudeAvailable()`; tests inject a spy. It fires
  * only AFTER the rights gate passes and BEFORE the first `claude` call, never
- * earlier (FR-009). A future dry-run (T027) will short-circuit before it.
+ * earlier (FR-009). `dryRun` (T027) short-circuits before it -- see
+ * {@link translateIssue}'s DRY-RUN note.
  */
 export interface TranslateIssueCtx {
   /** Engine adapter used for the cleanup + translation passes. */
@@ -79,6 +80,13 @@ export interface TranslateIssueCtx {
   log: (message: string) => void;
   /** Engine preflight (FR-009); fired once after the rights gate passes. */
   preflight: () => Promise<void>;
+  /**
+   * Report the intended work instead of performing it (FR-010/SC-007):
+   * classify rights + skip/translate/refuse and RETURN, never calling
+   * `preflight`, never calling `claude`, never writing anything. Defaults to
+   * `false` (the normal, executing path) when omitted.
+   */
+  dryRun?: boolean;
 }
 
 /** UTF-8 text -> bytes, for {@link storeAsset} (which re-derives the checksum). */
@@ -135,6 +143,73 @@ async function persist(
 }
 
 /**
+ * Classify a dry-run's intended per-issue work (FR-010/SC-007) with no engine
+ * call, no preflight, and no write. Called by {@link translateIssue} in place
+ * of its normal rights-gate-then-pipeline flow when `ctx.dryRun` is true.
+ *
+ * Deliberately reads `issue.txt` + splits pages BEFORE deciding refused vs.
+ * translated/skipped (unlike the normal path, which returns on a rights
+ * refusal before ever touching `issue.txt`): a dry-run refusal still reports
+ * the issue's real `pagesTotal`, so the caller sees the full shape of the
+ * work it is choosing not to do. This does mean a dry-run on a refused issue
+ * whose `issue.txt` is missing/empty THROWS (a hard precondition -- can't
+ * classify what isn't fetched/OCR'd), same as the normal path would once it
+ * got that far.
+ */
+async function classifyDryRun(
+  issueArk: string,
+  dir: string,
+  ctx: TranslateIssueCtx,
+): Promise<TranslateIssueResult> {
+  const rights = await readIssueRights(ctx.sourceId, issueArk, ctx.archiveRoot);
+
+  const issueTextPath = path.join(dir, 'issue.txt');
+  if (!existsSync(issueTextPath)) {
+    throw new Error(
+      `translateIssue: missing issue.txt in ${dir} -- OCR the issue first`,
+    );
+  }
+  const issueText = await readFile(issueTextPath, 'utf-8');
+  if (issueText.trim().length === 0) {
+    throw new Error(`translateIssue: issue.txt is empty in ${dir}`);
+  }
+  const pagesTotal = splitPages(issueText).length;
+
+  if (rights.rights_status !== 'public-domain') {
+    return {
+      ark: issueArk,
+      outcome: 'refused',
+      pagesDone: 0,
+      pagesTotal,
+      message:
+        `dry-run: would refuse -- rights_status is "${rights.rights_status}", ` +
+        'not "public-domain" -- no translation would be written',
+    };
+  }
+
+  let pagesDone = 0;
+  for (let i = 1; i <= pagesTotal; i += 1) {
+    const recorded =
+      (await isAssetRecorded(pageArtifactPath(dir, i, 'fr'))) &&
+      (await isAssetRecorded(pageArtifactPath(dir, i, 'en')));
+    if (recorded) {
+      pagesDone += 1;
+    }
+  }
+
+  const wouldSkip = !ctx.force && pagesDone === pagesTotal;
+  return {
+    ark: issueArk,
+    outcome: wouldSkip ? 'skipped' : 'translated',
+    pagesDone,
+    pagesTotal,
+    message:
+      `dry-run: rights_status is "${rights.rights_status}" -- ` +
+      (wouldSkip ? 'would skip (already translated)' : 'would translate'),
+  };
+}
+
+/**
  * Translate one already-fetched, OCR'd issue: cleanup -> translate per page,
  * persisted idempotently, then assemble the completed pages into whole-issue
  * `issue.fr.txt`/`issue.en.txt` (T016/T017, FR-002/008/009/011/012/013).
@@ -142,6 +217,12 @@ async function persist(
  * GUARD-FIRST ORDER:
  *  1. Locate the issue dir offline (`findIssueDir`) -- a missing fetched issue
  *     is a hard precondition, so its throw propagates.
+ *  1a. DRY-RUN (FR-010): when `ctx.dryRun` is true, classify and RETURN right
+ *     here via {@link classifyDryRun} -- before the rights-refusal
+ *     early-return below, before `ctx.preflight()`, before any `claude` call,
+ *     before any write. A dry-run therefore never requires the engine to be
+ *     present (contract 1) and reports rather than hard-refuses on rights
+ *     (contract 2).
  *  2. Rights gate (FR-008): refuse (write nothing) unless the source page
  *     provenance is `public-domain`. Returns `refused` -- never throws -- so
  *     `translateSource` can record it and carry on; the single-issue CLI turns
@@ -163,6 +244,12 @@ export async function translateIssue(
 ): Promise<TranslateIssueResult> {
   // 1. Locate (hard precondition -- let a missing issue throw).
   const dir = findIssueDir(ctx.sourceId, issueArk, ctx.archiveRoot);
+
+  // 1a. DRY-RUN (FR-010): classify + return, never reaching the rights
+  //     early-return, `ctx.preflight()`, the engine, or any write.
+  if (ctx.dryRun === true) {
+    return classifyDryRun(issueArk, dir, ctx);
+  }
 
   // 2. Rights gate (FR-008): write nothing, return `refused`.
   const rights = await readIssueRights(ctx.sourceId, issueArk, ctx.archiveRoot);

@@ -4,7 +4,11 @@ import { resolveArchiveRoot } from '@/archive/location';
 import { assertClaudeAvailable } from '@/claude/preflight';
 import { createClaudeCli, type ClaudeCli } from '@/claude/client';
 import { defaultClaudeCommandRunner } from '@/claude/exec';
-import { translateIssue, type TranslateIssueCtx } from '@/translate/issue';
+import {
+  translateIssue,
+  type IssueOutcome,
+  type TranslateIssueCtx,
+} from '@/translate/issue';
 import {
   translateSource,
   CONSECUTIVE_FAILURE_ABORT,
@@ -38,6 +42,26 @@ export interface TranslateCliDeps {
   delay: () => Promise<void>;
 }
 
+/**
+ * Map a per-issue {@link IssueOutcome} to its `--dry-run` "would-X" report
+ * label (contracts/cli.md help text, FR-010). `failed`/`incomplete` only
+ * arise from a dry-run's own hard-precondition throw (see
+ * `translateSource`'s DRY-RUN note) and are reported under their normal
+ * name -- there is no "would-fail" concept.
+ */
+function dryRunLabel(outcome: IssueOutcome): string {
+  switch (outcome) {
+    case 'translated':
+      return 'would-translate';
+    case 'skipped':
+      return 'would-skip';
+    case 'refused':
+      return 'would-refuse';
+    default:
+      return outcome;
+  }
+}
+
 /** Build the default (real preflight + disk) dependencies. */
 export function defaultTranslateCliDeps(): TranslateCliDeps {
   const repoRoot = process.cwd();
@@ -60,6 +84,12 @@ export function defaultTranslateCliDeps(): TranslateCliDeps {
  * assemble, store) via {@link translateIssue}. FAILS LOUD (throws) on a
  * `refused` (rights gate) or `failed` outcome so the bin exits non-zero --
  * a rights refusal must never look like success on a single-issue run.
+ *
+ * `--dry-run` (FR-010/contracts/cli.md behavior 1/2) instead REPORTS the
+ * intended work (would-translate/would-skip/would-refuse) plus the issue's
+ * rights status, then returns normally (exit 0) -- it never throws on
+ * `refused`/`failed`, since dry-run only reports. The `!dryRun` fail-loud
+ * behavior below is unchanged from before dry-run existed.
  */
 export async function runTranslate(
   args: ParsedArgs,
@@ -70,8 +100,7 @@ export async function runTranslate(
     throw new Error('translate: missing required argument <issueArk>');
   }
   const sourceId = requireOption(args.options.sourceId, 'source-id', 'translate');
-
-  // TODO(T027/T028): dry-run
+  const dryRun = args.flags.dryRun;
 
   const ctx: TranslateIssueCtx = {
     claude: deps.claude,
@@ -82,9 +111,20 @@ export async function runTranslate(
     model: args.options.model,
     log: deps.log,
     preflight: deps.preflight,
+    dryRun,
   };
 
   const result = await translateIssue(issueArk, ctx);
+
+  if (dryRun) {
+    deps.log(
+      `translate: ${result.ark} -> ${dryRunLabel(result.outcome)} ` +
+        `(${result.pagesDone}/${result.pagesTotal} pages)` +
+        (result.message !== undefined ? ` -- ${result.message}` : ''),
+    );
+    deps.log('translate: (dry-run) wrote nothing');
+    return;
+  }
 
   deps.log(
     `translate: ${result.ark} -> ${result.outcome} ` +
@@ -116,6 +156,14 @@ export async function runTranslate(
  *  - A run that trips the FR-017 consecutive-failure threshold THROWS, so the
  *    bin exits non-zero -- that condition means the run stopped early and did
  *    not process every issue.
+ *
+ * `--dry-run` (FR-010/contracts/cli.md behavior 1/2/5) forwards into every
+ * per-issue classification (see `translateSource`'s DRY-RUN note: no engine
+ * calls, no pacing, and the consecutive-failure abort is suppressed, so
+ * `report.abortedOnConsecutiveFailures` is always `false`). The report is
+ * printed with would-translate/would-skip/would-refuse labels plus a closing
+ * "(dry-run) wrote nothing" note, and the function returns normally (exit 0)
+ * without reaching the abort throw below.
  */
 export async function runTranslateSource(
   args: ParsedArgs,
@@ -125,8 +173,7 @@ export async function runTranslateSource(
   if (sourceId === undefined) {
     throw new Error('translate-source: missing required argument <sourceId>');
   }
-
-  // TODO(T027/T028): dry-run
+  const dryRun = args.flags.dryRun;
 
   const ctx: TranslateSourceCtx = {
     claude: deps.claude,
@@ -137,13 +184,15 @@ export async function runTranslateSource(
     log: deps.log,
     preflight: deps.preflight,
     delay: deps.delay,
+    dryRun,
   };
 
   const report = await translateSource(sourceId, ctx);
 
   for (const issue of report.issues) {
+    const label = dryRun ? dryRunLabel(issue.outcome) : issue.outcome;
     deps.log(
-      `translate-source: ${issue.ark} -> ${issue.outcome} ` +
+      `translate-source: ${issue.ark} -> ${label} ` +
         `(${issue.pagesDone}/${issue.pagesTotal} pages)` +
         (issue.message !== undefined ? ` -- ${issue.message}` : ''),
     );
@@ -152,6 +201,11 @@ export async function runTranslateSource(
     `translate-source: ${sourceId} -- ${report.issues.length} issue(s) attempted, ` +
       `aborted=${report.abortedOnConsecutiveFailures}`,
   );
+
+  if (dryRun) {
+    deps.log('translate-source: (dry-run) wrote nothing');
+    return;
+  }
 
   if (report.abortedOnConsecutiveFailures) {
     throw new Error(
