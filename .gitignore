@@ -1,1 +1,18 @@
 .playwright-cli/
+
+# Node / TypeScript
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.env
+.env.local
+
+# Archive assets
+# Note: Archive assets (images, PDFs, provenance sidecars) are stored in the private
+# sibling repo ../colony-cults-archive, never in this repo. The data/census/ directory
+# below contains public metadata only.
+
+# stack-control / speckit runtime caches (not source)
+.stack-control/state/
+.specify/extensions/.cache/

@@ -1,0 +1,32 @@
+{
+  "name": "gallica-fetcher",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "TypeScript CLI for mirroring public-domain BnF Gallica sources",
+  "bin": {
+    "gallica": "src/index.ts"
+  },
+  "scripts": {
+    "gallica": "tsx src/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "bnf",
+    "gallica",
+    "archive",
+    "mirror",
+    "ocr"
+  ],
+  "author": "Colony Cults",
+  "license": "ISC",
+  "dependencies": {
+    "fast-xml-parser": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.1"
+  }
+}
