@@ -63,17 +63,17 @@ This feature REUSES the shipped fetcher modules — do not reimplement: `@/archi
 
 **Independent test**: Run `translate <issueArk>` against a fixtured tmp archive with a faked `ClaudeCli`; assert `issue.fr.txt`, `issue.en.txt` + `.yml` companions land in the issue dir, English derives from corrected French, and provenance carries the machine-assisted label + citation.
 
-- [ ] T014 [US1] [tier:balanced] Implement `src/translate/cleanup.ts` — `cleanupPage(claude, pageText, model)`: build the cleanup instruction (dehyphenate, join broken lines, repair obvious scan errors, drop condition markers, stay faithful) and return corrected French via `ClaudeCli`.
-- [ ] T015 [US1] [tier:balanced] Implement `src/translate/translate-page.ts` — `translatePage(claude, correctedFrench, model)`: build the translation instruction (readable English from the corrected French) and return English via `ClaudeCli`.
-- [ ] T016 [US1] [tier:powerful] Implement `src/translate/issue.ts` — `translateIssue(issueArk, ctx)`: guard-first; read `issue.txt`, `splitPages`; per page run cleanup → translate; persist each page intermediate idempotently (reuse `storeAsset`/`isAssetRecorded` for skip); assemble whole-issue fr/en; write `issue.fr.txt`/`issue.en.txt` + `.yml` via `storeAsset`; return a per-issue result (pagesDone/pagesTotal, outcome). `ctx` injects `claude`, `archiveRoot`, `clock`, `force`, `model`, `log`.
-- [ ] T017 [US1] [tier:powerful] Enforce the rights gate + engine preflight in `translateIssue`: refuse (fail loud, write nothing) when `readIssueRights` ≠ public-domain (FR-008); call `assertClaudeAvailable` before the first `claude` call (FR-009); never emit partial/fabricated output on any failure (FR-013).
-- [ ] T018 [US1] [tier:balanced] Implement `src/cli/translate.ts` `runTranslate(args)` + extend `src/cli/parse.ts` to recognize `translate`/`translate-source` commands and the `--model` option (reuse existing `--dry-run`/`--force` flags); implement `src/translate-index.ts` bin dispatch mirroring `src/index.ts` (help/version/error-to-stderr, exit codes per contracts/cli.md).
+- [x] T014 [US1] [tier:balanced] Implement `src/translate/cleanup.ts` — `cleanupPage(claude, pageText, model)`: build the cleanup instruction (dehyphenate, join broken lines, repair obvious scan errors, drop condition markers, stay faithful) and return corrected French via `ClaudeCli`.
+- [x] T015 [US1] [tier:balanced] Implement `src/translate/translate-page.ts` — `translatePage(claude, correctedFrench, model)`: build the translation instruction (readable English from the corrected French) and return English via `ClaudeCli`.
+- [x] T016 [US1] [tier:powerful] Implement `src/translate/issue.ts` — `translateIssue(issueArk, ctx)`: guard-first; read `issue.txt`, `splitPages`; per page run cleanup → translate; persist each page intermediate idempotently (reuse `storeAsset`/`isAssetRecorded` for skip); assemble whole-issue fr/en; write `issue.fr.txt`/`issue.en.txt` + `.yml` via `storeAsset`; return a per-issue result (pagesDone/pagesTotal, outcome). `ctx` injects `claude`, `archiveRoot`, `clock`, `force`, `model`, `log`.
+- [x] T017 [US1] [tier:powerful] Enforce the rights gate + engine preflight in `translateIssue`: refuse (fail loud, write nothing) when `readIssueRights` ≠ public-domain (FR-008); call `assertClaudeAvailable` before the first `claude` call (FR-009); never emit partial/fabricated output on any failure (FR-013).
+- [x] T018 [US1] [tier:balanced] Implement `src/cli/translate.ts` `runTranslate(args)` + extend `src/cli/parse.ts` to recognize `translate`/`translate-source` commands and the `--model` option (reuse existing `--dry-run`/`--force` flags); implement `src/translate-index.ts` bin dispatch mirroring `src/index.ts` (help/version/error-to-stderr, exit codes per contracts/cli.md).
 
 ### US1 tests
 
-- [ ] T019 [P] [US1] [tier:balanced] Integration test `tests/integration/translate-issue.test.ts` — faked `ClaudeCli` (deterministic outputs) + tmp archive + injected clock: asserts fr/en artifacts + `.yml` land alongside source, English derived from corrected French, provenance fields (engine/model/date/machine-assisted/citation), and page count == fixture pages.
-- [ ] T020 [P] [US1] [tier:balanced] Integration test `tests/integration/translate-idempotent.test.ts` — second run skips (no `claude` calls); deleting one page intermediate then re-running reprocesses only that page (FR-011/FR-012/SC-008); `--force` regenerates.
-- [ ] T021 [P] [US1] [tier:balanced] Integration test `tests/integration/translate-guards.test.ts` — non-public-domain provenance ⇒ refusal + nothing written (FR-008); `claude` preflight absent ⇒ fail loud, nothing written (FR-009); a faked `claude` failure ⇒ descriptive error, no partial artifact (FR-013).
+- [x] T019 [P] [US1] [tier:balanced] Integration test `tests/integration/translate-issue.test.ts` — faked `ClaudeCli` (deterministic outputs) + tmp archive + injected clock: asserts fr/en artifacts + `.yml` land alongside source, English derived from corrected French, provenance fields (engine/model/date/machine-assisted/citation), and page count == fixture pages.
+- [x] T020 [P] [US1] [tier:balanced] Integration test `tests/integration/translate-idempotent.test.ts` — second run skips (no `claude` calls); deleting one page intermediate then re-running reprocesses only that page (FR-011/FR-012/SC-008); `--force` regenerates.
+- [x] T021 [P] [US1] [tier:balanced] Integration test `tests/integration/translate-guards.test.ts` — non-public-domain provenance ⇒ refusal + nothing written (FR-008); `claude` preflight absent ⇒ fail loud, nothing written (FR-009); a faked `claude` failure ⇒ descriptive error, no partial artifact (FR-013).
 
 **Checkpoint**: US1 is a complete, demonstrable MVP.
 
@@ -85,14 +85,14 @@ This feature REUSES the shipped fetcher modules — do not reimplement: `@/archi
 
 **Independent test**: Run `translate-source <sourceId>` over a tmp archive with several fixtured issues + faked `ClaudeCli`; assert untranslated issues translated, translated ones skipped, a per-issue report, and (with a forced-failing runner) abort after 3 consecutive failures.
 
-- [ ] T022 [US2] [tier:balanced] Implement source issue discovery in `src/translate/source.ts` — enumerate the source's archived issue dirs on disk (reuse the fetcher's on-disk enumeration pattern / `sourceLayout`), yielding issue arks in order; fail loud for an unregistered source.
-- [ ] T023 [US2] [tier:powerful] Implement `translateSource(sourceId, ctx)` in `src/translate/source.ts` — iterate issues calling `translateIssue`; skip already-translated (unless force); pace calls with an injected delay (default polite constant); track consecutive failures and ABORT after N=3 (FR-017); accumulate a `TranslateRunReport` (translated/skipped/refused/failed/incomplete per issue) (FR-015).
-- [ ] T024 [US2] [tier:balanced] Wire `runTranslateSource(args)` in `src/cli/translate.ts` + dispatch in `src/translate-index.ts`; print the per-issue outcome report; exit non-zero on a consecutive-failure abort.
+- [x] T022 [US2] [tier:balanced] Implement source issue discovery in `src/translate/source.ts` — enumerate the source's archived issue dirs on disk (reuse the fetcher's on-disk enumeration pattern / `sourceLayout`), yielding issue arks in order; fail loud for an unregistered source.
+- [x] T023 [US2] [tier:powerful] Implement `translateSource(sourceId, ctx)` in `src/translate/source.ts` — iterate issues calling `translateIssue`; skip already-translated (unless force); pace calls with an injected delay (default polite constant); track consecutive failures and ABORT after N=3 (FR-017); accumulate a `TranslateRunReport` (translated/skipped/refused/failed/incomplete per issue) (FR-015).
+- [x] T024 [US2] [tier:balanced] Wire `runTranslateSource(args)` in `src/cli/translate.ts` + dispatch in `src/translate-index.ts`; print the per-issue outcome report; exit non-zero on a consecutive-failure abort.
 
 ### US2 tests
 
-- [ ] T025 [P] [US2] [tier:balanced] Integration test `tests/integration/translate-source.test.ts` — mixed archive: untranslated translated, translated skipped, report shape correct, pacing delay invoked (injected spy).
-- [ ] T026 [P] [US2] [tier:balanced] Integration test `tests/integration/translate-source-abort.test.ts` — faked `claude` forced to fail: run aborts after exactly 3 consecutive issue failures, reports the condition, exits non-zero (FR-017/SC-009).
+- [x] T025 [P] [US2] [tier:balanced] Integration test `tests/integration/translate-source.test.ts` — mixed archive: untranslated translated, translated skipped, report shape correct, pacing delay invoked (injected spy).
+- [x] T026 [P] [US2] [tier:balanced] Integration test `tests/integration/translate-source-abort.test.ts` — faked `claude` forced to fail: run aborts after exactly 3 consecutive issue failures, reports the condition, exits non-zero (FR-017/SC-009).
 
 **Checkpoint**: US2 scales the MVP to whole sources independently of US3.
 

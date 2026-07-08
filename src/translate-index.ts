@@ -3,18 +3,14 @@
 import { readFileSync } from 'node:fs';
 import { parse } from '@/cli/parse';
 import type { Command, ParsedArgs } from '@/cli/parse';
-import { runTranslate } from '@/cli/translate';
+import { runTranslate, runTranslateSource } from '@/cli/translate';
 
 /** A command handler: given the parsed invocation, performs the command. */
 type Handler = (args: ParsedArgs) => Promise<void>;
 
-/**
- * `translate-source` is wired by T024 (`runTranslateSource`); left absent
- * here so an invocation falls through to the same "no handler" throw as any
- * other unrecognized command, rather than silently no-oping.
- */
 const HANDLERS: Partial<Record<Command, Handler>> = {
   translate: (args) => runTranslate(args),
+  'translate-source': (args) => runTranslateSource(args),
 };
 
 /** Read this package's version from package.json (no hardcoded duplicate). */

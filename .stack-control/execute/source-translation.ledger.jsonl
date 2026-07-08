@@ -11,3 +11,16 @@
 {"id": "T011", "tierLabel": "fast", "model": "haiku", "commitRange": "47a1e2c", "reviewClean": true, "coveredBy": "T007 pages.test.ts (test-first)"}
 {"id": "T012", "tierLabel": "balanced", "model": "sonnet", "commitRange": "47a1e2c", "reviewClean": true, "coveredBy": "T008 translate-rights.test.ts (test-first)"}
 {"id": "T013", "tierLabel": "balanced", "model": "sonnet", "commitRange": "339ab84", "reviewClean": true, "coveredBy": "T005 claude-preflight.test.ts (test-first)"}
+{"id": "T014", "tierLabel": "balanced", "model": "sonnet", "commitRange": "3792c8d", "reviewClean": true}
+{"id": "T015", "tierLabel": "balanced", "model": "sonnet", "commitRange": "3792c8d", "reviewClean": true}
+{"id": "T016", "tierLabel": "powerful", "model": "opus", "commitRange": "863d6d6", "reviewClean": true, "note": "controller review found preflight-over-fire + model/provenance mismatch; fixed before accept"}
+{"id": "T017", "tierLabel": "powerful", "model": "opus", "commitRange": "863d6d6", "reviewClean": true, "note": "co-implemented with T016 (guards in same file)"}
+{"id": "T019", "tierLabel": "balanced", "model": "sonnet", "commitRange": "863d6d6", "reviewClean": true, "note": "bundled test-first into the opus T016 dispatch; effective model opus"}
+{"id": "T018", "tierLabel": "balanced", "model": "sonnet", "commitRange": "5dc4207", "reviewClean": true, "note": "surfaced src/index.ts exhaustiveness regression; controller fixed"}
+{"id": "T020", "tierLabel": "balanced", "model": "sonnet", "commitRange": "5dc4207", "reviewClean": true}
+{"id": "T021", "tierLabel": "balanced", "model": "sonnet", "commitRange": "5dc4207", "reviewClean": true, "note": "co-dispatched with T020 + shared harness extraction"}
+{"id": "T022", "tierLabel": "balanced", "model": "sonnet", "commitRange": "6076c73", "reviewClean": true}
+{"id": "T023", "tierLabel": "powerful", "model": "opus", "commitRange": "6076c73", "reviewClean": true}
+{"id": "T025", "tierLabel": "balanced", "model": "sonnet", "commitRange": "6076c73", "reviewClean": true, "note": "bundled test-first into opus T023 dispatch"}
+{"id": "T026", "tierLabel": "balanced", "model": "sonnet", "commitRange": "6076c73", "reviewClean": true, "note": "bundled test-first into opus T023 dispatch"}
+{"id": "T024", "tierLabel": "balanced", "model": "sonnet", "commitRange": "PENDING", "reviewClean": true}
