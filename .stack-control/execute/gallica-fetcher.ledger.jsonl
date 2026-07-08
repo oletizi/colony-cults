@@ -1,0 +1,11 @@
+{"id":"T001-T005","tierLabel":"fast","model":"haiku","commitRange":"b1b08af","reviewClean":true,"note":"project scaffold"}
+{"id":"T006-T008","tierLabel":"powerful","model":"opus","commitRange":"93389de","reviewClean":true,"note":"model types + HttpClient (test-first); tsconfig->Bundler"}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"c23fa24","reviewClean":true,"note":"CLI skeleton + dispatch"}
+{"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"7ed9659","reviewClean":true,"note":"recorded Gallica fixtures + synthetic non-PD"}
+{"id":"T011-T016","tierLabel":"powerful","model":"opus","commitRange":"4a5ab4d","reviewClean":true,"note":"US1 census MVP; live 78 issues 1879-1885; resolves #2"}
+{"id":"T017-T022,T026,T027","tierLabel":"powerful","model":"opus","commitRange":"558e6aa","reviewClean":true,"note":"US2 archive+rights core; realpath guard; YAML+manifest convention"}
+{"id":"T023-T025,T028","tierLabel":"powerful","model":"opus","commitRange":"acbf30a","reviewClean":true,"note":"US2 fetch pipeline; live e2e 10 pages; 429 finding captured"}
+{"id":"T029-T033,T038","tierLabel":"balanced","model":"sonnet","commitRange":"8e68cb2","reviewClean":true,"note":"US3 self-OCR; preflight fail-loud verified; 50 tests"}
+{"id":"T034,T035,T037","tierLabel":"balanced","model":"sonnet","commitRange":"30ae574","reviewClean":true,"note":"polish: monograph, README, dry-run test; +missed helper files; fixed 523-line file"}
+{"id":"govern-high-fixes","tierLabel":"powerful","model":"opus","commitRange":"9a036f8","reviewClean":true,"note":"fixed 4 HIGH audit findings: mixed-rights fail-closed, ark validation, census completeness, manifest-on-skip"}
+{"id":"TASK-1-pacing-fix","tierLabel":"powerful","model":"opus-inline-controller","commitRange":"236447e","reviewClean":true,"note":"Retry-After + gentler image pacing; validated live 8/8 pages no 429; implemented inline after 2nd subagent glitch"}

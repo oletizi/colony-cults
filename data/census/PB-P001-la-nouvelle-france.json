@@ -1,0 +1,476 @@
+{
+  "sourceId": "PB-P001",
+  "gallicaArk": "ark:/12148/cb328261098/date",
+  "builtAt": "2026-07-08",
+  "totalIssues": 78,
+  "issues": [
+    {
+      "ark": "bpt6k5603637g",
+      "date": "1879-07-15",
+      "label": "15 juillet 1879",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k56068358",
+      "date": "1879-08-15",
+      "label": "15 août 1879",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606840k",
+      "date": "1879-09-15",
+      "label": "15 septembre 1879",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606842d",
+      "date": "1879-10-15",
+      "label": "15 octobre 1879",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606843t",
+      "date": "1879-11-15",
+      "label": "15 novembre 1879",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k56068447",
+      "date": "1879-12-15",
+      "label": "15 décembre 1879",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606845n",
+      "date": "1880-01-15",
+      "label": "15 janvier 1880",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k56068462",
+      "date": "1880-02-15",
+      "label": "15 février 1880",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606847g",
+      "date": "1880-03-15",
+      "label": "15 mars 1880",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606848w",
+      "date": "1880-04-15",
+      "label": "15 avril 1880",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606850z",
+      "date": "1880-05-15",
+      "label": "15 mai 1880",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606851c",
+      "date": "1880-06-15",
+      "label": "15 juin 1880",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k5605205r",
+      "date": "1880-08-15",
+      "label": "15 août 1880",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k56052154",
+      "date": "1880-10-15",
+      "label": "15 octobre 1880",
+      "pageCount": 24
+    },
+    {
+      "ark": "bpt6k56052228",
+      "date": "1881-01-15",
+      "label": "15 janvier 1881",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5605235w",
+      "date": "1881-04-15",
+      "label": "15 avril 1881",
+      "pageCount": 24
+    },
+    {
+      "ark": "bpt6k5605244v",
+      "date": "1881-07-15",
+      "label": "15 juillet 1881",
+      "pageCount": 24
+    },
+    {
+      "ark": "bpt6k56068536",
+      "date": "1881-08-15",
+      "label": "15 août 1881",
+      "pageCount": 20
+    },
+    {
+      "ark": "bpt6k5606854m",
+      "date": "1881-09-15",
+      "label": "15 septembre 1881",
+      "pageCount": 20
+    },
+    {
+      "ark": "bpt6k56068551",
+      "date": "1881-10-15",
+      "label": "15 octobre 1881",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k5606859p",
+      "date": "1881-11-15",
+      "label": "15 novembre 1881",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k5606860b",
+      "date": "1881-12-15",
+      "label": "15 décembre 1881",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k56068625",
+      "date": "1882-01-15",
+      "label": "15 janvier 1882",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k56068640",
+      "date": "1882-02-15",
+      "label": "15 février 1882",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k5606866t",
+      "date": "1882-03-15",
+      "label": "15 mars 1882",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606868n",
+      "date": "1882-04-15",
+      "label": "15 avril 1882",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k56068692",
+      "date": "1882-05-15",
+      "label": "15 mai 1882",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k5605293b",
+      "date": "1882-06-15",
+      "label": "15 juin 1882",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k5605298d",
+      "date": "1882-07-15",
+      "label": "15 juillet 1882",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k5605307x",
+      "date": "1882-08-15",
+      "label": "15 août 1882",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606873z",
+      "date": "1882-09-15",
+      "label": "15 septembre 1882",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606874c",
+      "date": "1882-10-15",
+      "label": "15 octobre 1882",
+      "pageCount": 21
+    },
+    {
+      "ark": "bpt6k5606958m",
+      "date": "1882-11-15",
+      "label": "15 novembre 1882",
+      "pageCount": 20
+    },
+    {
+      "ark": "bpt6k5606875s",
+      "date": "1882-12-15",
+      "label": "15 décembre 1882",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k56068766",
+      "date": "1883-01-15",
+      "label": "15 janvier 1883",
+      "pageCount": 24
+    },
+    {
+      "ark": "bpt6k5606877m",
+      "date": "1883-02-15",
+      "label": "15 février 1883",
+      "pageCount": 20
+    },
+    {
+      "ark": "bpt6k56068781",
+      "date": "1883-03-15",
+      "label": "15 mars 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606879f",
+      "date": "1883-04-02",
+      "label": "02 avril 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k56068803",
+      "date": "1883-04-16",
+      "label": "16 avril 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606881h",
+      "date": "1883-05-01",
+      "label": "01 mai 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606882x",
+      "date": "1883-05-15",
+      "label": "15 mai 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606883b",
+      "date": "1883-06-01",
+      "label": "01 juin 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606884r",
+      "date": "1883-06-15",
+      "label": "15 juin 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5605342c",
+      "date": "1883-07-01",
+      "label": "01 juillet 1883",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k56068855",
+      "date": "1883-07-15",
+      "label": "15 juillet 1883",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606886k",
+      "date": "1883-08-01",
+      "label": "01 août 1883",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k56068870",
+      "date": "1883-08-16",
+      "label": "16 août 1883",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606888d",
+      "date": "1883-09-01",
+      "label": "01 septembre 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606889t",
+      "date": "1883-09-16",
+      "label": "16 septembre 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606890g",
+      "date": "1883-10-01",
+      "label": "01 octobre 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606891w",
+      "date": "1883-10-16",
+      "label": "16 octobre 1883",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k56068929",
+      "date": "1883-11-02",
+      "label": "02 novembre 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606893q",
+      "date": "1883-11-16",
+      "label": "16 novembre 1883",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k56068944",
+      "date": "1883-12-01",
+      "label": "01 décembre 1883",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k5606895j",
+      "date": "1883-12-16",
+      "label": "16 décembre 1883",
+      "pageCount": 22
+    },
+    {
+      "ark": "bpt6k5606896z",
+      "date": "1884-01-01",
+      "label": "01 janvier 1884",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k5606897c",
+      "date": "1884-01-16",
+      "label": "16 janvier 1884",
+      "pageCount": 16
+    },
+    {
+      "ark": "bpt6k5606898s",
+      "date": "1884-02-15",
+      "label": "15 février 1884",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k56068996",
+      "date": "1884-03-15",
+      "label": "15 mars 1884",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606900d",
+      "date": "1884-04-15",
+      "label": "15 avril 1884",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606901t",
+      "date": "1884-05-15",
+      "label": "15 mai 1884",
+      "pageCount": 12
+    },
+    {
+      "ark": "bpt6k56069027",
+      "date": "1884-06-15",
+      "label": "15 juin 1884",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k56054271",
+      "date": "1884-07-15",
+      "label": "15 juillet 1884",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606903n",
+      "date": "1884-08-16",
+      "label": "16 août 1884",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k56069591",
+      "date": "1884-09-15",
+      "label": "15 septembre 1884",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k56069042",
+      "date": "1884-10-15",
+      "label": "15 octobre 1884",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606905g",
+      "date": "1884-11-15",
+      "label": "15 novembre 1884",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606906w",
+      "date": "1884-12-15",
+      "label": "15 décembre 1884",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k56069079",
+      "date": "1885-01-15",
+      "label": "15 janvier 1885",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606908q",
+      "date": "1885-02-15",
+      "label": "15 février 1885",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k56069094",
+      "date": "1885-03-15",
+      "label": "15 mars 1885",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606910s",
+      "date": "1885-04-15",
+      "label": "15 avril 1885",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k56069116",
+      "date": "1885-05-15",
+      "label": "15 mai 1885",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606912m",
+      "date": "1885-06-15",
+      "label": "15 juin 1885",
+      "pageCount": 10
+    },
+    {
+      "ark": "bpt6k56069131",
+      "date": "1885-07-15",
+      "label": "15 juillet 1885",
+      "pageCount": 6
+    },
+    {
+      "ark": "bpt6k5606914f",
+      "date": "1885-08-15",
+      "label": "15 août 1885",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k5606915v",
+      "date": "1885-09-15",
+      "label": "15 septembre 1885",
+      "pageCount": 8
+    },
+    {
+      "ark": "bpt6k56069168",
+      "date": "1885-10-15",
+      "label": "15 octobre 1885",
+      "pageCount": 10
+    }
+  ]
+}
