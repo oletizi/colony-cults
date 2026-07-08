@@ -239,3 +239,30 @@ Milestone 2 acquisition work on `PB-P001`.
 ### Notes
 
 This is a useful governance test: the repo now preserves not just a rights conclusion, but the distinction between host-specific evidence levels.
+
+## 2026-07-07 - La Nouvelle France minimum coverage picture improved
+
+### Summary
+
+Moved `PB-P001` from vague access notes toward a minimum verified holdings picture.
+
+### Completed
+
+- Recorded that SLQ explicitly shows `Volume 1` issues `1-10`.
+- Recorded that SLQ also shows `Volume 2` examples from issues `13`, `20`, and `21`.
+- Recorded search-visible Gallica issue pages for `1879-07-15`, `1879-12-15`, and `1881-08-15`.
+- Recorded an external catalogue note that mentions a `15 June 1879` specimen issue and `No. 1` beginning in July 1879.
+
+### Current focus
+
+Milestone 2 acquisition work on `PB-P001`.
+
+### Next actions
+
+- Turn the minimum verified coverage into an exact issue census.
+- Keep Gallica as the leading mirror-rights candidate.
+- Use SLQ as a coverage comparator until item-level reuse terms are clearer.
+
+### Notes
+
+The repo now distinguishes between a complete holdings claim, which we do not yet have, and a minimum verified span, which we do.
