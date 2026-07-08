@@ -29,5 +29,6 @@ Reusable TypeScript/tsx tool to fetch Gallica public-domain sources via document
 
 ## impl:feature/source-translation
 - status: planned
+- design: docs/superpowers/specs/2026-07-08-source-translation-design.md
 - depends-on: impl:feature/gallica-fetcher
 Mechanism to translate captured public-domain French sources (OCR text from the gallica-fetcher archive) to English for the research archive: machine-assisted translation retaining the original-language citation, labelled machine-assisted, with engine + date provenance, per AGENTS.md translation policy. First input: La Nouvelle France issue.txt OCR (PB-P001, public domain -> full translation committable).
