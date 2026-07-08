@@ -1,4 +1,4 @@
-import { realpathSync } from 'node:fs';
+import { existsSync, readdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 
 /** Fixed sibling directory name of the private archive (FR-006). */
@@ -8,7 +8,7 @@ const ARCHIVE_DIR_NAME = 'colony-cults-archive';
  * The archive-relative layout for a source. There is no fallback: an unknown
  * source ID throws (the layout is authoritative metadata, not a default).
  */
-interface SourceLayout {
+export interface SourceLayout {
   /** Case folder, e.g. `port-breton`. */
   case: string;
   /** Material-type folder, e.g. `newspapers`. */
@@ -29,6 +29,21 @@ const SOURCE_LAYOUTS: Readonly<Record<string, SourceLayout>> = {
     slug: 'la-nouvelle-france',
   },
 };
+
+/**
+ * Resolve the archive layout (case / type / slug) for a source ID, failing
+ * loud for an unregistered source -- the layout is authoritative metadata, not
+ * a default. Shared by {@link issueDir} and the provenance layer.
+ */
+export function sourceLayout(sourceId: string): SourceLayout {
+  const layout = SOURCE_LAYOUTS[sourceId];
+  if (layout === undefined) {
+    throw new Error(
+      `sourceLayout: no archive layout registered for source "${sourceId}"`,
+    );
+  }
+  return layout;
+}
 
 /** Minimal issue shape needed to name its directory. */
 export interface IssueLocation {
@@ -60,12 +75,7 @@ export function issueDir(
   issue: IssueLocation,
   archiveRoot: string,
 ): string {
-  const layout = SOURCE_LAYOUTS[sourceId];
-  if (layout === undefined) {
-    throw new Error(
-      `issueDir: no archive layout registered for source "${sourceId}"`,
-    );
-  }
+  const layout = sourceLayout(sourceId);
   if (issue.ark.trim().length === 0 || issue.date.trim().length === 0) {
     throw new Error(
       `issueDir: issue ark and date are required (got ark="${issue.ark}", date="${issue.date}")`,
@@ -80,6 +90,46 @@ export function issueDir(
     layout.slug,
     `${issue.date}_${issue.ark}`,
   );
+}
+
+/**
+ * Locate an already-fetched issue's directory purely from what is on disk:
+ * the reverse of {@link issueDir}, used by the `ocr` command (T031) so it
+ * never needs the issue's date (no census lookup, no network) -- it just
+ * finds the one entry under the source's directory whose name ends with
+ * `_<bareArk>`. Throws (fail loud) when the source has nothing fetched yet,
+ * or when no directory matches the ark -- OCR only ever operates on images
+ * that already exist.
+ */
+export function findIssueDir(
+  sourceId: string,
+  issueArk: string,
+  archiveRoot: string,
+): string {
+  const layout = sourceLayout(sourceId);
+  const bareArk = issueArk.trim().replace(/^ark:\/12148\//, '');
+  const sourceDir = path.join(
+    archiveRoot,
+    'archive',
+    'cases',
+    layout.case,
+    layout.type,
+    layout.slug,
+  );
+  if (!existsSync(sourceDir)) {
+    throw new Error(
+      `findIssueDir: no fetched issues found for source "${sourceId}" ` +
+        `(missing ${sourceDir}) -- run fetch-issue/fetch-source first`,
+    );
+  }
+  const match = readdirSync(sourceDir).find((name) => name.endsWith(`_${bareArk}`));
+  if (match === undefined) {
+    throw new Error(
+      `findIssueDir: no fetched issue directory found for ark "${bareArk}" ` +
+        `under ${sourceDir} -- fetch its images first`,
+    );
+  }
+  return path.join(sourceDir, match);
 }
 
 /**

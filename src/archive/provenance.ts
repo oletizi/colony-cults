@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 /**
@@ -117,4 +117,129 @@ export async function writeProvenance(
 ): Promise<void> {
   await mkdir(path.dirname(yamlPath), { recursive: true });
   await writeFile(yamlPath, serializeProvenance(fields), 'utf-8');
+}
+
+/** Reverse of {@link quotedScalar}: unescape a double-quoted YAML scalar body. */
+function unquoteScalar(raw: string): string {
+  let result = '';
+  for (let i = 0; i < raw.length; i += 1) {
+    const ch = raw[i];
+    const next = raw[i + 1];
+    if (ch === '\\' && next === '\\') {
+      result += '\\';
+      i += 1;
+    } else if (ch === '\\' && next === '"') {
+      result += '"';
+      i += 1;
+    } else if (ch === '\\' && next === 't') {
+      result += '\t';
+      i += 1;
+    } else {
+      result += ch;
+    }
+  }
+  return result;
+}
+
+/** Read one required field out of the raw parsed map, failing loud if absent. */
+function requireField(raw: Map<string, string | null>, key: string): string {
+  const value = raw.get(key);
+  if (value === undefined || value === null) {
+    throw new Error(`parseProvenance: missing required field "${key}"`);
+  }
+  return value;
+}
+
+/**
+ * Parse the fixed-format companion YAML this module writes back into raw
+ * `key -> value` pairs. This is a round-trip reader for OUR OWN deterministic
+ * serialization (see {@link serializeProvenance}) -- not a general YAML
+ * parser -- so it only needs to understand the three shapes `emitField`
+ * produces: `key: null`, `key: "quoted scalar"`, and `key: |2` block scalars.
+ */
+function parseRawFields(text: string): Map<string, string | null> {
+  const lines = text.split('\n');
+  const raw = new Map<string, string | null>();
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.length === 0) {
+      i += 1;
+      continue;
+    }
+    const header = line.match(/^([a-zA-Z0-9_]+):\s?(.*)$/);
+    if (!header) {
+      i += 1;
+      continue;
+    }
+    const [, key, rest] = header;
+    if (rest === 'null') {
+      raw.set(key, null);
+      i += 1;
+    } else if (rest === '|2') {
+      const blockLines: string[] = [];
+      i += 1;
+      while (i < lines.length) {
+        const blockLine = lines[i];
+        if (blockLine.length === 0) {
+          blockLines.push('');
+          i += 1;
+          continue;
+        }
+        if (blockLine.startsWith('  ')) {
+          blockLines.push(blockLine.slice(2));
+          i += 1;
+          continue;
+        }
+        break;
+      }
+      // The trailing newline of the file yields one spurious empty element
+      // at the very end of the block when it runs to EOF; drop it.
+      if (blockLines.length > 0 && blockLines[blockLines.length - 1] === '') {
+        blockLines.pop();
+      }
+      raw.set(key, blockLines.join('\n'));
+    } else if (rest.startsWith('"') && rest.endsWith('"') && rest.length >= 2) {
+      raw.set(key, unquoteScalar(rest.slice(1, -1)));
+      i += 1;
+    } else {
+      raw.set(key, rest);
+      i += 1;
+    }
+  }
+  return raw;
+}
+
+/**
+ * Parse a companion YAML file's text (as written by {@link writeProvenance})
+ * back into typed {@link ProvenanceFields}. Used by the OCR pipeline to reuse
+ * an already-fetched page's rights/catalog metadata (no re-fetch, no network)
+ * when building the derived PDF/A and text asset provenance (T030).
+ */
+export function parseProvenance(text: string): ProvenanceFields {
+  const raw = parseRawFields(text);
+  return {
+    id: requireField(raw, 'id'),
+    title: requireField(raw, 'title'),
+    type: requireField(raw, 'type'),
+    case: requireField(raw, 'case'),
+    language: requireField(raw, 'language'),
+    source_archive: requireField(raw, 'source_archive'),
+    catalog_url: requireField(raw, 'catalog_url'),
+    original_url: requireField(raw, 'original_url'),
+    rights_status: requireField(raw, 'rights_status'),
+    retrieved: requireField(raw, 'retrieved'),
+    local_path: requireField(raw, 'local_path'),
+    sha256: requireField(raw, 'sha256'),
+    format: requireField(raw, 'format'),
+    ocr_status: requireField(raw, 'ocr_status'),
+    notes: raw.get('notes') ?? null,
+    rights_raw: requireField(raw, 'rights_raw'),
+  };
+}
+
+/** Read and parse a companion YAML file from disk. */
+export async function readProvenance(yamlPath: string): Promise<ProvenanceFields> {
+  const text = await readFile(yamlPath, 'utf-8');
+  return parseProvenance(text);
 }

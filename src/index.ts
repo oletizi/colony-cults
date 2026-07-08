@@ -5,26 +5,16 @@ import { parse } from '@/cli/parse';
 import type { Command, ParsedArgs } from '@/cli/parse';
 import { runCensus } from '@/cli/census';
 import { runFetchIssue, runFetchSource } from '@/cli/fetch';
+import { runOcr } from '@/cli/ocr';
 
 /** A command handler: given the parsed invocation, performs the command. */
 type Handler = (args: ParsedArgs) => Promise<void>;
-
-/**
- * Handlers for census/fetch-issue/fetch-source/ocr are implemented in later
- * tasks. Until then, dispatch fails loud rather than silently doing nothing
- * -- this is intentional, not a fallback.
- */
-function notImplemented(command: Command): Handler {
-  return async () => {
-    throw new Error(`command ${command} not yet implemented`);
-  };
-}
 
 const HANDLERS: Record<Command, Handler> = {
   census: (args) => runCensus(args),
   'fetch-issue': (args) => runFetchIssue(args),
   'fetch-source': (args) => runFetchSource(args),
-  ocr: notImplemented('ocr'),
+  ocr: (args) => runOcr(args),
 };
 
 /** Read this package's version from package.json (no hardcoded duplicate). */

@@ -15,9 +15,12 @@ import { buildCensus } from '@/census/build';
 import { serializeCensus } from '@/census/serialize';
 import { loadCensus } from '@/census/load';
 import { censusPath } from '@/cli/census';
-import { fetchIssue, type FetchClient } from '@/fetch/issue';
+import { fetchIssue, type FetchClient, type FetchIssueResult } from '@/fetch/issue';
 import { estimateIssue } from '@/fetch/estimate';
 import type { Census } from '@/model/census';
+import { assertOcrToolchain } from '@/ocr/preflight';
+import { ocrIssue, defaultOcrCommandRunner } from '@/ocr/run';
+import type { OcrCommandRunner } from '@/ocr/types';
 
 /**
  * Composed client the fetch commands depend on: the rights + pagination + IIIF
@@ -39,6 +42,14 @@ export interface FetchDeps {
   builtAt: string;
   /** Line-oriented output sink (stdout in production). */
   log: (message: string) => void;
+  /**
+   * OCR toolchain preflight (T029/FR-013). Invoked ONLY when `--ocr` is set,
+   * before any fetch work -- an images-only run must never call this
+   * (SC-008). Injected so tests can simulate an absent toolchain.
+   */
+  ocrPreflight: () => Promise<void>;
+  /** Injected OCR command runner (T030), used when `--ocr` wires OCR in. */
+  ocrRunner: OcrCommandRunner;
 }
 
 /** Build the default (real network + disk) dependencies. */
@@ -54,11 +65,13 @@ export function defaultFetchDeps(): FetchDeps {
     log: (message) => {
       console.log(message);
     },
+    ocrPreflight: () => assertOcrToolchain(),
+    ocrRunner: defaultOcrCommandRunner(),
   };
 }
 
 /** Require a named string option, failing loud when absent/blank. */
-function requireOption(
+export function requireOption(
   value: string | undefined,
   name: string,
   command: string,
@@ -178,7 +191,7 @@ async function realFetchIssue(
   issueArk: string,
   date: string,
   flags: ParsedFlags,
-): Promise<void> {
+): Promise<FetchIssueResult> {
   const result = await fetchIssue(issueArk, {
     client: deps.client,
     sourceId,
@@ -195,6 +208,30 @@ async function realFetchIssue(
       `(${formatBytes(result.bytesWritten)}), ` +
       `${result.skippedCount} skipped`,
   );
+  return result;
+}
+
+/**
+ * Run OCR (T030) against a just-fetched issue directory, wired in via
+ * `--ocr` (T031). The preflight (T029) has already run by the time this is
+ * called -- see `runFetchIssue`/`runFetchSource`.
+ */
+async function runOcrForIssue(
+  deps: FetchDeps,
+  issueDirPath: string,
+  flags: ParsedFlags,
+): Promise<void> {
+  const result = await ocrIssue(issueDirPath, {
+    runner: deps.ocrRunner,
+    archiveRoot: deps.archiveRoot,
+    clock: deps.clock,
+    force: flags.force,
+    log: deps.log,
+  });
+  deps.log(
+    `  ocr   ${result.pdf.path} (${result.pdf.skipped ? 'skipped' : 'written'}), ` +
+      `${result.text.path} (${result.text.skipped ? 'skipped' : 'written'})`,
+  );
 }
 
 /**
@@ -208,6 +245,12 @@ export async function runFetchIssue(
   args: ParsedArgs,
   deps: FetchDeps = defaultFetchDeps(),
 ): Promise<void> {
+  // SC-008 / AS2: an OCR-enabled run fails loud BEFORE any work when the
+  // toolchain is missing; an images-only run (no --ocr) never calls this.
+  if (args.flags.ocr) {
+    await deps.ocrPreflight();
+  }
+
   const issueArk = args.positional[0];
   if (issueArk === undefined) {
     throw new Error('fetch-issue: missing required argument <issueArk>');
@@ -234,7 +277,10 @@ export async function runFetchIssue(
     return;
   }
 
-  await realFetchIssue(deps, sourceId, issueArk, date, args.flags);
+  const result = await realFetchIssue(deps, sourceId, issueArk, date, args.flags);
+  if (args.flags.ocr) {
+    await runOcrForIssue(deps, result.dir, args.flags);
+  }
 }
 
 /**
@@ -250,6 +296,12 @@ export async function runFetchSource(
   args: ParsedArgs,
   deps: FetchDeps = defaultFetchDeps(),
 ): Promise<void> {
+  // SC-008 / AS2: fail loud before any work when OCR is requested and the
+  // toolchain is missing; never invoked for an images-only run.
+  if (args.flags.ocr) {
+    await deps.ocrPreflight();
+  }
+
   const periodicalArk = args.positional[0];
   if (periodicalArk === undefined) {
     throw new Error('fetch-source: missing required argument <periodicalArk>');
@@ -281,7 +333,16 @@ export async function runFetchSource(
         estimatedTotal += await dryRunIssue(deps, sourceId, issue.ark, issue.date);
       } else {
         deps.log(`fetch-source: ${issue.ark} (${issue.date})`);
-        await realFetchIssue(deps, sourceId, issue.ark, issue.date, args.flags);
+        const result = await realFetchIssue(
+          deps,
+          sourceId,
+          issue.ark,
+          issue.date,
+          args.flags,
+        );
+        if (args.flags.ocr) {
+          await runOcrForIssue(deps, result.dir, args.flags);
+        }
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
