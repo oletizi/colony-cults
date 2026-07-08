@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
+import { assertValidArk } from '@/gallica/ark';
 
 /** Fixed sibling directory name of the private archive (FR-006). */
 const ARCHIVE_DIR_NAME = 'colony-cults-archive';
@@ -104,6 +105,9 @@ export function issueDir(
       `issueDir: issue ark and date are required (got ark="${issue.ark}", date="${issue.date}")`,
     );
   }
+  // Defense-in-depth: the ark is spliced into the directory name, so reject a
+  // malformed one (path separators, `..`, whitespace) before building a path.
+  assertValidArk(issue.ark.trim());
   return path.join(
     archiveRoot,
     'archive',
@@ -156,7 +160,7 @@ export function findIssueDir(
   archiveRoot: string,
 ): string {
   const layout = sourceLayout(sourceId);
-  const bareArk = issueArk.trim().replace(/^ark:\/12148\//, '');
+  const bareArk = assertValidArk(issueArk.trim().replace(/^ark:\/12148\//, ''));
   const sourceDir = path.join(
     archiveRoot,
     'archive',

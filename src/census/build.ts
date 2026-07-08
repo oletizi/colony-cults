@@ -29,6 +29,19 @@ export async function buildCensus(
 
   const enumeration = await client.issues(periodicalArk);
 
+  // Completeness gate: the Issues service publishes an authoritative
+  // `totalIssues`. If enumeration returned a different count, the census would
+  // be silently incomplete (e.g. a truncated or dropped year), so fail loud
+  // rather than persist a partial census. No fallback, no best-effort.
+  if (enumeration.issues.length !== enumeration.totalIssues) {
+    throw new Error(
+      `buildCensus: incomplete enumeration for periodical "${periodicalArk}" -- ` +
+        `expected ${enumeration.totalIssues} issues (authoritative totalIssues), ` +
+        `got ${enumeration.issues.length} across years ` +
+        `[${enumeration.years.join(', ')}]; refusing to write a partial census`,
+    );
+  }
+
   const issues: CensusIssue[] = [];
   for (const ref of enumeration.issues) {
     const date = normalizeFrenchDate(ref.label);

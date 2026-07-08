@@ -151,4 +151,30 @@ describe('buildCensus', () => {
       buildCensus('cb328261098', fakeClient(), 'PB-P001', '   '),
     ).rejects.toThrow(/builtAt is required/);
   });
+
+  it('THROWS when enumeration is incomplete (fewer issues than totalIssues)', async () => {
+    // The Issues service declares 5 total issues, but enumeration only yielded
+    // 3 -- a silently truncated census. buildCensus must refuse it and name the
+    // ark, the expected total, and the actual count.
+    const incomplete: IssuesEnumeration = {
+      totalIssues: 5,
+      years: ['1879'],
+      issues: [
+        { ark: 'a', label: '15 juillet 1879' },
+        { ark: 'b', label: '15 août 1879' },
+        { ark: 'c', label: '15 septembre 1879' },
+      ],
+    };
+    const client: GallicaClient = {
+      years: () => Promise.resolve({ totalIssues: 5, years: ['1879'] }),
+      issuesForYear: (): Promise<GallicaIssueRef[]> =>
+        Promise.resolve(incomplete.issues),
+      issues: () => Promise.resolve(incomplete),
+      pagination: () => Promise.resolve(8),
+    };
+
+    await expect(
+      buildCensus('cb328261098', client, 'PB-P001', '2026-07-08'),
+    ).rejects.toThrow(/cb328261098[\s\S]*expected 5[\s\S]*(got|actual)\s*3|incomplete/i);
+  });
 });

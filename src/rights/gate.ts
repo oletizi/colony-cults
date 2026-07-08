@@ -12,11 +12,26 @@ const PUBLIC_DOMAIN_VALUES: ReadonlySet<string> = new Set([
   'public domain',
 ]);
 
-/** True when at least one `dc:rights` value asserts the public domain. */
+/** True when `value` is one of the recognized public-domain markers. */
+function isPublicDomainValue(value: string): boolean {
+  return PUBLIC_DOMAIN_VALUES.has(value.trim().toLowerCase());
+}
+
+/**
+ * Fail-closed public-domain determination: true ONLY when there is at least
+ * one recognized public-domain value AND *every* `dc:rights` value present is
+ * a recognized public-domain marker.
+ *
+ * A record carrying BOTH "domaine public" and "in copyright" is therefore
+ * treated as NOT public-domain -- copyright uncertainty must block mirroring,
+ * so any unrecognized/restrictive value poisons the whole determination. An
+ * empty `dc:rights` set is likewise not public-domain (no affirmative marker).
+ */
 function isPublicDomain(dcRights: string[]): boolean {
-  return dcRights.some((value) =>
-    PUBLIC_DOMAIN_VALUES.has(value.trim().toLowerCase()),
-  );
+  if (dcRights.length === 0) {
+    return false;
+  }
+  return dcRights.every(isPublicDomainValue);
 }
 
 /** Render the observed rights values for a descriptive error/refusal. */

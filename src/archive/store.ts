@@ -62,6 +62,23 @@ async function readRecordedSha(yamlPath: string): Promise<string | null> {
   return match ? match[1] : null;
 }
 
+/** Read `manifests/MANIFEST.sha256` into a `relPath -> sha256` map. */
+async function readManifestEntries(
+  manifestPath: string,
+): Promise<Map<string, string>> {
+  const entries = new Map<string, string>();
+  if (existsSync(manifestPath)) {
+    const existing = await readFile(manifestPath, 'utf-8');
+    for (const line of existing.split('\n')) {
+      const match = line.match(/^([0-9a-f]{64})\s{2}(.+)$/);
+      if (match) {
+        entries.set(match[2], match[1]);
+      }
+    }
+  }
+  return entries;
+}
+
 /**
  * Insert/replace a `<sha256>  <relPath>` line in the archive's
  * `manifests/MANIFEST.sha256`, keeping the file sorted by path so repeated
@@ -73,17 +90,7 @@ async function updateManifest(
   sha256: string,
 ): Promise<void> {
   const manifestPath = path.join(archiveRoot, MANIFEST_RELATIVE);
-  const entries = new Map<string, string>();
-
-  if (existsSync(manifestPath)) {
-    const existing = await readFile(manifestPath, 'utf-8');
-    for (const line of existing.split('\n')) {
-      const match = line.match(/^([0-9a-f]{64})\s{2}(.+)$/);
-      if (match) {
-        entries.set(match[2], match[1]);
-      }
-    }
-  }
+  const entries = await readManifestEntries(manifestPath);
 
   entries.set(relPath, sha256);
 
@@ -94,6 +101,27 @@ async function updateManifest(
 
   await mkdir(path.dirname(manifestPath), { recursive: true });
   await writeFile(manifestPath, `${body}\n`, 'utf-8');
+}
+
+/**
+ * Ensure the manifest carries the correct `<sha256>  <relPath>` entry for an
+ * asset, adding or repairing it only when it is absent or stale. Used on the
+ * resumable SKIP path so an asset present + recorded on disk but missing from
+ * `manifests/MANIFEST.sha256` (e.g. an interrupted earlier run) is not left
+ * permanently unmanifested. No-op (no rewrite) when the entry already matches,
+ * keeping the manifest deterministic across re-runs.
+ */
+async function ensureManifestEntry(
+  archiveRoot: string,
+  relPath: string,
+  sha256: string,
+): Promise<void> {
+  const manifestPath = path.join(archiveRoot, MANIFEST_RELATIVE);
+  const entries = await readManifestEntries(manifestPath);
+  if (entries.get(relPath) === sha256) {
+    return;
+  }
+  await updateManifest(archiveRoot, relPath, sha256);
 }
 
 /**
@@ -149,6 +177,10 @@ export async function storeAsset(
     if (recorded !== null) {
       const onDisk = await sha256OfFile(targetPath);
       if (onDisk === recorded) {
+        // Integrity repair: even though the bytes are untouched, guarantee the
+        // manifest records this asset before returning -- an asset on disk but
+        // missing from MANIFEST.sha256 would otherwise stay missing forever.
+        await ensureManifestEntry(archiveRoot, relPath, recorded);
         return { path: targetPath, sha256: recorded, skipped: true };
       }
     }

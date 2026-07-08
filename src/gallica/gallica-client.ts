@@ -1,5 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
 import type { HttpClient } from '@/gallica/http-client';
+import { assertValidArk } from '@/gallica/ark';
 import {
   childNumber,
   childRecord,
@@ -119,7 +120,7 @@ function periodicalRoot(periodicalArk: string): string {
       `GallicaClient: empty periodical ark from "${periodicalArk}"`,
     );
   }
-  return root;
+  return assertValidArk(root);
 }
 
 /** Reduce an issue ark to its bare identifier (drops `ark:/12148/`). */
@@ -128,7 +129,7 @@ function issueRoot(issueArk: string): string {
   if (root.length === 0) {
     throw new Error(`GallicaClient: empty issue ark from "${issueArk}"`);
   }
-  return root;
+  return assertValidArk(root);
 }
 
 /** Reject a non-positive or non-integer page ordinal (fail loud, no clamp). */
