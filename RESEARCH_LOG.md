@@ -449,3 +449,28 @@ Tried to push beyond year-level counts into exact per-issue dates through the li
 ### Notes
 
 This is a different class of stop than earlier: the tooling blocker is solved, but the host itself is now the limiting factor.
+
+## 2026-07-08 - Manual check list added for PB-P001
+
+### Summary
+
+Added a repo-local checklist for hand-reviewing the remaining `La Nouvelle France` pages.
+
+### Completed
+
+- Added `notes/la-nouvelle-france-hand-check-list.md`.
+- Captured the Gallica, SLQ, and comparator URLs most worth checking manually.
+- Structured the list around concrete verification tasks rather than open-ended browsing.
+
+### Current focus
+
+`PB-P001` remains ready for manual browser follow-up if needed.
+
+### Next actions
+
+- Use the checklist during any future manual review session.
+- Record any hand-confirmed issue dates or rights statements back into `notes/la-nouvelle-france.md`.
+
+### Notes
+
+The checklist is meant to reduce repeated orientation work when the remaining gaps are best handled by a human browser pass.
