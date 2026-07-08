@@ -34,12 +34,13 @@ Current minimum coverage picture:
 
 - SLQ blog evidence explicitly shows `Volume 1` material from issues `1-10`.
 - The same SLQ post also shows `Volume 2` examples from issues `13`, `20`, and `21`.
-- Search-visible Gallica issue pages confirm at least `1879-07-15`, `1879-12-15`, and `1881-08-15`.
+- Search-visible Gallica issue pages confirm at least `1879-07-15`, `1879-11-15`, `1879-12-15`, and `1881-08-15`.
 - An external catalogue record at the National Library of New Zealand notes an introductory `No. specimen` dated `15 June 1879` and `No. 1` starting in July 1879.
 
 Verified Gallica issue endpoints now captured:
 
 - `1879-07-15`: `ark:/12148/bpt6k5603637g`
+- `1879-11-15`: `ark:/12148/bpt6k5606843t`
 - `1879-12-15`: `ark:/12148/bpt6k56068447`
 - `1881-08-15`: `ark:/12148/bpt6k56068536`
 
@@ -74,6 +75,7 @@ Relevant rights guidance now captured:
 - The paper was used as a propaganda and recruitment vehicle for the colony.
 - State Library of Queensland describes its holding as two bound volumes covering 1879-1881.
 - Verified issue-date evidence shows Gallica access reaching at least August 1881.
+- Verified issue-date evidence now includes multiple 1879 anchors plus August 1881.
 
 ## Quotations
 

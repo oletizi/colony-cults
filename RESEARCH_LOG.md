@@ -291,3 +291,27 @@ Milestone 2 acquisition work on `PB-P001`.
 ### Notes
 
 Stable issue endpoints make the next pass cheaper: we can now add to a growing census instead of restarting discovery from the title level each time.
+
+## 2026-07-07 - Additional 1879 Gallica issue confirmed
+
+### Summary
+
+Added another late-1879 Gallica issue endpoint to the growing verified census.
+
+### Completed
+
+- Confirmed and recorded `1879-11-15` as `ark:/12148/bpt6k5606843t`.
+- Updated the tracker and source note so the verified issue list now has four concrete Gallica anchors.
+
+### Current focus
+
+Milestone 2 acquisition work on `PB-P001`.
+
+### Next actions
+
+- Keep extending the verified issue list between November 1879 and August 1881.
+- Use the denser 1879 cluster to test whether Gallica's run is monthly, near-monthly, or incomplete.
+
+### Notes
+
+Even one additional verified issue matters here because it starts to reveal the cadence of surviving online fascicles.
