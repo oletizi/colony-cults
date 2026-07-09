@@ -17,7 +17,7 @@
 - Tests: vitest; every engine call is dependency-injected so no test invokes a real `claude`/`codex`. Run with `npx vitest run`.
 - Typecheck: `npx tsc --noEmit` must be clean.
 - Commit per task; do not bypass hooks; branch is `002-source-translation`.
-- Default engine stays `claude`; default models: claude → `claude-opus-4-8`, codex → `gpt-5-codex`.
+- Default engine stays `claude`; default models: claude → `claude-opus-4-8`, codex → `gpt-5.5`.
 
 ---
 
@@ -390,7 +390,7 @@ git commit -m "feat(002): codex preflight (PATH + version probe, fail loud)"
 **Interfaces:**
 - Produces:
   - `interface EngineConfig { engine?: EngineName; models?: { claude?: string; codex?: string } }`
-  - `DEFAULT_ENGINE: EngineName = 'claude'`; `DEFAULT_MODELS: Record<EngineName, string> = { claude: 'claude-opus-4-8', codex: 'gpt-5-codex' }`
+  - `DEFAULT_ENGINE: EngineName = 'claude'`; `DEFAULT_MODELS: Record<EngineName, string> = { claude: 'claude-opus-4-8', codex: 'gpt-5.5' }`
   - `resolveEngine(flag: string | undefined, config: EngineConfig): EngineName` (flag ▸ config ▸ default; unknown flag throws)
   - `resolveModel(flag: string | undefined, engine: EngineName, config: EngineConfig): string` (flag ▸ config.models[engine] ▸ DEFAULT_MODELS[engine])
   - `loadEngineConfig(repoRoot: string): Promise<EngineConfig>` (reads `translate.config.json`; absent → `{}`; malformed → throw)
@@ -440,7 +440,7 @@ export interface EngineConfig {
 export const DEFAULT_ENGINE: EngineName = 'claude';
 export const DEFAULT_MODELS: Record<EngineName, string> = {
   claude: 'claude-opus-4-8',
-  codex: 'gpt-5-codex',
+  codex: 'gpt-5.5',
 };
 
 const ENGINES: readonly EngineName[] = ['claude', 'codex'];
@@ -701,7 +701,7 @@ Pick one untranslated issue. Run `translateIssue` (or the CLI with `--engine cod
 
 If the operator wants codex as the default without passing the flag each time, write `translate.config.json`:
 ```json
-{ "engine": "codex", "models": { "codex": "gpt-5-codex" } }
+{ "engine": "codex", "models": { "codex": "gpt-5.5" } }
 ```
 Otherwise pass `--engine codex` to the driver.
 

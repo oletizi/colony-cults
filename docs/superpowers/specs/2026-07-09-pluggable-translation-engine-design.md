@@ -158,3 +158,12 @@ needed real-CLI hardening). Therefore, before any rollout:
 - `--ignore-user-config --ignore-rules -s read-only` suppresses agentic
   narration/side effects for a pure text-transform prompt.
 - The operator is authenticated for `codex` (`codex login`).
+
+## Codex invocation (confirmed — Task 1 spike, 2026-07-09)
+
+Empirically characterized against codex-cli 0.141.0 on a real 2664-char OCR page:
+
+- **Recipe:** `codex exec "<systemPrompt folded>\n\n<instruction>" -m <model> -s read-only --ignore-user-config --ignore-rules --skip-git-repo-check --ephemeral -o <tmpfile>`, source text on stdin (codex appends it as a `<stdin>` block); read the clean final message from `<tmpfile>` (stdout carries chrome — banner, token count — the `-o` file does not).
+- **Output quality:** clean (no preamble/agentic leakage), faithful, complete (ratio ~0.96 of source length), deterministic across runs. No truncation observed. The `runFaithfulTransformation` guard is retained as engine-agnostic insurance.
+- **Isolation:** `--ignore-user-config --ignore-rules -s read-only --ephemeral` is codex's analog to the claude isolation flags — no config/rules/skills, no side effects.
+- **Model on a ChatGPT-account login:** `gpt-5-codex` and `gpt-5` return HTTP 400 "not supported when using Codex with a ChatGPT account". **`gpt-5.5` works** and is pinnable via `-m`. Therefore the codex default model is **`gpt-5.5`** (revises the earlier `gpt-5-codex` placeholder). An unsupported pinned model 400s → the adapter throws (fail loud, no fallback). `--ignore-user-config` means codex's built-in default (`gpt-5.5`) is used when `-m` is omitted, not `~/.codex/config.toml`'s value.
