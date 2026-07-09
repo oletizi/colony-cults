@@ -37,6 +37,7 @@ Move the archive's binary image masters from git to Backblaze B2 (S3-compatible;
 
 ## impl:feature/canonical-source-metadata
 - status: planned
+- spec: specs/004-canonical-source-metadata
 - design-approved: yes
 - depends-on: impl:feature/archive-object-store
 - design: docs/superpowers/specs/2026-07-08-canonical-source-metadata-design.md
