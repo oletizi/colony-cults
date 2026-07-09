@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { runFetchIssue } from '@/cli/fetch-issue';
 import { runFetchSource } from '@/cli/fetch-source';
 import type { FetchCliClient, FetchDeps } from '@/cli/fetch-shared';
-import type { IssueCheckpoint } from '@/cli/archive-checkpoint';
+import type { IssueCheckpoint, PageStored } from '@/cli/archive-checkpoint';
 import type { ParsedArgs } from '@/cli/parse';
 import type {
   YearIndex,
@@ -262,6 +262,94 @@ describe('FetchDeps.onIssueComplete checkpoint hook (fetch-source monograph)', (
   it('is never invoked when onIssueComplete is undefined (checkpointing off)', async () => {
     const d = deps();
     d.onIssueComplete = undefined;
+    await expect(runFetchSource(monographArgs(), d)).resolves.toBeUndefined();
+  });
+});
+
+/**
+ * `FetchDeps.onPageStored` (page-level checkpointing): proves the shared
+ * per-page pipeline (`fetchDocumentPages` in `src/fetch/issue.ts`) fires this
+ * hook once per page for a MONOGRAPH document, with the correct `PageStored`
+ * fields, and never on `--dry-run`/`--verify`. A fake client + a SPY hook --
+ * no real git, no real commit adapter (that is `defaultFetchDeps`'s job, not
+ * the fetch core's).
+ */
+describe('FetchDeps.onPageStored per-page hook (fetch-source monograph)', () => {
+  let repoRoot: string;
+  let archiveRoot: string;
+  let pageCalls: PageStored[];
+
+  beforeEach(() => {
+    repoRoot = mkdtempSync(path.join(tmpdir(), 'cc-page-hook-repo-'));
+    archiveRoot = mkdtempSync(path.join(tmpdir(), 'cc-page-hook-archive-'));
+    pageCalls = [];
+  });
+
+  afterEach(() => {
+    rmSync(repoRoot, { recursive: true, force: true });
+    rmSync(archiveRoot, { recursive: true, force: true });
+  });
+
+  function deps(): FetchDeps {
+    return {
+      client: fakeCliClient(),
+      repoRoot,
+      archiveRoot,
+      clock: () => new Date('2026-07-08T00:00:00.000Z'),
+      builtAt: '2026-07-08',
+      log: () => {
+        /* no-op */
+      },
+      ocrPreflight: async () => {
+        throw new Error('page-hook test: ocrPreflight must not be called');
+      },
+      ocrRunner: {
+        run: async () => {
+          throw new Error('page-hook test: ocrRunner must not be called');
+        },
+      },
+      onPageStored: async (stored) => {
+        pageCalls.push(stored);
+      },
+    };
+  }
+
+  const expectedDir = () =>
+    path.join(
+      archiveRoot,
+      'archive/cases/port-breton/books',
+      'nouvelle-france-colonie-libre-port-breton',
+    );
+
+  it('fires once per page, in order, with correct page/pageCount/skipped', async () => {
+    await runFetchSource(monographArgs(), deps());
+
+    expect(pageCalls).toHaveLength(PAGE_COUNT);
+    for (let i = 0; i < PAGE_COUNT; i += 1) {
+      expect(pageCalls[i]).toEqual({
+        sourceId: MONOGRAPH_SOURCE_ID,
+        ark: MONOGRAPH_DOCUMENT_ARK,
+        dir: expectedDir(),
+        page: i + 1,
+        pageCount: PAGE_COUNT,
+        skipped: false,
+      });
+    }
+  });
+
+  it('does not fire on monograph --dry-run', async () => {
+    await runFetchSource(monographArgs({ dryRun: true }), deps());
+    expect(pageCalls).toHaveLength(0);
+  });
+
+  it('does not fire on monograph --verify', async () => {
+    await runFetchSource(monographArgs({ verify: true }), deps());
+    expect(pageCalls).toHaveLength(0);
+  });
+
+  it('is never invoked when onPageStored is undefined', async () => {
+    const d = deps();
+    d.onPageStored = undefined;
     await expect(runFetchSource(monographArgs(), d)).resolves.toBeUndefined();
   });
 });

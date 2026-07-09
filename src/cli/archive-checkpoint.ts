@@ -38,6 +38,39 @@ export interface IssueCheckpoint {
   written: number;
   /** Pages skipped (already recorded). */
   skipped: number;
+  /**
+   * Page-cadence progress (MONOGRAPH page-level checkpointing only, see
+   * `--checkpoint-every`): the page number reached when this intermediate
+   * checkpoint fired. When present, the commit message appends a
+   * `through page <page>/<pageCount>` segment so consecutive per-page
+   * commits for the same document are distinguishable from one another.
+   * Absent for a per-issue (periodical) checkpoint and for a monograph's
+   * final end-of-document flush, whose message is unchanged from before.
+   */
+  page?: number;
+}
+
+/**
+ * Fired once per page by the shared per-page fetch pipeline
+ * (`fetchDocumentPages` in `src/fetch/issue.ts`), for BOTH the write and the
+ * skip branch, so a resumed run still checkpoints. Defined here (not in the
+ * fetch core) so the core can depend on the TYPE without depending on git --
+ * a `import type` of this interface is fully erased at compile time, so
+ * `src/fetch/issue.ts` never pulls in this module's `git` runtime code.
+ */
+export interface PageStored {
+  /** Colony Cults source ID, e.g. `PB-P002`. */
+  sourceId: string;
+  /** The (bare) issue or document ark. */
+  ark: string;
+  /** Absolute directory the page was written into. */
+  dir: string;
+  /** 1-based page ordinal just stored. */
+  page: number;
+  /** Total page count for the document. */
+  pageCount: number;
+  /** True when this page was skipped (already recorded), not freshly stored. */
+  skipped: boolean;
 }
 
 /** Outcome of one `git` invocation: never throws, always resolves. */
@@ -132,11 +165,16 @@ export async function commitAndPushIssueCheckpoint(
   // A periodical issue carries a date (`archive(<id>): <date> <ark> — ...`);
   // a monograph document has none, so its message drops that segment
   // entirely (`archive(<id>): <ark> — ...`) rather than inventing a stand-in.
+  // An intermediate monograph page-cadence checkpoint additionally carries
+  // `c.page` (see `IssueCheckpoint.page`), appended as a distinguishing
+  // "through page N/M" segment; absent for every other caller, so their
+  // message shape is unchanged from before.
+  const progress = c.page === undefined ? '' : ` (through page ${c.page}/${c.pageCount})`;
   const message =
     c.date === undefined
-      ? `archive(${c.sourceId}): ${c.ark} — ${c.written} new, ${c.skipped} skipped`
+      ? `archive(${c.sourceId}): ${c.ark} — ${c.written} new, ${c.skipped} skipped${progress}`
       : `archive(${c.sourceId}): ${c.date} ${c.ark} — ` +
-        `${c.written} new, ${c.skipped} skipped`;
+        `${c.written} new, ${c.skipped} skipped${progress}`;
   await git(['commit', '-m', message], archiveRoot, 'committing issue checkpoint');
 
   if (!opts.push) {

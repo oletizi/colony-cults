@@ -16,6 +16,10 @@ import {
 import type { ObjectStore } from '@/archive/object-store';
 import type { ProvenanceFields } from '@/archive/provenance';
 import type { Rights } from '@/model/rights';
+// Type-only: erased at compile time, so this never pulls the git-invoking
+// runtime code of `@/cli/archive-checkpoint` into the fetch core -- only the
+// `PageStored` SHAPE is shared (see that module for why it lives there).
+import type { PageStored } from '@/cli/archive-checkpoint';
 
 /**
  * Coordinates recorded in provenance's `object_store` block when a page-image
@@ -63,6 +67,13 @@ export interface FetchIssueContext {
   objectStore?: ObjectStore;
   /** Coordinates recorded in provenance; meaningful only with {@link objectStore}. */
   objectStoreCoords?: ObjectStoreCoords;
+  /**
+   * Optional per-page hook (T0xx, page-level checkpointing), invoked once per
+   * page AFTER it is stored -- both the write and the skip branch. The fetch
+   * core never acts on this beyond invoking it; only the CLI orchestration
+   * layer (`src/cli/fetch-shared.ts`) wires a git-touching implementation in.
+   */
+  onPageStored?: (p: PageStored) => Promise<void>;
 }
 
 /**
@@ -92,6 +103,12 @@ export interface FetchMonographContext {
   objectStore?: ObjectStore;
   /** Coordinates recorded in provenance; meaningful only with {@link objectStore}. */
   objectStoreCoords?: ObjectStoreCoords;
+  /**
+   * Optional per-page hook (T0xx, page-level checkpointing), invoked once per
+   * page AFTER it is stored -- both the write and the skip branch. See the
+   * matching field on {@link FetchIssueContext}.
+   */
+  onPageStored?: (p: PageStored) => Promise<void>;
 }
 
 /** Per-document (issue or monograph) fetch outcome. */
@@ -124,6 +141,7 @@ interface DocumentFetchContext {
   log?: (message: string) => void;
   objectStore?: ObjectStore;
   objectStoreCoords?: ObjectStoreCoords;
+  onPageStored?: (p: PageStored) => Promise<void>;
 }
 
 /** Zero-padded page ordinal for the `f<NNN>.jpg` asset name. */
@@ -198,6 +216,14 @@ async function fetchDocumentPages(
       pages.push({ path: targetPath, sha256: '', skipped: true });
       skippedCount += 1;
       ctx.log?.(`  skip  ${pageFileName(page)} (already recorded)`);
+      await ctx.onPageStored?.({
+        sourceId: ctx.sourceId,
+        ark: documentArk,
+        dir: ctx.dir,
+        page,
+        pageCount,
+        skipped: true,
+      });
       continue;
     }
 
@@ -271,6 +297,15 @@ async function fetchDocumentPages(
         `  upload ${pageFileName(page)} (${bytes.byteLength} bytes from local cache)`,
       );
     }
+
+    await ctx.onPageStored?.({
+      sourceId: ctx.sourceId,
+      ark: documentArk,
+      dir: ctx.dir,
+      page,
+      pageCount,
+      skipped: result.skipped,
+    });
   }
 
   return {

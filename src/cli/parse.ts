@@ -14,6 +14,26 @@ function isCommand(value: string): value is Command {
   return (COMMANDS as readonly string[]).includes(value);
 }
 
+/**
+ * Parse `--checkpoint-every`'s raw string value into a positive integer.
+ * `undefined` (flag absent) passes through unchanged -- the default (1,
+ * every page) is a use-site decision, not something invented here. Any
+ * other non-positive-integer value throws a descriptive Error (no silent
+ * fallback to a default).
+ */
+function parseCheckpointEvery(raw: string | undefined): number | undefined {
+  if (raw === undefined) {
+    return undefined;
+  }
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) {
+    throw new Error(
+      `gallica: --checkpoint-every must be a positive integer (got "${raw}")`,
+    );
+  }
+  return n;
+}
+
 /** Name of each command's required positional, used in error messages. */
 const REQUIRED_POSITIONAL_NAME: Record<Command, string> = {
   census: 'periodicalArk',
@@ -64,6 +84,14 @@ export interface ParsedOptions {
    * (`COLONY_ARCHIVE_ROOT` env, then the fixed sibling clone) is unchanged.
    */
   archiveRoot?: string;
+  /**
+   * Page-checkpoint cadence for a MONOGRAPH fetch (`--checkpoint-every <N>`):
+   * commit+push every `N` pages instead of every page. Only meaningful
+   * together with `--checkpoint`; a periodical source ignores it (its
+   * checkpoint stays per-issue). Absent -> the use-site default is 1 (every
+   * page); `N` must be a positive integer, else `parse` throws.
+   */
+  checkpointEvery?: number;
 }
 
 /** Result of parsing argv into a single command invocation. */
@@ -97,6 +125,7 @@ export function parse(argv: string[]): ParsedArgs {
       'source-id': { type: 'string' },
       slug: { type: 'string' },
       'archive-root': { type: 'string' },
+      'checkpoint-every': { type: 'string' },
     },
     allowPositionals: true,
     strict: true,
@@ -137,6 +166,7 @@ export function parse(argv: string[]): ParsedArgs {
       sourceId: values['source-id'],
       slug: values.slug,
       archiveRoot: values['archive-root'],
+      checkpointEvery: parseCheckpointEvery(values['checkpoint-every']),
     },
   };
 }

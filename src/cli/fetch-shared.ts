@@ -12,6 +12,7 @@ import { S3ObjectStore } from '@/archive/s3-object-store';
 import {
   commitAndPushIssueCheckpoint,
   type IssueCheckpoint,
+  type PageStored,
 } from '@/cli/archive-checkpoint';
 import { resolveRights } from '@/rights/gate';
 import {
@@ -83,6 +84,15 @@ export interface FetchDeps {
    * {@link commitAndPushIssueCheckpoint}, the only place `git` is invoked.
    */
   onIssueComplete?: (checkpoint: IssueCheckpoint) => Promise<void>;
+  /**
+   * Per-page checkpoint hook, opt-in via `--checkpoint` (MONOGRAPH sources
+   * only -- a periodical's issues are already bounded by `onIssueComplete`,
+   * so this stays undefined for them). Threaded straight through to the
+   * fetch core's `DocumentFetchContext` (`src/fetch/issue.ts`), which never
+   * imports git; only {@link defaultFetchDeps} wires a git-touching
+   * implementation in, via {@link buildMonographPageCheckpointHook}.
+   */
+  onPageStored?: (p: PageStored) => Promise<void>;
 }
 
 /**
@@ -94,6 +104,78 @@ export interface FetchDeps {
  */
 const IMAGE_FETCH_CONCURRENCY = 1;
 const IMAGE_FETCH_MIN_INTERVAL_MS = 2000;
+
+/**
+ * Shape of {@link commitAndPushIssueCheckpoint}, injected into {@link
+ * buildMonographPageCheckpointHook} so the page-cadence logic itself can be
+ * unit tested with a fake commit function -- no real git required.
+ */
+export type CommitCheckpointFn = (
+  archiveRoot: string,
+  checkpoint: IssueCheckpoint,
+  opts: { push: boolean },
+) => Promise<void>;
+
+/**
+ * Build a STATEFUL per-page checkpoint hook for a MONOGRAPH fetch
+ * (`--checkpoint` + `--checkpoint-every <N>`): commits+pushes (via `commit`)
+ * every `checkpointEvery` pages, closing over running written/skipped
+ * counters so each checkpoint's commit message reflects only the pages
+ * stored since the LAST checkpoint (or document start).
+ *
+ * This state is scoped to ONE closure instance -- callers must build a fresh
+ * hook per fetch invocation (never share one across documents/runs); {@link
+ * defaultFetchDeps} does exactly this, once per `defaultFetchDeps` call.
+ *
+ * A periodical issue never uses this -- it stays bounded by the existing
+ * per-issue `onIssueComplete` hook; only a monograph document (unbounded
+ * page count) needs page-level cadence.
+ */
+export function buildMonographPageCheckpointHook(
+  archiveRoot: string,
+  checkpointEvery: number,
+  commit: CommitCheckpointFn,
+): (stored: PageStored) => Promise<void> {
+  if (!Number.isInteger(checkpointEvery) || checkpointEvery < 1) {
+    throw new Error(
+      `buildMonographPageCheckpointHook: checkpointEvery must be a positive ` +
+        `integer (got ${checkpointEvery})`,
+    );
+  }
+
+  let pagesSinceCheckpoint = 0;
+  let writtenSinceCheckpoint = 0;
+  let skippedSinceCheckpoint = 0;
+
+  return async (stored: PageStored): Promise<void> => {
+    if (stored.skipped) {
+      skippedSinceCheckpoint += 1;
+    } else {
+      writtenSinceCheckpoint += 1;
+    }
+    pagesSinceCheckpoint += 1;
+
+    if (pagesSinceCheckpoint < checkpointEvery) {
+      return;
+    }
+
+    const checkpoint: IssueCheckpoint = {
+      sourceId: stored.sourceId,
+      ark: stored.ark,
+      dir: stored.dir,
+      pageCount: stored.pageCount,
+      written: writtenSinceCheckpoint,
+      skipped: skippedSinceCheckpoint,
+      page: stored.page,
+    };
+
+    pagesSinceCheckpoint = 0;
+    writtenSinceCheckpoint = 0;
+    skippedSinceCheckpoint = 0;
+
+    await commit(archiveRoot, checkpoint, { push: true });
+  };
+}
 
 /**
  * Build the default (real network + disk) dependencies.
@@ -130,11 +212,35 @@ export function defaultFetchDeps(args: ParsedArgs): FetchDeps {
   // `--checkpoint` (operator's design): commit AND push after every issue.
   // Absent/false leaves `onIssueComplete` undefined, so tests/dry-runs never
   // touch git -- checkpointing is opt-in and this is the ONLY place the git
-  // adapter (`@/cli/archive-checkpoint`) is constructed.
+  // adapter (`@/cli/archive-checkpoint`) is constructed. This same hook also
+  // serves as a monograph's FINAL FLUSH: `runFetchSourceMonograph` calls it
+  // once at document end with the full document totals, so any pages stored
+  // since the last page-cadence checkpoint (below) are committed too -- a
+  // clean no-op if the last page-cadence checkpoint already covers them.
   const onIssueComplete: FetchDeps['onIssueComplete'] = args.flags.checkpoint
     ? (checkpoint) =>
         commitAndPushIssueCheckpoint(archiveRoot, checkpoint, { push: true })
     : undefined;
+
+  // Page-level cadence (`--checkpoint-every <N>`, default 1) applies ONLY to
+  // a MONOGRAPH source -- a periodical's issues are already bounded, so they
+  // keep the per-issue-only behavior above (`onPageStored` stays undefined).
+  // `args.options.sourceId` may be absent/unregistered at this point for
+  // commands that do not need it; that is caught later by `requireOption`/
+  // `sourceLayout`, so it is treated as "not a monograph" here rather than
+  // thrown on -- this function must stay side-effect-free on that path.
+  let onPageStored: FetchDeps['onPageStored'];
+  if (args.flags.checkpoint && args.options.sourceId !== undefined) {
+    const isMonograph = sourceLayout(args.options.sourceId).kind === 'monograph';
+    if (isMonograph) {
+      const checkpointEvery = args.options.checkpointEvery ?? 1;
+      onPageStored = buildMonographPageCheckpointHook(
+        archiveRoot,
+        checkpointEvery,
+        commitAndPushIssueCheckpoint,
+      );
+    }
+  }
 
   return {
     client: new GallicaHttpClient(http),
@@ -150,6 +256,7 @@ export function defaultFetchDeps(args: ParsedArgs): FetchDeps {
     objectStore,
     objectStoreCoords,
     onIssueComplete,
+    onPageStored,
   };
 }
 
@@ -239,6 +346,7 @@ export async function realFetchIssue(
     log: deps.log,
     objectStore: deps.objectStore,
     objectStoreCoords: deps.objectStoreCoords,
+    onPageStored: deps.onPageStored,
   });
   deps.log(
     `fetch-issue: ${result.issueArk} -> ${result.dir} :: ` +
@@ -270,6 +378,7 @@ export async function realFetchMonograph(
     log: deps.log,
     objectStore: deps.objectStore,
     objectStoreCoords: deps.objectStoreCoords,
+    onPageStored: deps.onPageStored,
   });
   deps.log(
     `fetch-source (monograph): ${result.issueArk} -> ${result.dir} :: ` +
