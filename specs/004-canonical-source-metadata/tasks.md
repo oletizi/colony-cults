@@ -22,8 +22,8 @@ Single TypeScript project: `src/`, `tests/` at repo root. ESM, `@/` imports, `ts
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 [tier:fast] Add `yaml` to `package.json` dependencies and install (`npm install`); confirm `npm run typecheck` still passes.
-- [ ] T002 [tier:fast] Create the module dirs: `src/bibliography/` and the public SSOT dir `bibliography/sources/` (add `bibliography/sources/.gitkeep`).
+- [x] T001 [tier:fast] Add `yaml` to `package.json` dependencies and install (`npm install`); confirm `npm run typecheck` still passes.
+- [x] T002 [tier:fast] Create the module dirs: `src/bibliography/` and the public SSOT dir `bibliography/sources/` (add `bibliography/sources/.gitkeep`).
 
 ---
 
@@ -31,15 +31,15 @@ Single TypeScript project: `src/`, `tests/` at repo root. ESM, `@/` imports, `ts
 
 **Blocks all user stories — the canonical model types + loader/deriver every story consumes.**
 
-- [ ] T003 [P] [tier:balanced] Generalize `src/model/source.ts` to an archive-independent Source (`sourceId`, `titles: Title[]`, `kind`, `creator?`, `language?`, `identifiers: WorkIdentifier[]`, `case?`, `notes?`) plus the `Title` and `WorkIdentifier` value types, per data-model.md §Source. Remove the single `gallicaArk` (it moves to Repository Record).
-- [ ] T004 [P] [tier:balanced] Create `src/model/repository-record.ts`: `RepositoryRecord`, `CopyIdentifier`, `AssetManifestRef` (reusing the spec-003 `object_store` block as `ObjectStoreRef` — import, do not redefine — FR-012), per data-model.md §Repository Record.
-- [ ] T005 [P] [tier:balanced] Create `src/model/identifiers.ts`: `WorkLevelIdentifierType` (`isbn`/`issn`/`oclc`), `CopyLevelIdentifierType` (`ark`/`iiif-manifest`/`scan-doi`), and `classifyIdentifier(type): 'work' | 'copy'`; an unknown type is surfaced (no silent accept), per research R-004.
-- [ ] T006 [P] [tier:balanced] Create `src/bibliography/vocab.ts`: closed allowed-value sets for `status`/`rights`/`provider`/`ocr_status` and the required-field core list, per data-model.md §Controlled vocabularies.
-- [ ] T007 [tier:fast] Update `src/model/index.ts` to re-export the changed/new types (`Source`, `Title`, `WorkIdentifier`, `RepositoryRecord`, `CopyIdentifier`, `AssetManifestRef`).
-- [ ] T008 [P] [tier:balanced] Unit test `classifyIdentifier` (work vs copy; unknown surfaced) and vocab membership in `tests/unit/model/identifiers.test.ts`.
-- [ ] T009 [tier:balanced] Implement `src/bibliography/load.ts`: parse `bibliography/sources/PB-###.yml` via `yaml`, then narrow to `Source` + authored `RepositoryRecord[]` with explicit validators (no `any` escapes the module); enforce filename-stem = `sourceId`, `(sourceId, sourceArchive)` uniqueness, and unknown-key rejection; fail loud (throw) on unreadable/malformed input, per contracts/source-record.md.
-- [ ] T010 [tier:balanced] Implement `src/bibliography/derive.ts`: build the `CanonicalModel` by (a) rolling up `RepositoryRecord`s + assets from the per-asset provenance the fetcher already writes (`src/model/provenance.ts` / `src/model/asset.ts`, unchanged ground truth), then (b) **merging the authored `RepositoryRecord[]` loaded by `load.ts` (T009) with the derived ones, keyed `(sourceId, sourceArchive)`** — an authored record overrides the derived one on that key, and an **authored-only record with no provenance survives** (this is how PB-P001's restored SLQ copy, which has no mirrored assets, appears in `CanonicalModel.repositoryRecords`; C1 / FR-013a / SC-005). Keyed by `sourceId`, per research R-001/R-006.
-- [ ] T011 [P] [tier:balanced] Unit test `load` (valid record + malformed → throw) and `derive` (roll-up from fixture provenance; **an authored-only record with no provenance survives the merge; an authored record overrides the derived one on the same `(sourceId, sourceArchive)` key** — C1) in `tests/unit/bibliography/load.test.ts` and `tests/unit/bibliography/derive.test.ts`.
+- [x] T003 [P] [tier:balanced] Generalize `src/model/source.ts` to an archive-independent Source (`sourceId`, `titles: Title[]`, `kind`, `creator?`, `language?`, `identifiers: WorkIdentifier[]`, `case?`, `notes?`) plus the `Title` and `WorkIdentifier` value types, per data-model.md §Source. Remove the single `gallicaArk` (it moves to Repository Record).
+- [x] T004 [P] [tier:balanced] Create `src/model/repository-record.ts`: `RepositoryRecord`, `CopyIdentifier`, `AssetManifestRef` (reusing the spec-003 `object_store` block as `ObjectStoreRef` — import, do not redefine — FR-012), per data-model.md §Repository Record.
+- [x] T005 [P] [tier:balanced] Create `src/model/identifiers.ts`: `WorkLevelIdentifierType` (`isbn`/`issn`/`oclc`), `CopyLevelIdentifierType` (`ark`/`iiif-manifest`/`scan-doi`), and `classifyIdentifier(type): 'work' | 'copy'`; an unknown type is surfaced (no silent accept), per research R-004.
+- [x] T006 [P] [tier:balanced] Create `src/bibliography/vocab.ts`: closed allowed-value sets for `status`/`rights`/`provider`/`ocr_status` and the required-field core list, per data-model.md §Controlled vocabularies.
+- [x] T007 [tier:fast] Update `src/model/index.ts` to re-export the changed/new types (`Source`, `Title`, `WorkIdentifier`, `RepositoryRecord`, `CopyIdentifier`, `AssetManifestRef`).
+- [x] T008 [P] [tier:balanced] Unit test `classifyIdentifier` (work vs copy; unknown surfaced) and vocab membership in `tests/unit/model/identifiers.test.ts`.
+- [x] T009 [tier:balanced] Implement `src/bibliography/load.ts`: parse `bibliography/sources/PB-###.yml` via `yaml`, then narrow to `Source` + authored `RepositoryRecord[]` with explicit validators (no `any` escapes the module); enforce filename-stem = `sourceId`, `(sourceId, sourceArchive)` uniqueness, and unknown-key rejection; fail loud (throw) on unreadable/malformed input, per contracts/source-record.md.
+- [x] T010 [tier:balanced] Implement `src/bibliography/derive.ts`: build the `CanonicalModel` by (a) rolling up `RepositoryRecord`s + assets from the per-asset provenance the fetcher already writes (`src/model/provenance.ts` / `src/model/asset.ts`, unchanged ground truth), then (b) **merging the authored `RepositoryRecord[]` loaded by `load.ts` (T009) with the derived ones, keyed `(sourceId, sourceArchive)`** — an authored record overrides the derived one on that key, and an **authored-only record with no provenance survives** (this is how PB-P001's restored SLQ copy, which has no mirrored assets, appears in `CanonicalModel.repositoryRecords`; C1 / FR-013a / SC-005). Keyed by `sourceId`, per research R-001/R-006.
+- [x] T011 [P] [tier:balanced] Unit test `load` (valid record + malformed → throw) and `derive` (roll-up from fixture provenance; **an authored-only record with no provenance survives the merge; an authored record overrides the derived one on the same `(sourceId, sourceArchive)` key** — C1) in `tests/unit/bibliography/load.test.ts` and `tests/unit/bibliography/derive.test.ts`.
 
 **Checkpoint**: model types + SSOT loader + provenance roll-up compile and pass unit tests.
 
@@ -50,10 +50,10 @@ Single TypeScript project: `src/`, `tests/` at repo root. ESM, `@/` imports, `ts
 **Goal**: A Source holds one Repository Record per archive copy; re-acquiring from a second archive never overwrites the first. Restore PB-P001's lost SLQ copy.
 **Independent test**: `bib migrate` then `bib show PB-P001 --json` yields two Repository Records (Gallica + SLQ); a repeat Gallica acquisition leaves the SLQ record intact (SC-001/SC-005).
 
-- [ ] T012 [P] [US1] [tier:balanced] Integration test: after `migrate`, PB-P001 has two `repositoryRecords` (`Gallica / BnF` + `State Library of Queensland`), each with its own copy-level identifier + provenance; a second Gallica roll-up does not drop the SLQ record; **a second same-archive (Gallica) roll-up updates the existing Gallica record in place (e.g. its `retrievedAt`/manifest) rather than adding a duplicate — count of `(sourceId, sourceArchive)` stays stable** (edge case spec.md L110) — in `tests/integration/bibliography.test.ts` (US1 slice).
-- [ ] T013 [US1] [tier:powerful] Implement `src/bibliography/migrate.ts`: fold the five current representations (`bibliography/sources.csv`, `bibliography/acquisition-tracker.csv`, archive `acquisition-register.csv`, `PB-P00X.yml` stubs, per-asset provenance) into authored `bibliography/sources/PB-###.yml`; **explicitly add PB-P001's second Repository Record (`State Library of Queensland`), restoring the record lost when `source-registry.ts` was overwritten** (SC-005); idempotent (re-run = no change), per data-model.md §Migration mapping.
-- [ ] T014 [US1] [tier:balanced] Implement the `bib show <sourceId>` and `bib migrate` verbs in `src/cli/bibliography.ts` and wire the verb group into `src/index.ts`; `bib show` fails loud on an unknown `sourceId` (message → stderr, exit `1`, no default; exit `2` reserved for malformed SSOT), per contracts/cli.md.
-- [ ] T015 [US1] [tier:balanced] Run `bib migrate`; verify `bibliography/sources/PB-P001.yml` carries both copies and `bib show PB-P001 --json` returns two Repository Records (validates SC-001/SC-005 end-to-end).
+- [x] T012 [P] [US1] [tier:balanced] Integration test: after `migrate`, PB-P001 has two `repositoryRecords` (`Gallica / BnF` + `State Library of Queensland`), each with its own copy-level identifier + provenance; a second Gallica roll-up does not drop the SLQ record; **a second same-archive (Gallica) roll-up updates the existing Gallica record in place (e.g. its `retrievedAt`/manifest) rather than adding a duplicate — count of `(sourceId, sourceArchive)` stays stable** (edge case spec.md L110) — in `tests/integration/bibliography.test.ts` (US1 slice).
+- [x] T013 [US1] [tier:powerful] Implement `src/bibliography/migrate.ts`: fold the five current representations (`bibliography/sources.csv`, `bibliography/acquisition-tracker.csv`, archive `acquisition-register.csv`, `PB-P00X.yml` stubs, per-asset provenance) into authored `bibliography/sources/PB-###.yml`; **explicitly add PB-P001's second Repository Record (`State Library of Queensland`), restoring the record lost when `source-registry.ts` was overwritten** (SC-005); idempotent (re-run = no change), per data-model.md §Migration mapping.
+- [x] T014 [US1] [tier:balanced] Implement the `bib show <sourceId>` and `bib migrate` verbs in `src/cli/bibliography.ts` and wire the verb group into `src/index.ts`; `bib show` fails loud on an unknown `sourceId` (message → stderr, exit `1`, no default; exit `2` reserved for malformed SSOT), per contracts/cli.md.
+- [x] T015 [US1] [tier:balanced] Run `bib migrate`; verify `bibliography/sources/PB-P001.yml` carries both copies and `bib show PB-P001 --json` returns two Repository Records (validates SC-001/SC-005 end-to-end).
 
 **Checkpoint**: MVP — multi-archive model + PB-P001 restoration demonstrable independently.
 
@@ -64,9 +64,9 @@ Single TypeScript project: `src/`, `tests/` at repo root. ESM, `@/` imports, `ts
 **Goal**: Reject a copy-level identifier on a Source and a work-level identifier on a Repository Record.
 **Independent test**: an `ark` under a Source's `identifiers:` yields an `identifier-leak` finding naming the identifier; correct placement passes (SC-002).
 
-- [ ] T016 [P] [US2] [tier:balanced] Unit test: copy-level id on Source → `identifier-leak` finding (named); work-level id on Repository Record → finding; correct placement → no finding — in `tests/unit/bibliography/validate-leak.test.ts`.
-- [ ] T017 [US2] [tier:balanced] Implement the identifier-leak check in `src/bibliography/validate.ts` using `classifyIdentifier`, returning `ValidationFinding[]` (kind `identifier-leak`, naming the identifier + level) per contracts/validation.md.
-- [ ] T018 [US2] [tier:balanced] Add the `bib validate` verb wiring in `src/cli/bibliography.ts` to run + report findings (human + `--json`), exit `1` on findings / `2` on malformed input, per contracts/cli.md.
+- [x] T016 [P] [US2] [tier:balanced] Unit test: copy-level id on Source → `identifier-leak` finding (named); work-level id on Repository Record → finding; correct placement → no finding — in `tests/unit/bibliography/validate-leak.test.ts`.
+- [x] T017 [US2] [tier:balanced] Implement the identifier-leak check in `src/bibliography/validate.ts` using `classifyIdentifier`, returning `ValidationFinding[]` (kind `identifier-leak`, naming the identifier + level) per contracts/validation.md.
+- [x] T018 [US2] [tier:balanced] Add the `bib validate` verb wiring in `src/cli/bibliography.ts` to run + report findings (human + `--json`), exit `1` on findings / `2` on malformed input, per contracts/cli.md.
 
 **Checkpoint**: identifier discipline enforced and reported.
 
@@ -77,10 +77,10 @@ Single TypeScript project: `src/`, `tests/` at repo root. ESM, `@/` imports, `ts
 **Goal**: One SSOT; the four legacy files become generated-and-committed views; drift is detectable.
 **Independent test**: one SSOT edit → `bib regenerate` updates `sources.csv` with no hand edits; a hand-edited view → `view-drift` (SC-003/SC-004/SC-008).
 
-- [ ] T019 [P] [US3] [tier:balanced] Unit test: each generator is deterministic (byte-identical output for identical input); a mutated committed view → `view-drift` finding — in `tests/unit/bibliography/regenerate.test.ts`.
-- [ ] T020 [US3] [tier:balanced] Implement `src/bibliography/regenerate.ts`: one pure generator per legacy view (`sources.csv`, `acquisition-tracker.csv`, archive `acquisition-register.csv`, `PB-P00X.yml` stub), each `(model) => string` in fixed field/column order (reuse the `provenance.ts` single-line-scalar discipline), per research R-006 + contracts/source-record.md §Serialization.
-- [ ] T021 [US3] [tier:balanced] Implement `bib regenerate` (writes views) and `bib regenerate --check` / the `view-drift` branch of `bib validate` (in-memory regeneration diffed against the committed file), per contracts/cli.md + validation.md.
-- [ ] T022 [US3] [tier:balanced] Convert the legacy files to generated-and-committed views (run `bib regenerate`, commit outputs); confirm one SSOT title edit propagates to `sources.csv` via regeneration with zero manual edits and no representation left disagreeing (SC-003/SC-004).
+- [x] T019 [P] [US3] [tier:balanced] Unit test: each generator is deterministic (byte-identical output for identical input); a mutated committed view → `view-drift` finding — in `tests/unit/bibliography/regenerate.test.ts`.
+- [x] T020 [US3] [tier:balanced] Implement `src/bibliography/regenerate.ts`: one pure generator per legacy view (`sources.csv`, `acquisition-tracker.csv`, archive `acquisition-register.csv`, `PB-P00X.yml` stub), each `(model) => string` in fixed field/column order (reuse the `provenance.ts` single-line-scalar discipline), per research R-006 + contracts/source-record.md §Serialization.
+- [x] T021 [US3] [tier:balanced] Implement `bib regenerate` (writes views) and `bib regenerate --check` / the `view-drift` branch of `bib validate` (in-memory regeneration diffed against the committed file), per contracts/cli.md + validation.md.
+- [x] T022 [US3] [tier:balanced] Convert the legacy files to generated-and-committed views (run `bib regenerate`, commit outputs); confirm one SSOT title edit propagates to `sources.csv` via regeneration with zero manual edits and no representation left disagreeing (SC-003/SC-004).
 
 **Checkpoint**: SSOT is the only hand-edited source; views are reproducible + drift-checked.
 
@@ -91,9 +91,9 @@ Single TypeScript project: `src/`, `tests/` at repo root. ESM, `@/` imports, `ts
 **Goal**: A serial's Repository Record enumerates its issues from the census; every copy references an asset manifest, not a single checksum.
 **Independent test**: `bib show PB-P001 --json` issue count equals census `totalIssues` (78); copies reference a manifest (SC-006).
 
-- [ ] T023 [P] [US4] [tier:balanced] Unit test: for a serial, derived `issues` length == census `totalIssues`; each Repository Record exposes an `AssetManifestRef` (not a scalar checksum); a monograph has no Issue layer — in `tests/unit/bibliography/issues.test.ts`.
-- [ ] T024 [US4] [tier:balanced] Extend `src/bibliography/derive.ts`: for `kind === 'periodical'`, derive `Issue[]` from `data/census/<sourceId>-*.json` (reuse `src/census/load.ts`), attaching each issue's assets from provenance; monographs reference assets directly (no Issue layer), per research R-005 + data-model.md §Issue.
-- [ ] T025 [US4] [tier:balanced] Implement the `AssetManifestRef` roll-up (`manifestPath`, derived `assetCount`, `objectStore | null`, `localPath` fallback) from provenance in `src/bibliography/derive.ts`; ensure no single-`checksum` representation survives (FR-006/FR-011).
+- [x] T023 [P] [US4] [tier:balanced] Unit test: for a serial, derived `issues` length == census `totalIssues`; each Repository Record exposes an `AssetManifestRef` (not a scalar checksum); a monograph has no Issue layer — in `tests/unit/bibliography/issues.test.ts`.
+- [x] T024 [US4] [tier:balanced] Extend `src/bibliography/derive.ts`: for `kind === 'periodical'`, derive `Issue[]` from `data/census/<sourceId>-*.json` (reuse `src/census/load.ts`), attaching each issue's assets from provenance; monographs reference assets directly (no Issue layer), per research R-005 + data-model.md §Issue.
+- [x] T025 [US4] [tier:balanced] Implement the `AssetManifestRef` roll-up (`manifestPath`, derived `assetCount`, `objectStore | null`, `localPath` fallback) from provenance in `src/bibliography/derive.ts`; ensure no single-`checksum` representation survives (FR-006/FR-011).
 
 **Checkpoint**: serials represented faithfully; manifest replaces single checksum.
 
@@ -104,9 +104,9 @@ Single TypeScript project: `src/`, `tests/` at repo root. ESM, `@/` imports, `ts
 **Goal**: Every Asset → a Repository Record → a Source; no leaks; closed vocab; required core; unique copies.
 **Independent test**: seeded orphan asset, orphan record, and a Source-level copy-id are each reported; a consistent tree reports success (SC-007).
 
-- [ ] T026 [P] [US5] [tier:balanced] Unit test: `orphan-asset`, `orphan-record`, `duplicate-copy`, `single-checksum`, `vocab`, `missing-required` each reported with a locating message; a clean tree → `findings: []` — in `tests/unit/bibliography/validate-integrity.test.ts`.
-- [ ] T027 [US5] [tier:balanced] Implement the referential-integrity, vocab, required-core, uniqueness, and manifest-not-checksum checks in `src/bibliography/validate.ts`, composing with the US2 leak check; throw only on malformed input, findings otherwise, per contracts/validation.md.
-- [ ] T028 [US5] [tier:balanced] Finalize `bib validate` to run the full finding set with exit codes `0` clean / `1` findings / `2` malformed (human + `--json`), per contracts/cli.md.
+- [x] T026 [P] [US5] [tier:balanced] Unit test: `orphan-asset`, `orphan-record`, `duplicate-copy`, `single-checksum`, `vocab`, `missing-required` each reported with a locating message; a clean tree → `findings: []` — in `tests/unit/bibliography/validate-integrity.test.ts`.
+- [x] T027 [US5] [tier:balanced] Implement the referential-integrity, vocab, required-core, uniqueness, and manifest-not-checksum checks in `src/bibliography/validate.ts`, composing with the US2 leak check; throw only on malformed input, findings otherwise, per contracts/validation.md.
+- [x] T028 [US5] [tier:balanced] Finalize `bib validate` to run the full finding set with exit codes `0` clean / `1` findings / `2` malformed (human + `--json`), per contracts/cli.md.
 
 **Checkpoint**: full validator green on the migrated tree.
 
@@ -114,9 +114,9 @@ Single TypeScript project: `src/`, `tests/` at repo root. ESM, `@/` imports, `ts
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T029 [P] [tier:balanced] Retire `src/archive/source-registry.ts`: mark `@deprecated`, migrate importers to `src/bibliography/load.ts`, and remove the singular `sourceArchive` path (the overwrite bug's origin); confirm the `check-deprecations` gate reports it safe-to-delete (importers = 0), per research R-007.
-- [ ] T030 [P] [tier:fast] Walk quickstart.md scenarios 1–5; confirm `npm test` (unit + integration) and `npm run typecheck` are green.
-- [ ] T031 [P] [tier:fast] Verify all new files are ≤300–500 lines, use `@/` imports, and contain no `any`/`as`/`@ts-ignore`.
+- [x] T029 [P] [tier:balanced] Retire `src/archive/source-registry.ts`: mark `@deprecated`, migrate importers to `src/bibliography/load.ts`, and remove the singular `sourceArchive` path (the overwrite bug's origin); confirm the `check-deprecations` gate reports it safe-to-delete (importers = 0), per research R-007.
+- [x] T030 [P] [tier:fast] Walk quickstart.md scenarios 1–5; confirm `npm test` (unit + integration) and `npm run typecheck` are green.
+- [x] T031 [P] [tier:fast] Verify all new files are ≤300–500 lines, use `@/` imports, and contain no `any`/`as`/`@ts-ignore`.
 
 ---
 
