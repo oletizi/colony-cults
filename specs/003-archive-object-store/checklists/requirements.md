@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,10 +31,8 @@
 
 ## Notes
 
-- **One open [NEEDS CLARIFICATION]** remains at FR-013 (OCR/verify byte-access
-  path: OCR-at-fetch-time vs fetch-from-object-store on demand). It is a genuine
-  scope decision with two reasonable interpretations and is deferred to
-  `/speckit-clarify`, per the spec-authoring chain. All other items pass.
-- Items marked incomplete require spec updates before `/speckit-plan`. The single
-  open clarification is intentionally routed to `/speckit-clarify` (the next step),
-  not resolved by guess.
+- **All items pass.** The FR-013 clarification (OCR/verify byte-access path) was
+  resolved in the 2026-07-08 clarify session → keep a local gitignored cache; B2 is
+  the durable copy. The go-forward-only scope for already-tracked masters was also
+  confirmed. See spec.md § Clarifications.
+- Spec is ready for `/speckit-plan`.

@@ -12,6 +12,13 @@
 
 **Input**: Move the archive's full-resolution image masters out of git and into an S3-compatible object store (Backblaze B2), so git keeps only small, diff-friendly research assets while the binary preservation masters live in object storage — addressed as an object-store backend for the fetcher's archive-writer.
 
+## Clarifications
+
+### Session 2026-07-08
+
+- Q: With masters living in B2 (not git), when are the image bytes available for OCR and `--verify`? → A: **Keep a local cache** — masters are written to a local, gitignored cache for OCR/verify to read; B2 is the durable copy. (Git stays lean because the cache is never tracked/committed; local disk convenience is retained.)
+- Q: Does this feature also stop git from tracking the masters already committed in the archive working tree, or only change go-forward writes? → A: **Go-forward only** — this feature changes how new captures are written; masters already tracked in the working tree remain until the later coordinated history purge handles them.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Image masters land in object storage, not git (Priority: P1)
@@ -29,9 +36,9 @@ Keeping masters out of git is what makes the archive scale across the remaining
 sources and future cases while preserving the masters.
 
 **Independent Test**: Fetch one issue against an isolated archive worktree; confirm
-the working tree and git index contain no image bytes, the object store holds each
-page master at its expected key, and the git-tracked provenance for each page
-records the object key, sha256, and size.
+git has no image bytes to stage or commit (any local cached masters are gitignored),
+the object store holds each page master at its expected key, and the git-tracked
+provenance for each page records the object key, sha256, and size.
 
 **Acceptance Scenarios**:
 
@@ -154,14 +161,18 @@ provenance and no image bytes in git.
   image masters to an S3-compatible object store (Backblaze B2) instead of the git
   working tree.
 - **FR-002**: On writing a master, the system MUST upload the bytes to the object
-  store and MUST NOT leave the image bytes in the git working tree or index.
+  store and MUST NOT add the image bytes to git. The bytes MAY reside in a local
+  gitignored cache (see FR-013), but MUST never be tracked or committed.
 - **FR-003**: The object key for a master MUST mirror that master's archive path
   (e.g. `archive/cases/port-breton/newspapers/la-nouvelle-france/<date>_<ark>/f001.jpg`).
 - **FR-004**: The system MUST record, in the git-tracked companion record for each
   master, the object store location (provider, bucket, key, endpoint) alongside the
   master's sha256 and size.
 - **FR-005**: Git MUST continue to track census, per-asset provenance, OCR issue
-  text, and the integrity manifest. Git MUST NOT track image master bytes.
+  text, and the integrity manifest. Git MUST NOT track image master bytes for
+  captures written by this backend. (Masters already tracked in the archive
+  working tree from prior git-writing captures are handled by the later history
+  purge — see Out of Scope; this backend changes go-forward writes only.)
 - **FR-006**: The system MUST skip uploading a master when the object already exists
   in the object store with the recorded sha256 (resumable, idempotent capture).
 - **FR-007**: The system MUST provide a `--force` mode that re-uploads a master even
@@ -183,11 +194,12 @@ provenance and no image bytes in git.
 - **FR-012**: The system MUST be able to capture the known straggler PB-P001 issues
   through the object-store backend, producing object-store masters with git-tracked
   provenance and no image bytes in git.
-- **FR-013**: The OCR and verify paths MUST have access to a master's bytes when
-  they need them, given the master no longer resides in git. [NEEDS CLARIFICATION:
-  should OCR run at fetch time while bytes are still local (before upload, no
-  post-upload local copy retained), or should OCR/verify fetch bytes from the object
-  store on demand? This determines whether a local image ever persists after upload.]
+- **FR-013**: The system MUST write each master to a local cache and keep it there
+  after upload; the OCR and verify paths read the master's bytes from this local
+  cache. The local cache location MUST be gitignored so cached masters are never
+  tracked or committed. (B2 remains the durable/preservation copy; `--verify` MAY
+  additionally re-check against B2 per FR-008, but the routine OCR/verify read path
+  is the local cache.)
 - **FR-014**: All development and testing that touches the archive repository MUST
   occur in a dedicated git worktree of the archive repository (its own branch and
   working tree), never in the shared archive clone that the translation session is
@@ -213,8 +225,9 @@ provenance and no image bytes in git.
 ### Measurable Outcomes
 
 - **SC-001**: After capturing an issue with the backend enabled, the number of image
-  master bytes added to git is zero (no `.jpg`/`.jpeg`/`.png` bytes in the git index
-  or working tree).
+  master bytes added to git is zero — no `.jpg`/`.jpeg`/`.png` bytes are staged,
+  tracked, or committed (`git status` surfaces no image bytes to add; any locally
+  cached masters are gitignored).
 - **SC-002**: Every image master captured with the backend is retrievable from the
   object store using only the git-tracked provenance, and 100% of retrieved masters
   match their recorded sha256.
