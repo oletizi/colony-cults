@@ -8,6 +8,7 @@ import { resolveObjectStoreConfig, ObjectStoreConfig } from '@/archive/b2-config
 import { sha256OfBytes } from '@/archive/checksum';
 import { storeAsset, companionYamlPath } from '@/archive/store';
 import { readProvenance, type ProvenanceFields } from '@/archive/provenance';
+import { objectKeyForAsset } from '@/archive/object-key';
 
 /**
  * OPT-IN integration test proving SC-002: an archive master is restorable
@@ -17,25 +18,17 @@ import { readProvenance, type ProvenanceFields } from '@/archive/provenance';
  * bucket, and proves byte/sha256 identity.
  *
  * Gated exactly like `tests/integration/s3-object-store.test.ts` (T022):
- * skipped -- not failed -- in a normal `vitest run` via `describe.skipIf`,
- * and only actually exercised when `COLONY_S3_IT` is set AND
- * `resolveObjectStoreConfig()` succeeds (bucket/endpoint/region env vars set
- * and a readable B2 credentials file present). Talks to a real bucket, so a
- * network/auth failure once enabled MUST fail loudly -- that is the point of
- * opting in.
+ * skipped -- not failed -- in a normal `vitest run` via `describe.skipIf`, so
+ * `resolveObjectStoreConfig()` is never invoked on that path. Once the
+ * operator opts in via `COLONY_S3_IT`, this talks to a real bucket, so a
+ * config-resolution, network, or auth failure MUST fail loudly -- that is
+ * the point of opting in.
  */
 describe.skipIf(!process.env.COLONY_S3_IT)(
   'restore from provenance (live B2 integration, SC-002)',
   () => {
     it('restores a master from B2 using only the git-tracked companion YAML', async () => {
-      let config: ObjectStoreConfig;
-      try {
-        config = resolveObjectStoreConfig();
-      } catch {
-        // COLONY_S3_IT is set but this machine has no B2 credentials
-        // configured -- an environment gap, not a test failure.
-        return;
-      }
+      const config: ObjectStoreConfig = resolveObjectStoreConfig();
 
       const store = new S3ObjectStore(config);
       const archiveRoot = mkdtempSync(path.join(tmpdir(), 'cc-restore-it-'));
@@ -85,7 +78,14 @@ describe.skipIf(!process.env.COLONY_S3_IT)(
         forcePathStyle: true,
       });
 
-      let uploadedKey: string | undefined;
+      // Computed BEFORE the upload, from the same inputs (archiveRoot,
+      // targetPath) the product uses internally, so cleanup can find the
+      // uploaded object even if something between the upload and reading
+      // the object_store field back out of provenance throws. This must
+      // stay unconditional in `finally` -- assigning the cleanup key only
+      // after a successful round-trip would leak the object on any
+      // mid-test failure.
+      const uploadedKey = objectKeyForAsset(archiveRoot, targetPath);
       try {
         await storeAsset(originalBytes, targetPath, provenanceFields, archiveRoot, {
           objectStore: store,
@@ -107,7 +107,7 @@ describe.skipIf(!process.env.COLONY_S3_IT)(
               '-- storeAsset should have populated it when an object store was configured',
           );
         }
-        uploadedKey = objectStoreLocation.key;
+        expect(objectStoreLocation.key).toBe(uploadedKey);
 
         const fetchedBytes = await store.get(objectStoreLocation.key);
         const fetchedSha256 = sha256OfBytes(fetchedBytes);
@@ -115,11 +115,9 @@ describe.skipIf(!process.env.COLONY_S3_IT)(
         expect(fetchedSha256).toBe(restoredProvenance.sha256);
         expect(Buffer.from(fetchedBytes)).toEqual(Buffer.from(originalBytes));
       } finally {
-        if (uploadedKey !== undefined) {
-          await client.send(
-            new DeleteObjectCommand({ Bucket: config.bucket, Key: uploadedKey }),
-          );
-        }
+        await client.send(
+          new DeleteObjectCommand({ Bucket: config.bucket, Key: uploadedKey }),
+        );
         rmSync(archiveRoot, { recursive: true, force: true });
       }
     });

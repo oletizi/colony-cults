@@ -22,3 +22,8 @@
 {"id":"T022","tierLabel":"balanced","model":"sonnet","commitRange":"38b60a0","reviewClean":true}
 {"id":"T023","tierLabel":"balanced","model":"sonnet","commitRange":"38b60a0","reviewClean":true}
 {"id":"T024","tierLabel":"balanced","model":"sonnet","commitRange":"38b60a0","reviewClean":true}
+{"id":"T026","tierLabel":"fast","model":"haiku","commitRange":"dc0c97d","reviewClean":true}
+{"id":"T028","tierLabel":"fast","model":"haiku","commitRange":"dc0c97d","reviewClean":true}
+{"id":"T029","tierLabel":"fast","model":"haiku","commitRange":"dc0c97d","reviewClean":true}
+{"id":"T025","tierLabel":"balanced","model":"sonnet","commitRange":"(operator/live)","reviewClean":"deferred-tilde"}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"(operator/live)","reviewClean":"deferred-tilde"}

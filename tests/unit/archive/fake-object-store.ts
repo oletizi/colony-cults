@@ -70,6 +70,16 @@ export class FakeObjectStore implements ObjectStore {
   }
 
   /**
+   * Test helper: return the contentType stored for a key, or undefined if
+   * the key is absent or was put without a contentType. Not part of the
+   * ObjectStore interface (contentType is write-only metadata there) --
+   * exists solely so tests can assert put() actually persisted it.
+   */
+  contentTypeOf(key: string): string | undefined {
+    return this.store.get(key)?.contentType;
+  }
+
+  /**
    * Test helper: remove an object, simulating it going missing from the
    * backend (e.g. a deleted or never-completed upload) so callers can
    * exercise the "object missing in B2" verification path.

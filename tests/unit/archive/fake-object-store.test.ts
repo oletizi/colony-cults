@@ -109,9 +109,10 @@ describe('FakeObjectStore', () => {
         contentType,
       });
 
-      // contentType is metadata; verify via the test helper has()
-      // since ObjectHead interface doesn't expose it
-      expect(store.has('key')).toBe(true);
+      // ObjectHead doesn't expose contentType, so assert directly against
+      // the test-only contentTypeOf() helper to actually prove put()
+      // persisted it (rather than merely proving the key exists).
+      expect(store.contentTypeOf('key')).toBe('application/json');
     });
   });
 

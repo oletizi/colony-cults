@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { storeAsset, companionYamlPath } from '@/archive/store';
 import { objectKeyForAsset } from '@/archive/object-key';
+import { IMAGE_MASTER_GITIGNORE_PATTERNS } from '@/archive/gitignore-patterns';
 import type { ProvenanceFields } from '@/archive/provenance';
 import { FakeObjectStore } from '../unit/archive/fake-object-store';
 
@@ -16,14 +17,17 @@ import { FakeObjectStore } from '../unit/archive/fake-object-store';
  * (`storeAsset`) never calls git itself. Only the test harness invokes `git`,
  * purely to observe what a real archive worktree's `git status` would report
  * for a page image written under its `.gitignore`.
+ *
+ * The throwaway `.gitignore` is built from
+ * `IMAGE_MASTER_GITIGNORE_PATTERNS` -- the canonical pattern set -- rather
+ * than a local copy, so this test can never drift from what the product
+ * considers canonical. This proves the mechanism: those patterns exclude
+ * image masters from git status. It does NOT prove that the real archive
+ * worktree's actual `.gitignore` (written by T002 setup) contains these
+ * patterns -- that file must be kept in sync with this same constant.
  */
 
-const GITIGNORE_CONTENTS = [
-  'archive/cases/**/*.jpg',
-  'archive/cases/**/*.jpeg',
-  'archive/cases/**/*.png',
-  '',
-].join('\n');
+const GITIGNORE_CONTENTS = [...IMAGE_MASTER_GITIGNORE_PATTERNS, ''].join('\n');
 
 const COORDS = {
   provider: 'backblaze-b2',

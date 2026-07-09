@@ -15,25 +15,16 @@ import { sha256OfBytes } from '@/archive/checksum';
  *      region env vars set and a readable B2 credentials file present).
  *
  * In a normal `vitest run` (no `COLONY_S3_IT`), the whole describe block is
- * skipped -- not failed -- via `describe.skipIf`. When `COLONY_S3_IT` is set
- * but config resolution fails (e.g. no credentials file on this machine),
- * the test itself skips at runtime rather than throwing, since a missing
- * local credentials file is not a defect in this suite.
+ * skipped -- not failed -- via `describe.skipIf`, so
+ * `resolveObjectStoreConfig()` is never invoked.
  *
- * When actually enabled and configured, a real network/auth failure MUST
- * fail loudly -- that is the entire point of opting in.
+ * Once the operator has opted in via `COLONY_S3_IT`, a config-resolution
+ * failure (e.g. no B2 credentials file on this machine) MUST fail the test
+ * loudly rather than silently pass -- that is the entire point of opting in.
  */
 describe.skipIf(!process.env.COLONY_S3_IT)('S3ObjectStore (live B2 integration)', () => {
   it('round-trips put/head/get against the real bucket and cleans up after itself', async () => {
-    let config: ObjectStoreConfig;
-    try {
-      config = resolveObjectStoreConfig();
-    } catch {
-      // COLONY_S3_IT is set but this machine has no B2 credentials
-      // configured -- skip rather than fail, since that's an environment
-      // gap, not a test failure.
-      return;
-    }
+    const config: ObjectStoreConfig = resolveObjectStoreConfig();
 
     const store = new S3ObjectStore(config);
     const key = `archive/_it/s3-object-store/${Date.now()}-${Math.random().toString(36).slice(2)}.bin`;
