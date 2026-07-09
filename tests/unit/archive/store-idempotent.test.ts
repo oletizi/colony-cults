@@ -105,6 +105,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
 
     const first = await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 
@@ -133,6 +134,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
     const getBefore = store.getCount;
     const second = await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
     expect(second.skipped).toBe(true);
@@ -151,6 +153,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
 
     const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 
@@ -168,6 +171,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
 
     const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 
@@ -193,6 +197,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
 
     const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 
@@ -217,6 +222,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
 
     const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 
@@ -239,6 +245,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
     const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
       force: true,
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 
@@ -257,6 +264,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
     // First run creates the local cache file (object present, skip path).
     await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
     expect(existsSync(target)).toBe(true);
@@ -265,6 +273,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
     // Second run must leave the existing cache file byte-identical.
     await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
     expect(readFileSync(target).equals(firstContents)).toBe(true);
@@ -329,6 +338,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
     // it must backfill the object_store block even though it skips the upload.
     const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 
@@ -376,6 +386,7 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
 
     const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 

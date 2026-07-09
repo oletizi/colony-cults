@@ -346,6 +346,7 @@ export async function realFetchIssue(
     log: deps.log,
     objectStore: deps.objectStore,
     objectStoreCoords: deps.objectStoreCoords,
+    reconcileRemote: flags.reconcileRemote,
     onPageStored: deps.onPageStored,
   });
   deps.log(
@@ -378,6 +379,7 @@ export async function realFetchMonograph(
     log: deps.log,
     objectStore: deps.objectStore,
     objectStoreCoords: deps.objectStoreCoords,
+    reconcileRemote: flags.reconcileRemote,
     onPageStored: deps.onPageStored,
   });
   deps.log(

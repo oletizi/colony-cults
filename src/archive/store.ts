@@ -54,6 +54,16 @@ export interface StoreOptions {
    * layout, same as `local_path`/`sha256`.
    */
   objectStoreCoords?: { provider: string; bucket: string; endpoint: string };
+  /**
+   * Opt-in: reconcile the skip decision against what B2 actually holds (a HEAD +
+   * ETag/size content-verify, plus a metadata backfill for externally-placed
+   * masters). This spends Class B (download) transactions. DEFAULT (absent) is
+   * to TRUST LOCAL PROVENANCE: an asset whose companion YAML already records a
+   * matching `object_store` is skipped with no B2 read; anything else is
+   * uploaded (a Class A PUT). Use this only when migrating masters placed in B2
+   * by another tool (e.g. an rclone bulk copy) so they gain our metadata.
+   */
+  reconcileRemote?: boolean;
 }
 
 /**
@@ -243,15 +253,31 @@ export async function storeAsset(
     const coords = options.objectStoreCoords;
     const key = objectKeyForAsset(archiveRoot, targetPath);
 
-    // T019/FR-006/SC-003: the write-path skip is content-based, driven by what
-    // B2 actually holds -- not by local file presence and not solely by our own
-    // metadata. `force` bypasses the whole presence check and always uploads.
+    // Skip decision. DEFAULT (trust local provenance): an asset whose companion
+    // YAML already records a matching `object_store` (same key + sha256) is
+    // already in B2 by our own committed record -- skip with NO B2 read (no
+    // Class B download transaction). Anything else is uploaded (a Class A PUT).
+    // `--reconcile-remote` opts into a content-verify against B2 (HEAD/ETag) +
+    // metadata backfill, for migrating externally-placed masters. `force`
+    // always uploads.
     let doUpload = true;
     let needMetaBackfill = false;
     if (options.force !== true) {
-      const presence = await resolveB2Presence(store, key, bytes, sha256);
-      doUpload = !presence.present;
-      needMetaBackfill = presence.needMetaBackfill;
+      if (options.reconcileRemote === true) {
+        const presence = await resolveB2Presence(store, key, bytes, sha256);
+        doUpload = !presence.present;
+        needMetaBackfill = presence.needMetaBackfill;
+      } else if (existsSync(yamlPath)) {
+        const existing = await readProvenanceSafe(yamlPath);
+        if (
+          existing !== null &&
+          existing.object_store !== null &&
+          existing.object_store.key === key &&
+          existing.sha256 === sha256
+        ) {
+          doUpload = false;
+        }
+      }
     }
 
     if (doUpload) {

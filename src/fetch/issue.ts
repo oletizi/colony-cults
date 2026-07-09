@@ -82,6 +82,8 @@ export interface FetchIssueContext {
   objectStore?: ObjectStore;
   /** Coordinates recorded in provenance; meaningful only with {@link objectStore}. */
   objectStoreCoords?: ObjectStoreCoords;
+  /** Opt-in B2 reconcile (see StoreOptions.reconcileRemote); default trusts local provenance. */
+  reconcileRemote?: boolean;
   /**
    * Optional per-page hook (T0xx, page-level checkpointing), invoked once per
    * page AFTER it is stored -- both the write and the skip branch. The fetch
@@ -120,6 +122,8 @@ export interface FetchMonographContext {
   objectStore?: ObjectStore;
   /** Coordinates recorded in provenance; meaningful only with {@link objectStore}. */
   objectStoreCoords?: ObjectStoreCoords;
+  /** Opt-in B2 reconcile (see StoreOptions.reconcileRemote); default trusts local provenance. */
+  reconcileRemote?: boolean;
   /**
    * Optional per-page hook (T0xx, page-level checkpointing), invoked once per
    * page AFTER it is stored -- both the write and the skip branch. See the
@@ -159,6 +163,8 @@ interface DocumentFetchContext {
   log?: (message: string) => void;
   objectStore?: ObjectStore;
   objectStoreCoords?: ObjectStoreCoords;
+  /** Opt-in B2 reconcile (see StoreOptions.reconcileRemote); default trusts local provenance. */
+  reconcileRemote?: boolean;
   onPageStored?: (p: PageStored) => Promise<void>;
 }
 
@@ -306,6 +312,7 @@ async function fetchDocumentPages(
         force: ctx.force,
         objectStore: ctx.objectStore,
         objectStoreCoords: ctx.objectStoreCoords,
+        reconcileRemote: ctx.reconcileRemote,
       },
     );
     pages.push(result);

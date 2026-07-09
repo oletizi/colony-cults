@@ -60,6 +60,13 @@ export interface ParsedFlags {
    */
   objectStore: boolean;
   /**
+   * Opt into reconciling the skip decision against B2 (a HEAD/ETag content-
+   * verify + metadata backfill) instead of trusting local provenance. Spends
+   * Class B transactions; use only to migrate externally-placed masters.
+   * Default false -- a normal capture trusts the committed provenance.
+   */
+  reconcileRemote: boolean;
+  /**
    * Opt into a per-issue git checkpoint (commit AND push) after each issue
    * completes (see `src/cli/archive-checkpoint.ts`). Default false -- the
    * fetch core stays git-free and this flag is the only way to wire the git
@@ -121,6 +128,7 @@ export function parse(argv: string[]): ParsedArgs {
       verify: { type: 'boolean', default: false },
       ocr: { type: 'boolean', default: false },
       'object-store': { type: 'boolean', default: false },
+      'reconcile-remote': { type: 'boolean', default: false },
       checkpoint: { type: 'boolean', default: false },
       'source-id': { type: 'string' },
       slug: { type: 'string' },
@@ -160,6 +168,7 @@ export function parse(argv: string[]): ParsedArgs {
       verify: Boolean(values.verify),
       ocr: Boolean(values.ocr),
       objectStore: Boolean(values['object-store']),
+      reconcileRemote: Boolean(values['reconcile-remote']),
       checkpoint: Boolean(values.checkpoint),
     },
     options: {

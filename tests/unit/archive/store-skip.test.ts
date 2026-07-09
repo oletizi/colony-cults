@@ -82,6 +82,7 @@ describe('storeAsset B2-head-based idempotent skip (T019, FR-006/SC-003)', () =>
 
     const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 
@@ -112,6 +113,7 @@ describe('storeAsset B2-head-based idempotent skip (T019, FR-006/SC-003)', () =>
     const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
       force: true,
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 
@@ -131,6 +133,7 @@ describe('storeAsset B2-head-based idempotent skip (T019, FR-006/SC-003)', () =>
 
     const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
       objectStore: store,
+      reconcileRemote: true,
       objectStoreCoords: COORDS,
     });
 
