@@ -2,11 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { translateIssue, DEFAULT_MODEL } from '@/translate/issue';
+import { translateIssue } from '@/translate/issue';
 import {
   buildFetchedIssue,
   buildCtx,
   FIXED_DATE,
+  TEST_MODEL,
   type FetchedIssue,
 } from './support/translate-archive';
 
@@ -47,9 +48,10 @@ describe('translateIssue (T016/T017/T019)', () => {
     expect(preflightCalls.n).toBe(1);
     // Two passes per page across three pages.
     expect(calls).toHaveLength(6);
-    // With no --model, the engine received DEFAULT_MODEL on EVERY call -- the
-    // same value recorded in provenance (no undefined/label mismatch).
-    expect(calls.map((c) => c.model)).toEqual(Array(6).fill(DEFAULT_MODEL));
+    // With no --model override, the engine received the ctx's resolved model
+    // on EVERY call -- the same value recorded in provenance (no
+    // undefined/label mismatch).
+    expect(calls.map((c) => c.model)).toEqual(Array(6).fill(TEST_MODEL));
 
     // Whole-issue artifacts + companions land in the issue directory.
     const frWhole = path.join(fetched.issueDir, 'issue.fr.txt');
@@ -79,7 +81,7 @@ describe('translateIssue (T016/T017/T019)', () => {
     // Provenance on a per-page and the whole-issue English artifact.
     const enYaml = await readFile(`${enWhole}.yml`, 'utf-8');
     expect(enYaml).toContain('engine: "claude-code-cli"');
-    expect(enYaml).toContain(`model: "${DEFAULT_MODEL}"`);
+    expect(enYaml).toContain(`model: "${TEST_MODEL}"`);
     expect(enYaml).toContain(`retrieved: "${FIXED_DATE}"`);
     expect(enYaml).toContain('translation: "machine-assisted"');
     expect(enYaml).toContain('type: "english-translation"');
@@ -96,13 +98,13 @@ describe('translateIssue (T016/T017/T019)', () => {
     expect(frYaml).toContain('translation: "machine-assisted"');
   });
 
-  it('honours --model over the DEFAULT_MODEL in provenance AND engine calls', async () => {
+  it('honours --model over the ctx default in provenance AND engine calls', async () => {
     const { ctx, calls } = buildCtx(fetched, { model: 'sonnet' });
     const result = await translateIssue(fetched.issueArk, ctx);
     expect(result.outcome).toBe('translated');
     // The pinned model reaches the engine on every call...
     expect(calls.map((c) => c.model)).toEqual(Array(6).fill('sonnet'));
-    // ...and is the value recorded in provenance (not DEFAULT_MODEL).
+    // ...and is the value recorded in provenance (not the ctx default).
     const enYaml = await readFile(
       path.join(fetched.issueDir, 'issue.en.txt.yml'),
       'utf-8',

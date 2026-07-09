@@ -16,19 +16,6 @@ import { assemble, splitPages } from '@/translate/pages';
 import { readIssueRights } from '@/translate/rights';
 import { translatePage } from '@/translate/translate-page';
 
-/**
- * Model id recorded in a translation artifact's provenance when the run does
- * not pin one via `--model`. It is a provenance LABEL, not a guarantee of what
- * the `claude` CLI resolved: when `ctx.model` is undefined the per-page calls
- * let the engine pick its own default (see {@link TranslationEngine.run}), while the
- * artifact records this constant so every derived `.yml` names a model. A
- * `--model` value always overrides it, for both the calls and the record.
- *
- * The exact model-id spelling the installed `claude` CLI accepts is
- * re-confirmed against the running binary in T032.
- */
-export const DEFAULT_MODEL = 'claude-opus-4-8';
-
 /** Per-issue outcome (data-model.md TranslateRunReport). */
 export type IssueOutcome =
   | 'translated'
@@ -74,8 +61,13 @@ export interface TranslateIssueCtx {
   clock: () => Date;
   /** Re-translate pages/issue that already have recorded artifacts (FR-011). */
   force: boolean;
-  /** Model alias/id to pin for the run; recorded in provenance when set. */
-  model?: string;
+  /**
+   * Model alias/id for the run, resolved ONCE by the caller (CLI flag >
+   * config > engine default; see `resolveModel`) so it is always the exact
+   * value sent to the engine AND recorded in provenance -- never an
+   * engine-specific fallback picked here.
+   */
+  model: string;
   /** Line-oriented progress sink. */
   log: (message: string) => void;
   /** Engine preflight (FR-009); fired once after the rights gate passes. */
@@ -281,10 +273,10 @@ export async function translateIssue(
   const pages = splitPages(issueText);
   const pagesTotal = pages.length;
 
-  // Resolve the run's model ONCE so the value sent to the engine and the value
-  // recorded in provenance can never disagree (an omitted `--model` records
-  // and "runs" DEFAULT_MODEL, not `undefined`).
-  const model = ctx.model ?? DEFAULT_MODEL;
+  // `ctx.model` is already the run's fully-resolved model (required on the
+  // ctx; see its doc comment), so the value sent to the engine and the value
+  // recorded in provenance can never disagree.
+  const model = ctx.model;
 
   // Plan the work up front: a page needs work when forced, or when either of
   // its fr/en intermediates is not yet recorded (FR-011/012). This decides

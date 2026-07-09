@@ -20,11 +20,22 @@ describe('engine/model resolution', () => {
     expect(() => resolveEngine('gpt', {})).toThrow(/unknown engine/i);
   });
 
+  it('engine: an empty/whitespace-only flag falls through to config', () => {
+    expect(resolveEngine('', { engine: 'codex' })).toBe('codex');
+    expect(resolveEngine('   ', { engine: 'codex' })).toBe('codex');
+    expect(resolveEngine('', {})).toBe('claude');
+  });
+
   it('model: flag over config over per-engine default', () => {
     expect(resolveModel('m1', 'codex', { models: { codex: 'm2' } })).toBe('m1');
     expect(resolveModel(undefined, 'codex', { models: { codex: 'm2' } })).toBe('m2');
     expect(resolveModel(undefined, 'codex', {})).toBe(DEFAULT_MODELS.codex);
     expect(resolveModel(undefined, 'claude', {})).toBe(DEFAULT_MODELS.claude);
+  });
+
+  it('model: an empty/whitespace-only flag falls through to config', () => {
+    expect(resolveModel('   ', 'codex', { models: { codex: 'm2' } })).toBe('m2');
+    expect(resolveModel('', 'claude', {})).toBe(DEFAULT_MODELS.claude);
   });
 });
 

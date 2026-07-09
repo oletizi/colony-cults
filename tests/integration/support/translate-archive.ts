@@ -27,6 +27,12 @@ export const BARE_ARK = 'bpt6k5603637g';
 const ISSUE_DIR_NAME = `1875-01-15_${BARE_ARK}`;
 /** Fixed clock timestamp used by {@link fixedClock}'s default. */
 export const FIXED_DATE = '2026-07-08T00:00:00.000Z';
+/**
+ * Default `ctx.model` for {@link buildCtx}/{@link buildSourceCtx} (now
+ * required on `TranslateIssueCtx`/`TranslateSourceCtx`). Tests that care
+ * about the resolved model pass their own `model` in `overrides`.
+ */
+export const TEST_MODEL = 'test-model';
 /** Page count baked into the shared `issue-sample.txt` fixture (two form-feeds -> 3 chunks). */
 const PAGE_COUNT = 3;
 
@@ -319,6 +325,7 @@ export function buildCtx(
     archiveRoot: fetched.archiveRoot,
     clock: fixedClock(),
     force: false,
+    model: TEST_MODEL,
     log: () => {},
     preflight: spy.preflight,
     ...overrides,
@@ -376,6 +383,7 @@ export function buildSourceCtx(
     archiveRoot: fetched.archiveRoot,
     clock: fixedClock(),
     force: false,
+    model: TEST_MODEL,
     log: () => {},
     preflight: spy.preflight,
     delay: dspy.delay,

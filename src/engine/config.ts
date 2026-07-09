@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { EngineName } from '@/engine/types';
 
@@ -52,7 +52,7 @@ export function resolveEngine(
   flag: string | undefined,
   config: EngineConfig,
 ): EngineName {
-  if (flag !== undefined) {
+  if (flag !== undefined && flag.trim().length > 0) {
     return assertEngine(flag);
   }
   if (config.engine !== undefined) {
@@ -70,7 +70,7 @@ export function resolveModel(
   engine: EngineName,
   config: EngineConfig,
 ): string {
-  if (flag !== undefined) {
+  if (flag !== undefined && flag.trim().length > 0) {
     return flag;
   }
   const configured = config.models?.[engine];
@@ -120,17 +120,23 @@ function readConfig(parsed: Record<string, unknown>): EngineConfig {
  * non-object root) throws rather than silently falling back, so operators
  * discover a broken config immediately instead of getting unexplained
  * default behavior.
+ *
+ * Absence is checked explicitly via `access` BEFORE the read, so only a
+ * missing file resolves to `{}` -- any error from the subsequent `readFile`
+ * or `JSON.parse` (permission denied, a directory in the file's place, a
+ * transient I/O error, malformed JSON) propagates uncaught instead of being
+ * silently swallowed as "no config".
  */
 export async function loadEngineConfig(repoRoot: string): Promise<EngineConfig> {
   const file = path.join(repoRoot, 'translate.config.json');
 
-  let raw: string;
   try {
-    raw = await readFile(file, 'utf-8');
+    await access(file);
   } catch {
     return {};
   }
 
+  const raw = await readFile(file, 'utf-8');
   const parsed: unknown = JSON.parse(raw);
   if (!isRecord(parsed)) {
     throw new Error(

@@ -30,6 +30,12 @@ describe('createCodexEngine', () => {
     expect(prompt).toBeDefined();
     expect(calls[0].stdin).toBe('Texte français');
   });
+  it('omits -m when model is undefined', async () => {
+    const { runner, readLastMessage, calls } = fake({ stdout: '', stderr: '', exitCode: 0 }, 'English text here, plenty long.');
+    const engine = createCodexEngine(runner, readLastMessage);
+    await engine.run('i', 's', undefined, 'sys');
+    expect(calls[0].args).not.toContain('-m');
+  });
   it('throws on non-zero exit', async () => {
     const { runner, readLastMessage } = fake({ stdout: '', stderr: 'boom', exitCode: 2 }, '');
     const engine = createCodexEngine(runner, readLastMessage);

@@ -134,8 +134,12 @@ export interface TranslateSourceCtx {
   clock: () => Date;
   /** Re-translate issues/pages that already have artifacts (FR-011). */
   force: boolean;
-  /** Model alias/id to pin for the run; recorded in provenance when set. */
-  model?: string;
+  /**
+   * Model alias/id for the run, resolved ONCE by the caller and forwarded
+   * unchanged into every per-issue {@link TranslateIssueCtx}; see that type's
+   * doc comment.
+   */
+  model: string;
   /** Line-oriented progress sink. */
   log: (message: string) => void;
   /** Engine preflight (FR-009), forwarded to each issue. */

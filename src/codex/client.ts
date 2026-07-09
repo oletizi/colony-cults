@@ -66,17 +66,26 @@ export function createCodexEngine(
       }
       const result = await runner.run('codex', args, sourceText);
 
-      if (result.exitCode !== 0) {
-        throw new Error(
-          `codex exec failed (exit ${result.exitCode}): ${result.stderr.trim() || '(no stderr)'}`,
-        );
-      }
+      try {
+        if (result.exitCode !== 0) {
+          throw new Error(
+            `codex exec failed (exit ${result.exitCode}): ${result.stderr.trim() || '(no stderr)'}`,
+          );
+        }
 
-      const message = await readLastMessage(outFile);
-      if (message.trim().length === 0) {
-        throw new Error('codex exec produced empty output (no fallback substituted).');
+        const message = await readLastMessage(outFile);
+        if (message.trim().length === 0) {
+          throw new Error('codex exec produced empty output (no fallback substituted).');
+        }
+        return message;
+      } finally {
+        // The `-o` temp file must never leak, whether codex exited non-zero
+        // (thrown above, before it was ever read) or `readLastMessage`
+        // itself failed -- this `finally` owns cleanup on every path.
+        // `readLastMessageFile` also unlinks on its own success path; a
+        // redundant unlink is harmless since `.catch` swallows ENOENT.
+        await unlink(outFile).catch(() => undefined);
       }
-      return message;
     },
   };
 }
