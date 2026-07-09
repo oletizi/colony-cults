@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,6 +31,6 @@
 
 ## Notes
 
-- **One `[NEEDS CLARIFICATION]` marker intentionally remains** (FR-019: controlled-vocabulary allowed-value sets, required-vs-optional fields, cardinalities). This is a design-declared open question (design open question 5) explicitly marked a **non-blocker** for `define`; it is scheduled for resolution in `/speckit-clarify`. It does not affect feature scope or the model shape, only field-level validation detail.
-- Five further design open questions (SSOT direction, file layout, migration mechanics, census linkage, validation tooling) are captured as **Assumptions (A-001–A-007)** with informed working defaults rather than blocking markers, per the design record's "none are blockers" note. `/speckit-clarify` will confirm or adjust them.
-- Items marked incomplete require spec updates before `/speckit-plan` **only** to the extent the operator wants the remaining clarification resolved first; the spec is otherwise plan-ready.
+- **`/speckit-clarify` session 2026-07-09 resolved 4 questions**: SSOT direction (hybrid — FR-013a), SSOT location (public `bibliography/sources/PB-###.yml` — FR-013), controlled-vocabulary strictness + required core (closed vocab + minimal core — FR-019), and legacy-file disposition (generated-and-committed views — FR-014). The former FR-019 `[NEEDS CLARIFICATION]` marker is cleared.
+- Two design open questions remain **deferred to `/speckit-plan`** as planning-level detail (not blocking): A-003 (exact census-reference mechanism for the Issue layer) and the precise per-view regeneration wiring / validation-tooling shape. Both affect *how*, not scope or model shape.
+- The spec is **plan-ready**.

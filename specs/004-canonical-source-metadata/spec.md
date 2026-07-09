@@ -12,6 +12,15 @@
 
 **Input**: User description: "Canonical Source Metadata Model. Establish a single canonical metadata model for acquired sources … Source → Repository Record → [Issue] → Asset; work-level IDs on Source vs copy-level IDs on Repository Record; acquisition axis distinct from storage axis; Repository Record references an asset manifest; consolidate the five existing metadata representations into one SSOT. Scope: sources only."
 
+## Clarifications
+
+### Session 2026-07-09
+
+- Q: SSOT authoring direction — authored, derived, or hybrid? → A: **Hybrid** — bibliographic Source records are hand-authored; Repository Records and their asset roll-ups are derived from the per-asset provenance the fetcher already writes.
+- Q: Where does the SSOT live, and what stays where it is? → A: **Source SSOT in the public repo** (`bibliography/sources/PB-###.yml`); per-copy/per-asset provenance stays where the fetcher/archive already writes it (including the private archive); `sources.csv` + registers become generated views.
+- Q: Controlled-vocabulary strictness and required fields? → A: **Closed vocab + minimal required core** — fixed allowed-value sets (rights aligned to Gallica `dc:rights` + SLQ), with a small required-field core and the rest optional.
+- Q: What happens to the four legacy representations after the SSOT exists? → A: **Regenerate as committed views** — `sources.csv`, `acquisition-tracker.csv`, `acquisition-register.csv`, and the `PB-P00X.yml` stubs become generated-and-committed views of the SSOT (a regen command + integrity check); the SSOT is the only hand-edited source.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Unify one work across multiple archives without losing provenance (Priority: P1)
@@ -132,16 +141,17 @@ A maintainer needs an automated check that every Asset links up to a Repository 
 
 **Single source of truth & consolidation**
 
-- **FR-013**: Exactly **one** representation MUST be declared the canonical source of truth (SSOT) for source metadata.
-- **FR-014**: The other current human-facing representations (`bibliography/sources.csv`, `bibliography/acquisition-tracker.csv`, the archive's `acquisition-register.csv`, the per-source `PB-P00X.yml` stubs) MUST become **derived/generated views** of the SSOT or be retired; the feature MUST NOT introduce a sixth independent representation.
-- **FR-015**: Regeneration of a derived view from the SSOT MUST be deterministic (the same SSOT yields byte-identical views).
+- **FR-013**: Exactly **one** representation MUST be declared the canonical source of truth (SSOT) for source metadata. The SSOT for the **bibliographic Source** MUST live in the **public** repo as `bibliography/sources/PB-###.yml`. Per-copy/per-asset provenance MUST remain where the fetcher/archive already writes it (including the private archive) and is not relocated by this feature.
+- **FR-013a**: Authoring direction MUST be **hybrid**: bibliographic **Source** records are hand-authored; **Repository Records** and their **asset roll-ups** are **derived** from the per-asset provenance the fetcher already writes. The system MUST NOT require hand-authoring of Repository Records or asset lists that can be derived from existing provenance.
+- **FR-014**: The four legacy human-facing representations (`bibliography/sources.csv`, `bibliography/acquisition-tracker.csv`, the archive's `acquisition-register.csv`, the per-source `PB-P00X.yml` stubs) MUST become **generated-and-committed views** of the SSOT: a regeneration command produces them and an integrity check confirms they match the SSOT. They MUST NOT be hand-edited, and the feature MUST NOT introduce a sixth independent representation.
+- **FR-015**: Regeneration of a derived view from the SSOT MUST be deterministic (the same SSOT yields byte-identical views), so a committed view that drifts from the SSOT is detectable by re-running the regeneration and comparing.
 - **FR-016**: A migration MUST fold the existing five representations into the model and MUST **restore the lost SLQ Repository Record for `PB-P001`**.
 
 **Validation**
 
 - **FR-017**: The system MUST provide a referential-integrity check verifying every Asset links to a Repository Record and every Repository Record links to a Source, reporting any orphan with a locating message.
 - **FR-018**: The system MUST detect and report a copy-level identifier that has leaked onto a Source.
-- **FR-019**: Controlled-vocabulary fields (at minimum `status`, `rights`, `provider`, `ocr_status`) MUST be validated against an allowed set; `rights` values MUST be reconcilable with the archives' own vocabularies (e.g., Gallica `dc:rights`, SLQ). [NEEDS CLARIFICATION: the exact allowed-value sets, and which fields are required vs optional with what cardinalities, are not yet fixed — to be settled in `/speckit-clarify`.]
+- **FR-019**: Controlled-vocabulary fields (at minimum `status`, `rights`, `provider`, `ocr_status`) MUST be validated against a **closed** allowed-value set; `rights` values MUST be reconcilable with the archives' own vocabularies (e.g., Gallica `dc:rights`, SLQ). A **minimal required-field core** (at least `id`, a canonical/primary title, and — where a copy exists — `source_archive` and `status`) MUST be enforced; all other fields are optional so partially-catalogued (`wanted` / `to-collect`) sources remain valid. The exact allowed-value sets and the final required-field list are settled during `/speckit-plan` and recorded in the data model.
 
 **Scope boundary**
 
@@ -167,14 +177,15 @@ A maintainer needs an automated check that every Asset links up to a Repository 
 - **SC-005**: The migration restores the previously-lost SLQ Repository Record for PB-P001 (it is present and complete after migration).
 - **SC-006**: The 78-issue periodical is represented with all issues enumerated matching the census, and each copy references an asset manifest rather than a single checksum.
 - **SC-007**: The referential-integrity + identifier-leak validator reports every seeded orphan and every seeded leak, and reports success on a consistent dataset (no false positives).
+- **SC-008**: A committed derived view that is hand-edited away from the SSOT is detected: re-running the deterministic regeneration and comparing flags the drift (no silent divergence between the SSOT and its committed views).
 
 ## Assumptions
 
-- **A-001 (SSOT direction)**: The design leaves open whether the Source record is *authored* (assets/repositories link up to it) or the Repository Record is *derived* from the asset provenance the fetcher already writes; it suggests a **hybrid** — an authored bibliographic Source plus a derived Repository/asset roll-up. This spec assumes the hybrid direction as the working default; the precise authored-vs-derived boundary is carried to `/speckit-clarify`. *(Design open question 1.)*
-- **A-002 (File layout)**: This spec assumes the SSOT for the bibliographic Source lives in the **public** repo (candidate: `bibliography/sources/PB-###.yml`), while per-copy/per-asset provenance continues to live where the fetcher/archive already writes it (including the private archive). The exact paths and how `sources.csv`/registers regenerate from the SSOT are carried to `/speckit-clarify` and `/speckit-plan`. *(Design open question 2.)*
-- **A-003 (Census linkage)**: The Issue layer references the existing census artifacts at `data/census/PB-###-*.json` rather than re-deriving issue lists. The exact reference mechanism is a planning detail. *(Design open question 4.)*
+- **A-001 (SSOT direction)**: **Resolved** (see Clarifications 2026-07-09) — hybrid: authored bibliographic Source, derived Repository Records + asset roll-ups. See FR-013a.
+- **A-002 (File layout)**: **Resolved** (see Clarifications 2026-07-09) — Source SSOT at public `bibliography/sources/PB-###.yml`; per-copy/per-asset provenance stays where it is written today. See FR-013. The precise regeneration wiring for each derived view is a `/speckit-plan` detail.
+- **A-003 (Census linkage)**: The Issue layer references the existing census artifacts at `data/census/PB-###-*.json` rather than re-deriving issue lists. The exact reference mechanism is a planning detail. *(Design open question 4 — deferred to `/speckit-plan`.)*
 - **A-004 (Object-store reuse)**: The storage axis reuses the archive-object-store feature's per-asset `object_store` provenance block as-is (`specs/003-archive-object-store/data-model.md`); this feature depends on that model and does not redefine it.
-- **A-005 (Migration is one-way)**: Consolidation retires or demotes the legacy representations to derived views; the migration is a one-time fold, not a bidirectional sync. Restoring PB-P001's SLQ record is part of that fold.
+- **A-005 (Migration is one-way)**: **Resolved** (see Clarifications 2026-07-09) — the legacy representations become generated-and-committed views of the SSOT (regen command + integrity check), not hand-edited and not bidirectionally synced; the migration is a one-time fold. Restoring PB-P001's SLQ record is part of that fold. See FR-014.
 - **A-006 (Dependency)**: This feature depends on `impl:feature/archive-object-store`, whose per-asset object-store provenance is the storage-axis foundation. A roadmap `depends-on` edge is to be added once that work is on `main`.
 - **A-007 (Identifier vocabularies)**: ISBN/ISSN/OCLC are treated as work-level; ARK/IIIF-manifest/scan-DOI as copy-level, per the design. Additional identifier types encountered later are classified into the same two levels rather than a third.
 
