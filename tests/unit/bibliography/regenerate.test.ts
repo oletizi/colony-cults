@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildViewRegistry,
-  enumerateSourceStubs,
-  generateAcquisitionRegisterCsv,
   generateAcquisitionTrackerCsv,
-  generateSourceStub,
   generateSourcesCsv,
 } from '@/bibliography/regenerate';
 import { parseCsv } from '@/bibliography/csv';
@@ -153,91 +150,22 @@ describe('generateAcquisitionTrackerCsv', () => {
   });
 });
 
-describe('generateAcquisitionRegisterCsv', () => {
-  it('is deterministic', () => {
-    const model = fixtureModel();
-    expect(generateAcquisitionRegisterCsv(model)).toBe(generateAcquisitionRegisterCsv(model));
-  });
-
-  it('PB-P001 produces TWO rows -- one per Repository Record (Gallica + SLQ), SC-005', () => {
-    const table = parseCsv(generateAcquisitionRegisterCsv(fixtureModel()));
-    const p001Rows = table.rows.filter((row) => row.id === 'PB-P001');
-    expect(p001Rows).toHaveLength(2);
-    expect(p001Rows.map((row) => row.source_archive).sort()).toEqual(
-      [GALLICA_SOURCE_ARCHIVE, SLQ_SOURCE_ARCHIVE].sort(),
-    );
-    const slqRow = p001Rows.find((row) => row.source_archive === SLQ_SOURCE_ARCHIVE);
-    expect(slqRow?.mirror_status).toBe('to-collect');
-    expect(slqRow?.source_url).toContain('slq.qld.gov.au');
-  });
-
-  it('emits zero rows for a Source with no Repository Records', () => {
-    const table = parseCsv(generateAcquisitionRegisterCsv(fixtureModel()));
-    expect(table.rows.some((row) => row.id === 'PB-S001')).toBe(false);
-  });
-});
-
-describe('generateSourceStub', () => {
-  it('is deterministic', () => {
-    const model = fixtureModel();
-    expect(generateSourceStub(model, 'PB-P001')).toBe(generateSourceStub(model, 'PB-P001'));
-  });
-
-  it('picks the alphabetically-first sourceArchive as the primary copy (Gallica before SLQ)', () => {
-    const stub = generateSourceStub(fixtureModel(), 'PB-P001');
-    expect(stub).toContain(`source_archive: "${GALLICA_SOURCE_ARCHIVE}"`);
-    expect(stub).not.toContain(SLQ_SOURCE_ARCHIVE);
-  });
-
-  it('emits null (not a fabricated value) for fields the SSOT does not hold', () => {
-    const stub = generateSourceStub(fixtureModel(), 'PB-S001');
-    // PB-S001 has no repository records, so every record-derived field is null.
-    expect(stub).toContain('source_archive: null');
-    expect(stub).toContain('catalog_url: null');
-    expect(stub).toContain('mirror_status: null');
-  });
-
-  it('throws on an unknown sourceId (fail loud, no fallback)', () => {
-    expect(() => generateSourceStub(fixtureModel(), 'PB-NOPE')).toThrow(/unknown sourceId/);
-  });
-});
-
-describe('enumerateSourceStubs', () => {
-  it('enumerates one stub per case-bearing Source, skipping sources with no case', () => {
-    const model = fixtureModel();
-    model.sources.push({
-      sourceId: 'PB-P099',
-      kind: 'monograph',
-      titles: [{ text: 'No case yet', role: 'canonical' }],
-      identifiers: [],
-    });
-
-    const stubs = enumerateSourceStubs(model);
-
-    expect(stubs.map((stub) => stub.sourceId)).toEqual(['PB-P001', 'PB-S001']);
-    const p001 = stubs.find((stub) => stub.sourceId === 'PB-P001');
-    expect(p001?.relativePath).toBe('archive/cases/port-breton/metadata/PB-P001.yml');
-  });
-});
-
 describe('buildViewRegistry', () => {
-  it('classifies the two CSVs as public and the register + stubs as archive', () => {
+  it('builds exactly the two PUBLIC CSVs -- the archive-side register + stubs are curated migrate input, not generated views', () => {
     const views = buildViewRegistry(fixtureModel());
 
-    const publicViews = views.filter((view) => view.kind === 'public').map((view) => view.relativePath);
-    expect(publicViews.sort()).toEqual(
+    expect(views.every((view) => view.kind === 'public')).toBe(true);
+    const relativePaths = views.map((view) => view.relativePath);
+    expect(relativePaths.sort()).toEqual(
       ['bibliography/acquisition-tracker.csv', 'bibliography/sources.csv'].sort(),
     );
-
-    const archiveViews = views.filter((view) => view.kind === 'archive').map((view) => view.relativePath);
-    expect(archiveViews).toContain('archive/cases/port-breton/metadata/acquisition-register.csv');
-    expect(archiveViews).toContain('archive/cases/port-breton/metadata/PB-P001.yml');
-    expect(archiveViews).toContain('archive/cases/port-breton/metadata/PB-S001.yml');
   });
 
-  it('omits the register view entirely when the model has zero repository records', () => {
+  it('still builds both views for a model with zero repository records', () => {
     const noRecordsModel: CanonicalModel = { sources: [pbS001Source()], repositoryRecords: [], identifierLeaks: [] };
     const views = buildViewRegistry(noRecordsModel);
-    expect(views.some((view) => view.id === 'acquisition-register-csv')).toBe(false);
+    expect(views.map((view) => view.relativePath).sort()).toEqual(
+      ['bibliography/acquisition-tracker.csv', 'bibliography/sources.csv'].sort(),
+    );
   });
 });
