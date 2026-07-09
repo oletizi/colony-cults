@@ -37,6 +37,7 @@ Move the archive's binary image masters from git to Backblaze B2 (S3-compatible;
 
 ## impl:feature/canonical-source-metadata
 - status: planned
+- design-approved: yes
 - depends-on: impl:feature/archive-object-store
 - design: docs/superpowers/specs/2026-07-08-canonical-source-metadata-design.md
 Two-level (really multi-level) canonical source metadata model: Source (intellectual work; stable internal ID PB-###; work-level identifiers ISBN/ISSN/OCLC; titles as data) separate from Repository Record (one source-archive's copy: Gallica/SLQ/IA/HathiTrust; copy-level identifiers ARK/IIIF-manifest/scan-DOI; provenance). Sits ABOVE the per-asset provenance the archive-object-store feature already emits; for serials adds Repository->Issue->Asset. Consolidates the 5 existing overlapping metadata representations into one SSOT. From a third-party design brief, with refinements. Depends-on archive-object-store (edge to add once that merges to main). Scope: sources only.
