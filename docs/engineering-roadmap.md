@@ -36,7 +36,7 @@ Reusable TypeScript/tsx tool to fetch Gallica public-domain sources via document
 Move the archive's binary image masters from git to Backblaze B2 (S3-compatible; bucket colony-cults, endpoint https://s3.us-west-004.backblazeb2.com, region us-west-004). Fetcher archive-writer uploads image bytes to B2 and records the object key + sha256 in the git-tracked provenance; git keeps only census + provenance + OCR text + manifest. Includes a one-time migration (masters already uploaded + verified in B2; remaining: strip images from git history + force-push, coordinated with the translation session). Subsumes TASK-6.
 
 ## impl:feature/canonical-source-metadata
-- status: planned
+- status: shipped
 - analyze-clean: yes
 - spec: specs/004-canonical-source-metadata
 - design-approved: yes

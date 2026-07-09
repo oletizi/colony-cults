@@ -85,17 +85,10 @@ export function validateIdentifierLeaks(model: CanonicalModel): ValidationFindin
   }));
 }
 
-/** The on-disk roots {@link validateViewDrift} needs to read each view's committed file. */
+/** The on-disk root {@link validateViewDrift} needs to read each view's committed file. */
 export interface ViewDriftOptions {
-  /** Public repo root (holds `bibliography/sources.csv` etc). */
+  /** Public repo root (holds `bibliography/sources.csv` etc) -- every view in the registry resolves against it. */
   repoRoot: string;
-  /**
-   * Private archive root; OMIT when the archive is not present on disk.
-   * Archive-side views (the register + stubs) are then skipped entirely --
-   * not reported as drift -- mirroring `bib regenerate`'s own explicit
-   * archive-absence branch (contracts/cli.md).
-   */
-  archiveRoot?: string;
 }
 
 /**
@@ -106,17 +99,16 @@ export interface ViewDriftOptions {
  * SC-008). A missing committed file is treated as drift, not an error --
  * `readViewIfExists` returns `undefined` rather than throwing for a
  * not-yet-written view.
+ *
+ * The archive-side `acquisition-register.csv` + `PB-P00X.yml` stubs are NOT
+ * in the registry (they are curated migrate INPUT, not generated views --
+ * see `buildViewRegistry`'s doc comment), so this check never touches the
+ * archive root.
  */
 export function validateViewDrift(model: CanonicalModel, opts: ViewDriftOptions): ValidationFinding[] {
   const findings: ValidationFinding[] = [];
   for (const view of buildViewRegistry(model)) {
-    const root = view.kind === 'public' ? opts.repoRoot : opts.archiveRoot;
-    if (root === undefined) {
-      // Archive absent -- archive-side views are unreachable, so skipped
-      // rather than reported as drift.
-      continue;
-    }
-    const absPath = path.join(root, view.relativePath);
+    const absPath = path.join(opts.repoRoot, view.relativePath);
     const committed = readViewIfExists(absPath);
     if (committed !== view.content) {
       findings.push({
