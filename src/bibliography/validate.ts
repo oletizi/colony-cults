@@ -2,12 +2,22 @@ import path from 'node:path';
 
 import type { CanonicalModel, IdentifierLeak } from '@/bibliography/model';
 import { buildViewRegistry, readViewIfExists } from '@/bibliography/regenerate';
+import {
+  validateDuplicateCopies,
+  validateMissingRequired,
+  validateOrphanAssets,
+  validateOrphanRecords,
+  validateSingleChecksum,
+  validateVocab,
+} from '@/bibliography/validate-checks';
 
 /**
  * The kinds of finding `bib validate` can report -- the full union per
- * specs/004-canonical-source-metadata/contracts/validation.md. Only
- * `'identifier-leak'` is implemented so far (US2); the remaining kinds are
- * added by US5 (T027) without needing to touch this union again.
+ * specs/004-canonical-source-metadata/contracts/validation.md. `'identifier-
+ * leak'`/`'view-drift'` were implemented by US2/US4; the referential-
+ * integrity, vocab, required-core, uniqueness, and manifest-shape kinds are
+ * implemented in `@/bibliography/validate-checks` (US5 / T027) and composed
+ * into `validate()` below.
  */
 export type ValidationFindingKind =
   | 'orphan-asset'
@@ -121,16 +131,24 @@ export function validateViewDrift(model: CanonicalModel, opts: ViewDriftOptions)
 
 /**
  * Run every implemented validation check over `model` and concatenate their
- * findings. Pure over `model` alone; `validateViewDrift` (the one check that
- * also touches disk) only runs when `opts` is supplied, so existing
- * model-only callers/tests are unaffected. Never throws on content findings
+ * findings: identifier leaks (US2), referential integrity / vocab /
+ * required-core / uniqueness / manifest-shape (US5, `@/bibliography/
+ * validate-checks`), and -- when `opts` is supplied -- view drift (US4, the
+ * one check that also touches disk; omitting `opts` leaves existing
+ * model-only callers/tests unaffected). Never throws on content findings
  * (throwing is reserved for malformed input upstream, in
- * `@/bibliography/load`). Kept as a simple concatenation so US5 (T027) can
- * add the remaining checks (referential integrity, vocab, required fields,
- * uniqueness, manifest shape) without restructuring this function.
+ * `@/bibliography/load`).
  */
 export function validate(model: CanonicalModel, opts?: ViewDriftOptions): ValidationFinding[] {
-  const findings = [...validateIdentifierLeaks(model)];
+  const findings = [
+    ...validateIdentifierLeaks(model),
+    ...validateOrphanRecords(model),
+    ...validateOrphanAssets(model),
+    ...validateVocab(model),
+    ...validateMissingRequired(model),
+    ...validateDuplicateCopies(model),
+    ...validateSingleChecksum(model),
+  ];
   if (opts !== undefined) {
     findings.push(...validateViewDrift(model, opts));
   }
