@@ -29,6 +29,7 @@ Reusable TypeScript/tsx tool to fetch Gallica public-domain sources via document
 
 ## impl:feature/archive-object-store
 - status: planned
+- analyze-clean: yes
 - spec: specs/003-archive-object-store
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-08-archive-object-store-design.md
