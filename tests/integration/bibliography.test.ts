@@ -89,12 +89,16 @@ const CENSUS_JSON = JSON.stringify({
   issues: [{ ark: 'bpt6k1', date: '1879-07-15', label: '15 juillet 1879', pageCount: 8 }],
 });
 
-/** Seed a repo root with the two PUBLIC representations (sources + tracker) plus the census fixture. */
+/**
+ * Seed a repo root with the two PUBLIC representations (sources + tracker),
+ * frozen under `bibliography/legacy/` (migrate's durable input), plus the
+ * census fixture.
+ */
 function seedRepo(): string {
   const repo = tempDir('bib-repo-');
-  mkdirSync(path.join(repo, 'bibliography'), { recursive: true });
-  writeFileSync(path.join(repo, 'bibliography', 'sources.csv'), SOURCES_CSV);
-  writeFileSync(path.join(repo, 'bibliography', 'acquisition-tracker.csv'), TRACKER_CSV);
+  mkdirSync(path.join(repo, 'bibliography', 'legacy'), { recursive: true });
+  writeFileSync(path.join(repo, 'bibliography', 'legacy', 'sources.csv'), SOURCES_CSV);
+  writeFileSync(path.join(repo, 'bibliography', 'legacy', 'acquisition-tracker.csv'), TRACKER_CSV);
   mkdirSync(path.join(repo, 'data', 'census'), { recursive: true });
   writeFileSync(path.join(repo, 'data', 'census', 'PB-P001-la-nouvelle-france.json'), CENSUS_JSON);
   return repo;

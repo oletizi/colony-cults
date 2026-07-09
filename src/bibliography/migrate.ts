@@ -19,6 +19,7 @@ import {
   MIRROR_STATUS,
   TRACKER_STATUS,
   canonicalizeArchive,
+  detectIsbn,
   detectKind,
   extractArk,
   extractSlqIds,
@@ -31,7 +32,7 @@ import {
 
 /** Options for {@link migrate}. */
 export interface MigrateOptions {
-  /** Public repo root holding `bibliography/sources.csv` + `acquisition-tracker.csv`. */
+  /** Public repo root holding the frozen `bibliography/legacy/sources.csv` + `acquisition-tracker.csv`. */
   repoRoot: string;
   /** Private archive root; defaults via {@link resolveArchiveRoot}. */
   archiveRoot?: string;
@@ -245,11 +246,17 @@ function migrateSource(
   const sourceId = requireCell(row, 'id', 'sources.csv row');
   const kind = detectKind(requireCell(row, 'type', `sources.csv ${sourceId}`));
 
+  // The tracker's `url_or_reference` cell doubles as a bare-ISBN slot for a
+  // source with no URL (e.g. PB-S001) -- a genuine URL/other reference is NOT
+  // an ISBN and detectIsbn returns undefined for it (no fabrication).
+  const trackerRef = trackerRow === undefined ? undefined : nonEmpty(trackerRow.url_or_reference);
+  const isbn = trackerRef === undefined ? undefined : detectIsbn(trackerRef);
+
   const source: Source = {
     sourceId,
     titles: [{ text: requireCell(row, 'title', `sources.csv ${sourceId}`), role: 'canonical' }],
     kind,
-    identifiers: [],
+    identifiers: isbn === undefined ? [] : [{ type: 'isbn', value: isbn }],
   };
   const creator = nonEmpty(row.creator);
   if (creator !== undefined) {
@@ -304,11 +311,18 @@ async function safeGather(sourceId: string, archiveRoot: string): Promise<AssetP
 /**
  * Fold the five legacy representations into the canonical SSOT (T013):
  *
- *  1. `bibliography/sources.csv`            -- the Source spine (required).
- *  2. `bibliography/acquisition-tracker.csv`-- status / combined vendor / notes.
+ *  1. `bibliography/legacy/sources.csv`            -- the Source spine (required).
+ *  2. `bibliography/legacy/acquisition-tracker.csv`-- status / combined vendor / notes / ISBN.
  *  3. archive `acquisition-register.csv`    -- per-archive acquisition fields.
  *  4. archive `PB-###.yml` stubs            -- Gallica catalog/mirror overrides.
  *  5. per-asset provenance YAML             -- the derived manifest roll-up.
+ *
+ * Representations 1-2 are FROZEN originals under `bibliography/legacy/` -- the
+ * top-level `bibliography/sources.csv` / `acquisition-tracker.csv` are
+ * generated VIEWS (written only by `bib regenerate`) and are never valid
+ * migrate input (they are lossy re-derivations, not the curated source). This
+ * keeps `migrate` re-runnable/idempotent (cli.md contract) instead of a
+ * one-time-only bootstrap.
  *
  * PB-P001 folds into TWO distinct Repository Records -- `Gallica / BnF` and the
  * RESTORED `State Library of Queensland` copy (SC-005). Serialization is
@@ -320,13 +334,13 @@ async function safeGather(sourceId: string, archiveRoot: string): Promise<AssetP
  */
 export async function migrate(opts: MigrateOptions): Promise<MigrateResult> {
   const write = opts.write ?? true;
-  const sourcesPath = path.join(opts.repoRoot, 'bibliography', 'sources.csv');
+  const sourcesPath = path.join(opts.repoRoot, 'bibliography', 'legacy', 'sources.csv');
   if (!existsSync(sourcesPath)) {
     throw new Error(`migrate: required spine "${sourcesPath}" does not exist`);
   }
   const sources = parseCsv(readFileSync(sourcesPath, 'utf-8')).rows;
 
-  const trackerPath = path.join(opts.repoRoot, 'bibliography', 'acquisition-tracker.csv');
+  const trackerPath = path.join(opts.repoRoot, 'bibliography', 'legacy', 'acquisition-tracker.csv');
   const trackerIndex = new Map<string, Record<string, string>>();
   if (existsSync(trackerPath)) {
     for (const row of parseCsv(readFileSync(trackerPath, 'utf-8')).rows) {
@@ -342,8 +356,8 @@ export async function migrate(opts: MigrateOptions): Promise<MigrateResult> {
   if (!archiveAvailable) {
     console.warn(
       `migrate: archive root "${archiveRoot}" does not exist -- folding public ` +
-        `representations (sources.csv + acquisition-tracker.csv) only; archive-side ` +
-        `enrichment (register, stubs, provenance) is unavailable`,
+        `representations (legacy/sources.csv + legacy/acquisition-tracker.csv) only; ` +
+        `archive-side enrichment (register, stubs, provenance) is unavailable`,
     );
   }
 

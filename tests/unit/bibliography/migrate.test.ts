@@ -27,10 +27,14 @@ const SOURCES_CSV = [
   '',
 ].join('\n');
 
+// PB-P001's url_or_reference is a GitHub issue URL -- NOT an ISBN, so it must
+// yield zero Source identifiers. PB-P002's is a bare ISBN-13 (the PB-S001
+// pattern from the original curated tracker) -- it must yield a work-level
+// `isbn` identifier.
 const TRACKER_CSV = [
   'id,title,priority,status,next_action,vendor_or_archive,url_or_reference,notes',
   'PB-P001,"La Nouvelle France",high,in progress,"Preserve Gallica run",State Library of Queensland / BnF Gallica,https://github.com/oletizi/colony-cults/issues/1,"SLQ title record id is slq_alma99183978086302061 with call number RBS 919.5 004."',
-  'PB-P002,"Nouvelle-France",high,wanted,"Find a scan",Gallica / Google Books,,"Promotional primary source."',
+  'PB-P002,"Nouvelle-France",high,wanted,"Find a scan",Gallica / Google Books,978-2-914612-02-9,"Promotional primary source."',
   '',
 ].join('\n');
 
@@ -79,12 +83,17 @@ const CENSUS_JSON = JSON.stringify({
   issues: [{ ark: 'bpt6k1', date: '1879-07-15', label: '15 juillet 1879', pageCount: 8 }],
 });
 
-/** Seed a repo root with the two PUBLIC representations (sources + tracker) plus the census fixture. */
+/**
+ * Seed a repo root with the two PUBLIC representations (sources + tracker),
+ * frozen under `bibliography/legacy/` (migrate's durable input -- the
+ * top-level `bibliography/sources.csv`/`acquisition-tracker.csv` are
+ * generated views, never migrate input), plus the census fixture.
+ */
 function seedRepo(tracker: string = TRACKER_CSV): string {
   const repo = tempDir('migrate-repo-');
-  mkdirSync(path.join(repo, 'bibliography'), { recursive: true });
-  writeFileSync(path.join(repo, 'bibliography', 'sources.csv'), SOURCES_CSV);
-  writeFileSync(path.join(repo, 'bibliography', 'acquisition-tracker.csv'), tracker);
+  mkdirSync(path.join(repo, 'bibliography', 'legacy'), { recursive: true });
+  writeFileSync(path.join(repo, 'bibliography', 'legacy', 'sources.csv'), SOURCES_CSV);
+  writeFileSync(path.join(repo, 'bibliography', 'legacy', 'acquisition-tracker.csv'), tracker);
   mkdirSync(path.join(repo, 'data', 'census'), { recursive: true });
   writeFileSync(path.join(repo, 'data', 'census', 'PB-P001-la-nouvelle-france.json'), CENSUS_JSON);
   return repo;
@@ -171,6 +180,18 @@ describe('migrate', () => {
     const second = readFileSync(sourcePath(repo, 'PB-P001'), 'utf-8');
 
     expect(second).toBe(first);
+  });
+
+  it('captures a bare-ISBN tracker reference as a work-level Source identifier; a URL reference does not', async () => {
+    const repo = seedRepo();
+    const arch = seedArchive();
+    await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+
+    const p002 = loadSourceFile(sourcePath(repo, 'PB-P002'));
+    expect(p002.source.identifiers).toEqual([{ type: 'isbn', value: '9782914612029' }]);
+
+    const p001 = loadSourceFile(sourcePath(repo, 'PB-P001'));
+    expect(p001.source.identifiers).toEqual([]);
   });
 
   it('yields ZERO repository records for a wanted source with no acquired copy', async () => {

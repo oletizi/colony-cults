@@ -6,4 +6,7 @@ creator: Daniel Raphalen
 titles:
   - text: L'Odyssée de Port-Breton ou le rêve océanien du marquis de Rays
     role: canonical
+identifiers:
+  - type: isbn
+    value: "9782914612029"
 notes: "Years: 2006 | Access: purchase/used | Public domain: false | Likely definitive modern French monograph; difficult to acquire."

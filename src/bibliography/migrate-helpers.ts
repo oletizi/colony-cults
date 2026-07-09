@@ -117,6 +117,25 @@ export function extractSlqIds(notes: string | undefined): string | undefined {
   return parts.join('; ');
 }
 
+/**
+ * Detect a work-level ISBN-10/ISBN-13 in a free-text reference cell (the
+ * tracker's `url_or_reference` column doubles as an ISBN slot for sources
+ * with no URL, e.g. PB-S001). Strips spaces/hyphens, then requires either a
+ * bare ISBN-10 (10 chars: 9 digits + a trailing digit or `X`) or a bare
+ * ISBN-13 (13 digits starting `978`/`979`). A URL or any other free-text
+ * reference does not match and returns `undefined` -- no fabrication.
+ */
+export function detectIsbn(ref: string): string | undefined {
+  const stripped = ref.replace(/[\s-]/g, '');
+  if (/^\d{9}[\dXx]$/.test(stripped)) {
+    return stripped.toUpperCase();
+  }
+  if (/^(978|979)\d{10}$/.test(stripped)) {
+    return stripped;
+  }
+  return undefined;
+}
+
 /** Whether the source's material type denotes a periodical/newspaper serial. */
 export function detectKind(typeColumn: string): Source['kind'] {
   const lower = typeColumn.toLowerCase();

@@ -131,13 +131,20 @@ function joinedArchives(records: readonly RepositoryRecord[]): string {
   return records.map((record) => record.sourceArchive).join(' / ');
 }
 
+/** A Source's work-level ISBN, if it carries one (empty when it does not). */
+function isbnOf(source: Source): string {
+  return source.identifiers.find((identifier) => identifier.type === 'isbn')?.value ?? '';
+}
+
 /**
  * `bibliography/acquisition-tracker.csv` -- one row per Source.
  * `vendor_or_archive` joins the Source's `repositoryRecords[].sourceArchive`
  * (the one column research R-006 / the task spec calls out explicitly as
- * SSOT-derivable). `priority`/`next_action`/`url_or_reference` have no
- * discrete SSOT field (`migrate.ts` dropped them) and are emitted empty --
- * not fabricated.
+ * SSOT-derivable). `priority`/`next_action` have no discrete SSOT field
+ * (`migrate.ts` dropped them) and are emitted empty -- not fabricated.
+ * `url_or_reference` round-trips a Source's work-level `isbn` identifier when
+ * present (the only discrete SSOT value that column carries today); it is
+ * empty for a Source with no ISBN.
  */
 export function generateAcquisitionTrackerCsv(model: CanonicalModel): string {
   const rows = sortedSources(model).map((source) => {
@@ -149,7 +156,7 @@ export function generateAcquisitionTrackerCsv(model: CanonicalModel): string {
       joinedStatus(records),
       '', // next_action -- not a discrete SSOT field
       joinedArchives(records),
-      '', // url_or_reference -- not a discrete SSOT field
+      isbnOf(source), // url_or_reference -- round-trips the work-level ISBN, else empty
       source.notes ?? '',
     ];
   });

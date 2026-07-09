@@ -10,7 +10,7 @@ Validation scenarios that prove the feature works end-to-end. Assumes the repo i
 
 ## Scenario 1 — PB-P001 keeps both archive copies (P1 / SC-001 / SC-005)
 
-`bib migrate` is a **one-time bootstrap** (spec A-005): it folds the five *original* representations into the SSOT and restores the SLQ record. It has already been run — the committed `bibliography/sources/*.yml` are its result, and the top-level `sources.csv` / `acquisition-tracker.csv` are now *generated views* (Scenario 3), so `bib migrate` is not re-run on the delivered repo (its lossy views are not valid migrate input). Verify the result directly:
+`bib migrate` folds the five *original* representations into the SSOT and restores the SLQ record. Its durable input is the pair of curated CSVs frozen under `bibliography/legacy/` (`sources.csv` + `acquisition-tracker.csv`) — NOT the top-level `bibliography/sources.csv` / `acquisition-tracker.csv`, which are *generated views* (Scenario 3) written only by `bib regenerate` and are never valid migrate input (they are lossy re-derivations of the SSOT). Because the frozen originals never change, `bib migrate` IS re-runnable and idempotent: re-running it reproduces byte-identical `bibliography/sources/*.yml`. Verify the result directly:
 
 ```bash
 npx tsx src/index.ts bib show PB-P001 --json --archive-root <archive-checkout>
