@@ -34,6 +34,7 @@ function args(overrides: {
       verify: false,
       ocr: false,
       objectStore: false,
+      reconcileRemote: false,
       checkpoint: overrides.checkpoint,
     },
     options: {

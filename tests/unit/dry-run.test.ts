@@ -85,6 +85,7 @@ function baseArgs(): ParsedArgs {
       verify: false,
       ocr: false,
       objectStore: false,
+      reconcileRemote: false,
       checkpoint: false,
     },
     options: { sourceId: SOURCE_ID, slug: undefined },

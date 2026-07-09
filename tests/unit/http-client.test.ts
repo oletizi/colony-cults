@@ -25,6 +25,32 @@ function queuedFetch(responses: Response[]): {
 }
 
 /**
+ * Build a fake fetch over a sequence where an `Error` entry REJECTS (a
+ * network-level failure, e.g. undici's `TypeError: fetch failed`) and a
+ * `Response` entry resolves. Records every call.
+ */
+function queuedSeqFetch(seq: Array<Response | Error>): {
+  fetch: FetchLike;
+  calls: Array<{ url: string; init?: RequestInit }>;
+} {
+  const calls: Array<{ url: string; init?: RequestInit }> = [];
+  let i = 0;
+  const fetch: FetchLike = (input, init) => {
+    calls.push({ url: String(input), init });
+    if (i >= seq.length) {
+      throw new Error(`fake fetch: no queued entry for call ${i + 1}`);
+    }
+    const entry = seq[i];
+    i += 1;
+    if (entry instanceof Error) {
+      return Promise.reject(entry);
+    }
+    return Promise.resolve(entry);
+  };
+  return { fetch, calls };
+}
+
+/**
  * Fake sleep: resolves immediately, records the requested delay.
  */
 function recordingSleep(): {
@@ -150,6 +176,54 @@ describe('HttpClient', () => {
     await expect(client.getText(URL_UNDER_TEST)).rejects.toThrow(/404/);
     expect(calls.length).toBe(1);
     expect(delays).toEqual([]);
+  });
+
+  it('retries a network-level fetch rejection with exponential backoff, then succeeds', async () => {
+    // undici throws `TypeError: fetch failed` on a connection reset — no HTTP
+    // response, so this must be retried like a retryable status, not aborted.
+    const { fetch, calls } = queuedSeqFetch([
+      new TypeError('fetch failed'),
+      new TypeError('fetch failed'),
+      new Response('recovered', { status: 200 }),
+    ]);
+    const { sleep, delays } = recordingSleep();
+    const client = new HttpClient({ fetch, sleep });
+
+    const body = await client.getText(URL_UNDER_TEST);
+
+    expect(body).toBe('recovered');
+    expect(calls.length).toBe(3);
+    expect(delays).toEqual([2000, 4000]);
+  });
+
+  it('gives up after max attempts on a persistent network failure (descriptive throw)', async () => {
+    const { fetch, calls } = queuedSeqFetch(
+      Array.from({ length: 6 }, () => new TypeError('fetch failed')),
+    );
+    const { sleep, delays } = recordingSleep();
+    const client = new HttpClient({ fetch, sleep });
+
+    await expect(client.getText(URL_UNDER_TEST)).rejects.toThrow(
+      /network error.*fetch failed/,
+    );
+    expect(calls.length).toBe(6);
+    expect(delays).toEqual([2000, 4000, 8000, 16000, 32000]);
+  });
+
+  it('retries a mix of a network rejection then a retryable status', async () => {
+    const { fetch, calls } = queuedSeqFetch([
+      new TypeError('fetch failed'),
+      new Response('', { status: 503 }),
+      new Response('ok', { status: 200 }),
+    ]);
+    const { sleep, delays } = recordingSleep();
+    const client = new HttpClient({ fetch, sleep });
+
+    const body = await client.getText(URL_UNDER_TEST);
+
+    expect(body).toBe('ok');
+    expect(calls.length).toBe(3);
+    expect(delays).toEqual([2000, 4000]);
   });
 
   it('sets a descriptive User-Agent header', async () => {

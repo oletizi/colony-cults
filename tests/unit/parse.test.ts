@@ -18,6 +18,7 @@ describe('parse', () => {
       verify: false,
       ocr: true,
       objectStore: false,
+      reconcileRemote: false,
       checkpoint: false,
     });
   });
@@ -31,6 +32,7 @@ describe('parse', () => {
       verify: false,
       ocr: false,
       objectStore: false,
+      reconcileRemote: false,
       checkpoint: false,
     });
   });
