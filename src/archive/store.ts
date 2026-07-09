@@ -284,6 +284,61 @@ export async function storeAsset(
   return { path: targetPath, sha256, skipped };
 }
 
+/**
+ * One `manifests/MANIFEST.sha256` entry whose companion YAML's recorded
+ * `sha256` disagrees with the manifest's recorded sha256 for the same path.
+ */
+export interface ManifestProvenanceDisagreement {
+  /** Archive-relative asset path (the manifest entry's key). */
+  relPath: string;
+  /** SHA-256 recorded in `manifests/MANIFEST.sha256` for this path. */
+  manifestSha256: string;
+  /**
+   * SHA-256 recorded in the companion YAML, or `null` when the companion is
+   * missing or has no readable `sha256` field -- itself an internal-
+   * consistency failure: the manifest tracks this asset but provenance does
+   * not corroborate it.
+   */
+  provenanceSha256: string | null;
+}
+
+/**
+ * Audit internal consistency between the archive's TWO git-tracked
+ * integrity records for every asset: `manifests/MANIFEST.sha256` and each
+ * asset's companion YAML `sha256:` field (T024). This is independent of the
+ * object store -- an object-store-backed master's bytes are not re-fetched
+ * or re-hashed here (see {@link verifyAsset} for that); this only proves the
+ * two git-tracked records agree with each other for every manifested path,
+ * including object-store-backed ones.
+ *
+ * Fails loud only on a STRUCTURAL problem: the manifest itself does not
+ * exist, so there is nothing to audit against. A per-entry mismatch
+ * (including a missing/unreadable companion YAML) is DATA, not a throw --
+ * it is returned as a {@link ManifestProvenanceDisagreement} for the caller
+ * to report. An empty array means full agreement.
+ */
+export async function auditManifestProvenance(
+  archiveRoot: string,
+): Promise<ManifestProvenanceDisagreement[]> {
+  const manifestPath = path.join(archiveRoot, MANIFEST_RELATIVE);
+  if (!existsSync(manifestPath)) {
+    throw new Error(
+      `auditManifestProvenance: manifest not found at ${manifestPath}`,
+    );
+  }
+  const entries = await readManifestEntries(manifestPath);
+
+  const disagreements: ManifestProvenanceDisagreement[] = [];
+  for (const [relPath, manifestSha256] of entries) {
+    const yamlPath = companionYamlPath(path.join(archiveRoot, relPath));
+    const provenanceSha256 = await readRecordedSha(yamlPath);
+    if (provenanceSha256 !== manifestSha256) {
+      disagreements.push({ relPath, manifestSha256, provenanceSha256 });
+    }
+  }
+  return disagreements;
+}
+
 /** Options for {@link verifyAsset}. */
 export interface VerifyAssetOptions {
   /**
