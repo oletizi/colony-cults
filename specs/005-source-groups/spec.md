@@ -58,9 +58,10 @@ meaningful and durable. It is separable from P1: the guardrail keys on kind, whi
 story adds the full members-vs-repository-records validation contract.
 
 **Independent Test**: Author a source-group record with members and no repository
-records — it validates. Author a source-group record that carries repository records, or
-one that carries no members — validation rejects it with a specific reason. Author an
-ordinary source that carries members — validation rejects it.
+records — it validates. Author a source-group record with zero members — it also
+validates (declared-but-unpopulated). Author a source-group record that carries
+repository records — validation rejects it with a specific reason. Author an ordinary
+source that carries members — validation rejects it.
 
 **Acceptance Scenarios**:
 
@@ -69,8 +70,9 @@ ordinary source that carries members — validation rejects it.
 2. **Given** a source-group record that carries repository records, **When** it is
    validated, **Then** validation fails, stating a source group must not hold repository
    records.
-3. **Given** a source-group record with no members, **When** it is validated, **Then**
-   validation fails, stating a source group must have at least one member.
+3. **Given** a source-group record with no members yet, **When** it is validated, **Then**
+   validation passes (a declared-but-unpopulated group is valid), provided it holds no
+   repository records and remains non-fetchable.
 4. **Given** an ordinary monograph/periodical record that carries members, **When** it is
    validated, **Then** validation fails, stating only a source group may hold members.
 5. **Given** a member and its group, **When** the membership relationship is inspected,
@@ -147,10 +149,29 @@ and any derived outputs still build without error.
 - **A member with no stable archival identity yet** (no ARK/DOI/ISBN/OCLC/repository id)
   — it is treated as requiring discovery, not acquisition, even before it is formally
   marked, so an accidental fetch of an un-acquirable member also fails informatively.
-- **An empty collection** (a group declared before any member is discovered) — see FR-005
-  clarification; the validation stance on a zero-member group must be explicit.
+- **An empty collection** (a group declared before any member is discovered) — valid per
+  FR-005; validation still enforces no repository records and non-fetchability on the
+  zero-member group.
 - **A record that is both marked a source group and carries repository records** — a
   contradiction that validation must reject rather than resolve by precedence.
+
+## Clarifications
+
+### Session 2026-07-09
+
+- Q: Member identity scheme for source-group members? → A: Each member gets its own
+  stable, opaque `PB-###` id plus an explicit membership edge — structure is a
+  relationship, not encoded in the id (model-consistent with the shipped canonical
+  opaque-id principle). Hierarchical `PB-P004-001` ids rejected.
+- Q: How is the group↔member link represented? → A: The **member** carries
+  `part_of: <group-id>`; the group's member list is **derived** from those edges (single
+  source of truth, no bidirectional state to keep in sync).
+- Q: Is a zero-member (declared-but-unpopulated) source group valid? → A: Yes — a group
+  may exist with no members yet, matching the discover-before-acquire premise. Validation
+  still enforces no repository records and non-fetchability regardless of member count.
+- Q: Where does the pre-promotion candidate inventory live? → A: Candidates are **member
+  stubs carrying `status: discovered`** (maturing to `approved-for-acquisition`, then the
+  existing acquisition statuses) — one record type and one pipeline, no parallel store.
 
 ## Requirements *(mandatory)*
 
@@ -169,21 +190,21 @@ and any derived outputs still build without error.
 - **FR-004**: RepositoryRecord MUST remain a **separate entity** — it MUST NOT be folded
   into the kind vocabulary. The model's two axes (a Source's kind; the RepositoryRecord
   entity that records a held copy) MUST be preserved.
-- **FR-005**: A source group MUST hold **members** and MUST NOT hold repository records.
-  Non-group sources MUST hold repository records and MUST NOT hold members. Validation
-  MUST enforce this split and fail loud with a specific reason when it is violated.
-  [NEEDS CLARIFICATION: must a source group have at least one member (zero-member group
-  rejected), or is an empty declared-but-unpopulated group valid?]
-- **FR-006**: A member MUST be linked to exactly one group, and the group MUST be
-  resolvable to its members. [NEEDS CLARIFICATION: representation of the group↔member
-  link — does the group list its `members`, do members carry a `part_of` pointer to the
-  group, or both directions maintained and validated for mutual consistency?]
-- **FR-007**: Each member MUST carry its own **stable, opaque identifier** consistent with
-  the shipped canonical principle that identifiers are permanent and structure is a
-  relationship, not encoded in the identifier. [NEEDS CLARIFICATION: member ID scheme —
-  stable flat id plus an explicit membership edge (recommended, model-consistent) vs
-  readable hierarchical ids such as `PB-P004-001` (the guidance's alternative that encodes
-  structure into the id)?]
+- **FR-005**: A source group MUST NOT hold repository records and MUST NOT be fetchable,
+  **regardless of how many members it has** — a zero-member (declared-but-unpopulated)
+  source group is valid, matching the discover-before-acquire premise. Non-group sources
+  MUST hold repository records and MUST NOT hold members. Validation MUST enforce this
+  split (group ⇒ no repository records, non-fetchable; non-group ⇒ no members) and fail
+  loud with a specific reason when it is violated.
+- **FR-006**: A member MUST carry a `part_of: <group-id>` edge linking it to exactly one
+  source group; a member's membership is stated on the member record. The group's member
+  list MUST be **derived** from those edges — the edge is the single source of truth, and
+  the group record does NOT maintain a redundant member list. Validation MUST fail loud
+  when a `part_of` edge names a non-existent group.
+- **FR-007**: Each member MUST carry its own **stable, opaque `PB-###` identifier**,
+  consistent with the shipped canonical principle that identifiers are permanent and
+  structure is a relationship (the `part_of` edge), not encoded in the identifier.
+  Hierarchical composite ids (e.g. `PB-P004-001`) MUST NOT be used.
 - **FR-008**: The status vocabulary MUST be extended with `discovered` and
   `approved-for-acquisition` to express the collection lifecycle Discover → Inventory →
   Verify → Promote → Acquire → Preserve. All previously-valid status values MUST continue
@@ -214,11 +235,10 @@ and any derived outputs still build without error.
 - **Status vocabulary**: The closed set of lifecycle values a record may carry, extended
   with `discovered` and `approved-for-acquisition`.
 - **Discovery record / candidate inventory**: The pre-promotion inventory of candidate
-  members (title / creator / ARK / repository / rights / relevance / status), captured
-  before a candidate is promoted to an acquirable member. [NEEDS CLARIFICATION — carried
-  to /speckit-clarify: where this inventory lives before promotion (a dedicated discovered
-  area vs `discovered`-status stubs on member records). Not counted among the 3 primary
-  markers; a reasonable default is recorded in Assumptions.]
+  members (title / creator / ARK / repository / rights / relevance / status). Represented
+  as **member stubs carrying `status: discovered`** — the same record type that later
+  matures to `approved-for-acquisition` and then the existing acquisition statuses. No
+  separate parallel store.
 
 ## Success Criteria *(mandatory)*
 
@@ -248,10 +268,9 @@ and any derived outputs still build without error.
   discovery" rules are encoded so the acquisition engine keys on the source's kind, not on
   identifier naming conventions. (Design open question "vocab/agent-behavior encoding" —
   the design already decided kind-keying; treated here as settled, not open.)
-- **Discovery-record location default**: Absent a clarification answer, candidate members
-  are represented as member stubs carrying `status: discovered` rather than a separate
-  parallel store, keeping one record type. (Revisited in /speckit-clarify — see the Key
-  Entities marker.)
+- **Discovery-record location** (resolved in Clarifications): candidate members are
+  represented as member stubs carrying `status: discovered` rather than a separate
+  parallel store, keeping one record type through the pipeline.
 - **Builds on shipped canonical model**: The shipped `impl:feature/canonical-source-metadata`
   (Source / RepositoryRecord separation, opaque stable ids, closed vocabularies) is the
   substrate; this feature extends it and does not re-litigate it.

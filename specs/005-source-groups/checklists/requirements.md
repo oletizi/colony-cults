@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,10 +31,9 @@
 
 ## Notes
 
-- Three [NEEDS CLARIFICATION] markers remain by design — the model-shaping open questions
-  carried forward from the approved design record (FR-005 zero-member group, FR-006
-  group↔member link representation, FR-007 member ID scheme), plus a fourth non-primary
-  marker on discovery-record location (Key Entities) with a documented default in
-  Assumptions. These are the intended input to `/speckit-clarify`; they are not defects.
-- Items marked incomplete require spec updates before `/speckit-plan`. The clarification
-  markers are resolved in the `/speckit-clarify` step that follows.
+- All four carried-forward open questions were resolved in `/speckit-clarify`
+  (Session 2026-07-09): member ID scheme (flat opaque id + `part_of` edge), group↔member
+  link (member carries `part_of`, group list derived), zero-member group (valid), and
+  discovery-record shape (`status: discovered` member stubs). See the spec's
+  `## Clarifications` section.
+- Checklist fully passing (16/16). Ready for `/speckit-plan`.
