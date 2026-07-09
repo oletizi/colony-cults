@@ -22,7 +22,8 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1083.0",
-    "fast-xml-parser": "^5.9.3"
+    "fast-xml-parser": "^5.9.3",
+    "yaml": "^2.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",

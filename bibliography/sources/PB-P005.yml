@@ -1,0 +1,13 @@
+sourceId: PB-P005
+kind: periodical
+case: port-breton
+language: English
+creator: various
+titles:
+  - text: Australian newspaper coverage in Trove
+    role: canonical
+notes: "Years: 1880s | Access: digital/public domain | Public domain: likely | Coverage of survivors, trial, and New Italy settlement."
+repositoryRecords:
+  - sourceArchive: Trove/National Library of Australia
+    status: to-collect
+    catalogUrl: https://trove.nla.gov.au/

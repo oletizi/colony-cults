@@ -1,4 +1,14 @@
-export type { Source } from '@/model/source';
+export type { Source, Title, WorkIdentifier } from '@/model/source';
+export type {
+  RepositoryRecord,
+  CopyIdentifier,
+  AssetManifestRef,
+  IssueRef,
+} from '@/model/repository-record';
+export type {
+  WorkLevelIdentifierType,
+  CopyLevelIdentifierType,
+} from '@/model/identifiers';
 export type { Census, CensusIssue } from '@/model/census';
 export type { Issue } from '@/model/issue';
 export type { Rights } from '@/model/rights';

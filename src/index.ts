@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { parse } from '@/cli/parse';
 import type { Command, ParsedArgs } from '@/cli/parse';
+import { runBibliography } from '@/cli/bibliography';
 import { runCensus } from '@/cli/census';
 import { runFetchIssue, runFetchSource } from '@/cli/fetch';
 import { runOcr } from '@/cli/ocr';
@@ -42,6 +43,7 @@ Usage:
   gallica <command> <ark> [options]
 
 Commands:
+  bib <subaction>                Bibliography SSOT verbs (migrate, show, ...)
   census <periodicalArk>        Build/refresh the per-source census
   fetch-issue <issueArk>        Fetch one issue's page images (private archive)
   fetch-source <periodicalArk>  Fetch every issue in a source's census
@@ -69,6 +71,11 @@ function wantsVersion(argv: string[]): boolean {
 }
 
 async function main(argv: string[]): Promise<void> {
+  if (argv[0] === 'bib') {
+    process.exitCode = await runBibliography(argv.slice(1));
+    return;
+  }
+
   if (wantsHelp(argv)) {
     console.log(HELP_TEXT);
     return;
