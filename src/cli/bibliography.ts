@@ -277,17 +277,13 @@ async function runValidate(rest: string[]): Promise<number> {
   try {
     const loaded = loadAllSources(sourcesDir);
     const archiveRoot = resolveArchiveRoot(repoRoot, args.archiveRoot);
-    const archiveAvailable = existsSync(archiveRoot);
     const provenanceBySource = await gatherProvenanceForAll(
       loaded.map((entry) => entry.source),
       archiveRoot,
     );
     const censusByKey = gatherCensusForAll(loaded, repoRoot);
     const model = deriveModel(loaded, provenanceBySource, censusByKey);
-    findings = validate(model, {
-      repoRoot,
-      archiveRoot: archiveAvailable ? archiveRoot : undefined,
-    });
+    findings = validate(model, { repoRoot });
   } catch (error) {
     console.error(`bib validate: ${describeError(error)}`);
     return 2;
@@ -307,37 +303,29 @@ async function runValidate(rest: string[]): Promise<number> {
   return ok ? 0 : 1;
 }
 
-/** Build the canonical model the same way `runShow`/`runValidate` do, reporting whether the archive root exists. */
-async function buildCanonicalModel(
-  repoRoot: string,
-  archiveRootOverride: string | undefined,
-): Promise<{ model: CanonicalModel; archiveRoot: string; archiveAvailable: boolean }> {
+/** Build the canonical model the same way `runShow`/`runValidate` do. */
+async function buildCanonicalModel(repoRoot: string, archiveRootOverride: string | undefined): Promise<CanonicalModel> {
   const sourcesDir = path.join(repoRoot, 'bibliography', 'sources');
   const loaded = loadAllSources(sourcesDir);
   const archiveRoot = resolveArchiveRoot(repoRoot, archiveRootOverride);
-  const archiveAvailable = existsSync(archiveRoot);
   const provenanceBySource = await gatherProvenanceForAll(
     loaded.map((entry) => entry.source),
     archiveRoot,
   );
   const censusByKey = gatherCensusForAll(loaded, repoRoot);
-  const model = deriveModel(loaded, provenanceBySource, censusByKey);
-  return { model, archiveRoot, archiveAvailable };
+  return deriveModel(loaded, provenanceBySource, censusByKey);
 }
 
-/** Absolute path a view resolves to, given the resolved repo/archive roots. */
-function viewAbsPath(view: ViewInstance, repoRoot: string, archiveRoot: string): string {
-  return path.join(view.kind === 'public' ? repoRoot : archiveRoot, view.relativePath);
+/** Absolute path a view resolves to under the repo root. */
+function viewAbsPath(view: ViewInstance, repoRoot: string): string {
+  return path.join(repoRoot, view.relativePath);
 }
 
 /** `bib regenerate --check`: write nothing; report which views (if any) have drifted. */
-function runRegenerateCheck(views: readonly ViewInstance[], repoRoot: string, archiveRoot: string, archiveAvailable: boolean): number {
+function runRegenerateCheck(views: readonly ViewInstance[], repoRoot: string): number {
   const drifted: string[] = [];
   for (const view of views) {
-    if (view.kind === 'archive' && !archiveAvailable) {
-      continue;
-    }
-    const absPath = viewAbsPath(view, repoRoot, archiveRoot);
+    const absPath = viewAbsPath(view, repoRoot);
     const committed = readViewIfExists(absPath);
     if (committed !== view.content) {
       drifted.push(view.relativePath);
@@ -354,19 +342,10 @@ function runRegenerateCheck(views: readonly ViewInstance[], repoRoot: string, ar
   return 1;
 }
 
-/** `bib regenerate` (write mode): write every view; skip archive views (logged once) when the archive is absent. */
-function runRegenerateWrite(views: readonly ViewInstance[], repoRoot: string, archiveRoot: string, archiveAvailable: boolean): number {
-  if (!archiveAvailable) {
-    console.log(
-      `bib regenerate: archive root "${archiveRoot}" not found -- skipping archive-side views ` +
-        `(register + stubs); writing PUBLIC views only`,
-    );
-  }
+/** `bib regenerate` (write mode): write every view. */
+function runRegenerateWrite(views: readonly ViewInstance[], repoRoot: string): number {
   for (const view of views) {
-    if (view.kind === 'archive' && !archiveAvailable) {
-      continue;
-    }
-    const absPath = viewAbsPath(view, repoRoot, archiveRoot);
+    const absPath = viewAbsPath(view, repoRoot);
     mkdirSync(path.dirname(absPath), { recursive: true });
     writeFileSync(absPath, view.content, 'utf-8');
     console.log(`bib regenerate: wrote ${absPath}`);
@@ -376,13 +355,16 @@ function runRegenerateWrite(views: readonly ViewInstance[], repoRoot: string, ar
 
 /**
  * `bib regenerate [--check] [--archive-root <path>]`: build the canonical
- * model (mirroring `runShow`/`runValidate`) and materialize every view
- * (`@/bibliography/regenerate`'s `buildViewRegistry`). Default mode WRITES
- * each view (public always; archive only when `--archive-root` resolves to
- * an existing directory) and exits `0`. `--check` writes nothing, diffs each
- * view against its committed file, and exits `1` if any view would change
- * (drift) or `0` if every reachable view is already in sync
- * (contracts/cli.md).
+ * model (mirroring `runShow`/`runValidate`) and materialize the two PUBLIC
+ * views (`@/bibliography/regenerate`'s `buildViewRegistry`) against the repo
+ * root. The archive-side register + stubs are curated migrate INPUT, not
+ * generated views (see `buildViewRegistry`'s doc comment), so this command
+ * never writes into the archive root; `--archive-root` is still accepted and
+ * forwarded to model-building (provenance gathering) for parity with `bib
+ * show`/`bib validate`. Default mode WRITES each view and exits `0`.
+ * `--check` writes nothing, diffs each view against its committed file, and
+ * exits `1` if any view would change (drift) or `0` if both are already in
+ * sync (contracts/cli.md).
  */
 async function runRegenerate(rest: string[]): Promise<number> {
   let args: BibArgs;
@@ -395,22 +377,15 @@ async function runRegenerate(rest: string[]): Promise<number> {
 
   const repoRoot = resolveRepoRoot();
   let model: CanonicalModel;
-  let archiveRoot: string;
-  let archiveAvailable: boolean;
   try {
-    const built = await buildCanonicalModel(repoRoot, args.archiveRoot);
-    model = built.model;
-    archiveRoot = built.archiveRoot;
-    archiveAvailable = built.archiveAvailable;
+    model = await buildCanonicalModel(repoRoot, args.archiveRoot);
   } catch (error) {
     console.error(`bib regenerate: ${describeError(error)}`);
     return 2;
   }
 
   const views = buildViewRegistry(model);
-  return args.check
-    ? runRegenerateCheck(views, repoRoot, archiveRoot, archiveAvailable)
-    : runRegenerateWrite(views, repoRoot, archiveRoot, archiveAvailable);
+  return args.check ? runRegenerateCheck(views, repoRoot) : runRegenerateWrite(views, repoRoot);
 }
 
 /**
