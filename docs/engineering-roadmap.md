@@ -47,6 +47,8 @@ Two-level (really multi-level) canonical source metadata model: Source (intellec
 
 ## impl:feature/source-groups
 - status: planned
+- analyze-clean: yes
+- spec: specs/005-source-groups
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-09-source-groups-design.md
 - depends-on: impl:feature/canonical-source-metadata
