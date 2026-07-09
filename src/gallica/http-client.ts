@@ -165,10 +165,28 @@ export class HttpClient {
 
   private async attemptWithBackoff(url: string): Promise<Response> {
     for (let attempt = 1; attempt <= this.maxAttempts; attempt += 1) {
-      const response = await this.fetchFn(url, {
-        method: 'GET',
-        headers: { 'User-Agent': this.userAgent },
-      });
+      let response: Response;
+      try {
+        response = await this.fetchFn(url, {
+          method: 'GET',
+          headers: { 'User-Agent': this.userAgent },
+        });
+      } catch (cause) {
+        // Network-level failure: `fetch` rejected before any HTTP response
+        // (e.g. undici's `TypeError: fetch failed` on a connection reset /
+        // socket hang-up). There is no status to inspect, so treat it as
+        // retryable and back off exponentially, giving up only once attempts
+        // are exhausted -- a single connection blip must not abort a long run.
+        if (attempt >= this.maxAttempts) {
+          throw new Error(
+            `HttpClient: gave up after ${this.maxAttempts} attempts; ` +
+              `network error for ${url}: ` +
+              `${cause instanceof Error ? cause.message : String(cause)}`,
+          );
+        }
+        await this.sleep(this.backoffDelay(attempt));
+        continue;
+      }
 
       if (response.ok) {
         return response;
@@ -199,15 +217,17 @@ export class HttpClient {
    * (never waiting less than the server asks), else exponential backoff.
    */
   private retryDelay(response: Response, attempt: number): number {
-    const backoff = Math.min(
-      this.baseDelayMs * 2 ** (attempt - 1),
-      this.maxDelayMs,
-    );
+    const backoff = this.backoffDelay(attempt);
     const retryAfter = parseRetryAfter(
       response.headers.get('retry-after'),
       this.now(),
       this.maxRetryAfterMs,
     );
     return retryAfter === null ? backoff : Math.max(backoff, retryAfter);
+  }
+
+  /** Exponential backoff for attempt N (capped), used with or without a response. */
+  private backoffDelay(attempt: number): number {
+    return Math.min(this.baseDelayMs * 2 ** (attempt - 1), this.maxDelayMs);
   }
 }
