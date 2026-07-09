@@ -7,6 +7,8 @@ import { deriveModel, gatherProvenance } from '@/bibliography/derive';
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
 import { migrate } from '@/bibliography/migrate';
+import { validate } from '@/bibliography/validate';
+import type { ValidationFinding } from '@/bibliography/validate';
 import { resolveArchiveRoot, sourceLayout } from '@/archive/location';
 import type { AssetProvenance } from '@/bibliography/provenance-read';
 import type { RepositoryRecord } from '@/model/repository-record';
@@ -233,10 +235,71 @@ async function runShow(rest: string[]): Promise<number> {
   return 0;
 }
 
-/** `bib validate` / `bib regenerate`: not implemented in this task (T018/T021/T028). */
-function runNotImplemented(subaction: 'validate' | 'regenerate'): number {
-  const seeAlso = subaction === 'validate' ? 'T018' : 'T021/T028';
-  console.error(`bib ${subaction}: not yet implemented (see ${seeAlso})`);
+/** Render one {@link ValidationFinding} as a human-readable line. */
+function formatFinding(finding: ValidationFinding): string {
+  const parts = [`[${finding.kind}]`];
+  if (finding.sourceId !== undefined) {
+    parts.push(finding.sourceId);
+  }
+  parts.push(finding.detail);
+  if (finding.path !== undefined) {
+    parts.push(`(${finding.path})`);
+  }
+  return parts.join(' ');
+}
+
+/**
+ * `bib validate [--archive-root <path>] [--json]`: build the canonical model
+ * (mirroring `runShow`'s SSOT + provenance gathering) and run every
+ * implemented check over it (contracts/cli.md).
+ *
+ * Exit codes: `0` clean (no findings), `1` findings exist, `2` malformed /
+ * unreadable SSOT (a thrown load error) -- findings themselves never throw.
+ */
+async function runValidate(rest: string[]): Promise<number> {
+  let args: BibArgs;
+  try {
+    args = parseBibArgs(rest);
+  } catch (error) {
+    console.error(`bib validate: ${describeError(error)}`);
+    return 2;
+  }
+
+  const repoRoot = resolveRepoRoot();
+  const sourcesDir = path.join(repoRoot, 'bibliography', 'sources');
+
+  let findings: ValidationFinding[];
+  try {
+    const loaded = loadAllSources(sourcesDir);
+    const archiveRoot = resolveArchiveRoot(repoRoot, args.archiveRoot);
+    const provenanceBySource = await gatherProvenanceForAll(
+      loaded.map((entry) => entry.source),
+      archiveRoot,
+    );
+    const model = deriveModel(loaded, provenanceBySource);
+    findings = validate(model);
+  } catch (error) {
+    console.error(`bib validate: ${describeError(error)}`);
+    return 2;
+  }
+
+  const ok = findings.length === 0;
+  if (args.json) {
+    console.log(JSON.stringify({ ok, findings }, null, 2));
+  } else if (ok) {
+    console.log('bib validate: clean -- no findings');
+  } else {
+    console.log(`bib validate: ${findings.length} finding(s):`);
+    for (const finding of findings) {
+      console.log(`  ${formatFinding(finding)}`);
+    }
+  }
+  return ok ? 0 : 1;
+}
+
+/** `bib regenerate`: not implemented in this task (T021/T028). */
+function runNotImplemented(subaction: 'regenerate'): number {
+  console.error(`bib ${subaction}: not yet implemented (see T021/T028)`);
   return NOT_IMPLEMENTED_EXIT;
 }
 
@@ -259,7 +322,7 @@ export async function runBibliography(argv: string[]): Promise<number> {
     case 'show':
       return runShow(rest);
     case 'validate':
-      return runNotImplemented('validate');
+      return runValidate(rest);
     case 'regenerate':
       return runNotImplemented('regenerate');
   }
