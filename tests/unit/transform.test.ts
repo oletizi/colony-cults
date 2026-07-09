@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { ClaudeCli } from '@/claude/client';
+import type { TranslationEngine } from '@/engine/types';
 import {
   runFaithfulTransformation,
   DEGENERATE_MIN_RATIO,
@@ -22,11 +22,11 @@ interface FakeCall {
 
 /** Fake that returns each queued output in turn (last one repeats). */
 function fakeClaudeCli(outputs: string[]): {
-  claude: ClaudeCli;
+  claude: TranslationEngine;
   calls: FakeCall[];
 } {
   const calls: FakeCall[] = [];
-  const claude: ClaudeCli = {
+  const claude: TranslationEngine = {
     name: 'claude-code-cli',
     run: async (prompt, sourceText, model, systemPrompt) => {
       calls.push({ prompt, sourceText, model, systemPrompt });

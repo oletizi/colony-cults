@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { TranslateIssueCtx } from '@/translate/issue';
 import type { TranslateSourceCtx } from '@/translate/source';
-import type { ClaudeCli } from '@/claude/client';
+import type { TranslationEngine } from '@/engine/types';
 import { readProvenance, writeProvenance } from '@/archive/provenance';
 
 /**
@@ -230,7 +230,7 @@ export interface FakeClaudeOptions {
 export function fakeClaude(
   calls: EngineCall[],
   options: FakeClaudeOptions = {},
-): ClaudeCli {
+): TranslationEngine {
   return {
     name: 'claude-code-cli',
     run: async (prompt, sourceText, model) => {
@@ -291,8 +291,8 @@ export function throwingPreflight(
 export interface CtxHarness {
   ctx: TranslateIssueCtx;
   /**
-   * Calls recorded by the DEFAULT fake claude. Stays empty if `overrides`
-   * supplies its own `claude` (build your own `calls` array alongside a
+   * Calls recorded by the DEFAULT fake engine. Stays empty if `overrides`
+   * supplies its own `engine` (build your own `calls` array alongside a
    * custom `fakeClaude(...)` call in that case).
    */
   calls: EngineCall[];
@@ -302,9 +302,9 @@ export interface CtxHarness {
 
 /**
  * Build a {@link TranslateIssueCtx} wired to a {@link FetchedIssue}'s archive,
- * with a default (always-succeeding) fake claude, a fixed clock, and a
+ * with a default (always-succeeding) fake engine, a fixed clock, and a
  * counting preflight spy -- the same shape every US1 integration test needs.
- * Pass `overrides` to swap in a failing claude, a throwing preflight,
+ * Pass `overrides` to swap in a failing engine, a throwing preflight,
  * `force: true`, a pinned `model`, etc.
  */
 export function buildCtx(
@@ -314,7 +314,7 @@ export function buildCtx(
   const calls: EngineCall[] = [];
   const spy = preflightSpy();
   const ctx: TranslateIssueCtx = {
-    claude: fakeClaude(calls),
+    engine: fakeClaude(calls),
     sourceId: fetched.sourceId,
     archiveRoot: fetched.archiveRoot,
     clock: fixedClock(),
@@ -348,7 +348,7 @@ export function delaySpy(): DelaySpy {
 /** Bundle returned by {@link buildSourceCtx}: the ctx plus its default spies. */
 export interface SourceCtxHarness {
   ctx: TranslateSourceCtx;
-  /** Calls recorded by the DEFAULT fake claude (empty if `overrides.claude` given). */
+  /** Calls recorded by the DEFAULT fake engine (empty if `overrides.engine` given). */
   calls: EngineCall[];
   /** Count recorded by the DEFAULT preflight spy. */
   preflightCalls: { n: number };
@@ -358,9 +358,9 @@ export interface SourceCtxHarness {
 
 /**
  * Build a {@link TranslateSourceCtx} wired to a {@link FetchedSource}'s archive,
- * with a default (always-succeeding) fake claude, a fixed clock, a counting
+ * with a default (always-succeeding) fake engine, a fixed clock, a counting
  * preflight spy, and a counting delay spy -- the shape the whole-source
- * integration tests need. Pass `overrides` to swap in a failing claude,
+ * integration tests need. Pass `overrides` to swap in a failing engine,
  * `force: true`, a pinned `model`, etc. `sourceId` is NOT part of the ctx (it
  * is `translateSource`'s first argument), so only `archiveRoot` is read here.
  */
@@ -372,7 +372,7 @@ export function buildSourceCtx(
   const spy = preflightSpy();
   const dspy = delaySpy();
   const ctx: TranslateSourceCtx = {
-    claude: fakeClaude(calls),
+    engine: fakeClaude(calls),
     archiveRoot: fetched.archiveRoot,
     clock: fixedClock(),
     force: false,

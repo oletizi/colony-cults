@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import type { ClaudeCli } from '@/claude/client';
+import type { TranslationEngine } from '@/engine/types';
 import { translateSource, CONSECUTIVE_FAILURE_ABORT } from '@/translate/source';
 import {
   buildFetchedSource,
@@ -29,14 +29,14 @@ describe('translateSource -- consecutive-failure abort (T026)', () => {
     // we count invocations directly here to prove the engine was hit exactly
     // once per attempted issue and never for the 4th/5th.
     let engineCalls = 0;
-    const claude: ClaudeCli = {
+    const engine: TranslationEngine = {
       name: 'claude-code-cli',
       run: async () => {
         engineCalls += 1;
         throw new Error('claude boom');
       },
     };
-    const { ctx, delayCalls } = buildSourceCtx(source, { claude });
+    const { ctx, delayCalls } = buildSourceCtx(source, { engine });
 
     const report = await translateSource(source.sourceId, ctx);
 
@@ -67,11 +67,11 @@ describe('translateSource -- consecutive-failure abort (T026)', () => {
     const successArk = source.issueArks[2];
     const failArks = source.issueArks.filter((a) => a !== successArk);
     const calls: EngineCall[] = [];
-    const claude = fakeClaude(calls, {
+    const engine = fakeClaude(calls, {
       failWith: new Error('boom'),
       failWhen: (sourceText) => failArks.some((a) => sourceText.includes(a)),
     });
-    const { ctx, delayCalls } = buildSourceCtx(source, { claude });
+    const { ctx, delayCalls } = buildSourceCtx(source, { engine });
 
     const report = await translateSource(source.sourceId, ctx);
 

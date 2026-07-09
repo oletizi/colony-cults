@@ -2,8 +2,9 @@ import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot } from '@/archive/location';
 import { assertClaudeAvailable } from '@/claude/preflight';
-import { createClaudeCli, type ClaudeCli } from '@/claude/client';
+import { createClaudeCli } from '@/claude/client';
 import { defaultClaudeCommandRunner } from '@/claude/exec';
+import type { TranslationEngine } from '@/engine/types';
 import {
   translateIssue,
   type IssueOutcome,
@@ -33,8 +34,8 @@ export interface TranslateCliDeps {
   log: (message: string) => void;
   /** `claude` CLI preflight (FR-009); fires only before a real translation. */
   preflight: () => Promise<void>;
-  /** Injected Claude engine adapter. */
-  claude: ClaudeCli;
+  /** Injected translation engine adapter. */
+  engine: TranslationEngine;
   /**
    * Polite pacing thunk between engine-invoking issues in a whole-source run
    * (`runTranslate`, the single-issue command, does not use this).
@@ -72,7 +73,7 @@ export function defaultTranslateCliDeps(): TranslateCliDeps {
       console.log(message);
     },
     preflight: () => assertClaudeAvailable(),
-    claude: createClaudeCli(defaultClaudeCommandRunner()),
+    engine: createClaudeCli(defaultClaudeCommandRunner()),
     delay: () => new Promise((resolve) => setTimeout(resolve, PACE_MS)),
   };
 }
@@ -103,7 +104,7 @@ export async function runTranslate(
   const dryRun = args.flags.dryRun;
 
   const ctx: TranslateIssueCtx = {
-    claude: deps.claude,
+    engine: deps.engine,
     sourceId,
     archiveRoot: deps.archiveRoot,
     clock: deps.clock,
@@ -176,7 +177,7 @@ export async function runTranslateSource(
   const dryRun = args.flags.dryRun;
 
   const ctx: TranslateSourceCtx = {
-    claude: deps.claude,
+    engine: deps.engine,
     archiveRoot: deps.archiveRoot,
     clock: deps.clock,
     force: args.flags.force,

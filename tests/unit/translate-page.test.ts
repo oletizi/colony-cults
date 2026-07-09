@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { translatePage } from '@/translate/translate-page';
-import type { ClaudeCli } from '@/claude/client';
+import type { TranslationEngine } from '@/engine/types';
 import { TRANSFORMATION_SYSTEM_PROMPT } from '@/claude/client';
 
 /**
@@ -16,9 +16,9 @@ interface FakeCall {
   systemPrompt?: string;
 }
 
-function fakeClaudeCli(canned: string): { cli: ClaudeCli; calls: FakeCall[] } {
+function fakeClaudeCli(canned: string): { cli: TranslationEngine; calls: FakeCall[] } {
   const calls: FakeCall[] = [];
-  const cli: ClaudeCli = {
+  const cli: TranslationEngine = {
     name: 'claude-code-cli',
     run: async (prompt, sourceText, model, systemPrompt) => {
       calls.push({ prompt, sourceText, model, systemPrompt });

@@ -41,7 +41,10 @@ export function pageArtifactPath(
  * the source page's provenance `base` without mutating it.
  *
  * Field-by-field mapping:
- * - `engine` / `translation`: constants (FR-006/FR-007).
+ * - `engine`: the selected engine's provenance label (`engineName`), passed in
+ *   by the caller (e.g. `'claude-code-cli'`, `'codex-cli'`) so the record names
+ *   the engine that actually ran, not a hardcoded constant.
+ * - `translation`: constant `'machine-assisted'` (FR-007).
  * - `model` / `retrieved`: the run's resolved `--model` and injected clock,
  *   passed in by the caller (never read from `base`, which describes the
  *   SOURCE page fetch, not this derived artifact).
@@ -71,6 +74,7 @@ export function pageArtifactPath(
 export function buildTranslationProvenance(
   base: ProvenanceFields,
   kind: TranslationKind,
+  engineName: string,
   model: string,
   retrieved: string,
 ): ProvenanceFields {
@@ -89,7 +93,7 @@ export function buildTranslationProvenance(
     sha256: base.sha256,
     format: 'text/plain',
     ocr_status: base.ocr_status,
-    engine: 'claude-code-cli',
+    engine: engineName,
     model,
     translation: 'machine-assisted',
     notes: base.notes,

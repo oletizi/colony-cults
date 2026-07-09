@@ -56,11 +56,12 @@ describe('buildTranslationProvenance', () => {
     const result = buildTranslationProvenance(
       base,
       'corrected-french',
+      'codex-cli',
       'claude-opus-4',
       '2026-07-08T00:00:00.000Z',
     );
 
-    expect(result.engine).toBe('claude-code-cli');
+    expect(result.engine).toBe('codex-cli');
     expect(result.model).toBe('claude-opus-4');
     expect(result.translation).toBe('machine-assisted');
     expect(result.retrieved).toBe('2026-07-08T00:00:00.000Z');
@@ -74,11 +75,12 @@ describe('buildTranslationProvenance', () => {
     const result = buildTranslationProvenance(
       base,
       'english',
+      'codex-cli',
       'claude-opus-4',
       '2026-07-08T00:00:00.000Z',
     );
 
-    expect(result.engine).toBe('claude-code-cli');
+    expect(result.engine).toBe('codex-cli');
     expect(result.model).toBe('claude-opus-4');
     expect(result.translation).toBe('machine-assisted');
     expect(result.type).toBe('english-translation');
@@ -91,6 +93,7 @@ describe('buildTranslationProvenance', () => {
     const result = buildTranslationProvenance(
       base,
       'english',
+      'codex-cli',
       'claude-opus-4',
       '2026-07-08T00:00:00.000Z',
     );
@@ -103,7 +106,7 @@ describe('buildTranslationProvenance', () => {
   it('does not mutate the base ProvenanceFields', () => {
     const base = loadBase();
     const baseCopy = { ...base };
-    buildTranslationProvenance(base, 'corrected-french', 'claude-opus-4', '2026-07-08T00:00:00.000Z');
+    buildTranslationProvenance(base, 'corrected-french', 'codex-cli', 'claude-opus-4', '2026-07-08T00:00:00.000Z');
     expect(base).toEqual(baseCopy);
   });
 
@@ -112,6 +115,7 @@ describe('buildTranslationProvenance', () => {
     const result = buildTranslationProvenance(
       base,
       'english',
+      'codex-cli',
       'claude-opus-4',
       '2026-07-08T00:00:00.000Z',
     );

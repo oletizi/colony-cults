@@ -4,7 +4,7 @@ import path from 'node:path';
 import { findIssueDir } from '@/archive/location';
 import { readProvenance, type ProvenanceFields } from '@/archive/provenance';
 import { companionYamlPath, isAssetRecorded, storeAsset } from '@/archive/store';
-import type { ClaudeCli } from '@/claude/client';
+import type { TranslationEngine } from '@/engine/types';
 import {
   buildTranslationProvenance,
   issueArtifactPath,
@@ -20,7 +20,7 @@ import { translatePage } from '@/translate/translate-page';
  * Model id recorded in a translation artifact's provenance when the run does
  * not pin one via `--model`. It is a provenance LABEL, not a guarantee of what
  * the `claude` CLI resolved: when `ctx.model` is undefined the per-page calls
- * let `claude` pick its own default (see {@link ClaudeCli.run}), while the
+ * let the engine pick its own default (see {@link TranslationEngine.run}), while the
  * artifact records this constant so every derived `.yml` names a model. A
  * `--model` value always overrides it, for both the calls and the record.
  *
@@ -65,7 +65,7 @@ export interface TranslateIssueResult {
  */
 export interface TranslateIssueCtx {
   /** Engine adapter used for the cleanup + translation passes. */
-  claude: ClaudeCli;
+  engine: TranslationEngine;
   /** Registered source id, e.g. `PB-P001`. */
   sourceId: string;
   /** Absolute private-archive root (all writes are guarded inside it). */
@@ -134,6 +134,7 @@ async function persist(
   const provenance = buildTranslationProvenance(
     base,
     kind,
+    ctx.engine.name,
     model,
     ctx.clock().toISOString(),
   );
@@ -324,8 +325,8 @@ export async function translateIssue(
 
     try {
       // Both passes must succeed before either artifact is written (FR-013).
-      const corrected = await cleanupPage(ctx.claude, pages[i - 1], model);
-      const english = await translatePage(ctx.claude, corrected, model);
+      const corrected = await cleanupPage(ctx.engine, pages[i - 1], model);
+      const english = await translatePage(ctx.engine, corrected, model);
       await persist(corrected, frPath, base, 'corrected-french', model, ctx);
       await persist(english, enPath, base, 'english', model, ctx);
       workDone = true;

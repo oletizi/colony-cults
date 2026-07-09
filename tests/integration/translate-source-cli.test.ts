@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import type { ParsedArgs } from '@/cli/parse';
 import type { TranslateCliDeps } from '@/cli/translate';
 import { runTranslateSource } from '@/cli/translate';
-import type { ClaudeCli } from '@/claude/client';
+import type { TranslationEngine } from '@/engine/types';
 import { CONSECUTIVE_FAILURE_ABORT } from '@/translate/source';
 import {
   buildFetchedSource,
@@ -47,7 +47,7 @@ describe('runTranslateSource (T024)', () => {
 
     const logLines: string[] = [];
     const deps: TranslateCliDeps = {
-      claude: ctx.claude,
+      engine: ctx.engine,
       archiveRoot: ctx.archiveRoot,
       clock: ctx.clock,
       log: (message) => logLines.push(message),
@@ -76,17 +76,17 @@ describe('runTranslateSource (T024)', () => {
 
   it('rejects naming the consecutive-failure abort when every issue fails', async () => {
     source = await buildFetchedSource({ count: 4 });
-    const claude: ClaudeCli = {
+    const engine: TranslationEngine = {
       name: 'claude-code-cli',
       run: async () => {
         throw new Error('claude boom');
       },
     };
-    const { ctx } = buildSourceCtx(source, { claude });
+    const { ctx } = buildSourceCtx(source, { engine });
 
     const logLines: string[] = [];
     const deps: TranslateCliDeps = {
-      claude: ctx.claude,
+      engine: ctx.engine,
       archiveRoot: ctx.archiveRoot,
       clock: ctx.clock,
       log: (message) => logLines.push(message),
@@ -112,7 +112,7 @@ describe('runTranslateSource (T024)', () => {
     source = await buildFetchedSource({ count: 1 });
     const { ctx } = buildSourceCtx(source);
     const deps: TranslateCliDeps = {
-      claude: ctx.claude,
+      engine: ctx.engine,
       archiveRoot: ctx.archiveRoot,
       clock: ctx.clock,
       log: () => {},

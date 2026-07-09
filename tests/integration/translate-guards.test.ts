@@ -71,8 +71,8 @@ describe('translateIssue guards (T021)', () => {
   it('a claude engine failure returns a non-translated outcome and leaves no partial page artifact (FR-013)', async () => {
     fetched = await buildFetchedIssue();
     const calls: EngineCall[] = [];
-    const claude = fakeClaude(calls, { failWith: new Error('engine exploded') });
-    const { ctx } = buildCtx(fetched, { claude });
+    const engine = fakeClaude(calls, { failWith: new Error('engine exploded') });
+    const { ctx } = buildCtx(fetched, { engine });
 
     const result = await translateIssue(fetched.issueArk, ctx);
 
@@ -101,12 +101,12 @@ describe('translateIssue guards (T021)', () => {
     const calls: EngineCall[] = [];
     // Fail only the cleanup pass, and only for page 2's raw text (the raw
     // fixture text for page 2 starts with "POLITIQUE RÉGIONALE").
-    const claude = fakeClaude(calls, {
+    const engine = fakeClaude(calls, {
       failWith: new Error('engine exploded on page 2'),
       failOn: 'clean',
       failWhen: (sourceText) => sourceText.includes('POLITIQUE RÉGIONALE'),
     });
-    const { ctx } = buildCtx(fetched, { claude });
+    const { ctx } = buildCtx(fetched, { engine });
 
     const result = await translateIssue(fetched.issueArk, ctx);
 

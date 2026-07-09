@@ -1,13 +1,13 @@
-import type { ClaudeCli } from '@/claude/client';
 import { TRANSFORMATION_SYSTEM_PROMPT } from '@/claude/client';
+import type { TranslationEngine } from '@/engine/types';
 import { runFaithfulTransformation } from '@/translate/transform';
 
 /**
  * Instruction prompt for the cleanup pass (T014, FR-003): turns one page of
  * raw French OCR text into a corrected French transcription. The page's raw
  * OCR text itself is NOT embedded here -- it is passed separately as the
- * `ClaudeCli.run` sourceText argument (written to stdin), mirroring the
- * `claude --print` invocation shape documented on `ClaudeCli`.
+ * `TranslationEngine.run` sourceText argument (written to stdin), mirroring the
+ * `claude --print` invocation shape documented on `TranslationEngine`.
  *
  * Directives, per FR-003 and the design record:
  * - dehyphenate words split across line breaks;
@@ -32,22 +32,22 @@ Your entire reply must be the corrected French text and nothing else: no preambl
 
 /**
  * Corrects one page of raw French OCR text into a faithful French
- * transcription via the injected {@link ClaudeCli}. FR-003: dehyphenates,
+ * transcription via the injected {@link TranslationEngine}. FR-003: dehyphenates,
  * joins broken lines, repairs obvious scan errors, and drops non-text
  * condition markers, while remaining faithful to the source's words.
  *
- * @param claude Injected Claude CLI adapter (composition, not inheritance).
+ * @param engine Injected translation engine adapter (composition, not inheritance).
  * @param pageText Raw OCR text for one page.
- * @param model Optional model alias/full name forwarded to `claude.run`.
+ * @param model Optional model alias/full name forwarded to `engine.run`.
  * @returns The corrected French text for the page.
  */
 export async function cleanupPage(
-  claude: ClaudeCli,
+  engine: TranslationEngine,
   pageText: string,
   model?: string,
 ): Promise<string> {
   return await runFaithfulTransformation(
-    claude,
+    engine,
     CLEANUP_INSTRUCTION,
     pageText,
     model,

@@ -1,4 +1,4 @@
-import type { ClaudeCli } from '@/claude/client';
+import type { TranslationEngine } from '@/engine/types';
 
 /**
  * Minimum plausible output-to-source length ratio for one faithful
@@ -20,7 +20,7 @@ export const DEGENERATE_MIN_RATIO = 0.25;
 export const MAX_TRANSFORM_ATTEMPTS = 3;
 
 /**
- * Run one faithful text transformation via the injected {@link ClaudeCli},
+ * Run one faithful text transformation via the injected {@link TranslationEngine},
  * retrying when the engine returns a degenerate (implausibly short) result,
  * and failing loud if every attempt is degenerate.
  *
@@ -30,7 +30,7 @@ export const MAX_TRANSFORM_ATTEMPTS = 3;
  * persistent failure throws, honoring the no-fallback rule). The client's own
  * non-zero-exit / empty-output guards still apply on every attempt.
  *
- * @param claude Injected Claude CLI adapter.
+ * @param engine Injected translation engine adapter.
  * @param instruction Instruction passed as the `claude --print` prompt.
  * @param sourceText Source text for the transformation (page text on stdin).
  * @param model Optional model alias/full name pinned via `--model`.
@@ -39,7 +39,7 @@ export const MAX_TRANSFORM_ATTEMPTS = 3;
  * @returns The engine's output for the first non-degenerate attempt.
  */
 export async function runFaithfulTransformation(
-  claude: ClaudeCli,
+  engine: TranslationEngine,
   instruction: string,
   sourceText: string,
   model: string | undefined,
@@ -53,7 +53,7 @@ export async function runFaithfulTransformation(
 
   let lastLength = -1;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const output = await claude.run(instruction, sourceText, model, systemPrompt);
+    const output = await engine.run(instruction, sourceText, model, systemPrompt);
     lastLength = output.trim().length;
     if (lastLength >= threshold) {
       return output;

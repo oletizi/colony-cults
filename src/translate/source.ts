@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { sourceLayout } from '@/archive/location';
-import type { ClaudeCli } from '@/claude/client';
+import type { TranslationEngine } from '@/engine/types';
 import { assertValidArk } from '@/gallica/ark';
 import {
   translateIssue,
@@ -127,7 +127,7 @@ export interface TranslateRunReport {
  */
 export interface TranslateSourceCtx {
   /** Engine adapter, forwarded to each issue. */
-  claude: ClaudeCli;
+  engine: TranslationEngine;
   /** Absolute private-archive root (all writes guarded inside it). */
   archiveRoot: string;
   /** Clock for provenance timestamps (determinism/testability). */
@@ -221,7 +221,7 @@ export async function translateSource(
   for (let i = 0; i < arks.length; i += 1) {
     const ark = arks[i];
     const issueCtx: TranslateIssueCtx = {
-      claude: ctx.claude,
+      engine: ctx.engine,
       sourceId,
       archiveRoot: ctx.archiveRoot,
       clock: ctx.clock,
