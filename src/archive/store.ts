@@ -152,8 +152,9 @@ export async function isAssetRecorded(targetPath: string): Promise<boolean> {
  * - Resumability (FR-009): when `force` is not set and the asset already
  *   exists AND its on-disk bytes hash to the sha256 recorded in the companion
  *   YAML, the asset is left untouched and `skipped: true` is returned.
- * - `local_path` and `sha256` on the provenance record are always (re)derived
- *   here from the actual bytes and target, never trusted from the caller.
+ * - `local_path`, `sha256` and `size` on the provenance record are always
+ *   (re)derived here from the actual bytes and target, never trusted from the
+ *   caller.
  */
 export async function storeAsset(
   bytes: Uint8Array,
@@ -190,6 +191,7 @@ export async function storeAsset(
     ...provenanceFields,
     local_path: relPath,
     sha256,
+    size: bytes.length,
   };
 
   await mkdir(path.dirname(targetPath), { recursive: true });

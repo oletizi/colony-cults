@@ -23,8 +23,10 @@ function provenance(): ProvenanceFields {
     retrieved: '2026-07-08T00:00:00.000Z',
     local_path: 'overwritten-by-store',
     sha256: 'overwritten-by-store',
+    size: 0,
     format: 'image/jpeg',
     ocr_status: 'none',
+    object_store: null,
     rights_raw: '<results/>',
     notes: null,
   };

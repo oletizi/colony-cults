@@ -173,11 +173,14 @@ async function fetchDocumentPages(
       original_url: originalUrl,
       rights_status: rights.status,
       retrieved,
-      // local_path + sha256 are (re)derived inside storeAsset from real bytes.
+      // local_path + sha256 + size are (re)derived inside storeAsset from the
+      // real bytes; object_store is null until the master is uploaded (T009).
       local_path: '',
       sha256: '',
+      size: 0,
       format: 'image/jpeg',
       ocr_status: 'none',
+      object_store: null,
       rights_raw: rights.rawResponse,
       notes: null,
     };
