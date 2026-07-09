@@ -47,6 +47,7 @@ Two-level (really multi-level) canonical source metadata model: Source (intellec
 
 ## impl:feature/source-groups
 - status: planned
+- design-approved: yes
 - design: docs/superpowers/specs/2026-07-09-source-groups-design.md
 - depends-on: impl:feature/canonical-source-metadata
 Source Group kind for research-defined collections that are discovered before acquired (resolves PB-P004 mis-model + backlog TASK-3). Extend Source.kind to periodical|monograph|source-group; a source-group has members (part_of edges), NOT repositoryRecords, and is never fetchable; fetcher/acquisition fails loud+informatively on a source-group keyed on kind. Add discovered/approved-for-acquisition to the status vocab. Reclassify PB-P004 (French legal corpus) as the first source-group with member children. Discover->Inventory->Verify->Promote->Acquire pipeline. Does NOT add repository-record to the kind enum (already a separate entity). From a third-party design guidance doc, with refinements.
