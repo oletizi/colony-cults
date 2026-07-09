@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import type {
   IiifClient,
   OaiRecordClient,
@@ -178,12 +179,22 @@ async function fetchDocumentPages(
   let bytesWritten = 0;
   let skippedCount = 0;
 
+  const objectStoreConfigured = ctx.objectStore !== undefined;
+
   for (let page = 1; page <= pageCount; page += 1) {
     const targetPath = path.join(ctx.dir, pageFileName(page));
 
-    // Resumability (FR-009 / SC-005): skip the download itself for a page
-    // already present with a matching recorded checksum.
-    if (ctx.force !== true && (await isAssetRecorded(targetPath))) {
+    // Is this page already present locally with a matching recorded checksum?
+    const recordedLocally =
+      ctx.force !== true && (await isAssetRecorded(targetPath));
+
+    // Resumability (FR-009 / SC-005), LEGACY local-only path: with NO object
+    // store configured, a page already present + checksum-recorded is skipped
+    // WITHOUT re-downloading. When an object store IS configured this local
+    // check must NOT short-circuit -- `storeAsset`'s B2 `head(key)` is the
+    // skip authority there, so a prior local-only run's masters still get
+    // uploaded (audit HIGH finding) rather than silently treated as complete.
+    if (!objectStoreConfigured && recordedLocally) {
       pages.push({ path: targetPath, sha256: '', skipped: true });
       skippedCount += 1;
       ctx.log?.(`  skip  ${pageFileName(page)} (already recorded)`);
@@ -191,7 +202,20 @@ async function fetchDocumentPages(
     }
 
     const originalUrl = iiifImageUrl(documentArk, page);
-    const bytes = await ctx.client.iiifImage(documentArk, page);
+
+    // Obtain the bytes: re-read the LOCAL cache file (no IIIF fetch) when the
+    // page is already recorded on disk; otherwise download from Gallica. Only
+    // reachable with an object store configured OR force -- the legacy skip
+    // above returns before this for the pure local-only case.
+    let bytes: Uint8Array;
+    let downloaded: boolean;
+    if (recordedLocally) {
+      bytes = await readFile(targetPath);
+      downloaded = false;
+    } else {
+      bytes = await ctx.client.iiifImage(documentArk, page);
+      downloaded = true;
+    }
 
     const provenance: ProvenanceFields = {
       id: ctx.sourceId,
@@ -229,11 +253,23 @@ async function fetchDocumentPages(
     );
     pages.push(result);
     if (result.skipped) {
+      // storeAsset skipped: for an object-store run this is a B2-head match
+      // (the object already exists at the recorded sha); for a forced
+      // re-download it does not occur. Counts as skipped, not as bytes.
       skippedCount += 1;
       ctx.log?.(`  skip  ${pageFileName(page)} (already recorded)`);
-    } else {
+    } else if (downloaded) {
+      // Freshly downloaded from Gallica and written -- the only path that
+      // adds to the "bytes downloaded this run" counter.
       bytesWritten += bytes.byteLength;
       ctx.log?.(`  wrote ${pageFileName(page)} (${bytes.byteLength} bytes)`);
+    } else {
+      // Backfill: bytes came from the local cache and were uploaded to the
+      // object store. No Gallica download happened, so this is neither a skip
+      // nor counted as downloaded bytes.
+      ctx.log?.(
+        `  upload ${pageFileName(page)} (${bytes.byteLength} bytes from local cache)`,
+      );
     }
   }
 
