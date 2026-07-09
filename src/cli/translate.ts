@@ -1,9 +1,8 @@
 import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot } from '@/archive/location';
-import { assertClaudeAvailable } from '@/claude/preflight';
-import { createClaudeCli } from '@/claude/client';
-import { defaultClaudeCommandRunner } from '@/claude/exec';
+import { loadEngineConfig, resolveEngine, resolveModel } from '@/engine/config';
+import { createEngine } from '@/engine/factory';
 import type { TranslationEngine } from '@/engine/types';
 import {
   translateIssue,
@@ -36,6 +35,8 @@ export interface TranslateCliDeps {
   preflight: () => Promise<void>;
   /** Injected translation engine adapter. */
   engine: TranslationEngine;
+  /** Resolved model id/alias for this run (CLI flag > config > engine default; see `resolveModel`). */
+  model: string;
   /**
    * Polite pacing thunk between engine-invoking issues in a whole-source run
    * (`runTranslate`, the single-issue command, does not use this).
@@ -63,17 +64,32 @@ function dryRunLabel(outcome: IssueOutcome): string {
   }
 }
 
-/** Build the default (real preflight + disk) dependencies. */
-export function defaultTranslateCliDeps(): TranslateCliDeps {
+/**
+ * Build the default (real preflight + disk) `TranslateCliDeps`, resolving
+ * the engine + model to use from the `--engine`/`--model` flags and
+ * `translate.config.json` (CLI flag beats config beats the built-in
+ * default; see `resolveEngine`/`resolveModel`), then constructing that
+ * engine's real adapter + preflight via the factory. `runTranslate`/
+ * `runTranslateSource` call this when no `deps` is injected (tests inject
+ * their own).
+ */
+export async function buildTranslateCliDeps(
+  args: ParsedArgs,
+): Promise<TranslateCliDeps> {
   const repoRoot = process.cwd();
+  const config = await loadEngineConfig(repoRoot);
+  const engineName = resolveEngine(args.options.engine, config);
+  const model = resolveModel(args.options.model, engineName, config);
+  const { engine, preflight } = createEngine(engineName);
   return {
     archiveRoot: resolveArchiveRoot(repoRoot),
     clock: () => new Date(),
     log: (message) => {
       console.log(message);
     },
-    preflight: () => assertClaudeAvailable(),
-    engine: createClaudeCli(defaultClaudeCommandRunner()),
+    preflight,
+    engine,
+    model,
     delay: () => new Promise((resolve) => setTimeout(resolve, PACE_MS)),
   };
 }
@@ -94,8 +110,10 @@ export function defaultTranslateCliDeps(): TranslateCliDeps {
  */
 export async function runTranslate(
   args: ParsedArgs,
-  deps: TranslateCliDeps = defaultTranslateCliDeps(),
+  deps?: TranslateCliDeps,
 ): Promise<void> {
+  const d = deps ?? (await buildTranslateCliDeps(args));
+
   const issueArk = args.positional[0];
   if (issueArk === undefined) {
     throw new Error('translate: missing required argument <issueArk>');
@@ -104,30 +122,30 @@ export async function runTranslate(
   const dryRun = args.flags.dryRun;
 
   const ctx: TranslateIssueCtx = {
-    engine: deps.engine,
+    engine: d.engine,
     sourceId,
-    archiveRoot: deps.archiveRoot,
-    clock: deps.clock,
+    archiveRoot: d.archiveRoot,
+    clock: d.clock,
     force: args.flags.force,
-    model: args.options.model,
-    log: deps.log,
-    preflight: deps.preflight,
+    model: d.model,
+    log: d.log,
+    preflight: d.preflight,
     dryRun,
   };
 
   const result = await translateIssue(issueArk, ctx);
 
   if (dryRun) {
-    deps.log(
+    d.log(
       `translate: ${result.ark} -> ${dryRunLabel(result.outcome)} ` +
         `(${result.pagesDone}/${result.pagesTotal} pages)` +
         (result.message !== undefined ? ` -- ${result.message}` : ''),
     );
-    deps.log('translate: (dry-run) wrote nothing');
+    d.log('translate: (dry-run) wrote nothing');
     return;
   }
 
-  deps.log(
+  d.log(
     `translate: ${result.ark} -> ${result.outcome} ` +
       `(${result.pagesDone}/${result.pagesTotal} pages)`,
   );
@@ -168,8 +186,10 @@ export async function runTranslate(
  */
 export async function runTranslateSource(
   args: ParsedArgs,
-  deps: TranslateCliDeps = defaultTranslateCliDeps(),
+  deps?: TranslateCliDeps,
 ): Promise<void> {
+  const d = deps ?? (await buildTranslateCliDeps(args));
+
   const sourceId = args.positional[0];
   if (sourceId === undefined) {
     throw new Error('translate-source: missing required argument <sourceId>');
@@ -177,14 +197,14 @@ export async function runTranslateSource(
   const dryRun = args.flags.dryRun;
 
   const ctx: TranslateSourceCtx = {
-    engine: deps.engine,
-    archiveRoot: deps.archiveRoot,
-    clock: deps.clock,
+    engine: d.engine,
+    archiveRoot: d.archiveRoot,
+    clock: d.clock,
     force: args.flags.force,
-    model: args.options.model,
-    log: deps.log,
-    preflight: deps.preflight,
-    delay: deps.delay,
+    model: d.model,
+    log: d.log,
+    preflight: d.preflight,
+    delay: d.delay,
     dryRun,
   };
 
@@ -192,19 +212,19 @@ export async function runTranslateSource(
 
   for (const issue of report.issues) {
     const label = dryRun ? dryRunLabel(issue.outcome) : issue.outcome;
-    deps.log(
+    d.log(
       `translate-source: ${issue.ark} -> ${label} ` +
         `(${issue.pagesDone}/${issue.pagesTotal} pages)` +
         (issue.message !== undefined ? ` -- ${issue.message}` : ''),
     );
   }
-  deps.log(
+  d.log(
     `translate-source: ${sourceId} -- ${report.issues.length} issue(s) attempted, ` +
       `aborted=${report.abortedOnConsecutiveFailures}`,
   );
 
   if (dryRun) {
-    deps.log('translate-source: (dry-run) wrote nothing');
+    d.log('translate-source: (dry-run) wrote nothing');
     return;
   }
 

@@ -56,6 +56,8 @@ export interface ParsedOptions {
   slug?: string;
   /** Claude model alias/id to pin for a translation run (contracts/cli.md). */
   model?: string;
+  /** Translation engine selector (`claude`/`codex`); CLI flag beats config beats the built-in default. */
+  engine?: string;
 }
 
 /** Result of parsing argv into a single command invocation. */
@@ -87,6 +89,7 @@ export function parse(argv: string[]): ParsedArgs {
       'source-id': { type: 'string' },
       slug: { type: 'string' },
       model: { type: 'string' },
+      engine: { type: 'string' },
     },
     allowPositionals: true,
     strict: true,
@@ -125,6 +128,7 @@ export function parse(argv: string[]): ParsedArgs {
       sourceId: values['source-id'],
       slug: values.slug,
       model: values.model,
+      engine: values.engine,
     },
   };
 }

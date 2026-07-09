@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import type { ParsedArgs } from '@/cli/parse';
 import type { TranslateCliDeps } from '@/cli/translate';
-import { runTranslateSource } from '@/cli/translate';
+import { buildTranslateCliDeps, runTranslateSource } from '@/cli/translate';
 import type { TranslationEngine } from '@/engine/types';
 import { CONSECUTIVE_FAILURE_ABORT } from '@/translate/source';
 import {
@@ -48,6 +48,7 @@ describe('runTranslateSource (T024)', () => {
     const logLines: string[] = [];
     const deps: TranslateCliDeps = {
       engine: ctx.engine,
+      model: 'claude-opus-4-8',
       archiveRoot: ctx.archiveRoot,
       clock: ctx.clock,
       log: (message) => logLines.push(message),
@@ -87,6 +88,7 @@ describe('runTranslateSource (T024)', () => {
     const logLines: string[] = [];
     const deps: TranslateCliDeps = {
       engine: ctx.engine,
+      model: 'claude-opus-4-8',
       archiveRoot: ctx.archiveRoot,
       clock: ctx.clock,
       log: (message) => logLines.push(message),
@@ -113,6 +115,7 @@ describe('runTranslateSource (T024)', () => {
     const { ctx } = buildSourceCtx(source);
     const deps: TranslateCliDeps = {
       engine: ctx.engine,
+      model: 'claude-opus-4-8',
       archiveRoot: ctx.archiveRoot,
       clock: ctx.clock,
       log: () => {},
@@ -129,5 +132,20 @@ describe('runTranslateSource (T024)', () => {
     await expect(runTranslateSource(args, deps)).rejects.toThrow(
       /missing required argument <sourceId>/,
     );
+  });
+});
+
+describe('buildTranslateCliDeps (Task 7)', () => {
+  it('resolves the codex engine from --engine without making a real codex call', async () => {
+    const args: ParsedArgs = {
+      command: 'translate',
+      positional: ['ark'],
+      flags: { dryRun: false, force: false, verify: false, ocr: false },
+      options: { engine: 'codex' },
+    };
+
+    const deps = await buildTranslateCliDeps(args);
+
+    expect(deps.engine.name).toBe('codex-cli');
   });
 });

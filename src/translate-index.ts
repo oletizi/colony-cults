@@ -46,7 +46,8 @@ Options:
   --version, -v   Show version
   --dry-run       Report intended work + rights; write nothing
   --force         Re-translate artifacts that already exist
-  --model <name>  Claude model to pin (recorded in provenance)
+  --model <name>  Model to pin (recorded in provenance)
+  --engine <name> Translation engine to use (claude|codex; default: claude, or translate.config.json)
 `;
 
 function wantsHelp(argv: string[]): boolean {
