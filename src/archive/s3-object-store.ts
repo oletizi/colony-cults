@@ -95,6 +95,13 @@ export class S3ObjectStore implements ObjectStore {
       },
       // B2's S3-compatible endpoint expects path-style bucket addressing.
       forcePathStyle: true,
+      // Resilience for long runs (hundreds of head/put/get calls): the SDK
+      // default (3 attempts, no client-side throttling) aborts a whole capture
+      // on a single transient B2 hiccup. `adaptive` adds client-side rate
+      // limiting + backoff on transient/throttling errors; raise the attempt
+      // budget so a blip is retried, not fatal.
+      maxAttempts: 10,
+      retryMode: 'adaptive',
     });
   }
 
