@@ -52,7 +52,7 @@ export async function runFetchIssue(
   if (args.flags.verify) {
     const dir = issueDir(sourceId, { ark: bareArk(issueArk), date }, deps.archiveRoot);
     deps.log(`fetch-issue (verify): ${issueArk}`);
-    const mismatches = await verifyIssueDir(dir, deps.log);
+    const mismatches = await verifyIssueDir(dir, deps.log, deps.objectStore);
     if (mismatches > 0) {
       throw new Error(
         `fetch-issue: ${mismatches} checksum mismatch(es) for ${issueArk}`,

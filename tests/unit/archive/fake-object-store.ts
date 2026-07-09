@@ -70,6 +70,15 @@ export class FakeObjectStore implements ObjectStore {
   }
 
   /**
+   * Test helper: remove an object, simulating it going missing from the
+   * backend (e.g. a deleted or never-completed upload) so callers can
+   * exercise the "object missing in B2" verification path.
+   */
+  delete(key: string): void {
+    this.store.delete(key);
+  }
+
+  /**
    * Test helper: count of objects in the store.
    */
   get size(): number {

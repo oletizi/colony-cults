@@ -278,10 +278,19 @@ export async function runOcrForIssue(
   );
 }
 
-/** Re-hash every `f<NNN>.jpg` present in a directory; returns mismatch count. */
+/**
+ * Re-hash every `f<NNN>.jpg` present in a directory; returns mismatch count.
+ *
+ * When `objectStore` is supplied (the `--object-store` backend is enabled),
+ * each object-store-backed page is verified against its B2 master rather than
+ * the local file (FR-008, SC-002/SC-004) -- a legacy page with
+ * `object_store: null` still falls back to local verification, handled by
+ * {@link verifyAsset} itself.
+ */
 export async function verifyIssueDir(
   dir: string,
   log: (message: string) => void,
+  objectStore?: ObjectStore,
 ): Promise<number> {
   if (!existsSync(dir)) {
     log(`  verify: no archive directory ${dir} (nothing fetched yet)`);
@@ -296,7 +305,7 @@ export async function verifyIssueDir(
   }
   let mismatches = 0;
   for (const name of pageFiles) {
-    const result = await verifyAsset(path.join(dir, name));
+    const result = await verifyAsset(path.join(dir, name), { objectStore });
     if (result.ok) {
       log(`  ok    ${name}`);
     } else {

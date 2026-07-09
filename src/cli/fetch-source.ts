@@ -68,7 +68,7 @@ async function runFetchSourceMonograph(
   deps.log(`fetch-source: monograph ${sourceId} -> ${dir}`);
 
   if (args.flags.verify) {
-    const mismatches = await verifyIssueDir(dir, deps.log);
+    const mismatches = await verifyIssueDir(dir, deps.log, deps.objectStore);
     if (mismatches > 0) {
       throw new Error(
         `fetch-source: ${mismatches} checksum mismatch(es) for ${sourceId}`,
@@ -154,7 +154,7 @@ async function runFetchSourcePeriodical(
       const dir = issueDir(sourceId, { ark: issue.ark, date: issue.date }, deps.archiveRoot);
       if (args.flags.verify) {
         deps.log(`fetch-source (verify): ${issue.ark} (${issue.date})`);
-        verifyMismatches += await verifyIssueDir(dir, deps.log);
+        verifyMismatches += await verifyIssueDir(dir, deps.log, deps.objectStore);
       } else if (args.flags.dryRun) {
         estimatedTotal += await dryRunDocument(deps, issue.ark, dir);
       } else {
