@@ -35,8 +35,10 @@ const BASE_PAGE_PROVENANCE: ProvenanceFields = {
   retrieved: '2026-07-08T00:00:00.000Z',
   local_path: 'archive/cases/port-breton/newspapers/la-nouvelle-france/x/f001.jpg',
   sha256: 'deadbeef',
+  size: 0,
   format: 'image/jpeg',
   ocr_status: 'none',
+  object_store: null,
   rights_raw: '<oai_dc:dc><dc:rights>domaine public</dc:rights></oai_dc:dc>',
   notes: null,
 };

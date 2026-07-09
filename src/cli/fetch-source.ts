@@ -8,6 +8,7 @@ import { serializeCensus } from '@/census/serialize';
 import { loadCensus } from '@/census/load';
 import { censusPath } from '@/cli/census';
 import type { Census } from '@/model/census';
+import type { IssueCheckpoint } from '@/cli/archive-checkpoint';
 import {
   defaultFetchDeps,
   dryRunDocument,
@@ -32,7 +33,7 @@ import {
  */
 export async function runFetchSource(
   args: ParsedArgs,
-  deps: FetchDeps = defaultFetchDeps(),
+  deps: FetchDeps = defaultFetchDeps(args),
 ): Promise<void> {
   const ark = args.positional[0];
   if (ark === undefined) {
@@ -68,7 +69,7 @@ async function runFetchSourceMonograph(
   deps.log(`fetch-source: monograph ${sourceId} -> ${dir}`);
 
   if (args.flags.verify) {
-    const mismatches = await verifyIssueDir(dir, deps.log);
+    const mismatches = await verifyIssueDir(dir, deps.log, deps.objectStore);
     if (mismatches > 0) {
       throw new Error(
         `fetch-source: ${mismatches} checksum mismatch(es) for ${sourceId}`,
@@ -90,6 +91,19 @@ async function runFetchSourceMonograph(
   if (args.flags.ocr) {
     await runOcrForIssue(deps, result.dir, args.flags);
   }
+  // A monograph is a single document, so it gets ONE checkpoint (commit+push)
+  // after the whole document is fetched -- unlike the periodical loop, there
+  // is no per-issue date to carry (`IssueCheckpoint.date` is optional exactly
+  // for this case; see `src/cli/archive-checkpoint.ts`).
+  const checkpoint: IssueCheckpoint = {
+    sourceId,
+    ark: documentArk,
+    dir: result.dir,
+    pageCount: result.pageCount,
+    written: result.pages.length - result.skippedCount,
+    skipped: result.skippedCount,
+  };
+  await deps.onIssueComplete?.(checkpoint);
 }
 
 /** Load the source census, building (and persisting) it first when absent. */
@@ -154,7 +168,7 @@ async function runFetchSourcePeriodical(
       const dir = issueDir(sourceId, { ark: issue.ark, date: issue.date }, deps.archiveRoot);
       if (args.flags.verify) {
         deps.log(`fetch-source (verify): ${issue.ark} (${issue.date})`);
-        verifyMismatches += await verifyIssueDir(dir, deps.log);
+        verifyMismatches += await verifyIssueDir(dir, deps.log, deps.objectStore);
       } else if (args.flags.dryRun) {
         estimatedTotal += await dryRunDocument(deps, issue.ark, dir);
       } else {
@@ -169,6 +183,16 @@ async function runFetchSourcePeriodical(
         if (args.flags.ocr) {
           await runOcrForIssue(deps, result.dir, args.flags);
         }
+        const checkpoint: IssueCheckpoint = {
+          sourceId,
+          ark: issue.ark,
+          date: issue.date,
+          dir: result.dir,
+          pageCount: result.pageCount,
+          written: result.pages.length - result.skippedCount,
+          skipped: result.skippedCount,
+        };
+        await deps.onIssueComplete?.(checkpoint);
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);

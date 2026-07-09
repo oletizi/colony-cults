@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import type {
   IiifClient,
   OaiRecordClient,
@@ -12,8 +13,25 @@ import {
   storeAsset,
   type StoreResult,
 } from '@/archive/store';
+import type { ObjectStore } from '@/archive/object-store';
 import type { ProvenanceFields } from '@/archive/provenance';
 import type { Rights } from '@/model/rights';
+// Type-only: erased at compile time, so this never pulls the git-invoking
+// runtime code of `@/cli/archive-checkpoint` into the fetch core -- only the
+// `PageStored` SHAPE is shared (see that module for why it lives there).
+import type { PageStored } from '@/cli/archive-checkpoint';
+
+/**
+ * Coordinates recorded in provenance's `object_store` block when a page-image
+ * master is uploaded (T015). Mirrors `StoreOptions.objectStoreCoords`
+ * (`@/archive/store`) -- the object key itself is re-derived from the
+ * archive layout, not carried here.
+ */
+export type ObjectStoreCoords = {
+  provider: string;
+  bucket: string;
+  endpoint: string;
+};
 
 /**
  * The Gallica capabilities `fetchIssue` depends on, composed from the
@@ -41,6 +59,21 @@ export interface FetchIssueContext {
   force?: boolean;
   /** Optional line-oriented progress sink. */
   log?: (message: string) => void;
+  /**
+   * Object-store backend for page-image masters (T015), opt-in via the CLI's
+   * `--object-store` flag. Undefined -- the default -- means legacy
+   * local-only behavior: no upload, `object_store` stays null in provenance.
+   */
+  objectStore?: ObjectStore;
+  /** Coordinates recorded in provenance; meaningful only with {@link objectStore}. */
+  objectStoreCoords?: ObjectStoreCoords;
+  /**
+   * Optional per-page hook (T0xx, page-level checkpointing), invoked once per
+   * page AFTER it is stored -- both the write and the skip branch. The fetch
+   * core never acts on this beyond invoking it; only the CLI orchestration
+   * layer (`src/cli/fetch-shared.ts`) wires a git-touching implementation in.
+   */
+  onPageStored?: (p: PageStored) => Promise<void>;
 }
 
 /**
@@ -62,6 +95,20 @@ export interface FetchMonographContext {
   force?: boolean;
   /** Optional line-oriented progress sink. */
   log?: (message: string) => void;
+  /**
+   * Object-store backend for page-image masters (T015), opt-in via the CLI's
+   * `--object-store` flag. Undefined -- the default -- means legacy
+   * local-only behavior: no upload, `object_store` stays null in provenance.
+   */
+  objectStore?: ObjectStore;
+  /** Coordinates recorded in provenance; meaningful only with {@link objectStore}. */
+  objectStoreCoords?: ObjectStoreCoords;
+  /**
+   * Optional per-page hook (T0xx, page-level checkpointing), invoked once per
+   * page AFTER it is stored -- both the write and the skip branch. See the
+   * matching field on {@link FetchIssueContext}.
+   */
+  onPageStored?: (p: PageStored) => Promise<void>;
 }
 
 /** Per-document (issue or monograph) fetch outcome. */
@@ -92,6 +139,9 @@ interface DocumentFetchContext {
   clock: () => Date;
   force?: boolean;
   log?: (message: string) => void;
+  objectStore?: ObjectStore;
+  objectStoreCoords?: ObjectStoreCoords;
+  onPageStored?: (p: PageStored) => Promise<void>;
 }
 
 /** Zero-padded page ordinal for the `f<NNN>.jpg` asset name. */
@@ -147,20 +197,51 @@ async function fetchDocumentPages(
   let bytesWritten = 0;
   let skippedCount = 0;
 
+  const objectStoreConfigured = ctx.objectStore !== undefined;
+
   for (let page = 1; page <= pageCount; page += 1) {
     const targetPath = path.join(ctx.dir, pageFileName(page));
 
-    // Resumability (FR-009 / SC-005): skip the download itself for a page
-    // already present with a matching recorded checksum.
-    if (ctx.force !== true && (await isAssetRecorded(targetPath))) {
+    // Is this page already present locally with a matching recorded checksum?
+    const recordedLocally =
+      ctx.force !== true && (await isAssetRecorded(targetPath));
+
+    // Resumability (FR-009 / SC-005), LEGACY local-only path: with NO object
+    // store configured, a page already present + checksum-recorded is skipped
+    // WITHOUT re-downloading. When an object store IS configured this local
+    // check must NOT short-circuit -- `storeAsset`'s B2 `head(key)` is the
+    // skip authority there, so a prior local-only run's masters still get
+    // uploaded (audit HIGH finding) rather than silently treated as complete.
+    if (!objectStoreConfigured && recordedLocally) {
       pages.push({ path: targetPath, sha256: '', skipped: true });
       skippedCount += 1;
       ctx.log?.(`  skip  ${pageFileName(page)} (already recorded)`);
+      await ctx.onPageStored?.({
+        sourceId: ctx.sourceId,
+        ark: documentArk,
+        dir: ctx.dir,
+        page,
+        pageCount,
+        skipped: true,
+      });
       continue;
     }
 
     const originalUrl = iiifImageUrl(documentArk, page);
-    const bytes = await ctx.client.iiifImage(documentArk, page);
+
+    // Obtain the bytes: re-read the LOCAL cache file (no IIIF fetch) when the
+    // page is already recorded on disk; otherwise download from Gallica. Only
+    // reachable with an object store configured OR force -- the legacy skip
+    // above returns before this for the pure local-only case.
+    let bytes: Uint8Array;
+    let downloaded: boolean;
+    if (recordedLocally) {
+      bytes = await readFile(targetPath);
+      downloaded = false;
+    } else {
+      bytes = await ctx.client.iiifImage(documentArk, page);
+      downloaded = true;
+    }
 
     const provenance: ProvenanceFields = {
       id: ctx.sourceId,
@@ -173,11 +254,14 @@ async function fetchDocumentPages(
       original_url: originalUrl,
       rights_status: rights.status,
       retrieved,
-      // local_path + sha256 are (re)derived inside storeAsset from real bytes.
+      // local_path + sha256 + size are (re)derived inside storeAsset from the
+      // real bytes; object_store is null until the master is uploaded (T009).
       local_path: '',
       sha256: '',
+      size: 0,
       format: 'image/jpeg',
       ocr_status: 'none',
+      object_store: null,
       rights_raw: rights.rawResponse,
       notes: null,
     };
@@ -187,16 +271,41 @@ async function fetchDocumentPages(
       targetPath,
       provenance,
       ctx.archiveRoot,
-      { force: ctx.force },
+      {
+        force: ctx.force,
+        objectStore: ctx.objectStore,
+        objectStoreCoords: ctx.objectStoreCoords,
+      },
     );
     pages.push(result);
     if (result.skipped) {
+      // storeAsset skipped: for an object-store run this is a B2-head match
+      // (the object already exists at the recorded sha); for a forced
+      // re-download it does not occur. Counts as skipped, not as bytes.
       skippedCount += 1;
       ctx.log?.(`  skip  ${pageFileName(page)} (already recorded)`);
-    } else {
+    } else if (downloaded) {
+      // Freshly downloaded from Gallica and written -- the only path that
+      // adds to the "bytes downloaded this run" counter.
       bytesWritten += bytes.byteLength;
       ctx.log?.(`  wrote ${pageFileName(page)} (${bytes.byteLength} bytes)`);
+    } else {
+      // Backfill: bytes came from the local cache and were uploaded to the
+      // object store. No Gallica download happened, so this is neither a skip
+      // nor counted as downloaded bytes.
+      ctx.log?.(
+        `  upload ${pageFileName(page)} (${bytes.byteLength} bytes from local cache)`,
+      );
     }
+
+    await ctx.onPageStored?.({
+      sourceId: ctx.sourceId,
+      ark: documentArk,
+      dir: ctx.dir,
+      page,
+      pageCount,
+      skipped: result.skipped,
+    });
   }
 
   return {
