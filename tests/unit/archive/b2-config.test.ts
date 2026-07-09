@@ -75,13 +75,31 @@ describe('resolveObjectStoreConfig', () => {
     expect(() => resolveObjectStoreConfig(env)).toThrow();
   });
 
-  it('throws when the credentials file is missing keyID or applicationKey', () => {
+  it('throws (naming keyID) when only keyID is absent', () => {
+    // applicationKey present, keyID absent — proves the keyID branch on its own,
+    // so a parser that accepted a present-applicationKey/absent-keyID file would fail.
     const credentialsPath = writeCredentialsFile(
-      'keyName: colony-cults-archive-writer\n',
+      'keyName: colony-cults-archive-writer\n' +
+        'applicationKey:\tK002superSecretApplicationKeyValue\n',
     );
 
     expect(() => resolveObjectStoreConfig(baseEnv(credentialsPath))).toThrow(
-      /keyID|applicationKey/,
+      /keyID/,
+    );
+  });
+
+  it('throws (naming applicationKey) when only applicationKey is absent', () => {
+    // keyID present, applicationKey absent — proves the applicationKey branch on
+    // its own, so a parser that emitted an undefined/empty secretAccessKey for a
+    // present-keyID/absent-applicationKey file would fail here rather than only at
+    // a downstream B2 auth rejection.
+    const credentialsPath = writeCredentialsFile(
+      'keyID: 0012abcdef34560000000001\n' +
+        'keyName: colony-cults-archive-writer\n',
+    );
+
+    expect(() => resolveObjectStoreConfig(baseEnv(credentialsPath))).toThrow(
+      /applicationKey/,
     );
   });
 });
