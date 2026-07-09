@@ -184,7 +184,7 @@ without breaking the previous ones.
 
 ## Notes
 
-- [P] = different files, no incomplete-task dependency.
+- `[P]` = different files, no incomplete-task dependency.
 - Do all archive-repo work in the dedicated worktree (T002), never the shared clone.
 - The one-time git-history purge (reclaim ~2 GB; subsumes TASK-6) is OUT OF SCOPE —
   blocked on the translation session quiescing.
