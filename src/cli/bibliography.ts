@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs as nodeParseArgs } from 'node:util';
 
-import { deriveModel, gatherProvenance } from '@/bibliography/derive';
+import { deriveModel, gatherCensusForAll, gatherProvenance } from '@/bibliography/derive';
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
 import { migrate } from '@/bibliography/migrate';
@@ -218,7 +218,8 @@ async function runShow(rest: string[]): Promise<number> {
       loaded.map((entry) => entry.source),
       archiveRoot,
     );
-    const model = deriveModel(loaded, provenanceBySource);
+    const censusByKey = gatherCensusForAll(loaded, repoRoot);
+    const model = deriveModel(loaded, provenanceBySource, censusByKey);
     source = model.sources.find((s) => s.sourceId === sourceId);
     records = model.repositoryRecords.filter((r) => r.sourceId === sourceId);
   } catch (error) {
@@ -281,7 +282,8 @@ async function runValidate(rest: string[]): Promise<number> {
       loaded.map((entry) => entry.source),
       archiveRoot,
     );
-    const model = deriveModel(loaded, provenanceBySource);
+    const censusByKey = gatherCensusForAll(loaded, repoRoot);
+    const model = deriveModel(loaded, provenanceBySource, censusByKey);
     findings = validate(model, {
       repoRoot,
       archiveRoot: archiveAvailable ? archiveRoot : undefined,
@@ -318,7 +320,8 @@ async function buildCanonicalModel(
     loaded.map((entry) => entry.source),
     archiveRoot,
   );
-  const model = deriveModel(loaded, provenanceBySource);
+  const censusByKey = gatherCensusForAll(loaded, repoRoot);
+  const model = deriveModel(loaded, provenanceBySource, censusByKey);
   return { model, archiveRoot, archiveAvailable };
 }
 

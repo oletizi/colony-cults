@@ -26,9 +26,25 @@ export interface AssetProvenance {
   sha256: string;
   /** Object-store master location, or `null` when absent or not yet uploaded. */
   object_store: ObjectStoreLocation | null;
+  /**
+   * MIME type, e.g. `image/jpeg`. Unlike `object_store`/`size`, this field
+   * predates none of the archive's companion sidecars (100% coverage across
+   * the real archive, legacy included), so it is required here, not tolerated
+   * as absent.
+   */
+  format: string;
+  /** The exact origin URL the asset bytes were fetched from (may be `""` for a derived asset). Same 100% coverage as `format`. */
+  original_url: string;
 }
 
-const REQUIRED_KEYS = ['source_archive', 'local_path', 'type', 'sha256'] as const;
+const REQUIRED_KEYS = [
+  'source_archive',
+  'local_path',
+  'type',
+  'sha256',
+  'format',
+  'original_url',
+] as const;
 type RequiredKey = (typeof REQUIRED_KEYS)[number];
 
 /** Reverse of the writer's `quotedScalar`: unescape a double-quoted YAML scalar body. */
@@ -172,6 +188,8 @@ export function parseAssetProvenance(text: string, yamlPath: string): AssetProve
     type: requireField(scalars, 'type', yamlPath),
     sha256: requireField(scalars, 'sha256', yamlPath),
     object_store: objectStore,
+    format: requireField(scalars, 'format', yamlPath),
+    original_url: requireField(scalars, 'original_url', yamlPath),
   };
 }
 

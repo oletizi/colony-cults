@@ -3,7 +3,7 @@ import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
 import { parseCsv } from '@/bibliography/csv';
-import { deriveModel, gatherProvenance } from '@/bibliography/derive';
+import { deriveModel, gatherCensusForAll, gatherProvenance } from '@/bibliography/derive';
 import { loadAllSources } from '@/bibliography/load';
 import type { LoadedSource } from '@/bibliography/load';
 import type { AuthoredRepositoryRecord, CanonicalModel } from '@/bibliography/model';
@@ -512,6 +512,7 @@ export async function migrate(opts: MigrateOptions): Promise<MigrateResult> {
     }
   }
 
-  const model = deriveModel(loaded, provenanceBySource);
+  const censusByKey = gatherCensusForAll(loaded, opts.repoRoot);
+  const model = deriveModel(loaded, provenanceBySource, censusByKey);
   return { written, model };
 }

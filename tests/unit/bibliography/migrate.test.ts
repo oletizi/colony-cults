@@ -64,12 +64,29 @@ function tempDir(prefix: string): string {
   return dir;
 }
 
-/** Seed a repo root with the two PUBLIC representations (sources + tracker). */
+/**
+ * Minimal fixture census JSON, written at the path `migrateSource` derives
+ * for a periodical's Gallica copy (`data/census/PB-P001-la-nouvelle-france.json`)
+ * -- `migrate`'s internal `deriveModel` call (T024) now eagerly loads every
+ * declared `census` pointer and fails loud if it is missing, so every
+ * `seedRepo()`-based fixture needs this file present.
+ */
+const CENSUS_JSON = JSON.stringify({
+  sourceId: 'PB-P001',
+  gallicaArk: GALLICA_ARK,
+  builtAt: '2026-01-01',
+  totalIssues: 1,
+  issues: [{ ark: 'bpt6k1', date: '1879-07-15', label: '15 juillet 1879', pageCount: 8 }],
+});
+
+/** Seed a repo root with the two PUBLIC representations (sources + tracker) plus the census fixture. */
 function seedRepo(tracker: string = TRACKER_CSV): string {
   const repo = tempDir('migrate-repo-');
   mkdirSync(path.join(repo, 'bibliography'), { recursive: true });
   writeFileSync(path.join(repo, 'bibliography', 'sources.csv'), SOURCES_CSV);
   writeFileSync(path.join(repo, 'bibliography', 'acquisition-tracker.csv'), tracker);
+  mkdirSync(path.join(repo, 'data', 'census'), { recursive: true });
+  writeFileSync(path.join(repo, 'data', 'census', 'PB-P001-la-nouvelle-france.json'), CENSUS_JSON);
   return repo;
 }
 

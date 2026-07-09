@@ -7,7 +7,10 @@ import type { ObjectStoreLocation } from '@/archive/provenance';
 import type { AssetProvenance } from '@/bibliography/provenance-read';
 import { readAssetProvenance } from '@/bibliography/provenance-read';
 import { sourceLayout } from '@/archive/location';
-import type { AssetManifestRef, RepositoryRecord } from '@/model/repository-record';
+import { loadCensus } from '@/census/load';
+import type { Census, CensusIssue } from '@/model/census';
+import type { Asset } from '@/model/asset';
+import type { AssetManifestRef, IssueRef, RepositoryRecord } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 
 /**
@@ -26,10 +29,20 @@ export interface RollupProvenance {
   readonly local_path: string;
   /** Object-store master location, or `null` for a legacy/not-yet-uploaded asset. */
   readonly object_store: ObjectStoreLocation | null;
+  /**
+   * Asset kind, e.g. `page-image`, `ocr-text` -- required (both `AssetProvenance`
+   * and `ProvenanceFields` always carry it) so the Issue layer (T024) can build
+   * a faithful {@link Asset} per mirrored asset.
+   */
+  readonly type: string;
+  /** Lowercase-hex SHA-256 of the asset bytes -- required, same as `type`. */
+  readonly sha256: string;
+  /** MIME type, e.g. `image/jpeg` -- required (100% archive coverage, see `AssetProvenance`). */
+  readonly format: string;
+  /** The exact origin URL the asset bytes were fetched from -- required, same coverage as `format`. */
+  readonly original_url: string;
   /** Catalog / issue landing URL, when the roll-up source carries one. */
   readonly catalog_url?: string;
-  /** The exact origin URL the asset bytes were fetched from, when carried. */
-  readonly original_url?: string;
   /** Retrieval timestamp (ISO), when carried. */
   readonly retrieved?: string;
 }
@@ -244,9 +257,13 @@ function mergeRecord(
   // (when tests supply it) but no per-copy `ark`, so a faithful `Rights`
   // object (which requires one) cannot be derived without fabricating a
   // field -- omitting it is more honest than mock data. Likewise
-  // catalog_url/original_url/retrieved are OPTIONAL on `RollupProvenance` --
-  // the tolerant on-disk reader never carries them -- so only set the
-  // record's fields when the roll-up source actually supplied them.
+  // catalog_url/retrieved are OPTIONAL on `RollupProvenance` -- the tolerant
+  // on-disk reader never carries them -- so only set the record's fields when
+  // the roll-up source actually supplied them. `original_url` is REQUIRED on
+  // `RollupProvenance` (100% archive coverage, T024) but may still be `""`
+  // for a derived asset (e.g. OCR text) with no origin URL of its own; the
+  // `!== undefined` check below is retained even though always-true for
+  // clarity/symmetry with the other two optional fields.
   const record: RepositoryRecord = {
     sourceId,
     sourceArchive,
@@ -268,10 +285,119 @@ function mergeRecord(
 }
 
 /**
- * PURE core: build the {@link CanonicalModel} from the authored SSOT entries
- * and each source's provenance-derived roll-up. The final `repositoryRecords`
- * is the UNION over `(sourceId, sourceArchive)` of authored and derived
- * records (C1 / FR-013a / SC-005):
+ * Composite key for `censusByKey`, matching one Repository Record's
+ * `(sourceId, sourceArchive)` -- the same pair an `AuthoredRepositoryRecord`'s
+ * `census` pointer is authored on.
+ */
+export function censusKey(sourceId: string, sourceArchive: string): string {
+  return `${sourceId} ${sourceArchive}`;
+}
+
+/**
+ * ADAPTER: eagerly load the census file for every authored record (across
+ * every loaded source) that declares a `census` pointer, resolving the
+ * pointer path against `repoRoot` (T024). `loadCensus` fails loud on a
+ * missing/malformed file -- there is no silent skip here: a `census` pointer
+ * authored on a record is a promise that file is loadable, so this adapter
+ * surfaces that failure immediately, mirroring the disk-adapter pattern
+ * {@link gatherProvenance} already establishes for asset provenance.
+ */
+export function gatherCensusForAll(
+  authored: readonly LoadedSource[],
+  repoRoot: string,
+): Map<string, Census> {
+  const censusByKey = new Map<string, Census>();
+  for (const entry of authored) {
+    for (const record of entry.records) {
+      if (record.census === undefined) {
+        continue;
+      }
+      const census = loadCensus(path.join(repoRoot, record.census));
+      censusByKey.set(censusKey(entry.source.sourceId, record.sourceArchive), census);
+    }
+  }
+  return censusByKey;
+}
+
+/** The `<date>_<ark>` issue-dir path segment a census issue's assets live under (mirrors `@/archive/location`'s `issueDir`). */
+function issueSegment(issue: CensusIssue): string {
+  return `${issue.date}_${issue.ark}`;
+}
+
+/** Every {@link Asset}`['type']` value, kept in one place so `isAssetType` and its error message can't drift apart. */
+const ASSET_TYPES: readonly string[] = [
+  'page-image',
+  'pdf-a',
+  'ocr-text',
+  'corrected-french-text',
+  'english-translation',
+];
+
+/** Narrow a raw provenance `type` string to `Asset['type']`, failing loud on an unrecognized value. */
+function isAssetType(value: string): value is Asset['type'] {
+  return ASSET_TYPES.includes(value);
+}
+
+/** Build one rolled-up provenance entry's {@link Asset}. */
+function toAsset(entry: RollupProvenance): Asset {
+  if (!isAssetType(entry.type)) {
+    throw new Error(
+      `deriveModel: asset "${entry.local_path}" has unknown type "${entry.type}" ` +
+        `(expected one of: ${ASSET_TYPES.join('/')})`,
+    );
+  }
+  return {
+    type: entry.type,
+    localPath: entry.local_path,
+    sourceUrl: entry.original_url,
+    sha256: entry.sha256,
+    format: entry.format,
+    // No per-asset page ordinal is tracked anywhere in provenance (on disk or
+    // in-memory) -- `null` is the type's own honest "not tracked" state, not
+    // a fabricated default (`Asset.pageOrdinal: number | null`).
+    pageOrdinal: null,
+  };
+}
+
+/**
+ * Derive a periodical copy's `IssueRef[]` from its census, in census order
+ * (R-005 / SC-006): every census issue survives whether or not any of the
+ * copy's rolled-up assets were mirrored for it yet -- a census issue with NO
+ * matching assets yields `assets: []` (known-but-unacquired is a VALID state,
+ * not an error). Assets are attached to an issue by matching the `<date>_<ark>`
+ * issue-dir segment (`issueSegment`) against each asset's `local_path`.
+ *
+ * `record.issues.length` always equals `census.issues.length` by
+ * construction; a census file whose own `totalIssues` disagrees with what it
+ * actually enumerates is a data-integrity bug -- fails loud rather than
+ * silently reporting the wrong count (SC-006).
+ */
+function buildIssues(census: Census, derivedEntries: readonly RollupProvenance[]): IssueRef[] {
+  if (census.totalIssues !== census.issues.length) {
+    throw new Error(
+      `deriveModel: census for "${census.sourceId}" declares totalIssues=${census.totalIssues} ` +
+        `but enumerates ${census.issues.length} issue(s) -- data integrity issue`,
+    );
+  }
+  return census.issues.map((issue) => {
+    const segment = issueSegment(issue);
+    const matching = derivedEntries.filter((entry) => entry.local_path.split('/').includes(segment));
+    return {
+      ark: issue.ark,
+      date: issue.date,
+      label: issue.label,
+      pageCount: issue.pageCount,
+      assets: matching.map(toAsset),
+    };
+  });
+}
+
+/**
+ * PURE core: build the {@link CanonicalModel} from the authored SSOT entries,
+ * each source's provenance-derived roll-up, and each declared record's
+ * census (Issue layer, T024). The final `repositoryRecords` is the UNION over
+ * `(sourceId, sourceArchive)` of authored and derived records (C1 / FR-013a /
+ * SC-005):
  *
  * - key in both -> one record: authored acquisition fields (authored
  *   overrides), derived `manifest` attached.
@@ -280,12 +406,25 @@ function mergeRecord(
  * - key only in derived -> a record surfaced from provenance, `status` unset
  *   (empty-string sentinel).
  *
- * Issue-layer derivation from the census is out of scope here (T024); `issues`
- * is left unset.
+ * Issue layer: a `kind === 'periodical'` Source's record that declares a
+ * `census` pointer gets `issues: IssueRef[]` built from `census.issues`
+ * (`buildIssues`), enumerated via `censusByKey` (built by the
+ * {@link gatherCensusForAll} adapter -- this core stays pure, no disk I/O).
+ * A record with no `census` pointer (e.g. an authored-only SLQ copy) and any
+ * `kind === 'monograph'` record never gets an `issues` field at all -- it
+ * stays `undefined`, monographs reference their assets directly via
+ * `manifest`. A `census` pointer with no matching `censusByKey` entry is a
+ * caller error (the adapter should have loaded it, or thrown trying) --
+ * fails loud here too, defensively. `censusByKey` defaults to an empty map
+ * for callers with no periodical/census-bearing records to derive (most unit
+ * tests); a record that DOES declare a `census` pointer still fails loud
+ * against an empty map, per the previous paragraph -- the default never
+ * silently swallows a real Issue-layer requirement.
  */
 export function deriveModel(
   authored: LoadedSource[],
   provenanceBySource: ReadonlyMap<string, readonly RollupProvenance[]>,
+  censusByKey: ReadonlyMap<string, Census> = new Map(),
 ): CanonicalModel {
   const sources: Source[] = authored.map((entry) => entry.source);
   const repositoryRecords: RepositoryRecord[] = [];
@@ -299,14 +438,23 @@ export function deriveModel(
 
     const archives = [...new Set([...derivedByArchive.keys(), ...authoredByArchive.keys()])].sort();
     for (const sourceArchive of archives) {
-      repositoryRecords.push(
-        mergeRecord(
-          sourceId,
-          sourceArchive,
-          authoredByArchive.get(sourceArchive),
-          derivedByArchive.get(sourceArchive),
-        ),
-      );
+      const authoredRecord = authoredByArchive.get(sourceArchive);
+      const derivedEntries = derivedByArchive.get(sourceArchive);
+      const record = mergeRecord(sourceId, sourceArchive, authoredRecord, derivedEntries);
+
+      if (entry.source.kind === 'periodical' && authoredRecord?.census !== undefined) {
+        const census = censusByKey.get(censusKey(sourceId, sourceArchive));
+        if (census === undefined) {
+          throw new Error(
+            `deriveModel: record (${sourceId}, ${sourceArchive}) declares census ` +
+              `"${authoredRecord.census}" but no census data was supplied for it -- the ` +
+              `census file may be missing/unreadable (fail loud, no silent skip)`,
+          );
+        }
+        record.issues = buildIssues(census, derivedEntries ?? []);
+      }
+
+      repositoryRecords.push(record);
     }
   }
 
