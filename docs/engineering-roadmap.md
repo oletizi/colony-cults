@@ -26,3 +26,8 @@ graph (it fails loud on a cycle / dangling ref / duplicate id).
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-08-gallica-fetcher-design.md
 Reusable TypeScript/tsx tool to fetch Gallica public-domain sources via documented web-service and IIIF APIs (Issues census, Pagination, IIIF images, OCR text) with provenance and checksums into the private archive; first target La Nouvelle France PB-P001
+
+## impl:feature/archive-object-store
+- status: planned
+- design: docs/superpowers/specs/2026-07-08-archive-object-store-design.md
+Move the archive's binary image masters from git to Backblaze B2 (S3-compatible; bucket colony-cults, endpoint https://s3.us-west-004.backblazeb2.com, region us-west-004). Fetcher archive-writer uploads image bytes to B2 and records the object key + sha256 in the git-tracked provenance; git keeps only census + provenance + OCR text + manifest. Includes a one-time migration (masters already uploaded + verified in B2; remaining: strip images from git history + force-push, coordinated with the translation session). Subsumes TASK-6.
