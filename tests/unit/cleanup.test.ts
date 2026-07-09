@@ -20,6 +20,7 @@ interface FakeCall {
 function fakeClaudeCli(canned: string): { claude: ClaudeCli; calls: FakeCall[] } {
   const calls: FakeCall[] = [];
   const claude: ClaudeCli = {
+    name: 'claude-code-cli',
     run: async (prompt, sourceText, model, systemPrompt) => {
       calls.push({ prompt, sourceText, model, systemPrompt });
       return canned;

@@ -232,6 +232,7 @@ export function fakeClaude(
   options: FakeClaudeOptions = {},
 ): ClaudeCli {
   return {
+    name: 'claude-code-cli',
     run: async (prompt, sourceText, model) => {
       const pass: EngineCall['pass'] = prompt.includes(
         'Translate the following corrected French',

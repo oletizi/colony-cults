@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createClaudeCli } from '@/claude/client';
 import type { ClaudeCommandRunner } from '@/claude/exec';
 import type { ExecResult } from '@/ocr/exec';
+import type { TranslationEngine } from '@/engine/types';
 
 /**
  * Unit coverage for `ClaudeCli` (T006): ONE `claude --print` invocation per
@@ -160,5 +161,11 @@ describe('createClaudeCli (T006)', () => {
     const cli = createClaudeCli(runner);
 
     await expect(cli.run('prompt', 'source')).rejects.toThrow(/empty|no output|produced nothing/i);
+  });
+
+  it('exposes the claude provenance name and satisfies TranslationEngine', () => {
+    const { runner } = fakeRunner({ stdout: 'x', stderr: '', exitCode: 0 });
+    const engine: TranslationEngine = createClaudeCli(runner);
+    expect(engine.name).toBe('claude-code-cli');
   });
 });

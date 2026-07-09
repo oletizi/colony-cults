@@ -27,6 +27,7 @@ function fakeClaudeCli(outputs: string[]): {
 } {
   const calls: FakeCall[] = [];
   const claude: ClaudeCli = {
+    name: 'claude-code-cli',
     run: async (prompt, sourceText, model, systemPrompt) => {
       calls.push({ prompt, sourceText, model, systemPrompt });
       const i = Math.min(calls.length - 1, outputs.length - 1);

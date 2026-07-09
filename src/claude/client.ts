@@ -1,4 +1,5 @@
 import type { ClaudeCommandRunner } from '@/claude/exec';
+import type { TranslationEngine } from '@/engine/types';
 
 /**
  * System prompt that pins `claude --print` to behave as a pure
@@ -30,39 +31,36 @@ Absolute rules:
  * stdin, and captured stdout is the result. No fallback -- a non-zero exit
  * or empty output throws a descriptive error rather than returning partial
  * or fabricated text.
+ *
+ * `run`'s params: `prompt` is the instruction text passed as the
+ * `claude --print` argument; `sourceText` is the page text written to the
+ * child process's stdin; `model` is an optional model alias/full name
+ * pinned via `--model` (when omitted, `claude` uses its own default -- the
+ * caller records the resolved model for provenance, this function does
+ * not); `systemPrompt` is an optional system prompt appended via
+ * `--append-system-prompt` (e.g. {@link TRANSFORMATION_SYSTEM_PROMPT}) to
+ * pin output-only behavior (when omitted, no system prompt is appended).
+ * Returns the captured stdout on success.
+ *
+ * Back-compat alias: `ClaudeCli` is the pre-existing name for what is now
+ * the shared {@link TranslationEngine} contract.
  */
-export interface ClaudeCli {
-  /**
-   * @param prompt Instruction text passed as the `claude --print` argument.
-   * @param sourceText Page text written to the child process's stdin.
-   * @param model Optional model alias/full name pinned via `--model`; when
-   *   omitted, `claude` uses its own default. The caller records the
-   *   resolved model for provenance -- this function does not.
-   * @param systemPrompt Optional system prompt appended via
-   *   `--append-system-prompt` (e.g. {@link TRANSFORMATION_SYSTEM_PROMPT}) to
-   *   pin output-only behavior; when omitted, no system prompt is appended.
-   * @returns The captured stdout on success.
-   */
-  run(
-    prompt: string,
-    sourceText: string,
-    model?: string,
-    systemPrompt?: string,
-  ): Promise<string>;
-}
+export type ClaudeCli = TranslationEngine;
 
 /**
- * Build a {@link ClaudeCli} backed by the given {@link ClaudeCommandRunner}.
- * A factory + closure over the injected runner (composition, not
- * inheritance) so tests can supply a fake runner and never shell out to a
- * real `claude` binary.
+ * Build a {@link TranslationEngine} backed by the given
+ * {@link ClaudeCommandRunner}. A factory + closure over the injected runner
+ * (composition, not inheritance) so tests can supply a fake runner and
+ * never shell out to a real `claude` binary. `name` records this adapter's
+ * provenance label for artifact `.yml` metadata.
  *
  * Flag spelling (`--print`, `--model`) matches the documented CLI per
  * research R1; the exact spelling is re-confirmed against the installed
  * `claude` version in T032.
  */
-export function createClaudeCli(runner: ClaudeCommandRunner): ClaudeCli {
+export function createClaudeCli(runner: ClaudeCommandRunner): TranslationEngine {
   return {
+    name: 'claude-code-cli',
     async run(
       prompt: string,
       sourceText: string,

@@ -77,6 +77,7 @@ describe('runTranslateSource (T024)', () => {
   it('rejects naming the consecutive-failure abort when every issue fails', async () => {
     source = await buildFetchedSource({ count: 4 });
     const claude: ClaudeCli = {
+      name: 'claude-code-cli',
       run: async () => {
         throw new Error('claude boom');
       },

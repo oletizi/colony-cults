@@ -30,6 +30,7 @@ describe('translateSource -- consecutive-failure abort (T026)', () => {
     // once per attempted issue and never for the 4th/5th.
     let engineCalls = 0;
     const claude: ClaudeCli = {
+      name: 'claude-code-cli',
       run: async () => {
         engineCalls += 1;
         throw new Error('claude boom');
