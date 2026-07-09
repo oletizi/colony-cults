@@ -1,9 +1,7 @@
-import { existsSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { findIssueDir } from '@/archive/location';
 import { readProvenance } from '@/archive/provenance';
-import { companionYamlPath } from '@/archive/store';
 
 /**
  * The rights determination + citation needed to gate/label a translation run
@@ -23,32 +21,40 @@ export interface IssueRights {
 }
 
 /**
- * Zero-padded page-image filenames (`f001.jpg`), in page order. Mirrors
- * `gatherPageImages` in `src/ocr/run.ts` so both offline consumers of a
- * fetched issue agree on what "the first page" means.
+ * Absolute path to the first page's provenance companion YAML (`f001.yml`,
+ * before `f002.yml`, ...), in page order.
+ *
+ * We scan the `f###.yml` companions DIRECTLY rather than deriving them from the
+ * `f###.jpg` images: the archive's object-store migration moves page images to
+ * external storage and REMOVES the local `.jpg` files while KEEPING the
+ * `f###.yml` companions in git. Reading rights must therefore not depend on a
+ * local image being present -- only on its persistent provenance companion.
  */
-async function firstPageImageName(issueDir: string): Promise<string> {
+async function firstPageProvenanceYaml(issueDir: string): Promise<string> {
   const entries = await readdir(issueDir);
-  const pages = entries.filter((name) => /^f\d{3}\.jpg$/.test(name)).sort();
-  if (pages.length === 0) {
+  const companions = entries
+    .filter((name) => /^f\d{3}\.yml$/.test(name))
+    .sort();
+  if (companions.length === 0) {
     throw new Error(
-      `readIssueRights: no page images (f###.jpg) found in ${issueDir} -- fetch its images first`,
+      `readIssueRights: no page provenance (f###.yml) found in ${issueDir} -- fetch the issue first`,
     );
   }
-  return pages[0];
+  return path.join(issueDir, companions[0]);
 }
 
 /**
  * Read an issue's rights determination + citation OFFLINE, purely from what
  * the fetcher already wrote to disk (research.md R3): locate the issue
  * directory via {@link findIssueDir} (no census, no network), then read the
- * companion YAML of the first page image (page order, `f001.jpg` before
- * `f002.jpg`, ...) via {@link readProvenance}. The rights gate already ran at
- * fetch time (`@/rights/gate`); this never re-queries Gallica.
+ * first page's provenance companion YAML (page order, `f001.yml` before
+ * `f002.yml`, ...) via {@link readProvenance}. The rights gate already ran at
+ * fetch time (`@/rights/gate`); this never re-queries Gallica. Reading the
+ * `.yml` companion (not the `.jpg` image) keeps this robust to the object-store
+ * image migration, which removes local images but keeps their companions.
  *
  * Fails loud -- no fallback, no default -- when the issue has never been
- * fetched, has no page images, or the first page has no companion provenance
- * YAML.
+ * fetched or has no page provenance companion YAML.
  */
 export async function readIssueRights(
   sourceId: string,
@@ -56,15 +62,7 @@ export async function readIssueRights(
   archiveRoot: string,
 ): Promise<IssueRights> {
   const issueDir = findIssueDir(sourceId, issueArk, archiveRoot);
-  const firstPage = await firstPageImageName(issueDir);
-  const yamlPath = companionYamlPath(path.join(issueDir, firstPage));
-
-  if (!existsSync(yamlPath)) {
-    throw new Error(
-      `readIssueRights: no page provenance found at "${yamlPath}" for issue ` +
-        `"${issueArk}" -- fetch its images first`,
-    );
-  }
+  const yamlPath = await firstPageProvenanceYaml(issueDir);
 
   const fields = await readProvenance(yamlPath);
 

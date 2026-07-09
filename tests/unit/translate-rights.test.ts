@@ -60,6 +60,25 @@ describe('readIssueRights (T008, offline rights + citation lookup)', () => {
     expect(rights.citation.language).toBe('French');
   });
 
+  it('reads rights after the object-store migration removed the local image (f###.yml present, f###.jpg absent)', async () => {
+    const ark = 'bpt6k777888';
+    const issueDir = await makeIssueDir(archiveRoot, ark);
+
+    // Object-store-migrated issue: the page image has been moved to external
+    // storage and its local .jpg removed, but the f###.yml companion remains.
+    const provenanceText = await readFile(
+      path.join(FIXTURES, 'page-provenance.yml'),
+      'utf-8',
+    );
+    await writeFile(path.join(issueDir, 'f001.yml'), provenanceText);
+    // Note: NO f001.jpg written.
+
+    const rights = await readIssueRights('PB-P001', ark, archiveRoot);
+
+    expect(rights.rights_status).toBe('public-domain');
+    expect(rights.citation.title).toBe('Le Journal de Port-Breton, 15 Janvier 1875');
+  });
+
   it('picks the FIRST page in page order when multiple pages are present', async () => {
     const ark = 'bpt6k654321';
     const issueDir = await makeIssueDir(archiveRoot, ark);
