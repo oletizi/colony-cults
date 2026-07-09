@@ -16,6 +16,7 @@ import {
   PutObjectCommand,
   HeadObjectCommand,
   GetObjectCommand,
+  CopyObjectCommand,
   GetObjectCommandOutput,
 } from '@aws-sdk/client-s3';
 import { ObjectStore, ObjectHead, PutOptions } from '@/archive/object-store';
@@ -137,10 +138,14 @@ export class S3ObjectStore implements ObjectStore {
           Key: key,
         }),
       );
+      const rawEtag = response.ETag;
+      const etag =
+        rawEtag === undefined ? undefined : rawEtag.replace(/^"|"$/g, '');
       return {
         exists: true,
         sha256: response.Metadata?.sha256,
         size: response.ContentLength,
+        etag,
       };
     } catch (cause) {
       if (isNotFoundError(cause)) {
@@ -184,6 +189,38 @@ export class S3ObjectStore implements ObjectStore {
     } catch (cause) {
       throw new Error(
         `S3ObjectStore.get: failed to read response body for key "${key}": ${describeCause(cause)}`,
+      );
+    }
+  }
+
+  /**
+   * Rewrite the object's metadata to carry `sha256` (and, when given,
+   * `contentType`) WITHOUT re-uploading its bytes. This is a server-side copy
+   * of the object onto itself with `MetadataDirective: 'REPLACE'`, which B2/S3
+   * services as a metadata update with no data transfer.
+   *
+   * Resolves only when the metadata rewrite has been applied; throws a
+   * descriptive Error wrapping any SDK failure.
+   */
+  async attachSha256Metadata(
+    key: string,
+    sha256: string,
+    contentType?: string,
+  ): Promise<void> {
+    try {
+      await this.client.send(
+        new CopyObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          CopySource: encodeURI(`${this.bucket}/${key}`),
+          MetadataDirective: 'REPLACE',
+          Metadata: { sha256 },
+          ContentType: contentType,
+        }),
+      );
+    } catch (cause) {
+      throw new Error(
+        `S3ObjectStore.attachSha256Metadata: failed to backfill sha256 metadata for key "${key}": ${describeCause(cause)}`,
       );
     }
   }

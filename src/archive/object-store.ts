@@ -25,6 +25,15 @@ export interface ObjectHead {
   sha256?: string;
   /** Object size in bytes, when the store reports it. */
   size?: number;
+  /**
+   * The object's raw ETag with any surrounding double-quotes stripped, when
+   * the store reports one. For S3/B2 single-part uploads this is the hex MD5
+   * of the content (a multipart ETag instead looks like `<hash>-<N>` and
+   * contains a hyphen). Used as a cheap content-identity signal to recognize
+   * objects placed WITHOUT our `sha256` metadata (e.g. by a bulk rclone copy),
+   * so they are skipped rather than re-uploaded.
+   */
+  etag?: string;
 }
 
 /** Options for a PUT. */
@@ -64,4 +73,19 @@ export interface ObjectStore {
    * Throws when the object is missing or on transport error.
    */
   get(key: string): Promise<Uint8Array>;
+
+  /**
+   * Set/replace the object's `sha256` metadata WITHOUT re-uploading its bytes
+   * (a server-side metadata rewrite, no data transfer).
+   *
+   * Used to backfill our `sha256` metadata onto an object that was placed
+   * without it (e.g. a bulk rclone copy) once its content has been confirmed
+   * identical, so future runs skip via the cheap metadata (`head.sha256`) path
+   * instead of re-reading bytes. Throws a descriptive Error on failure.
+   */
+  attachSha256Metadata(
+    key: string,
+    sha256: string,
+    contentType?: string,
+  ): Promise<void>;
 }

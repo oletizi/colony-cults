@@ -5,6 +5,7 @@ import { assertInsideArchive } from '@/archive/location';
 import { sha256OfBytes, sha256OfFile } from '@/archive/checksum';
 import { objectKeyForAsset } from '@/archive/object-key';
 import type { ObjectStore } from '@/archive/object-store';
+import { resolveB2Presence } from '@/archive/b2-presence';
 import {
   readProvenance,
   writeProvenance,
@@ -225,18 +226,18 @@ export async function storeAsset(
     const coords = options.objectStoreCoords;
     const key = objectKeyForAsset(archiveRoot, targetPath);
 
-    // T019/FR-006/SC-003: the write-path skip is driven by B2's own head, not
-    // by local file presence. `force` bypasses the head check entirely.
-    let shouldUpload = true;
+    // T019/FR-006/SC-003: the write-path skip is content-based, driven by what
+    // B2 actually holds -- not by local file presence and not solely by our own
+    // metadata. `force` bypasses the whole presence check and always uploads.
+    let doUpload = true;
+    let needMetaBackfill = false;
     if (options.force !== true) {
-      const head = await store.head(key);
-      if (head.exists === true && head.sha256 === sha256) {
-        shouldUpload = false;
-        skipped = true;
-      }
+      const presence = await resolveB2Presence(store, key, bytes, sha256);
+      doUpload = !presence.present;
+      needMetaBackfill = presence.needMetaBackfill;
     }
 
-    if (shouldUpload) {
+    if (doUpload) {
       // Write the local cache file, then upload the master BEFORE writing
       // provenance so the companion YAML never claims an upload that did not
       // happen. A failed put propagates and no provenance/manifest is
@@ -247,15 +248,29 @@ export async function storeAsset(
         sha256,
         contentType: provenanceFields.format,
       });
-    } else if (!existsSync(targetPath)) {
-      // Skip path: no re-upload, but ensure the local cache file exists so
-      // on-disk state is consistent even if it was never written locally.
-      await mkdir(path.dirname(targetPath), { recursive: true });
-      await writeFile(targetPath, bytes);
+    } else {
+      skipped = true;
+      // Self-heal: backfill our sha256 metadata onto an object that was
+      // confirmed present by content but lacked it (e.g. an rclone-placed
+      // master), so future runs hit the cheap `head.sha256` fast path. No byte
+      // upload -- this is a server-side metadata rewrite.
+      if (needMetaBackfill) {
+        await store.attachSha256Metadata(key, sha256, provenanceFields.format);
+      }
+      // Do NOT rewrite an existing local cache file -- it is the source of
+      // these bytes. Only materialize it when it is missing so on-disk state
+      // stays consistent.
+      if (!existsSync(targetPath)) {
+        await mkdir(path.dirname(targetPath), { recursive: true });
+        await writeFile(targetPath, bytes);
+      }
     }
 
     // The recorded `object_store.key` is RE-DERIVED here (never trusted from
-    // the caller), same principle as `local_path`/`sha256`.
+    // the caller), same principle as `local_path`/`sha256`. Written on BOTH the
+    // upload and skip paths, so a master confirmed present in B2 always gets its
+    // git-tracked provenance backfilled -- object_store is never left null for a
+    // present object.
     objectStoreLocation = {
       provider: coords.provider,
       bucket: coords.bucket,

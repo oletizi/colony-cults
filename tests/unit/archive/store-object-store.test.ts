@@ -115,6 +115,9 @@ describe('storeAsset object-store integration (T014)', () => {
       async get() {
         throw new Error('not used');
       },
+      async attachSha256Metadata() {
+        throw new Error('not used');
+      },
     };
 
     await expect(

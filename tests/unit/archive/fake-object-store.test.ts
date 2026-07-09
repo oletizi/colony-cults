@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FakeObjectStore } from './fake-object-store';
+import { md5OfBytes } from '@/archive/checksum';
 
 describe('FakeObjectStore', () => {
   let store: FakeObjectStore;
@@ -14,7 +15,7 @@ describe('FakeObjectStore', () => {
       expect(result).toEqual({ exists: false });
     });
 
-    it('returns {exists: true, sha256, size} after put', async () => {
+    it('returns {exists: true, sha256, size, etag} after put', async () => {
       const bytes = new Uint8Array([1, 2, 3, 4, 5]);
       const sha256 = 'abc123def456';
 
@@ -25,6 +26,7 @@ describe('FakeObjectStore', () => {
         exists: true,
         sha256: 'abc123def456',
         size: 5,
+        etag: md5OfBytes(bytes),
       });
     });
 
@@ -135,6 +137,38 @@ describe('FakeObjectStore', () => {
 
       await store.put('key1', new Uint8Array([99]), { sha256: 'hash1-new' });
       expect(store.size).toBe(2); // Overwrite, not add
+    });
+
+    it('seedExternal stores bytes + etag but NO sha256 metadata', async () => {
+      const bytes = new Uint8Array([7, 8, 9]);
+      store.seedExternal('ext-key', bytes);
+
+      const head = await store.head('ext-key');
+      expect(head.exists).toBe(true);
+      expect(head.sha256).toBeUndefined();
+      expect(head.etag).toBe(md5OfBytes(bytes));
+      expect(head.size).toBe(3);
+      // The bytes are retrievable for the fallback get()+hash path.
+      expect(await store.get('ext-key')).toEqual(bytes);
+    });
+
+    it('attachSha256Metadata backfills sha256 without changing bytes/etag', async () => {
+      const bytes = new Uint8Array([7, 8, 9]);
+      store.seedExternal('ext-key', bytes);
+      const etagBefore = (await store.head('ext-key')).etag;
+
+      await store.attachSha256Metadata('ext-key', 'backfilled-sha');
+
+      const head = await store.head('ext-key');
+      expect(head.sha256).toBe('backfilled-sha');
+      expect(head.etag).toBe(etagBefore);
+      expect(await store.get('ext-key')).toEqual(bytes);
+    });
+
+    it('attachSha256Metadata throws when the key is absent', async () => {
+      await expect(
+        store.attachSha256Metadata('missing', 'sha'),
+      ).rejects.toThrow('no object at key: missing');
     });
   });
 });
