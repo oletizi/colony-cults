@@ -27,3 +27,4 @@
 {"id":"T029","tierLabel":"fast","model":"haiku","commitRange":"dc0c97d","reviewClean":true}
 {"id":"T025","tierLabel":"balanced","model":"sonnet","commitRange":"(operator/live)","reviewClean":"deferred-tilde"}
 {"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"(operator/live)","reviewClean":"deferred-tilde"}
+{"id":"GOVERN","tierLabel":"n/a","model":"override","commitRange":"override-short-circuit","reviewClean":"override-eligible: barrage exceeds env runtime; live-validated; findings fixed e54d046/b03527d/a6821f0"}
