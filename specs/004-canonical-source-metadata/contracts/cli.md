@@ -6,8 +6,8 @@ New verb group beside the existing `gallica` verbs (`src/cli/bibliography.ts`, w
 |------|-------|--------|------|---------|
 | `bib validate` | reads SSOT + provenance | findings report (human; `--json` for machine) | `0` clean, `1` findings, `2` malformed input | throws (→ stderr, exit 2) on unreadable/malformed SSOT; findings (orphans, leaks, vocab, drift) → exit 1 |
 | `bib regenerate` | reads SSOT + provenance | writes the 4 derived views | `0` written, `2` malformed | `--check` writes nothing and exits `1` if any view would change (drift), `0` if in sync |
-| `bib show <sourceId>` | SSOT + derived roll-up | the canonical model for one source (human; `--json`) | `0`, `1` unknown id | throws on unknown `sourceId` (no default — fail loud) |
-| `bib migrate` | reads the 5 legacy representations | writes initial `bibliography/sources/PB-###.yml` + views | `0`, `2` on conflict | idempotent; re-run yields no change; explicitly restores PB-P001 SLQ record |
+| `bib show <sourceId>` | SSOT + derived roll-up | the canonical model for one source (human; `--json`) | `0`, `1` unknown id, `2` malformed | unknown `sourceId` → fail loud (message → stderr, **exit `1`**, no default); exit `2` reserved for unreadable/malformed SSOT |
+| `bib migrate` | reads the 5 legacy representations | writes initial `bibliography/sources/PB-###.yml` (SSOT only; derived views are produced separately by `bib regenerate`) | `0`, `2` on conflict | idempotent; re-run yields no change; explicitly restores PB-P001 SLQ record |
 
 ## `bib validate` finding shape (`--json`)
 
