@@ -34,6 +34,7 @@ const SOURCE_KEYS = new Set([
   'sourceId',
   'titles',
   'kind',
+  'partOf',
   'creator',
   'language',
   'identifiers',
@@ -43,7 +44,7 @@ const SOURCE_KEYS = new Set([
 ]);
 
 function isSourceKind(value: string): value is Source['kind'] {
-  return value === 'periodical' || value === 'monograph';
+  return value === 'periodical' || value === 'monograph' || value === 'source-group';
 }
 
 function readFileText(filePath: string): string {
@@ -95,8 +96,13 @@ export function loadSourceFile(filePath: string): LoadedSource {
 
   const kindRaw = requireString(obj.kind, filePath, 'kind');
   if (!isSourceKind(kindRaw)) {
-    fail(filePath, `kind "${kindRaw}" must be "periodical" or "monograph"`);
+    fail(filePath, `kind "${kindRaw}" must be "periodical", "monograph", or "source-group"`);
   }
+
+  // The member -> source-group edge (FR-006). Absent stays undefined -- no
+  // default is invented. Group/member split + dangling-partOf validation are
+  // out of scope here (later validation task).
+  const partOf = optionalString(obj.partOf, filePath, 'partOf');
 
   const creator = optionalString(obj.creator, filePath, 'creator');
   const language = optionalString(obj.language, filePath, 'language');
@@ -156,6 +162,7 @@ export function loadSourceFile(filePath: string): LoadedSource {
     sourceId,
     titles,
     kind: kindRaw,
+    partOf,
     identifiers,
     creator,
     language,

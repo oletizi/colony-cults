@@ -63,6 +63,9 @@ export function serializeSource(migrated: MigratedSource): string {
     sourceId: source.sourceId,
     kind: source.kind,
   };
+  if (source.partOf !== undefined) {
+    out.partOf = source.partOf;
+  }
   if (source.case !== undefined) {
     out.case = source.case;
   }
