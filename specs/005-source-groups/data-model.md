@@ -46,20 +46,23 @@ Not a separate type — a Source instance. Distinguishing properties:
 
 ## Status vocabulary (edited)
 
-`src/bibliography/vocab.ts` — `STATUS_VALUES` gains two values, prepended to the acquisition
-lifecycle so the full pipeline is ordered:
+`src/bibliography/vocab.ts` — `STATUS_VALUES` gains three values: two prepended to the
+acquisition lifecycle so the full pipeline is ordered, plus `excluded` as an off-pipeline
+terminal state:
 
 ```
 discovered → approved-for-acquisition → wanted → to-collect → collecting → collected → archived
+     └──────────────> excluded  (intentional exclusion; reason in notes)
 ```
 
 | Value | Change | Meaning |
 |-------|--------|---------|
 | `discovered` | **new** | A candidate member found during Discover/Inventory; not yet verified/approved. |
 | `approved-for-acquisition` | **new** | Verified and promoted; cleared to enter the existing acquisition flow. |
+| `excluded` | **new** | A discovered candidate intentionally NOT promoted (duplicate / irrelevant / incomplete / superseded / out-of-scope). Retained in the SSOT; the reason lives in the record's `notes`. Preserves discovery history without a separate store. |
 | `wanted`, `to-collect`, `collecting`, `collected`, `archived` | unchanged | Existing acquisition/preservation states. |
 
-All previously-valid status values continue to validate unchanged (FR-008). The two new values
+All previously-valid status values continue to validate unchanged (FR-008). The three new values
 are valid on any Source but are meaningful primarily on member stubs of a group.
 
 ## State transitions (member lifecycle)
@@ -67,7 +70,8 @@ are valid on any Source but are meaningful primarily on member stubs of a group.
 ```
 (new candidate)
    └─> discovered ──verify+promote──> approved-for-acquisition ──> wanted / to-collect
-                                                                        └─> collecting ─> collected ─> archived
+          │                                                             └─> collecting ─> collected ─> archived
+          └── verify rejects / out-of-scope ──> excluded  (terminal; reason in notes; record retained)
 ```
 
 - Backward transitions (e.g. `approved-for-acquisition` → `discovered` on a failed verification)

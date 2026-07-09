@@ -95,11 +95,11 @@ Single-project TypeScript CLI: `src/`, `tests/` at repository root (per plan.md 
 
 ### Tests for User Story 3
 
-- [ ] T010 [P] [US3] [tier:fast] RED unit test in `tests/unit/bibliography/vocab.test.ts`: `STATUS_VALUES` accepts `discovered` and `approved-for-acquisition`; the five existing values still validate; an unknown status still rejects.
+- [ ] T010 [P] [US3] [tier:fast] RED unit test in `tests/unit/bibliography/vocab.test.ts`: `STATUS_VALUES` accepts `discovered`, `approved-for-acquisition`, and `excluded`; the five existing values still validate; an unknown status still rejects.
 
 ### Implementation for User Story 3
 
-- [ ] T011 [US3] [tier:fast] Extend `STATUS_VALUES` in `src/bibliography/vocab.ts` with `discovered` and `approved-for-acquisition` (ordered ahead of the acquisition states per data-model.md).
+- [ ] T011 [US3] [tier:fast] Extend `STATUS_VALUES` in `src/bibliography/vocab.ts` with `discovered` and `approved-for-acquisition` (ordered ahead of the acquisition states) and `excluded` (off-pipeline terminal; reason carried in the record `notes`), per data-model.md.
 
 **Checkpoint**: US1–US3 independently functional; the discovery pipeline is expressible.
 

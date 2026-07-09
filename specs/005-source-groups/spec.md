@@ -85,16 +85,18 @@ source that carries members — validation rejects it.
 
 Members of a collection are not acquired in one step — they are **discovered**,
 inventoried, verified, and only then **approved for acquisition** before the existing
-acquisition flow takes over. The status vocabulary needs two new values so a member's
-position in the pipeline Discover → Inventory → Verify → Promote → Acquire → Preserve is
-expressible and validated.
+acquisition flow takes over. Some discovered candidates are deliberately **excluded**
+(duplicate / irrelevant / superseded / out-of-scope) yet retain research value and must be
+preserved, not deleted. The status vocabulary needs new values so a member's position in the
+pipeline Discover → Inventory → Verify → Promote → Acquire → Preserve — and an intentional
+exclusion — is expressible and validated.
 
 **Why this priority**: It makes the collection lifecycle first-class, but the P1 guardrail
 and P2 model deliver value without it. It is additive and independently testable.
 
-**Independent Test**: Set a member's status to `discovered` or `approved-for-acquisition`
-and confirm validation accepts it; confirm the previously-existing statuses continue to
-validate unchanged.
+**Independent Test**: Set a member's status to `discovered`, `approved-for-acquisition`, or
+`excluded` and confirm validation accepts it; confirm the previously-existing statuses
+continue to validate unchanged.
 
 **Acceptance Scenarios**:
 
@@ -102,7 +104,10 @@ validate unchanged.
    validation passes.
 2. **Given** a member record with status `approved-for-acquisition`, **When** it is
    validated, **Then** validation passes.
-3. **Given** any record using a pre-existing status value, **When** it is validated,
+3. **Given** a discovered candidate that is intentionally excluded, **When** it is recorded
+   with status `excluded` and a reason in `notes`, **Then** validation passes and the record
+   (with its exclusion rationale) is retained in the SSOT rather than deleted.
+4. **Given** any record using a pre-existing status value, **When** it is validated,
    **Then** validation behaves exactly as before this feature.
 
 ---
@@ -173,6 +178,16 @@ and any derived outputs still build without error.
   stubs carrying `status: discovered`** (maturing to `approved-for-acquisition`, then the
   existing acquisition statuses) — one record type and one pipeline, no parallel store.
 
+### Session 2026-07-09 (design review)
+
+- Q: How is an intentionally-excluded discovery preserved (duplicate / irrelevant /
+  superseded / out-of-scope)? → A: Add an **`excluded`** status value; the excluded stub is
+  retained in the SSOT with the reason in its `notes` field. Preserves discovery history
+  without a separate store (single-record-type decision upheld). Raised by third-party spec
+  review (Rec 4). The review's other points either matched existing decisions or (its
+  hierarchical `PB-P004-003` ID example) conflicted with the settled flat-opaque-ID
+  decision (FR-007) and were not adopted.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
@@ -205,10 +220,14 @@ and any derived outputs still build without error.
   consistent with the shipped canonical principle that identifiers are permanent and
   structure is a relationship (the `part_of` edge), not encoded in the identifier.
   Hierarchical composite ids (e.g. `PB-P004-001`) MUST NOT be used.
-- **FR-008**: The status vocabulary MUST be extended with `discovered` and
-  `approved-for-acquisition` to express the collection lifecycle Discover → Inventory →
-  Verify → Promote → Acquire → Preserve. All previously-valid status values MUST continue
-  to validate unchanged.
+- **FR-008**: The status vocabulary MUST be extended with `discovered`,
+  `approved-for-acquisition`, and `excluded` to express the collection lifecycle Discover →
+  Inventory → Verify → Promote → Acquire → Preserve, plus intentional exclusion. A candidate
+  that is discovered but deliberately not promoted (duplicate / irrelevant / incomplete /
+  superseded / out-of-scope) MUST be recordable as `excluded` with the reason captured in the
+  record's existing `notes` field — the discovery is preserved, not deleted, so the exclusion
+  and its rationale remain in the SSOT. All previously-valid status values MUST continue to
+  validate unchanged.
 - **FR-009**: `PB-P004` MUST be reclassified from a monograph-with-repository-record into
   a source group whose single existing `to-collect` repository record is migrated into a
   members list. The migration MUST NOT break existing bibliography derivation or
@@ -233,7 +252,8 @@ and any derived outputs still build without error.
 - **RepositoryRecord**: Unchanged, separate entity — the held copy of a Source at a given
   archive (ARK, rights, assets). Present on non-group sources; absent on source groups.
 - **Status vocabulary**: The closed set of lifecycle values a record may carry, extended
-  with `discovered` and `approved-for-acquisition`.
+  with `discovered`, `approved-for-acquisition`, and `excluded` (the last preserving an
+  intentionally-excluded discovery, reason in `notes`).
 - **Discovery record / candidate inventory**: The pre-promotion inventory of candidate
   members (title / creator / ARK / repository / rights / relevance / status). Represented
   as **member stubs carrying `status: discovered`** — the same record type that later

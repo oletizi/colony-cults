@@ -112,7 +112,7 @@ src/
 │   ├── source.ts              # EDIT: kind += 'source-group'; add optional partOf?: string edge
 │   └── index.ts               # re-export unchanged (Source already exported)
 ├── bibliography/
-│   ├── vocab.ts               # EDIT: STATUS_VALUES += 'discovered', 'approved-for-acquisition'
+│   ├── vocab.ts               # EDIT: STATUS_VALUES += 'discovered', 'approved-for-acquisition', 'excluded'
 │   ├── load-fields.ts         # EDIT: parse/narrow the new kind + partOf field
 │   ├── validate.ts            # EDIT: wire the new group/member split check into validate()
 │   ├── validate-checks.ts     # EDIT/NEW: validateSourceGroups() — the split + dangling part_of + non-group-has-members
