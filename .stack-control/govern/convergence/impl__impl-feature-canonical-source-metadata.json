@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/canonical-source-metadata",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/canonical-source-metadata",
+  "override": true,
+  "overrideReason": "Refresh after post-execute completeness enrichment (db7bbc3): migrate input frozen under bibliography/legacy/ (migrate now re-runnable + idempotent, cli.md) and work-level ISBNs captured into the SSOT (PB-S001 isbn 9782914612029). Barrage still exceeds env runtime; live-validated: bib migrate exit 0 + idempotent, PB-P001 two records (SLQ intact), bib show PB-S001 shows isbn, regenerate --check in sync, full suite green (273 passed)."
+}

@@ -1,0 +1,12 @@
+sourceId: PB-P002
+kind: monograph
+case: port-breton
+language: French
+creator: Paul de Groote
+titles:
+  - text: "Nouvelle-France: Colonie libre de Port-Breton, Océanie"
+    role: canonical
+notes: "Years: 1879 | Access: digital/public domain | Public domain: likely | Promotional account useful for claims made to prospective settlers."
+repositoryRecords:
+  - sourceArchive: Gallica / BnF
+    status: to-collect

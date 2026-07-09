@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import type {
   IiifClient,
   OaiRecordClient,
@@ -7,7 +8,7 @@ import type {
 import { iiifImageUrl, issueLandingUrl } from '@/gallica/gallica-client';
 import { assertPublicDomain } from '@/rights/gate';
 import { issueDir, monographDir, sourceLayout } from '@/archive/location';
-import { sourceMeta } from '@/archive/source-registry';
+import { sourceDescriptor } from '@/bibliography/source-meta';
 import {
   isAssetRecorded,
   storeAsset,
@@ -53,6 +54,20 @@ export interface FetchIssueContext {
   date: string;
   /** Absolute private-archive root (`../colony-cults-archive`). */
   archiveRoot: string;
+  /**
+   * Absolute public-repo root, used to locate the SSOT source metadata
+   * (`bibliography/sources/<sourceId>.yml`) via {@link sourceDescriptor}.
+   * Undefined -- the default, and what the CLI wiring (`src/cli/fetch-shared.ts`)
+   * leaves it as -- resolves from this module's own location (`src/fetch/`,
+   * two levels below the repo root), matching how `src/cli/bibliography.ts`'s
+   * `resolveRepoRoot` behaves independently of the caller's `process.cwd()`.
+   * Deliberately NOT the same value as `FetchDeps.repoRoot` (which the CLI
+   * only uses to resolve a census file path and tests legitimately fake with
+   * an isolated temp directory) -- the SSOT always lives in the real,
+   * installed repo, so this field exists as an explicit override for callers
+   * that need one, not as a pass-through of that unrelated value.
+   */
+  repoRoot?: string;
   /** Injected clock for the retrieval timestamp (testability, determinism). */
   clock: () => Date;
   /** Re-fetch pages that already exist and are checksum-recorded. */
@@ -89,6 +104,8 @@ export interface FetchMonographContext {
   sourceId: string;
   /** Absolute private-archive root (`../colony-cults-archive`). */
   archiveRoot: string;
+  /** Absolute public-repo root; see the matching field on {@link FetchIssueContext}. */
+  repoRoot?: string;
   /** Injected clock for the retrieval timestamp (testability, determinism). */
   clock: () => Date;
   /** Re-fetch pages that already exist and are checksum-recorded. */
@@ -136,6 +153,7 @@ interface DocumentFetchContext {
   /** Absolute archive directory to write pages into (already resolved). */
   dir: string;
   archiveRoot: string;
+  repoRoot?: string;
   clock: () => Date;
   force?: boolean;
   log?: (message: string) => void;
@@ -156,6 +174,19 @@ function pageFileName(page: number): string {
  */
 function bareIssueArk(issueArk: string): string {
   return issueArk.trim().replace(/^ark:\/12148\//, '');
+}
+
+/**
+ * The public-repo root, resolved from THIS module's own location -- `src/fetch/`
+ * is two levels below the repo root -- used when a caller does not thread an
+ * explicit `repoRoot` through {@link FetchIssueContext}/{@link
+ * FetchMonographContext}. Mirrors `resolveRepoRoot` in `src/cli/bibliography.ts`,
+ * so `fetchIssue`/`fetchMonograph` behave the same regardless of the caller's
+ * `process.cwd()`.
+ */
+function defaultRepoRoot(): string {
+  const here = fileURLToPath(import.meta.url);
+  return path.resolve(path.dirname(here), '..', '..');
 }
 
 /**
@@ -189,7 +220,7 @@ async function fetchDocumentPages(
   }
 
   const layout = sourceLayout(ctx.sourceId);
-  const meta = sourceMeta(ctx.sourceId);
+  const meta = sourceDescriptor(ctx.repoRoot ?? defaultRepoRoot(), ctx.sourceId);
   const retrieved = ctx.clock().toISOString();
   const catalogUrl = issueLandingUrl(documentArk);
 

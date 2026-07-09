@@ -1,0 +1,31 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"aa3ae73","reviewClean":true}
+{"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"aa3ae73","reviewClean":true}
+{"id":"T003","tierLabel":"balanced","model":"sonnet","commitRange":"4c9a1fd","reviewClean":true}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"4c9a1fd","reviewClean":true}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commitRange":"4c9a1fd","reviewClean":true}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"4c9a1fd","reviewClean":true}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commitRange":"4c9a1fd","reviewClean":true}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"4c9a1fd","reviewClean":true}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"ed84108","reviewClean":true,"note":"load+leak-preservation fix"}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"ed84108","reviewClean":true,"note":"derive+C1 merge; identifierLeaks side-channel"}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"ed84108","reviewClean":true}
+{"id":"T013","tierLabel":"powerful","model":"opus","commitRange":"092b5c3","reviewClean":true,"note":"migrate.ts 517 lines — flag split for polish T031"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"c12de68","reviewClean":true}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"c12de68","reviewClean":true}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"262ae62","reviewClean":true,"note":"live acceptance: bib migrate/show exit 0 vs real archive; PB-P001 2 records + derived manifest 1218; derive fix FR-011 legacy assets also advances T025"}
+{"id":"T016","tierLabel":"balanced","model":"sonnet","commitRange":"f800f02","reviewClean":true}
+{"id":"T017","tierLabel":"balanced","model":"sonnet","commitRange":"f800f02","reviewClean":true}
+{"id":"T018","tierLabel":"balanced","model":"sonnet","commitRange":"f800f02","reviewClean":true}
+{"id":"T019","tierLabel":"balanced","model":"sonnet","commitRange":"1129466","reviewClean":true}
+{"id":"T020","tierLabel":"balanced","model":"sonnet","commitRange":"1129466","reviewClean":true}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"1129466","reviewClean":true}
+{"id":"T022","tierLabel":"balanced","model":"sonnet","commitRange":"d6fb644","reviewClean":true,"note":"operator chose convert-as-is (spec-literal); public views regenerated, --check in sync; documented column/ISBN loss accepted"}
+{"id":"T023","tierLabel":"balanced","model":"sonnet","commitRange":"3f3b547","reviewClean":true}
+{"id":"T024","tierLabel":"balanced","model":"sonnet","commitRange":"3f3b547","reviewClean":true}
+{"id":"T025","tierLabel":"balanced","model":"sonnet","commitRange":"3f3b547","reviewClean":true,"note":"manifest roll-up finalized; live 78 issues, per-issue assets sum 1218"}
+{"id":"T026","tierLabel":"balanced","model":"sonnet","commitRange":"af5559f","reviewClean":true}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"af5559f","reviewClean":true}
+{"id":"T028","tierLabel":"balanced","model":"sonnet","commitRange":"af5559f","reviewClean":true}
+{"id":"T029","tierLabel":"balanced","model":"sonnet","commitRange":"ef8490c","reviewClean":true,"note":"source-registry retired, importers=0, fetch reads SSOT"}
+{"id":"T030","tierLabel":"fast","model":"haiku","commitRange":"1cbce4f","reviewClean":true,"note":"quickstart smoke re-verified clean by controller (haiku run had mutated views); migrate one-time documented; type=kind fix keeps view migrate-consumable"}
+{"id":"T031","tierLabel":"fast","model":"haiku","commitRange":"87ed405","reviewClean":true,"note":"migrate.ts split 517->401; all feature files <=500, @/ imports, no any/as/@ts-ignore"}
