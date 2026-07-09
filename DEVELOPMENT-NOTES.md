@@ -1,3 +1,37 @@
+## 2026-07-09: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 13
+  - Merge remote-tracking branch 'origin/main' into feature/archive-object-store
+  - backlog: capture CDN read-caching for public consumption (TASK-8)
+  - Merge pull request #7 from oletizi/feature/archive-object-store
+  - roadmap: close impl:feature/canonical-source-metadata (validated -> closed)
+  - feat(archive-object-store): trust local provenance by default (B2 verify is opt-in)
+  - Merge remote-tracking branch 'origin/main' into feature/archive-object-store
+  - Merge pull request #9 from oletizi/feature/canonical-source-metadata
+  - refactor(bibliography): archive register/stubs are curated migrate input, not views
+  - Merge remote-tracking branch 'origin/main' into feature/archive-object-store
+  - Merge pull request #8 from oletizi/feature/canonical-source-metadata
+  - fix(archive-object-store): resilient B2 client (adaptive retry, maxAttempts 10)
+  - fix(archive-object-store): preserve provenance on idempotent skip (no retrieved churn)
+  - fix(gallica): retry network-level fetch rejections, not just retryable statuses
+- Files changed: 20
+- Backlog touched: TASK-8
+
 ## 2026-07-09: Author canonical-source-metadata spec through the stack-control front door
 
 **Goal:** Take the approved canonical source metadata design (handed off in the prior session's commit `c1b0689`) and author a *runnable* Spec Kit spec for `impl:feature/canonical-source-metadata` via `/stack-control:define`.
