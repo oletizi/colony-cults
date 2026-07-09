@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { runFetchIssue } from '@/cli/fetch-issue';
+import { runFetchSource } from '@/cli/fetch-source';
 import type { FetchCliClient, FetchDeps } from '@/cli/fetch-shared';
 import type { IssueCheckpoint } from '@/cli/archive-checkpoint';
 import type { ParsedArgs } from '@/cli/parse';
@@ -159,5 +160,108 @@ describe('FetchDeps.onIssueComplete checkpoint hook (fetch-issue)', () => {
     d.onIssueComplete = undefined;
     // Must complete without throwing even though nothing is wired.
     await expect(runFetchIssue(baseArgs(), d)).resolves.toBeUndefined();
+  });
+});
+
+/**
+ * Monograph branch (`fetch-source` dispatches to `runFetchSourceMonograph`
+ * for a `kind: 'monograph'` source, see `src/archive/location.ts`). A
+ * monograph has no per-issue date, so its checkpoint is dateless -- proves
+ * the hook still fires exactly once, with `date` absent, and is skipped on
+ * `--verify`/`--dry-run` just like the periodical path.
+ */
+const MONOGRAPH_DOCUMENT_ARK = 'bpt6kFAKE00001';
+const MONOGRAPH_SOURCE_ID = 'PB-P002';
+
+function monographArgs(overrides: Partial<ParsedArgs['flags']> = {}): ParsedArgs {
+  return {
+    command: 'fetch-source',
+    positional: [MONOGRAPH_DOCUMENT_ARK],
+    flags: {
+      dryRun: false,
+      force: false,
+      verify: false,
+      ocr: false,
+      objectStore: false,
+      checkpoint: false,
+      ...overrides,
+    },
+    options: { sourceId: MONOGRAPH_SOURCE_ID, slug: undefined },
+  };
+}
+
+describe('FetchDeps.onIssueComplete checkpoint hook (fetch-source monograph)', () => {
+  let repoRoot: string;
+  let archiveRoot: string;
+  let calls: IssueCheckpoint[];
+
+  beforeEach(() => {
+    repoRoot = mkdtempSync(path.join(tmpdir(), 'cc-hook-mono-repo-'));
+    archiveRoot = mkdtempSync(path.join(tmpdir(), 'cc-hook-mono-archive-'));
+    calls = [];
+  });
+
+  afterEach(() => {
+    rmSync(repoRoot, { recursive: true, force: true });
+    rmSync(archiveRoot, { recursive: true, force: true });
+  });
+
+  function deps(): FetchDeps {
+    return {
+      client: fakeCliClient(),
+      repoRoot,
+      archiveRoot,
+      clock: () => new Date('2026-07-08T00:00:00.000Z'),
+      builtAt: '2026-07-08',
+      log: () => {
+        /* no-op */
+      },
+      ocrPreflight: async () => {
+        throw new Error('checkpoint-hook test: ocrPreflight must not be called');
+      },
+      ocrRunner: {
+        run: async () => {
+          throw new Error('checkpoint-hook test: ocrRunner must not be called');
+        },
+      },
+      onIssueComplete: async (checkpoint) => {
+        calls.push(checkpoint);
+      },
+    };
+  }
+
+  it('fires exactly once with a dateless IssueCheckpoint after a real monograph fetch', async () => {
+    await runFetchSource(monographArgs(), deps());
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual({
+      sourceId: MONOGRAPH_SOURCE_ID,
+      ark: MONOGRAPH_DOCUMENT_ARK,
+      dir: path.join(
+        archiveRoot,
+        'archive/cases/port-breton/books',
+        'nouvelle-france-colonie-libre-port-breton',
+      ),
+      pageCount: PAGE_COUNT,
+      written: PAGE_COUNT,
+      skipped: 0,
+    });
+    expect(calls[0].date).toBeUndefined();
+  });
+
+  it('does not fire on monograph --dry-run', async () => {
+    await runFetchSource(monographArgs({ dryRun: true }), deps());
+    expect(calls).toHaveLength(0);
+  });
+
+  it('does not fire on monograph --verify', async () => {
+    await runFetchSource(monographArgs({ verify: true }), deps());
+    expect(calls).toHaveLength(0);
+  });
+
+  it('is never invoked when onIssueComplete is undefined (checkpointing off)', async () => {
+    const d = deps();
+    d.onIssueComplete = undefined;
+    await expect(runFetchSource(monographArgs(), d)).resolves.toBeUndefined();
   });
 });

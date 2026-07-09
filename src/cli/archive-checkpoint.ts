@@ -23,8 +23,13 @@ export interface IssueCheckpoint {
   sourceId: string;
   /** The (bare) issue or document ark. */
   ark: string;
-  /** Normalized issue date `YYYY-MM-DD` (or the monograph's fixed stand-in). */
-  date: string;
+  /**
+   * Normalized issue date `YYYY-MM-DD`. Absent for a monograph document,
+   * which has no per-issue date -- its commit message omits the date segment
+   * entirely (see {@link commitAndPushIssueCheckpoint}) rather than inventing
+   * a stand-in.
+   */
+  date?: string;
   /** Absolute issue directory path (must be inside `archiveRoot`). */
   dir: string;
   /** Page count reported by the host. */
@@ -124,9 +129,14 @@ export async function commitAndPushIssueCheckpoint(
     return;
   }
 
+  // A periodical issue carries a date (`archive(<id>): <date> <ark> — ...`);
+  // a monograph document has none, so its message drops that segment
+  // entirely (`archive(<id>): <ark> — ...`) rather than inventing a stand-in.
   const message =
-    `archive(${c.sourceId}): ${c.date} ${c.ark} — ` +
-    `${c.written} new, ${c.skipped} skipped`;
+    c.date === undefined
+      ? `archive(${c.sourceId}): ${c.ark} — ${c.written} new, ${c.skipped} skipped`
+      : `archive(${c.sourceId}): ${c.date} ${c.ark} — ` +
+        `${c.written} new, ${c.skipped} skipped`;
   await git(['commit', '-m', message], archiveRoot, 'committing issue checkpoint');
 
   if (!opts.push) {

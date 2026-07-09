@@ -91,11 +91,19 @@ async function runFetchSourceMonograph(
   if (args.flags.ocr) {
     await runOcrForIssue(deps, result.dir, args.flags);
   }
-  // NOTE: `--checkpoint` is not wired for the monograph branch. IssueCheckpoint
-  // requires a per-issue `date` (YYYY-MM-DD); a monograph document has none
-  // (see FetchIssueResult / monographDir), and inventing one would be a
-  // fallback masking missing data. Revisit if/when monograph checkpointing is
-  // actually needed -- see the operator-facing note in the design doc.
+  // A monograph is a single document, so it gets ONE checkpoint (commit+push)
+  // after the whole document is fetched -- unlike the periodical loop, there
+  // is no per-issue date to carry (`IssueCheckpoint.date` is optional exactly
+  // for this case; see `src/cli/archive-checkpoint.ts`).
+  const checkpoint: IssueCheckpoint = {
+    sourceId,
+    ark: documentArk,
+    dir: result.dir,
+    pageCount: result.pageCount,
+    written: result.pages.length - result.skippedCount,
+    skipped: result.skippedCount,
+  };
+  await deps.onIssueComplete?.(checkpoint);
 }
 
 /** Load the source census, building (and persisting) it first when absent. */

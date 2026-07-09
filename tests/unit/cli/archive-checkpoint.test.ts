@@ -165,6 +165,27 @@ describe('commitAndPushIssueCheckpoint', () => {
     }
   });
 
+  it('commits a dateless (monograph) checkpoint with the dateless message shape', async () => {
+    writeIssueFiles(archiveRoot, 'a');
+    const before = commitCount(archiveRoot);
+
+    const checkpoint: IssueCheckpoint = {
+      sourceId: 'PB-P002',
+      ark: 'bpt6kFAKE00001',
+      dir: path.join(archiveRoot, ISSUE_SUBDIR),
+      pageCount: 2,
+      written: 2,
+      skipped: 0,
+    };
+
+    await commitAndPushIssueCheckpoint(archiveRoot, checkpoint, { push: false });
+
+    expect(commitCount(archiveRoot)).toBe(before + 1);
+
+    const message = git(archiveRoot, ['log', '-1', '--pretty=%s']).trim();
+    expect(message).toBe('archive(PB-P002): bpt6kFAKE00001 — 2 new, 0 skipped');
+  });
+
   it('throws a descriptive error when the issue dir is outside archiveRoot', async () => {
     const outside = mkdtempSync(path.join(tmpdir(), 'cc-checkpoint-outside-'));
     try {
