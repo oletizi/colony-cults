@@ -99,7 +99,7 @@ export function generateSourcesCsv(model: CanonicalModel): string {
     canonicalTitle(source),
     source.creator ?? '',
     '', // year -- folded into notes by migrate; not a discrete SSOT field
-    '', // type -- not a discrete SSOT field
+    source.kind, // type <- SSOT kind (periodical/monograph); keeps migrate re-runnable
     source.language ?? '',
     '', // status -- now per-copy (repositoryRecords[].status), not per-Source
     '', // access -- folded into notes by migrate

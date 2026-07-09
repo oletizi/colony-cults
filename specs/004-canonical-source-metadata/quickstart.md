@@ -10,12 +10,13 @@ Validation scenarios that prove the feature works end-to-end. Assumes the repo i
 
 ## Scenario 1 — PB-P001 keeps both archive copies (P1 / SC-001 / SC-005)
 
+`bib migrate` is a **one-time bootstrap** (spec A-005): it folds the five *original* representations into the SSOT and restores the SLQ record. It has already been run — the committed `bibliography/sources/*.yml` are its result, and the top-level `sources.csv` / `acquisition-tracker.csv` are now *generated views* (Scenario 3), so `bib migrate` is not re-run on the delivered repo (its lossy views are not valid migrate input). Verify the result directly:
+
 ```bash
-npx tsx src/index.ts bib migrate            # fold the 5 representations → SSOT, restore SLQ record
-npx tsx src/index.ts bib show PB-P001 --json
+npx tsx src/index.ts bib show PB-P001 --json --archive-root <archive-checkout>
 ```
 
-**Expected**: two `repositoryRecords` for PB-P001 — one `Gallica / BnF`, one `State Library of Queensland` — each with its own copy-level identifier and provenance. Re-running a Gallica acquisition does not remove the SLQ record.
+**Expected**: two `repositoryRecords` for PB-P001 — one `Gallica / BnF`, one `State Library of Queensland` — each with its own copy-level identifier and provenance. Adding a Gallica acquisition never removes the SLQ record.
 
 ## Scenario 2 — Identifier placement is enforced (P2 / SC-002)
 

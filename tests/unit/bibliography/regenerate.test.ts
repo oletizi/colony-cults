@@ -106,9 +106,11 @@ describe('generateSourcesCsv', () => {
     expect(p001?.title).toBe('La Nouvelle France');
     expect(p001?.creator).toBe('Marquis de Rays / colonial enterprise');
     expect(p001?.case).toBe('port-breton');
+    // `type` projects the SSOT `kind` (periodical/monograph) -- keeps sources.csv
+    // migrate-consumable (detectKind reads it) and is not fabricated data.
+    expect(p001?.type).toBe('periodical');
     // Not discrete SSOT fields (folded into notes / dropped by migrate) -- never fabricated.
     expect(p001?.year).toBe('');
-    expect(p001?.type).toBe('');
     expect(p001?.status).toBe('');
     expect(p001?.access).toBe('');
     expect(p001?.public_domain).toBe('');
