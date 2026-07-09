@@ -39,6 +39,13 @@ export interface ParsedFlags {
    * fail loud if the required env/credentials are missing.
    */
   objectStore: boolean;
+  /**
+   * Opt into a per-issue git checkpoint (commit AND push) after each issue
+   * completes (see `src/cli/archive-checkpoint.ts`). Default false -- the
+   * fetch core stays git-free and this flag is the only way to wire the git
+   * adapter into `FetchDeps.onIssueComplete` (`defaultFetchDeps`).
+   */
+  checkpoint: boolean;
 }
 
 /**
@@ -86,6 +93,7 @@ export function parse(argv: string[]): ParsedArgs {
       verify: { type: 'boolean', default: false },
       ocr: { type: 'boolean', default: false },
       'object-store': { type: 'boolean', default: false },
+      checkpoint: { type: 'boolean', default: false },
       'source-id': { type: 'string' },
       slug: { type: 'string' },
       'archive-root': { type: 'string' },
@@ -123,6 +131,7 @@ export function parse(argv: string[]): ParsedArgs {
       verify: Boolean(values.verify),
       ocr: Boolean(values.ocr),
       objectStore: Boolean(values['object-store']),
+      checkpoint: Boolean(values.checkpoint),
     },
     options: {
       sourceId: values['source-id'],

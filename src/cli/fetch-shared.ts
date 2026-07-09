@@ -9,6 +9,10 @@ import { verifyAsset } from '@/archive/store';
 import type { ObjectStore } from '@/archive/object-store';
 import { resolveObjectStoreConfig } from '@/archive/b2-config';
 import { S3ObjectStore } from '@/archive/s3-object-store';
+import {
+  commitAndPushIssueCheckpoint,
+  type IssueCheckpoint,
+} from '@/cli/archive-checkpoint';
 import { resolveRights } from '@/rights/gate';
 import {
   fetchIssue,
@@ -69,6 +73,16 @@ export interface FetchDeps {
    * itself is re-derived from the archive layout, not carried here.
    */
   objectStoreCoords?: { provider: string; bucket: string; endpoint: string };
+  /**
+   * Per-issue checkpoint hook, opt-in via `--checkpoint`. The fetch core
+   * (`src/fetch/*`) never calls this and never imports git; only the CLI
+   * orchestration layer (`fetch-issue.ts`/`fetch-source.ts`) invokes it, once
+   * per completed issue. Undefined -- the default -- means checkpointing is
+   * off: tests and dry-runs never touch git. When wired (by
+   * {@link defaultFetchDeps}), it delegates to
+   * {@link commitAndPushIssueCheckpoint}, the only place `git` is invoked.
+   */
+  onIssueComplete?: (checkpoint: IssueCheckpoint) => Promise<void>;
 }
 
 /**
@@ -95,6 +109,7 @@ const IMAGE_FETCH_MIN_INTERVAL_MS = 2000;
  */
 export function defaultFetchDeps(args: ParsedArgs): FetchDeps {
   const repoRoot = process.cwd();
+  const archiveRoot = resolveArchiveRoot(repoRoot, args.options.archiveRoot);
   const http = new HttpClient({
     maxConcurrent: IMAGE_FETCH_CONCURRENCY,
     minRequestIntervalMs: IMAGE_FETCH_MIN_INTERVAL_MS,
@@ -112,10 +127,19 @@ export function defaultFetchDeps(args: ParsedArgs): FetchDeps {
     };
   }
 
+  // `--checkpoint` (operator's design): commit AND push after every issue.
+  // Absent/false leaves `onIssueComplete` undefined, so tests/dry-runs never
+  // touch git -- checkpointing is opt-in and this is the ONLY place the git
+  // adapter (`@/cli/archive-checkpoint`) is constructed.
+  const onIssueComplete: FetchDeps['onIssueComplete'] = args.flags.checkpoint
+    ? (checkpoint) =>
+        commitAndPushIssueCheckpoint(archiveRoot, checkpoint, { push: true })
+    : undefined;
+
   return {
     client: new GallicaHttpClient(http),
     repoRoot,
-    archiveRoot: resolveArchiveRoot(repoRoot, args.options.archiveRoot),
+    archiveRoot,
     clock: () => new Date(),
     builtAt: new Date().toISOString().slice(0, 10),
     log: (message) => {
@@ -125,6 +149,7 @@ export function defaultFetchDeps(args: ParsedArgs): FetchDeps {
     ocrRunner: defaultOcrCommandRunner(),
     objectStore,
     objectStoreCoords,
+    onIssueComplete,
   };
 }
 

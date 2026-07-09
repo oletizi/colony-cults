@@ -18,6 +18,7 @@ describe('parse', () => {
       verify: false,
       ocr: true,
       objectStore: false,
+      checkpoint: false,
     });
   });
 
@@ -30,6 +31,7 @@ describe('parse', () => {
       verify: false,
       ocr: false,
       objectStore: false,
+      checkpoint: false,
     });
   });
 
@@ -44,6 +46,16 @@ describe('parse', () => {
 
     expect(result.options.archiveRoot).toBe('/tmp/some-archive');
     expect(result.flags.objectStore).toBe(true);
+  });
+
+  it('parses --checkpoint', () => {
+    const result = parse([
+      'fetch-issue',
+      'ark:/12148/bpt6k000001',
+      '--checkpoint',
+    ]);
+
+    expect(result.flags.checkpoint).toBe(true);
   });
 
   it('throws a descriptive error on an unknown command', () => {

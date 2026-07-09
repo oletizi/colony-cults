@@ -3,6 +3,7 @@ import type { ParsedArgs } from '@/cli/parse';
 import { issueDir, sourceLayout } from '@/archive/location';
 import { loadCensus } from '@/census/load';
 import { censusPath } from '@/cli/census';
+import type { IssueCheckpoint } from '@/cli/archive-checkpoint';
 import {
   bareArk,
   defaultFetchDeps,
@@ -72,6 +73,16 @@ export async function runFetchIssue(
   if (args.flags.ocr) {
     await runOcrForIssue(deps, result.dir, args.flags);
   }
+  const checkpoint: IssueCheckpoint = {
+    sourceId,
+    ark: bareArk(issueArk),
+    date,
+    dir: result.dir,
+    pageCount: result.pageCount,
+    written: result.pages.length - result.skippedCount,
+    skipped: result.skippedCount,
+  };
+  await deps.onIssueComplete?.(checkpoint);
 }
 
 /**

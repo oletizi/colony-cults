@@ -8,6 +8,7 @@ import { serializeCensus } from '@/census/serialize';
 import { loadCensus } from '@/census/load';
 import { censusPath } from '@/cli/census';
 import type { Census } from '@/model/census';
+import type { IssueCheckpoint } from '@/cli/archive-checkpoint';
 import {
   defaultFetchDeps,
   dryRunDocument,
@@ -90,6 +91,11 @@ async function runFetchSourceMonograph(
   if (args.flags.ocr) {
     await runOcrForIssue(deps, result.dir, args.flags);
   }
+  // NOTE: `--checkpoint` is not wired for the monograph branch. IssueCheckpoint
+  // requires a per-issue `date` (YYYY-MM-DD); a monograph document has none
+  // (see FetchIssueResult / monographDir), and inventing one would be a
+  // fallback masking missing data. Revisit if/when monograph checkpointing is
+  // actually needed -- see the operator-facing note in the design doc.
 }
 
 /** Load the source census, building (and persisting) it first when absent. */
@@ -169,6 +175,16 @@ async function runFetchSourcePeriodical(
         if (args.flags.ocr) {
           await runOcrForIssue(deps, result.dir, args.flags);
         }
+        const checkpoint: IssueCheckpoint = {
+          sourceId,
+          ark: issue.ark,
+          date: issue.date,
+          dir: result.dir,
+          pageCount: result.pageCount,
+          written: result.pages.length - result.skippedCount,
+          skipped: result.skippedCount,
+        };
+        await deps.onIssueComplete?.(checkpoint);
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
