@@ -1,4 +1,7 @@
+import path from 'node:path';
+
 import type { CanonicalModel, IdentifierLeak } from '@/bibliography/model';
+import { buildViewRegistry, readViewIfExists } from '@/bibliography/regenerate';
 
 /**
  * The kinds of finding `bib validate` can report -- the full union per
@@ -72,14 +75,64 @@ export function validateIdentifierLeaks(model: CanonicalModel): ValidationFindin
   }));
 }
 
+/** The on-disk roots {@link validateViewDrift} needs to read each view's committed file. */
+export interface ViewDriftOptions {
+  /** Public repo root (holds `bibliography/sources.csv` etc). */
+  repoRoot: string;
+  /**
+   * Private archive root; OMIT when the archive is not present on disk.
+   * Archive-side views (the register + stubs) are then skipped entirely --
+   * not reported as drift -- mirroring `bib regenerate`'s own explicit
+   * archive-absence branch (contracts/cli.md).
+   */
+  archiveRoot?: string;
+}
+
+/**
+ * Regenerate every view IN-MEMORY (`@/bibliography/regenerate`'s
+ * `buildViewRegistry`) and compare each to its committed file on disk,
+ * emitting a `view-drift` finding per view whose committed content differs
+ * from (or is entirely missing relative to) its regeneration (FR-015/
+ * SC-008). A missing committed file is treated as drift, not an error --
+ * `readViewIfExists` returns `undefined` rather than throwing for a
+ * not-yet-written view.
+ */
+export function validateViewDrift(model: CanonicalModel, opts: ViewDriftOptions): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
+  for (const view of buildViewRegistry(model)) {
+    const root = view.kind === 'public' ? opts.repoRoot : opts.archiveRoot;
+    if (root === undefined) {
+      // Archive absent -- archive-side views are unreachable, so skipped
+      // rather than reported as drift.
+      continue;
+    }
+    const absPath = path.join(root, view.relativePath);
+    const committed = readViewIfExists(absPath);
+    if (committed !== view.content) {
+      findings.push({
+        kind: 'view-drift',
+        detail: 'committed view differs from regeneration',
+        path: view.relativePath,
+      });
+    }
+  }
+  return findings;
+}
+
 /**
  * Run every implemented validation check over `model` and concatenate their
- * findings. Pure function -- never throws on content findings (throwing is
- * reserved for malformed input upstream, in `@/bibliography/load`). Kept as
- * a simple concatenation so US5 (T027) can add the remaining checks
- * (referential integrity, vocab, required fields, uniqueness, manifest
- * shape, view drift) without restructuring this function.
+ * findings. Pure over `model` alone; `validateViewDrift` (the one check that
+ * also touches disk) only runs when `opts` is supplied, so existing
+ * model-only callers/tests are unaffected. Never throws on content findings
+ * (throwing is reserved for malformed input upstream, in
+ * `@/bibliography/load`). Kept as a simple concatenation so US5 (T027) can
+ * add the remaining checks (referential integrity, vocab, required fields,
+ * uniqueness, manifest shape) without restructuring this function.
  */
-export function validate(model: CanonicalModel): ValidationFinding[] {
-  return [...validateIdentifierLeaks(model)];
+export function validate(model: CanonicalModel, opts?: ViewDriftOptions): ValidationFinding[] {
+  const findings = [...validateIdentifierLeaks(model)];
+  if (opts !== undefined) {
+    findings.push(...validateViewDrift(model, opts));
+  }
+  return findings;
 }

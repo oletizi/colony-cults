@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs as nodeParseArgs } from 'node:util';
@@ -7,10 +7,13 @@ import { deriveModel, gatherProvenance } from '@/bibliography/derive';
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
 import { migrate } from '@/bibliography/migrate';
+import { buildViewRegistry, readViewIfExists } from '@/bibliography/regenerate';
+import type { ViewInstance } from '@/bibliography/regenerate';
 import { validate } from '@/bibliography/validate';
 import type { ValidationFinding } from '@/bibliography/validate';
 import { resolveArchiveRoot, sourceLayout } from '@/archive/location';
 import type { AssetProvenance } from '@/bibliography/provenance-read';
+import type { CanonicalModel } from '@/bibliography/model';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 
@@ -22,14 +25,13 @@ function isSubaction(value: string): value is Subaction {
   return (SUBACTIONS as readonly string[]).includes(value);
 }
 
-/** Exit code reserved for a recognized-but-unimplemented subaction. */
-const NOT_IMPLEMENTED_EXIT = 3;
-
 /** Flags/positionals shared by every `bib` subaction. */
 interface BibArgs {
   positional: string[];
   json: boolean;
   archiveRoot?: string;
+  /** `bib regenerate --check`: write nothing, report drift only. */
+  check: boolean;
 }
 
 /**
@@ -50,6 +52,7 @@ function parseBibArgs(rest: string[]): BibArgs {
     options: {
       json: { type: 'boolean', default: false },
       'archive-root': { type: 'string' },
+      check: { type: 'boolean', default: false },
     },
     allowPositionals: true,
     strict: true,
@@ -58,6 +61,7 @@ function parseBibArgs(rest: string[]): BibArgs {
     positional: positionals,
     json: Boolean(values.json),
     archiveRoot: values['archive-root'],
+    check: Boolean(values.check),
   };
 }
 
@@ -272,12 +276,16 @@ async function runValidate(rest: string[]): Promise<number> {
   try {
     const loaded = loadAllSources(sourcesDir);
     const archiveRoot = resolveArchiveRoot(repoRoot, args.archiveRoot);
+    const archiveAvailable = existsSync(archiveRoot);
     const provenanceBySource = await gatherProvenanceForAll(
       loaded.map((entry) => entry.source),
       archiveRoot,
     );
     const model = deriveModel(loaded, provenanceBySource);
-    findings = validate(model);
+    findings = validate(model, {
+      repoRoot,
+      archiveRoot: archiveAvailable ? archiveRoot : undefined,
+    });
   } catch (error) {
     console.error(`bib validate: ${describeError(error)}`);
     return 2;
@@ -297,10 +305,109 @@ async function runValidate(rest: string[]): Promise<number> {
   return ok ? 0 : 1;
 }
 
-/** `bib regenerate`: not implemented in this task (T021/T028). */
-function runNotImplemented(subaction: 'regenerate'): number {
-  console.error(`bib ${subaction}: not yet implemented (see T021/T028)`);
-  return NOT_IMPLEMENTED_EXIT;
+/** Build the canonical model the same way `runShow`/`runValidate` do, reporting whether the archive root exists. */
+async function buildCanonicalModel(
+  repoRoot: string,
+  archiveRootOverride: string | undefined,
+): Promise<{ model: CanonicalModel; archiveRoot: string; archiveAvailable: boolean }> {
+  const sourcesDir = path.join(repoRoot, 'bibliography', 'sources');
+  const loaded = loadAllSources(sourcesDir);
+  const archiveRoot = resolveArchiveRoot(repoRoot, archiveRootOverride);
+  const archiveAvailable = existsSync(archiveRoot);
+  const provenanceBySource = await gatherProvenanceForAll(
+    loaded.map((entry) => entry.source),
+    archiveRoot,
+  );
+  const model = deriveModel(loaded, provenanceBySource);
+  return { model, archiveRoot, archiveAvailable };
+}
+
+/** Absolute path a view resolves to, given the resolved repo/archive roots. */
+function viewAbsPath(view: ViewInstance, repoRoot: string, archiveRoot: string): string {
+  return path.join(view.kind === 'public' ? repoRoot : archiveRoot, view.relativePath);
+}
+
+/** `bib regenerate --check`: write nothing; report which views (if any) have drifted. */
+function runRegenerateCheck(views: readonly ViewInstance[], repoRoot: string, archiveRoot: string, archiveAvailable: boolean): number {
+  const drifted: string[] = [];
+  for (const view of views) {
+    if (view.kind === 'archive' && !archiveAvailable) {
+      continue;
+    }
+    const absPath = viewAbsPath(view, repoRoot, archiveRoot);
+    const committed = readViewIfExists(absPath);
+    if (committed !== view.content) {
+      drifted.push(view.relativePath);
+    }
+  }
+  if (drifted.length === 0) {
+    console.log('bib regenerate --check: all views in sync');
+    return 0;
+  }
+  console.log(`bib regenerate --check: ${drifted.length} view(s) drifted:`);
+  for (const relativePath of drifted) {
+    console.log(`  ${relativePath}`);
+  }
+  return 1;
+}
+
+/** `bib regenerate` (write mode): write every view; skip archive views (logged once) when the archive is absent. */
+function runRegenerateWrite(views: readonly ViewInstance[], repoRoot: string, archiveRoot: string, archiveAvailable: boolean): number {
+  if (!archiveAvailable) {
+    console.log(
+      `bib regenerate: archive root "${archiveRoot}" not found -- skipping archive-side views ` +
+        `(register + stubs); writing PUBLIC views only`,
+    );
+  }
+  for (const view of views) {
+    if (view.kind === 'archive' && !archiveAvailable) {
+      continue;
+    }
+    const absPath = viewAbsPath(view, repoRoot, archiveRoot);
+    mkdirSync(path.dirname(absPath), { recursive: true });
+    writeFileSync(absPath, view.content, 'utf-8');
+    console.log(`bib regenerate: wrote ${absPath}`);
+  }
+  return 0;
+}
+
+/**
+ * `bib regenerate [--check] [--archive-root <path>]`: build the canonical
+ * model (mirroring `runShow`/`runValidate`) and materialize every view
+ * (`@/bibliography/regenerate`'s `buildViewRegistry`). Default mode WRITES
+ * each view (public always; archive only when `--archive-root` resolves to
+ * an existing directory) and exits `0`. `--check` writes nothing, diffs each
+ * view against its committed file, and exits `1` if any view would change
+ * (drift) or `0` if every reachable view is already in sync
+ * (contracts/cli.md).
+ */
+async function runRegenerate(rest: string[]): Promise<number> {
+  let args: BibArgs;
+  try {
+    args = parseBibArgs(rest);
+  } catch (error) {
+    console.error(`bib regenerate: ${describeError(error)}`);
+    return 2;
+  }
+
+  const repoRoot = resolveRepoRoot();
+  let model: CanonicalModel;
+  let archiveRoot: string;
+  let archiveAvailable: boolean;
+  try {
+    const built = await buildCanonicalModel(repoRoot, args.archiveRoot);
+    model = built.model;
+    archiveRoot = built.archiveRoot;
+    archiveAvailable = built.archiveAvailable;
+  } catch (error) {
+    console.error(`bib regenerate: ${describeError(error)}`);
+    return 2;
+  }
+
+  const views = buildViewRegistry(model);
+  return args.check
+    ? runRegenerateCheck(views, repoRoot, archiveRoot, archiveAvailable)
+    : runRegenerateWrite(views, repoRoot, archiveRoot, archiveAvailable);
 }
 
 /**
@@ -324,6 +431,6 @@ export async function runBibliography(argv: string[]): Promise<number> {
     case 'validate':
       return runValidate(rest);
     case 'regenerate':
-      return runNotImplemented('regenerate');
+      return runRegenerate(rest);
   }
 }
