@@ -3,7 +3,11 @@ import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { storeAsset, companionYamlPath } from '@/archive/store';
-import { readProvenance, type ProvenanceFields } from '@/archive/provenance';
+import {
+  readProvenance,
+  writeProvenance,
+  type ProvenanceFields,
+} from '@/archive/provenance';
 import { objectKeyForAsset } from '@/archive/object-key';
 import { sha256OfBytes } from '@/archive/checksum';
 import { FakeObjectStore } from './fake-object-store';
@@ -264,5 +268,121 @@ describe('storeAsset content-based idempotency + self-healing (FR-006)', () => {
       objectStoreCoords: COORDS,
     });
     expect(readFileSync(target).equals(firstContents)).toBe(true);
+  });
+
+  it('idempotent skip preserves the companion YAML byte-for-byte (no retrieved/rights_raw churn)', async () => {
+    const bytes = new TextEncoder().encode('the master page bytes');
+    const store = new CountingStore();
+    const yamlPath = companionYamlPath(target);
+
+    // First run: object absent -> uploads and records provenance with the
+    // ORIGINAL retrieved timestamp and rights_raw.
+    const first = await storeAsset(
+      bytes,
+      target,
+      { ...provenance(), retrieved: '2026-01-01T00:00:00.000Z' },
+      archiveRoot,
+      { objectStore: store, objectStoreCoords: COORDS },
+    );
+    expect(first.skipped).toBe(false);
+    const firstYaml = readFileSync(yamlPath, 'utf-8');
+    const putsAfterFirst = store.putCount;
+
+    // Second (resume) run: SAME bytes, but a fresh retrieved timestamp AND a
+    // different rights_raw (as the real caller rebuilds each run). The object
+    // is already present in B2, so this must skip WITHOUT rewriting the YAML.
+    const second = await storeAsset(
+      bytes,
+      target,
+      {
+        ...provenance(),
+        retrieved: '2026-06-30T23:59:59.000Z',
+        rights_raw: '<results ResultsGenerationSearchTime="0:00:00.240"/>',
+      },
+      archiveRoot,
+      { objectStore: store, objectStoreCoords: COORDS },
+    );
+
+    expect(second.skipped).toBe(true);
+    // No re-upload happened.
+    expect(store.putCount).toBe(putsAfterFirst);
+    // The companion YAML on disk is byte-identical to the first write: the
+    // original retrieved/rights_raw were preserved, not churned.
+    expect(readFileSync(yamlPath, 'utf-8')).toBe(firstYaml);
+  });
+
+  it('still backfills the object_store block when the existing YAML has object_store: null', async () => {
+    const bytes = new TextEncoder().encode('legacy-then-backfilled bytes');
+    const store = new CountingStore();
+    const yamlPath = companionYamlPath(target);
+    const key = objectKeyForAsset(archiveRoot, target);
+
+    // Legacy write (no object store configured): companion YAML records
+    // object_store: null.
+    await storeAsset(bytes, target, provenance(), archiveRoot, {});
+    expect((await readProvenance(yamlPath)).object_store).toBeNull();
+
+    // The master is now present in the object store (e.g. bulk-copied).
+    store.seedExternal(key, bytes);
+
+    // A run WITH the object store must NOT falsely preserve the null block --
+    // it must backfill the object_store block even though it skips the upload.
+    const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
+      objectStore: store,
+      objectStoreCoords: COORDS,
+    });
+
+    expect(result.skipped).toBe(true);
+    const record = await readProvenance(yamlPath);
+    expect(record.object_store).toEqual({
+      provider: COORDS.provider,
+      bucket: COORDS.bucket,
+      key,
+      endpoint: COORDS.endpoint,
+    });
+  });
+
+  it('rewrites the companion YAML when the recorded object_store.key mismatches', async () => {
+    const bytes = new TextEncoder().encode('key-mismatch bytes');
+    const sha256 = sha256OfBytes(bytes);
+    const store = new CountingStore();
+    const yamlPath = companionYamlPath(target);
+    const key = objectKeyForAsset(archiveRoot, target);
+    const relPath = path.relative(
+      path.resolve(archiveRoot),
+      path.resolve(target),
+    );
+
+    // The master is present in the object store at the CORRECT key.
+    store.seedExternal(key, bytes);
+
+    // Hand-write a stale companion YAML whose object_store.key is WRONG (but
+    // whose sha256 matches) -- e.g. a bad earlier record. The idempotency
+    // short-circuit must NOT preserve this; it must be corrected.
+    const stale: ProvenanceFields = {
+      ...provenance(),
+      local_path: relPath,
+      sha256,
+      size: bytes.length,
+      object_store: {
+        provider: COORDS.provider,
+        bucket: COORDS.bucket,
+        key: 'archive/WRONG/stale-key.jpg',
+        endpoint: COORDS.endpoint,
+      },
+    };
+    await writeProvenance(yamlPath, stale);
+    const staleYaml = readFileSync(yamlPath, 'utf-8');
+
+    const result = await storeAsset(bytes, target, provenance(), archiveRoot, {
+      objectStore: store,
+      objectStoreCoords: COORDS,
+    });
+
+    expect(result.skipped).toBe(true);
+    // The stale YAML was rewritten, correcting the object_store.key.
+    const record = await readProvenance(yamlPath);
+    expect(record.object_store?.key).toBe(key);
+    expect(readFileSync(yamlPath, 'utf-8')).not.toBe(staleYaml);
   });
 });

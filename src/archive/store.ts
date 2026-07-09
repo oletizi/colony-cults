@@ -69,6 +69,23 @@ export function companionYamlPath(assetPath: string): string {
   return `${assetPath}.yml`;
 }
 
+/**
+ * Read + parse a companion YAML, returning `null` on ANY read/parse failure (a
+ * missing OR malformed file) instead of throwing. Used by the idempotency
+ * short-circuit below: an unreadable existing companion is simply "not already
+ * complete and correct", so the caller falls through to a normal (re)write
+ * rather than crashing on a parse error (`readProvenance` can throw).
+ */
+async function readProvenanceSafe(
+  yamlPath: string,
+): Promise<ProvenanceFields | null> {
+  try {
+    return await readProvenance(yamlPath);
+  } catch {
+    return null;
+  }
+}
+
 /** Read the recorded `sha256` from a companion YAML, or `null` if absent. */
 async function readRecordedSha(yamlPath: string): Promise<string | null> {
   if (!existsSync(yamlPath)) {
@@ -283,6 +300,29 @@ export async function storeAsset(
     // case).
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFile(targetPath, bytes);
+  }
+
+  // Idempotency short-circuit (FR-006 resume): when we SKIPPED because the
+  // master is already present in B2 AND the companion YAML is already complete
+  // and correct for this asset, preserve it byte-for-byte. Rewriting it here
+  // would churn `retrieved` (which must record when the asset was ACTUALLY
+  // first retrieved) and `rights_raw` (whose OAI XML carries a varying
+  // server-timing attribute) on every resume, for zero integrity gain. The
+  // manifest is still ensured -- an interrupted earlier run may have recorded
+  // provenance but not the manifest entry. A missing companion, a null
+  // object_store (genuine backfill), a key/sha mismatch, or an unreadable
+  // (malformed) companion all fall through to the normal (re)write below.
+  if (skipped && objectStoreLocation !== null && existsSync(yamlPath)) {
+    const existing = await readProvenanceSafe(yamlPath);
+    if (
+      existing !== null &&
+      existing.object_store !== null &&
+      existing.object_store.key === objectStoreLocation.key &&
+      existing.sha256 === sha256
+    ) {
+      await ensureManifestEntry(archiveRoot, relPath, sha256);
+      return { path: targetPath, sha256, skipped: true };
+    }
   }
 
   const record: ProvenanceFields = {
