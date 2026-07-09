@@ -61,8 +61,12 @@ Fetch a single small issue with the backend enabled, against the worktree:
 
 ```sh
 npm run gallica -- fetch-issue --source PB-P001 --ark <ark> \
-  --archive-root "$COLONY_ARCHIVE_ROOT"
+  --object-store --archive-root "$COLONY_ARCHIVE_ROOT"
 ```
+
+> The `--object-store` flag is opt-in — it enables the B2 backend (and fails loud
+> if `COLONY_S3_*` config or credentials are missing). Without it, the fetcher
+> writes locally as before.
 
 Validate:
 
@@ -79,13 +83,13 @@ Validate:
 
 ```sh
 # Re-run: every master is skipped, zero uploads (SC-003)
-npm run gallica -- fetch-issue --source PB-P001 --ark <ark> --archive-root "$COLONY_ARCHIVE_ROOT"
+npm run gallica -- fetch-issue --source PB-P001 --ark <ark> --object-store --archive-root "$COLONY_ARCHIVE_ROOT"
 
 # Verify against B2: all match (SC-002/SC-004)
-npm run gallica -- fetch-issue --source PB-P001 --ark <ark> --archive-root "$COLONY_ARCHIVE_ROOT" --verify
+npm run gallica -- fetch-issue --source PB-P001 --ark <ark> --object-store --archive-root "$COLONY_ARCHIVE_ROOT" --verify
 
 # Force re-upload one master, confirm it re-uploads (FR-007)
-npm run gallica -- fetch-issue --source PB-P001 --ark <ark> --archive-root "$COLONY_ARCHIVE_ROOT" --force
+npm run gallica -- fetch-issue --source PB-P001 --ark <ark> --object-store --archive-root "$COLONY_ARCHIVE_ROOT" --force
 ```
 
 Expected: re-run reports all skipped; `--verify` reports all OK; deleting/corrupting
