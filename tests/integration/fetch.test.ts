@@ -9,6 +9,9 @@ import type { FetchLike } from '@/gallica/http-client';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { fetchIssue } from '@/fetch/issue';
 import { assertInsideArchive } from '@/archive/location';
+import { objectKeyForAsset } from '@/archive/object-key';
+import { readProvenance } from '@/archive/provenance';
+import { FakeObjectStore } from '../unit/archive/fake-object-store';
 
 /**
  * Integration coverage for the fetch pipeline (T028): fetchIssue is driven
@@ -199,5 +202,38 @@ describe('fetchIssue (T028, fetch pipeline)', () => {
     expect(() =>
       assertInsideArchive(path.join(archiveRoot, '..', 'escapee.jpg'), archiveRoot),
     ).toThrow(/outside the private archive|no override/i);
+  });
+
+  it('T015: uploads page-image masters to an injected object store and records object_store in provenance', async () => {
+    const { client } = makeClient('oairecord-bpt6k5603637g.xml');
+    const objectStore = new FakeObjectStore();
+    const objectStoreCoords = {
+      provider: 'backblaze-b2',
+      bucket: 'colony-cults',
+      endpoint: 'https://s3.us-west-004.backblazeb2.com',
+    };
+
+    const result = await fetchIssue(ISSUE_ARK, {
+      ...baseContext(client, archiveRoot),
+      objectStore,
+      objectStoreCoords,
+    });
+
+    expect(result.skippedCount).toBe(0);
+    const dir = path.join(archiveRoot, ISSUE_SUBDIR);
+    const page1 = path.join(dir, 'f001.jpg');
+    const expectedKey = objectKeyForAsset(archiveRoot, page1);
+
+    // The master actually landed in the injected object store.
+    expect(objectStore.has(expectedKey)).toBe(true);
+
+    // Provenance records the object_store block re-derived from the coords.
+    const record = await readProvenance(`${page1.slice(0, -4)}.yml`);
+    expect(record.object_store).toEqual({
+      provider: objectStoreCoords.provider,
+      bucket: objectStoreCoords.bucket,
+      key: expectedKey,
+      endpoint: objectStoreCoords.endpoint,
+    });
   });
 });

@@ -32,6 +32,13 @@ export interface ParsedFlags {
   verify: boolean;
   /** Opt into OCR during a fetch (default: images-only). */
   ocr: boolean;
+  /**
+   * Opt into the object-store (B2) backend for page-image masters (T016).
+   * Default false -- legacy local-only behavior is unchanged when absent.
+   * When set, the fetch commands resolve `resolveObjectStoreConfig()` and
+   * fail loud if the required env/credentials are missing.
+   */
+  objectStore: boolean;
 }
 
 /**
@@ -44,6 +51,12 @@ export interface ParsedOptions {
   sourceId?: string;
   /** Filename slug, e.g. `la-nouvelle-france` (census: required). */
   slug?: string;
+  /**
+   * Explicit override for the private-archive root (T016), passed as the
+   * `override` arg to `resolveArchiveRoot`. Absent -> existing precedence
+   * (`COLONY_ARCHIVE_ROOT` env, then the fixed sibling clone) is unchanged.
+   */
+  archiveRoot?: string;
 }
 
 /** Result of parsing argv into a single command invocation. */
@@ -72,8 +85,10 @@ export function parse(argv: string[]): ParsedArgs {
       force: { type: 'boolean', default: false },
       verify: { type: 'boolean', default: false },
       ocr: { type: 'boolean', default: false },
+      'object-store': { type: 'boolean', default: false },
       'source-id': { type: 'string' },
       slug: { type: 'string' },
+      'archive-root': { type: 'string' },
     },
     allowPositionals: true,
     strict: true,
@@ -107,10 +122,12 @@ export function parse(argv: string[]): ParsedArgs {
       force: Boolean(values.force),
       verify: Boolean(values.verify),
       ocr: Boolean(values.ocr),
+      objectStore: Boolean(values['object-store']),
     },
     options: {
       sourceId: values['source-id'],
       slug: values.slug,
+      archiveRoot: values['archive-root'],
     },
   };
 }

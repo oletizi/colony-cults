@@ -8,3 +8,5 @@
 {"id":"T008","tierLabel":"powerful","model":"opus","commitRange":"5cb8903","reviewClean":true}
 {"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"5cb8903","reviewClean":true}
 {"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"5cb8903","reviewClean":true}
+{"id":"T011","tierLabel":"fast","model":"haiku","commitRange":"0024053","reviewClean":true}
+{"id":"T012","tierLabel":"powerful","model":"opus","commitRange":"0024053","reviewClean":true}

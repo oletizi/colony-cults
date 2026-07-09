@@ -3,8 +3,11 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { assertInsideArchive } from '@/archive/location';
 import { sha256OfBytes, sha256OfFile } from '@/archive/checksum';
+import { objectKeyForAsset } from '@/archive/object-key';
+import type { ObjectStore } from '@/archive/object-store';
 import {
   writeProvenance,
+  type ObjectStoreLocation,
   type ProvenanceFields,
 } from '@/archive/provenance';
 
@@ -37,6 +40,18 @@ export interface VerifyResult {
 export interface StoreOptions {
   /** Re-fetch/rewrite even when a verified copy already exists. */
   force?: boolean;
+  /**
+   * When provided together with {@link StoreOptions.objectStoreCoords}, the
+   * asset master is uploaded here (in addition to the local OCR cache) on the
+   * write path, before provenance/manifest are written.
+   */
+  objectStore?: ObjectStore;
+  /**
+   * Coordinates recorded in the companion YAML's `object_store` block. The
+   * object `key` is NOT taken from here -- it is re-derived from the archive
+   * layout, same as `local_path`/`sha256`.
+   */
+  objectStoreCoords?: { provider: string; bucket: string; endpoint: string };
 }
 
 /**
@@ -187,15 +202,38 @@ export async function storeAsset(
     }
   }
 
+  // Write the local cache file first (it is the OCR cache).
+  await mkdir(path.dirname(targetPath), { recursive: true });
+  await writeFile(targetPath, bytes);
+
+  // When an object store is injected, upload the master BEFORE writing
+  // provenance so the companion YAML never claims an upload that did not
+  // happen. A failed put propagates and no provenance/manifest is written.
+  // The recorded `object_store.key` is RE-DERIVED here (never trusted from the
+  // caller), same principle as `local_path`/`sha256`.
+  let objectStore: ObjectStoreLocation | null = provenanceFields.object_store;
+  if (options.objectStore !== undefined && options.objectStoreCoords !== undefined) {
+    const key = objectKeyForAsset(archiveRoot, targetPath);
+    await options.objectStore.put(key, bytes, {
+      sha256,
+      contentType: provenanceFields.format,
+    });
+    objectStore = {
+      provider: options.objectStoreCoords.provider,
+      bucket: options.objectStoreCoords.bucket,
+      key,
+      endpoint: options.objectStoreCoords.endpoint,
+    };
+  }
+
   const record: ProvenanceFields = {
     ...provenanceFields,
     local_path: relPath,
     sha256,
     size: bytes.length,
+    object_store: objectStore,
   };
 
-  await mkdir(path.dirname(targetPath), { recursive: true });
-  await writeFile(targetPath, bytes);
   await writeProvenance(yamlPath, record);
   await updateManifest(archiveRoot, relPath, sha256);
 

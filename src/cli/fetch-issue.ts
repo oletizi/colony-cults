@@ -26,7 +26,7 @@ import {
  */
 export async function runFetchIssue(
   args: ParsedArgs,
-  deps: FetchDeps = defaultFetchDeps(),
+  deps: FetchDeps = defaultFetchDeps(args),
 ): Promise<void> {
   // SC-008 / AS2: an OCR-enabled run fails loud BEFORE any work when the
   // toolchain is missing; an images-only run (no --ocr) never calls this.

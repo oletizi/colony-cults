@@ -17,6 +17,7 @@ describe('parse', () => {
       force: false,
       verify: false,
       ocr: true,
+      objectStore: false,
     });
   });
 
@@ -28,7 +29,21 @@ describe('parse', () => {
       force: false,
       verify: false,
       ocr: false,
+      objectStore: false,
     });
+  });
+
+  it('parses --archive-root and --object-store', () => {
+    const result = parse([
+      'fetch-issue',
+      'ark:/12148/bpt6k000001',
+      '--archive-root',
+      '/tmp/some-archive',
+      '--object-store',
+    ]);
+
+    expect(result.options.archiveRoot).toBe('/tmp/some-archive');
+    expect(result.flags.objectStore).toBe(true);
   });
 
   it('throws a descriptive error on an unknown command', () => {

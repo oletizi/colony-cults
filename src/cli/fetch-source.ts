@@ -32,7 +32,7 @@ import {
  */
 export async function runFetchSource(
   args: ParsedArgs,
-  deps: FetchDeps = defaultFetchDeps(),
+  deps: FetchDeps = defaultFetchDeps(args),
 ): Promise<void> {
   const ark = args.positional[0];
   if (ark === undefined) {

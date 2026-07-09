@@ -12,8 +12,21 @@ import {
   storeAsset,
   type StoreResult,
 } from '@/archive/store';
+import type { ObjectStore } from '@/archive/object-store';
 import type { ProvenanceFields } from '@/archive/provenance';
 import type { Rights } from '@/model/rights';
+
+/**
+ * Coordinates recorded in provenance's `object_store` block when a page-image
+ * master is uploaded (T015). Mirrors `StoreOptions.objectStoreCoords`
+ * (`@/archive/store`) -- the object key itself is re-derived from the
+ * archive layout, not carried here.
+ */
+export type ObjectStoreCoords = {
+  provider: string;
+  bucket: string;
+  endpoint: string;
+};
 
 /**
  * The Gallica capabilities `fetchIssue` depends on, composed from the
@@ -41,6 +54,14 @@ export interface FetchIssueContext {
   force?: boolean;
   /** Optional line-oriented progress sink. */
   log?: (message: string) => void;
+  /**
+   * Object-store backend for page-image masters (T015), opt-in via the CLI's
+   * `--object-store` flag. Undefined -- the default -- means legacy
+   * local-only behavior: no upload, `object_store` stays null in provenance.
+   */
+  objectStore?: ObjectStore;
+  /** Coordinates recorded in provenance; meaningful only with {@link objectStore}. */
+  objectStoreCoords?: ObjectStoreCoords;
 }
 
 /**
@@ -62,6 +83,14 @@ export interface FetchMonographContext {
   force?: boolean;
   /** Optional line-oriented progress sink. */
   log?: (message: string) => void;
+  /**
+   * Object-store backend for page-image masters (T015), opt-in via the CLI's
+   * `--object-store` flag. Undefined -- the default -- means legacy
+   * local-only behavior: no upload, `object_store` stays null in provenance.
+   */
+  objectStore?: ObjectStore;
+  /** Coordinates recorded in provenance; meaningful only with {@link objectStore}. */
+  objectStoreCoords?: ObjectStoreCoords;
 }
 
 /** Per-document (issue or monograph) fetch outcome. */
@@ -92,6 +121,8 @@ interface DocumentFetchContext {
   clock: () => Date;
   force?: boolean;
   log?: (message: string) => void;
+  objectStore?: ObjectStore;
+  objectStoreCoords?: ObjectStoreCoords;
 }
 
 /** Zero-padded page ordinal for the `f<NNN>.jpg` asset name. */
@@ -190,7 +221,11 @@ async function fetchDocumentPages(
       targetPath,
       provenance,
       ctx.archiveRoot,
-      { force: ctx.force },
+      {
+        force: ctx.force,
+        objectStore: ctx.objectStore,
+        objectStoreCoords: ctx.objectStoreCoords,
+      },
     );
     pages.push(result);
     if (result.skipped) {

@@ -1,11 +1,14 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import type { ParsedFlags } from '@/cli/parse';
+import type { ParsedArgs, ParsedFlags } from '@/cli/parse';
 import type { GallicaClient, IssueMetaClient } from '@/gallica/gallica-client';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
 import { resolveArchiveRoot, sourceLayout } from '@/archive/location';
 import { verifyAsset } from '@/archive/store';
+import type { ObjectStore } from '@/archive/object-store';
+import { resolveObjectStoreConfig } from '@/archive/b2-config';
+import { S3ObjectStore } from '@/archive/s3-object-store';
 import { resolveRights } from '@/rights/gate';
 import {
   fetchIssue,
@@ -53,6 +56,19 @@ export interface FetchDeps {
   ocrPreflight: () => Promise<void>;
   /** Injected OCR command runner (T030), used when `--ocr` wires OCR in. */
   ocrRunner: OcrCommandRunner;
+  /**
+   * Object-store backend for page-image masters (T015/T016), opt-in via
+   * `--object-store`. Undefined -- the default -- means legacy local-only
+   * behavior: no upload, `object_store` stays null in provenance. OCR text
+   * assets never use this (they stay local/git regardless).
+   */
+  objectStore?: ObjectStore;
+  /**
+   * Coordinates recorded in provenance's `object_store` block; only
+   * meaningful together with {@link FetchDeps.objectStore}. The object key
+   * itself is re-derived from the archive layout, not carried here.
+   */
+  objectStoreCoords?: { provider: string; bucket: string; endpoint: string };
 }
 
 /**
@@ -65,17 +81,41 @@ export interface FetchDeps {
 const IMAGE_FETCH_CONCURRENCY = 1;
 const IMAGE_FETCH_MIN_INTERVAL_MS = 2000;
 
-/** Build the default (real network + disk) dependencies. */
-export function defaultFetchDeps(): FetchDeps {
+/**
+ * Build the default (real network + disk) dependencies.
+ *
+ * `args` supplies the CLI-level overrides threaded in via T016:
+ * `--archive-root <path>` (passed as `resolveArchiveRoot`'s `override`) and
+ * the opt-in `--object-store` flag. When `--object-store` is absent (the
+ * default), no `ObjectStore` is constructed and the archive stays
+ * local-only, unchanged from prior behavior. When present,
+ * `resolveObjectStoreConfig()` is called eagerly here so a missing
+ * config/credential fails loud before any fetch work begins, rather than
+ * failing mid-run on the first page.
+ */
+export function defaultFetchDeps(args: ParsedArgs): FetchDeps {
   const repoRoot = process.cwd();
   const http = new HttpClient({
     maxConcurrent: IMAGE_FETCH_CONCURRENCY,
     minRequestIntervalMs: IMAGE_FETCH_MIN_INTERVAL_MS,
   });
+
+  let objectStore: ObjectStore | undefined;
+  let objectStoreCoords: FetchDeps['objectStoreCoords'];
+  if (args.flags.objectStore) {
+    const config = resolveObjectStoreConfig();
+    objectStore = new S3ObjectStore(config);
+    objectStoreCoords = {
+      provider: config.provider,
+      bucket: config.bucket,
+      endpoint: config.endpoint,
+    };
+  }
+
   return {
     client: new GallicaHttpClient(http),
     repoRoot,
-    archiveRoot: resolveArchiveRoot(repoRoot),
+    archiveRoot: resolveArchiveRoot(repoRoot, args.options.archiveRoot),
     clock: () => new Date(),
     builtAt: new Date().toISOString().slice(0, 10),
     log: (message) => {
@@ -83,6 +123,8 @@ export function defaultFetchDeps(): FetchDeps {
     },
     ocrPreflight: () => assertOcrToolchain(),
     ocrRunner: defaultOcrCommandRunner(),
+    objectStore,
+    objectStoreCoords,
   };
 }
 
@@ -170,6 +212,8 @@ export async function realFetchIssue(
     clock: deps.clock,
     force: flags.force,
     log: deps.log,
+    objectStore: deps.objectStore,
+    objectStoreCoords: deps.objectStoreCoords,
   });
   deps.log(
     `fetch-issue: ${result.issueArk} -> ${result.dir} :: ` +
@@ -199,6 +243,8 @@ export async function realFetchMonograph(
     clock: deps.clock,
     force: flags.force,
     log: deps.log,
+    objectStore: deps.objectStore,
+    objectStoreCoords: deps.objectStoreCoords,
   });
   deps.log(
     `fetch-source (monograph): ${result.issueArk} -> ${result.dir} :: ` +

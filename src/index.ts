@@ -48,12 +48,16 @@ Commands:
   ocr <issueArk>                OCR already-fetched images for an issue
 
 Options:
-  --help, -h     Show this help message
-  --version, -v  Show version
-  --dry-run      Report intended actions; write nothing
-  --force        Re-fetch/regenerate assets that already exist
-  --verify       Re-hash existing assets against recorded checksums
-  --ocr          Opt into OCR during a fetch
+  --help, -h             Show this help message
+  --version, -v          Show version
+  --dry-run              Report intended actions; write nothing
+  --force                Re-fetch/regenerate assets that already exist
+  --verify               Re-hash existing assets against recorded checksums
+  --ocr                  Opt into OCR during a fetch
+  --archive-root <path>  Override the private-archive root (else
+                         COLONY_ARCHIVE_ROOT env, else the sibling clone)
+  --object-store         Opt into the object-store (B2) backend for
+                         page-image masters (else local-only)
 `;
 
 function wantsHelp(argv: string[]): boolean {
