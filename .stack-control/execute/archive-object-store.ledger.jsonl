@@ -1,2 +1,10 @@
 {"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"ec39e62","reviewClean":true}
 {"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"7cb98d8(archive-worktree)","reviewClean":true}
+{"id":"T003","tierLabel":"balanced","model":"sonnet","commitRange":"5cb8903","reviewClean":true}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"5cb8903","reviewClean":true}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commitRange":"5cb8903","reviewClean":true}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"5cb8903","reviewClean":true}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commitRange":"5cb8903","reviewClean":true}
+{"id":"T008","tierLabel":"powerful","model":"opus","commitRange":"5cb8903","reviewClean":true}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"5cb8903","reviewClean":true}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"5cb8903","reviewClean":true}
