@@ -8,7 +8,7 @@ import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
 import { migrate } from '@/bibliography/migrate';
 import { resolveArchiveRoot, sourceLayout } from '@/archive/location';
-import type { ProvenanceFields } from '@/archive/provenance';
+import type { AssetProvenance } from '@/bibliography/provenance-read';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 
@@ -77,8 +77,8 @@ function hasArchiveLayout(sourceId: string): boolean {
 async function gatherProvenanceForAll(
   sources: Source[],
   archiveRoot: string,
-): Promise<Map<string, ProvenanceFields[]>> {
-  const provenanceBySource = new Map<string, ProvenanceFields[]>();
+): Promise<Map<string, AssetProvenance[]>> {
+  const provenanceBySource = new Map<string, AssetProvenance[]>();
   if (!existsSync(archiveRoot)) {
     return provenanceBySource;
   }

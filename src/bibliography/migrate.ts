@@ -10,7 +10,7 @@ import type { AuthoredRepositoryRecord, CanonicalModel } from '@/bibliography/mo
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import type { MigratedSource } from '@/bibliography/migrate-serialize';
 import { resolveArchiveRoot, sourceLayout } from '@/archive/location';
-import type { ProvenanceFields } from '@/archive/provenance';
+import type { AssetProvenance } from '@/bibliography/provenance-read';
 import type { CopyIdentifier } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 
@@ -411,7 +411,7 @@ function migrateSource(
 }
 
 /** Gather a source's provenance, tolerating an unregistered (no-layout) source. */
-async function safeGather(sourceId: string, archiveRoot: string): Promise<ProvenanceFields[]> {
+async function safeGather(sourceId: string, archiveRoot: string): Promise<AssetProvenance[]> {
   if (safeSlug(sourceId) === undefined) {
     return [];
   }
@@ -502,7 +502,7 @@ export async function migrate(opts: MigrateOptions): Promise<MigrateResult> {
     ? loadAllSources(sourcesDir)
     : migrated.map((entry) => ({ source: entry.source, records: entry.records, identifierLeaks: [] }));
 
-  const provenanceBySource = new Map<string, ProvenanceFields[]>();
+  const provenanceBySource = new Map<string, AssetProvenance[]>();
   if (archiveAvailable) {
     for (const entry of loaded) {
       const provenance = await safeGather(entry.source.sourceId, archiveRoot);
