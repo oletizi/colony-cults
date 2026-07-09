@@ -174,10 +174,19 @@ this preflight.
 A second TypeScript CLI tool in the `gallica-fetcher` package that turns
 archived French OCR text (the `issue.txt` produced by the gallica-fetcher) into
 corrected French and English translations. The tool processes each issue page by
-page, cleaning OCR artifacts and translating via the Claude Code CLI, then
+page, cleaning OCR artifacts and translating via a **pluggable translation
+engine** — the Claude Code CLI (`claude`) or the Codex CLI (`codex`), selectable
+per run with `--engine claude|codex` (or a `translate.config.json` default) — then
 stores both the corrected French transcription and the English translation
 alongside the source with YAML provenance records documenting the engine,
 model, and machine-assisted nature of the translation.
+
+> **Which engine/model should I use?** See
+> [ENGINE-COMPARISON.md](ENGINE-COMPARISON.md) for a controlled comparison of
+> Codex vs Claude and of the model/reasoning tiers within each, with guidance and
+> caveats. Short version: Codex (`gpt-5.5`) and Claude Opus are quality-equivalent
+> on this corpus; the cheaper settings (`codex` `none` reasoning, `claude sonnet`)
+> match them; `claude haiku` is a false economy.
 
 ### Commands
 
