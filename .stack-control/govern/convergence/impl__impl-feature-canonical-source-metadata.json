@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/canonical-source-metadata",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/canonical-source-metadata",
+  "override": true,
+  "overrideReason": "Cross-model audit-barrage exceeds this environment's runtime (timed out at 2m, per standing govern-barrage-override directive). Substituted thorough live end-to-end validation against the real archive (colony-cults-archive-object-store): bib migrate/show/validate/regenerate all exit 0; PB-P001 holds two RepositoryRecords (Gallica/BnF + restored State Library of Queensland) = SC-001/SC-005; Gallica copy enumerates 78 issues matching census totalIssues = SC-006 with per-issue assets summing to manifest assetCount 1218 (AssetManifestRef, not scalar checksum) = FR-006/011; bib validate clean for all integrity/leak/vocab/required checks = SC-007; identifier-leak finding demonstrated = SC-002; bib regenerate --check in sync = SC-008. Full vitest suite green (272 passed, 2 pre-existing skips)."
+}
