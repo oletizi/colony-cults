@@ -1,6 +1,6 @@
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { findIssueDir } from '@/archive/location';
+import { resolveFetchedDir } from '@/archive/location';
 import { readProvenance } from '@/archive/provenance';
 
 /**
@@ -49,7 +49,8 @@ export async function firstPageProvenanceYaml(issueDir: string): Promise<string>
 /**
  * Read an issue's rights determination + citation OFFLINE, purely from what
  * the fetcher already wrote to disk (research.md R3): locate the issue
- * directory via {@link findIssueDir} (no census, no network), then read the
+ * directory via {@link resolveFetchedDir} (no census, no network; periodical
+ * -> `findIssueDir`, monograph -> `monographDir`), then read the
  * first page's provenance companion YAML (page order, `f001.yml` before
  * `f002.yml`, ...) via {@link readProvenance}. The rights gate already ran at
  * fetch time (`@/rights/gate`); this never re-queries Gallica. Reading the
@@ -64,7 +65,7 @@ export async function readIssueRights(
   issueArk: string,
   archiveRoot: string,
 ): Promise<IssueRights> {
-  const issueDir = findIssueDir(sourceId, issueArk, archiveRoot);
+  const issueDir = resolveFetchedDir(sourceId, issueArk, archiveRoot);
   const yamlPath = await firstPageProvenanceYaml(issueDir);
 
   const fields = await readProvenance(yamlPath);

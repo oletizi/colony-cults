@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { findIssueDir } from '@/archive/location';
+import { resolveFetchedDir } from '@/archive/location';
 import { readProvenance, type ProvenanceFields } from '@/archive/provenance';
 import { isAssetRecorded, storeAsset } from '@/archive/store';
 import type { TranslationEngine } from '@/engine/types';
@@ -218,7 +218,9 @@ async function classifyDryRun(
  * `issue.fr.txt`/`issue.en.txt` (T016/T017, FR-002/008/009/011/012/013).
  *
  * GUARD-FIRST ORDER:
- *  1. Locate the issue dir offline (`findIssueDir`) -- a missing fetched issue
+ *  1. Locate the issue/document dir offline (`resolveFetchedDir`, which
+ *     branches periodical -> `findIssueDir`, monograph -> `monographDir`) --
+ *     a missing fetched issue
  *     is a hard precondition, so its throw propagates.
  *  1a. DRY-RUN (FR-010): when `ctx.dryRun` is true, classify and RETURN right
  *     here via {@link classifyDryRun} -- before the rights-refusal
@@ -246,7 +248,7 @@ export async function translateIssue(
   ctx: TranslateIssueCtx,
 ): Promise<TranslateIssueResult> {
   // 1. Locate (hard precondition -- let a missing issue throw).
-  const dir = findIssueDir(ctx.sourceId, issueArk, ctx.archiveRoot);
+  const dir = resolveFetchedDir(ctx.sourceId, issueArk, ctx.archiveRoot);
 
   // 1a. DRY-RUN (FR-010): classify + return, never reaching the rights
   //     early-return, `ctx.preflight()`, the engine, or any write.
