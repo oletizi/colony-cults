@@ -1,3 +1,17 @@
 {"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"7b0c81b","reviewClean":true,"note":"src/sourcegroup/index.ts barrel; typecheck clean"}
 {"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"7b0c81b","reviewClean":true,"note":"__fixtures__ PB-P004 + TG-001 second source-group"}
 {"id":"T003","tierLabel":"fast","model":"haiku","commitRange":"7b0c81b","reviewClean":true,"note":"6 bib subaction stubs fail-loud; 432 lines; typecheck clean"}
+{"id":"T004","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"spike: BnF general-catalogue SRU selected (live-probed, 18 recs); discover verb ships"}
+{"id":"T005","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"DiscoveryMechanism iface + fail-loud dispatcher, no fallback; 5 tests"}
+{"id":"T006","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"004 decision: feature-local additive fields cross-ref 004 (controller-recorded)"}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"additive RepositoryRecord.metadataSnapshot/.verification + Rights.raw"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"serialize/load round-trip; 5 tests idempotent"}
+{"id":"T009","tierLabel":"fast","model":"haiku","commitRange":"e19cd8f","reviewClean":true,"note":"vocab-disjoint regression test, 7 tests (FR-022)"}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"id-alloc RED test incl 40-way concurrency"}
+{"id":"T011","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"atomic PB-P### alloc, exclusive-create+retry, no counter"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"record-select RED test, 6 cases"}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"selectRepositoryRecord --archive infer-one/fail-loud"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"snapshot RED test, 7 cases write-once"}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"immutable snapshot store write-once+read; ref type unified to model"}
+{"id":"T016","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"verifyMember RED test, 17 cases, injected I/O"}
+{"id":"T017","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"shared deterministic verifyMember(); no relevance; reused by verify+promote"}
