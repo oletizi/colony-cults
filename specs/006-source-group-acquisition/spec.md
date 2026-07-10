@@ -15,10 +15,13 @@ The shipped source-groups feature deliberately made **PB-P004** (the Marquis de 
 This feature builds a **reusable member-acquisition pipeline** for any source-group and runs it end-to-end on PB-P004. The pipeline separates deterministic software checks from research judgment:
 
 ```
-Discover → Inventory → Technical verification → Research approval (Promote) → Acquire → Preserve
+Discover → Inventory → Repository verification → Research approval (Promote) → Acquire → Preserve
+                                                        └→ Exclude (alternative outcome)
 ```
 
-The deliverable is both the reusable `inventory` / `verify-member` / `promote` commands (plus a discovery search helper over one spike-selected mechanism) **and** the actually-acquired PB-P004 corpus as the v1 validation run.
+The deliverable is both the reusable `inventory` / `verify-member` / `promote` / `exclude-member` commands (plus a discovery search helper over one spike-selected mechanism) **and** the actually-acquired PB-P004 corpus as the v1 validation run.
+
+"Repository verification" (the stage) denotes the **deterministic** checks over repository resolution, rights, required metadata, and copy identity — not general code quality. Its command is `verify-member`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -38,13 +41,13 @@ A researcher has identified a candidate archival object (an ARK) that belongs in
 2. **Given** the same command, **When** it completes, **Then** a RepositoryRecord is created at acquisition status `wanted` (never `to-collect`), carrying `sourceArchive`, the ark, `source_url`, `rightsRaw` (the archive's verbatim statement) and `rightsStatus` (the normalized project determination).
 3. **Given** the same command, **When** it completes, **Then** the raw repository response is preserved as an immutable acquisition snapshot referenced by the RepositoryRecord (recording `retrievedAt`, `endpoint`, and `normalizationVersion`) alongside the normalized fields.
 4. **Given** a `--group` that does not resolve to an existing `source-group`, **When** the researcher runs `inventory`, **Then** it fails loud with an informative error and creates nothing.
-5. **Given** an ARK the archive reports as non-public-domain, **When** the researcher runs `inventory`, **Then** the member is recorded with `rightsStatus` other-than-public-domain and is flagged as not acquirable (only public-domain members are acquired downstream).
+5. **Given** an ARK the archive reports as non-public-domain, **When** the researcher runs `inventory`, **Then** the member is recorded with `rightsStatus` other-than-public-domain and is flagged as not acquirable (only public-domain members are acquired downstream); its terminal path is `exclude-member` (US3), not promotion — inventory preserves the discovered candidate, and exclusion is the explicit next step.
 
 ---
 
-### User Story 2 - Technically verify a member (Priority: P2)
+### User Story 2 - Verify a member's repository copy (Priority: P2)
 
-Before a member is considered for the corpus, the software confirms it is technically acquirable — deterministically, with no research judgment.
+Before a member is considered for the corpus, the software confirms its repository copy is acquirable — deterministically, with no research judgment.
 
 **Why this priority**: The deterministic gate protects the research-approval step and acquisition from resolvable-only-later failures (dead ARK, missing metadata, duplicate). It is a pure function of the member record and is testable in isolation.
 
@@ -58,6 +61,7 @@ Before a member is considered for the corpus, the software confirms it is techni
 4. **Given** a member sharing an ARK with an existing member of the same archive, **When** `verify-member` runs, **Then** it reports a **hard duplicate**.
 5. **Given** a member with a matching normalized title/creator/date but a different ARK, **When** `verify-member` runs, **Then** it reports a **possible duplicate requiring review** (not a hard failure).
 6. **Given** any input, **When** `verify-member` runs, **Then** it makes **no** determination about corpus relevance.
+7. **Given** a member with more than one RepositoryRecord (copies at different archives), **When** `verify-member` runs without an archive selector, **Then** it fails loud requiring `--archive <sourceArchive>`; **When** exactly one RepositoryRecord exists, **Then** it verifies that one without a selector.
 
 ---
 
@@ -67,15 +71,17 @@ A researcher judges a technically-valid member to be a relevant part of the corp
 
 **Why this priority**: This is the human judgment gate that keeps "valid archival object" distinct from "relevant member of this corpus." It is the transition acquisition depends on.
 
-**Independent Test**: Run `promote PB-P007` against a verified member fixture and confirm the Source advances `discovered → approved-for-acquisition` and the RepositoryRecord advances `wanted → to-collect`, with membership unchanged.
+**Independent Test**: Run `promote PB-P007` against a verified member fixture and confirm promote re-runs deterministic verification, records the verdict, advances the Source `discovered → approved-for-acquisition` and the selected RepositoryRecord `wanted → to-collect`, with membership unchanged.
 
 **Acceptance Scenarios**:
 
-1. **Given** a member with `status: discovered` whose existing `partOf` resolves to a valid source-group, **When** the researcher runs `promote PB-P007`, **Then** the Source advances to `approved-for-acquisition` and its RepositoryRecord advances from `wanted` to `to-collect`.
-2. **Given** the promote command, **When** it runs, **Then** it treats the **existing `partOf` as authoritative** and never establishes or alters membership; the group is not re-supplied.
-3. **Given** a `--group` flag is provided (operator clarity), **When** it does not equal the member's existing `partOf`, **Then** promote fails loud; **When** it equals the existing `partOf`, **Then** promote proceeds — the flag may only assert equality, never set membership.
-4. **Given** a member whose `partOf` does not resolve to a valid source-group, **When** `promote` runs, **Then** it fails loud and changes nothing.
-5. **Given** a member the researcher judges irrelevant, **When** they exclude it, **Then** exclusion is a **separate operation** (`discovered → excluded`), never a silent consequence of, or step after, approval.
+1. **Given** a member with `status: discovered` whose existing `partOf` resolves to a valid source-group, **When** the researcher runs `promote PB-P007`, **Then** promote **re-runs the deterministic repository-verification checks itself** and, only if they pass, advances the Source to `approved-for-acquisition` and the selected RepositoryRecord from `wanted` to `to-collect`.
+2. **Given** promote re-runs verification, **When** it passes, **Then** promote **records the verification verdict** (result, `verifiedAt`, the checks, and the metadata-snapshot reference) on the member as provenance; **When** any check fails, **Then** promote fails loud, records nothing, and applies no status transition.
+3. **Given** the promote command, **When** it runs, **Then** it treats the **existing `partOf` as authoritative** and never establishes or alters membership; the group is not re-supplied.
+4. **Given** a `--group` flag is provided (operator clarity), **When** it does not equal the member's existing `partOf`, **Then** promote fails loud; **When** it equals the existing `partOf`, **Then** promote proceeds — the flag may only assert equality, never set membership.
+5. **Given** a member with more than one RepositoryRecord, **When** `promote` runs without `--archive`, **Then** it fails loud requiring `--archive <sourceArchive>`; **When** exactly one RepositoryRecord exists, **Then** promote selects it without a selector.
+6. **Given** a member whose `partOf` does not resolve to a valid source-group, **When** `promote` runs, **Then** it fails loud and changes nothing.
+7. **Given** a member the researcher judges irrelevant (or one that failed verification, e.g. non-public-domain rights), **When** they run `exclude-member PB-P007 --reason "<text>"`, **Then** the Source advances `discovered → excluded` with the reason recorded — a **separate operation**, never a silent consequence of, or step after, approval.
 
 ---
 
@@ -90,9 +96,10 @@ An approved member's archival object (page images, OCR, provenance) is pulled in
 **Acceptance Scenarios**:
 
 1. **Given** an approved member whose RepositoryRecord carries the ARK, **When** the researcher acquires it, **Then** the acquire step **resolves the ARK from the RepositoryRecord** and drives the shipped fetcher (`--object-store`) to pull page images → object store, OCR, and provenance — the operator never supplies both the id and the ARK.
-2. **Given** acquisition of a member, **When** the fetcher runs, **Then** no new fetch code is introduced — the shipped fetcher is reused unchanged.
-3. **Given** an attempt to fetch the source-group **PB-P004 itself**, **When** the fetcher is invoked on it, **Then** the shipped guardrail still blocks it; the guardrail never blocks a member.
-4. **Given** a member that is not `approved-for-acquisition`, **When** acquisition is attempted, **Then** it fails loud and fetches nothing.
+2. **Given** a member with more than one RepositoryRecord, **When** acquisition runs without `--archive`, **Then** it fails loud requiring `--archive <sourceArchive>`; **When** exactly one RepositoryRecord exists, **Then** acquisition selects it without a selector.
+3. **Given** acquisition of a member, **When** the fetcher runs, **Then** no new fetch code is introduced — the shipped fetcher is reused unchanged.
+4. **Given** an attempt to fetch the source-group **PB-P004 itself**, **When** the fetcher is invoked on it, **Then** the shipped guardrail still blocks it; the guardrail never blocks a member.
+5. **Given** a member that is not `approved-for-acquisition`, **When** acquisition is attempted, **Then** it fails loud and fetches nothing.
 
 ---
 
@@ -127,26 +134,30 @@ A researcher searches an archive for candidate legal records for a source-group 
 ### Functional Requirements
 
 **Inventory**
-- **FR-001**: The system MUST create a member Source from an ARK via `inventory <ark> --group <group-id> [--kind monograph]`, assigning the **next-free flat opaque id** in the `PB-P###` namespace with no group prefix.
+- **FR-001**: The system MUST create a member Source from an ARK via `inventory <ark> --group <group-id> [--kind monograph]`, assigning the **next-free flat opaque id** in the `PB-P###` namespace with no group prefix. Id allocation MUST be **atomic** — scan for the maximum, attempt an exclusive create, and on collision rescan and retry — with **no mutable counter**, so concurrent inventory never allocates the same id.
 - **FR-002**: The member Source MUST record `partOf: <group-id>` as the sole membership mechanism, `kind` (default `monograph`), and `status: discovered`.
 - **FR-003**: Inventory MUST create a RepositoryRecord at acquisition status **`wanted`** (never `to-collect`), carrying `sourceArchive`, ark, `source_url`, `rightsRaw`, and `rightsStatus`.
 - **FR-004**: Inventory MUST preserve the **raw repository response** as an immutable acquisition snapshot referenced by the RepositoryRecord, recording `retrievedAt`, `endpoint`, and `normalizationVersion`, alongside the normalized fields; re-inventory MUST create a new snapshot, never overwrite an existing one.
 - **FR-005**: Inventory MUST fail loud when `--group` does not resolve to an existing `source-group`, creating nothing.
 
-**Technical verification**
-- **FR-006**: `verify-member <id>` MUST perform only **deterministic** checks and make no corpus-relevance judgment.
+**Repository verification** (deterministic checks over one RepositoryRecord)
+- **FR-006**: `verify-member <id> [--archive <sourceArchive>]` MUST perform only **deterministic** checks and make no corpus-relevance judgment.
 - **FR-007**: Verification MUST confirm the repository identifier resolves, the normalized rights permit acquisition, and required metadata is present, failing loud and naming the failed check otherwise.
 - **FR-008**: Verification MUST classify duplicates: **same ARK within the same archive → hard duplicate**; **matching normalized title/creator/date with a different ARK → possible duplicate requiring review**.
-- **FR-009**: A different repository copy of a work already represented MUST attach a **new RepositoryRecord to the existing Source**, not create a new Source.
+- **FR-009**: A different repository copy of a work already represented MUST attach a **new RepositoryRecord to the existing Source** (keyed by `(sourceId, sourceArchive)`), not create a new Source.
+- **FR-009a**: When a member has more than one RepositoryRecord, `verify-member`, `promote`, and acquisition MUST require **`--archive <sourceArchive>`** to select the target record and MUST **fail loud on ambiguity**; when exactly one RepositoryRecord exists, the selector MAY be omitted and that record is used.
 
 **Research approval / Promote**
-- **FR-010**: `promote <id>` MUST record research approval, advancing the Source `discovered → approved-for-acquisition` and its RepositoryRecord `wanted → to-collect`.
+- **FR-010**: `promote <id> [--archive <sourceArchive>]` MUST record research approval, advancing the Source `discovered → approved-for-acquisition` and the selected RepositoryRecord `wanted → to-collect`.
+- **FR-010a**: Promote MUST **re-run the deterministic repository-verification checks (FR-006–FR-008) itself** before applying any status transition, and MUST **fail loud, transitioning nothing**, if any check fails — the invariant (nothing acquired unverified, SC-004) is enforced at the promote gate, never trusted from prior console output.
+- **FR-010b**: On a passing re-verification, promote MUST **record the verification verdict as provenance** on the member — result, `verifiedAt`, the per-check outcomes, and the referenced immutable metadata snapshot — so the approval is auditable.
 - **FR-011**: Promote MUST treat the member's **existing `partOf` as authoritative** and MUST NOT establish or alter membership; a `--group` flag, if present, MUST only assert equality with the existing `partOf`.
 - **FR-012**: Promote MUST fail loud when the member's `partOf` does not resolve to a valid `source-group`.
-- **FR-013**: `approved-for-acquisition` and `excluded` MUST be modeled as **alternative outcomes** of `discovered`; **exclusion MUST be a separate operation** (`discovered → excluded`) with its own reconsideration path, never a silent step after approval.
+- **FR-013**: `approved-for-acquisition` and `excluded` MUST be modeled as **alternative outcomes** of `discovered`; **exclusion MUST be a separate operation** with its own reconsideration path, never a silent step after approval.
+- **FR-013a**: The system MUST provide `exclude-member <id> --reason <text>` performing the `discovered → excluded` transition and recording the reason. This is the defined terminal path for a discovered candidate that is not acquired (e.g. non-public-domain rights, judged irrelevant). Reconsidering an `excluded` member back into the pipeline MUST likewise be an explicit operation, never implicit.
 
 **Acquire / Preserve**
-- **FR-014**: Acquisition of an approved member MUST **resolve the ARK from the member's RepositoryRecord** and drive the **shipped fetcher** (`--object-store`); the operator MUST NOT supply both the source id and the ARK.
+- **FR-014**: Acquisition of an approved member MUST **resolve the ARK from the selected RepositoryRecord** (`--archive <sourceArchive>` per FR-009a) and drive the **shipped fetcher** (`--object-store`); the operator MUST NOT supply both the source id and the ARK.
 - **FR-015**: Acquisition MUST introduce **no new fetch code** in v1 (the shipped fetcher is reused unchanged).
 - **FR-016**: The shipped source-group guardrail MUST continue to block fetching a `source-group` itself while never blocking a member.
 - **FR-017**: Acquisition MUST fail loud for any member not in `approved-for-acquisition`, and only **public-domain** members MUST be acquired.
@@ -163,7 +174,7 @@ A researcher searches an archive for candidate legal records for a source-group 
 
 ### Key Entities *(include if feature involves data)*
 
-- **Source (member)**: an archive-independent work that is a member of a source-group. Flat opaque `sourceId` (`PB-P###`), `kind`, `partOf` (the membership edge), and a `SourceLifecycleStatus` (`discovered` → `approved-for-acquisition` | `excluded`).
+- **Source (member)**: an archive-independent work that is a member of a source-group. Flat opaque `sourceId` (`PB-P###`), `kind`, `partOf` (the membership edge), and a `SourceLifecycleStatus` (`discovered` → `approved-for-acquisition` | `excluded`, alternative outcomes). Carries a recorded **verification verdict** (result, `verifiedAt`, per-check outcomes, snapshot reference) after promotion, and an **exclusion reason** when excluded.
 - **Source Group**: an existing Source with `kind: source-group`; holds no member list (membership is derived from members' `partOf` edges) and is never fetchable.
 - **RepositoryRecord**: one archive's held copy of a member — `sourceArchive`, ark, `source_url`, `rightsRaw` + `rightsStatus`, a `RepositoryAcquisitionStatus` (`wanted` → `to-collect` → `collecting` → `collected` → `archived`), and a reference to its metadata snapshot(s).
 - **Metadata snapshot**: an immutable record of one raw repository response for a RepositoryRecord — `path`, `retrievedAt`, `endpoint`, `normalizationVersion`. Re-inventory appends a new snapshot.
@@ -176,12 +187,14 @@ A researcher searches an archive for candidate legal records for a source-group 
 - **SC-001**: A researcher can take a public-domain ARK from candidate to preserved object store through the full pipeline (inventory → verify → promote → acquire) with the operator supplying the ARK only once (at inventory).
 - **SC-002**: The PB-P004 Marquis de Rays legal corpus has its identified original court records acquired to the object store as the v1 validation run, each with preserved provenance and raw metadata.
 - **SC-003**: The `inventory` / `verify-member` / `promote` commands operate unchanged on a **second, different** source-group (proving reusability, not PB-P004 special-casing).
-- **SC-004**: 100% of acquired members are public-domain and `approved-for-acquisition`; no member is acquired without passing technical verification and research approval.
+- **SC-004**: 100% of acquired members are public-domain and `approved-for-acquisition`; no member reaches `approved-for-acquisition` without promote's re-run verification passing (enforced at the promote gate, FR-010a), and each carries a recorded verification verdict.
 - **SC-005**: Every command fails loud with an informative message on its defined error conditions (unresolved group, dead ARK, non-public-domain rights, cross-domain status, unavailable discovery mechanism) — verified with negative-path fixtures.
 - **SC-006**: For every inventoried member, the raw repository response is recoverable from an immutable snapshot after a later re-inventory (the original is never overwritten).
 
 ## Assumptions
 
+- **Verification durability** (spec-review issue 2, operator decision 2026-07-10): **rerun + record** — `promote` re-runs the deterministic checks itself and records the verdict as provenance (FR-010a/FR-010b). `verify-member` remains a standalone inspection command; the acquire-safety invariant is enforced at the promote gate, not from prior console output.
+- **RepositoryRecord selection** (spec-review issue 3): commands select a copy by **`--archive <sourceArchive>`** (the shipped `(sourceId, sourceArchive)` key), inferring the sole record when only one exists and failing loud on ambiguity (FR-009a) — no new RepositoryRecord id is introduced.
 - **Raw-metadata storage model** (approval clarification 3): the recommended **separate immutable acquisition snapshot** referenced by the RepositoryRecord is adopted as the default. Whether this is recorded as an explicit amendment to the `004-canonical-source-metadata` data model is an open item for the planning phase.
 - **Metadata-driven fetcher resolution** (`fetch-source <id> --repository`) is a **stated target, out of v1 scope** — it is new fetch code. v1 has the acquire step resolve the ARK from the RepositoryRecord internally and pass it to the unchanged fetcher.
 - **Discovery mechanism** is resolved by the gated spike; the lead candidate is the BnF general-catalogue SRU (`catalogue.bnf.fr`), distinct from the anti-bot-blocked Gallica web search. The spec does not promise a search helper until the spike proves its underlying service.
