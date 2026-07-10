@@ -8,9 +8,9 @@
  *
  * Deliberately single-theme (an archival light-box, per design). The apparatus
  * voices are system-font stacks (CSP-safe, no external hosts); the warm Didone
- * display face is embedded as a base64 woff2 data-URI in `styles/fonts.css`
- * (US4 / T026) -- no runtime font request, degrading to system Didot if it
- * fails. This layout carries only the shared tokens + reset; page identity is
+ * display face is a same-origin woff2 asset (`/fonts/...`, @font-face in
+ * `styles/fonts.css`, US4 / T026) -- no external font host (CSP `font-src
+ * 'self'`), degrading to system Didot if it fails. This layout carries only the shared tokens + reset; page identity is
  * styled by the components it wraps.
  */
 import '@site/styles/fonts.css';
