@@ -261,12 +261,67 @@ export function validateSingleChecksum(model: CanonicalModel): ValidationFinding
 }
 
 /**
- * STUB: This function will be implemented in T008.
- * Validates source groups per specs/005-source-groups/contracts/validation.md:
- * - `group-has-repository-records`: a Source with kind 'source-group' carrying >= 1 repository record
- * - `dangling-part-of`: a member whose partOf names a sourceId that does not exist
- * - `part-of-not-a-group`: a member whose partOf names an existing source whose kind !== 'source-group'
+ * `group-has-repository-records` findings: one per `Source` with `kind ===
+ * 'source-group'` that has >= 1 entry in `model.repositoryRecords` keyed to
+ * its `sourceId` (FR-001/data-model invariant 1). A source group never
+ * carries a `repositoryRecords` field of its own on the `Source` type --
+ * repository records are folded into `model.repositoryRecords` by
+ * `deriveModel`, keyed by `sourceId` -- so membership in that array is the
+ * only representation to check.
+ */
+function groupRepositoryRecordFindings(model: CanonicalModel): ValidationFinding[] {
+  const recordSourceIds = new Set(model.repositoryRecords.map((record) => record.sourceId));
+  return model.sources
+    .filter((source) => source.kind === 'source-group' && recordSourceIds.has(source.sourceId))
+    .map((group) => ({
+      kind: 'group-has-repository-records',
+      sourceId: group.sourceId,
+      detail: `source group "${group.sourceId}" must not hold repository records`,
+    }));
+}
+
+/**
+ * `dangling-part-of` / `part-of-not-a-group` findings: for every `Source`
+ * with `partOf` set, resolve it against `model.sources` (data-model
+ * invariant 5). A `partOf` naming no existing `sourceId` is `dangling-part-
+ * of`; a `partOf` naming an existing Source whose `kind !== 'source-group'`
+ * is `part-of-not-a-group`. A `partOf` resolving to an existing source-group
+ * is valid membership and yields no finding.
+ */
+function partOfFindings(model: CanonicalModel): ValidationFinding[] {
+  const sourcesById = new Map(model.sources.map((source) => [source.sourceId, source]));
+  const findings: ValidationFinding[] = [];
+  for (const member of model.sources) {
+    if (member.partOf === undefined) {
+      continue;
+    }
+    const target = sourcesById.get(member.partOf);
+    if (target === undefined) {
+      findings.push({
+        kind: 'dangling-part-of',
+        sourceId: member.sourceId,
+        detail: `member "${member.sourceId}" has part_of "${member.partOf}" but no such source exists`,
+      });
+      continue;
+    }
+    if (target.kind !== 'source-group') {
+      findings.push({
+        kind: 'part-of-not-a-group',
+        sourceId: member.sourceId,
+        detail: `member "${member.sourceId}" has part_of "${member.partOf}", which is not a source group (kind: ${target.kind})`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
+ * Validate source-group invariants (FR-001/FR-005/FR-006 --
+ * specs/005-source-groups/contracts/validation.md): a group must not hold
+ * repository records, and every member's `partOf` must resolve to an
+ * existing source-group. A zero-member group, or a group with members and no
+ * repository records, is valid and yields no finding (FR-005).
  */
 export function validateSourceGroups(model: CanonicalModel): ValidationFinding[] {
-  throw new Error('validateSourceGroups is not implemented yet (T008)');
+  return [...groupRepositoryRecordFindings(model), ...partOfFindings(model)];
 }

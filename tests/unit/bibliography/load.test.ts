@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { loadAllSources, loadSourceFile } from '@/bibliography/load';
+import { loadAllSources, loadSourceFile, sourceKind } from '@/bibliography/load';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 
 const VALID_YAML = `
@@ -454,5 +454,35 @@ titles:
 `,
     );
     expect(() => loadSourceFile(filePath)).toThrow(/must be "periodical", "monograph", or "source-group"/);
+  });
+});
+
+describe('sourceKind (T005)', () => {
+  it('returns "source-group" for a source-group fixture', () => {
+    writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+case: port-breton
+titles:
+  - text: "French trial and legal proceedings relating to the Marquis de Rays"
+    role: canonical
+`,
+    );
+
+    expect(sourceKind('PB-P004', dir)).toBe('source-group');
+  });
+
+  it('returns the kind of an ordinary source', () => {
+    writeSource('PB-P001.yml', VALID_YAML);
+
+    expect(sourceKind('PB-P001', dir)).toBe('periodical');
+  });
+
+  it('returns undefined for an unknown sourceId', () => {
+    writeSource('PB-P001.yml', VALID_YAML);
+
+    expect(sourceKind('PB-NOPE', dir)).toBeUndefined();
   });
 });

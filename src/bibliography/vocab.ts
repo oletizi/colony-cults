@@ -8,11 +8,14 @@
 
 /** Acquisition status of a `RepositoryRecord`. */
 export const STATUS_VALUES = [
+  'discovered',
+  'approved-for-acquisition',
   'wanted',
   'to-collect',
   'collecting',
   'collected',
   'archived',
+  'excluded',
 ] as const;
 export type Status = (typeof STATUS_VALUES)[number];
 

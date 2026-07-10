@@ -5,3 +5,6 @@
 {"id":"T007","tierLabel":"fast","model":"haiku","commitRange":"RED","reviewClean":true,"note":"RED validate-checks tests (5); added validateSourceGroups stub + 3 finding kinds (replaced by T008)"}
 {"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"RED","reviewClean":true,"note":"RED vocab tests (3): discovered/approved-for-acquisition/excluded not yet in STATUS_VALUES"}
 {"id":"T012","tierLabel":"fast","model":"haiku","commitRange":"RED","reviewClean":true,"note":"RED migrate test (3); added migrateSourceToGroup stub (replaced by T013)"}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"sourceKind(id,dir) lookup helper over loadAllSources + test; tsc clean"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"validateSourceGroups impl (group-has-repository-records via derived model.repositoryRecords; dangling-part-of; part-of-not-a-group); T007 green 5/5"}
+{"id":"T011","tierLabel":"fast","model":"haiku","commitRange":"pending","reviewClean":true,"note":"STATUS_VALUES += discovered/approved-for-acquisition (ahead of wanted), excluded (terminal); T010 green"}

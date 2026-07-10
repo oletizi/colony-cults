@@ -191,3 +191,15 @@ export function loadAllSources(dir: string): LoadedSource[] {
     .sort();
   return names.map((name) => loadSourceFile(path.join(dir, name)));
 }
+
+/**
+ * Resolve a single source's canonical `kind` from the SSOT (`dir` is the
+ * `bibliography/sources` directory, same convention as {@link loadAllSources}).
+ * Returns `undefined` when no source with `sourceId` exists -- that is a
+ * lookup miss, not missing data to throw on. Callers that need "is this a
+ * source-group" (e.g. the fetch-source guardrail) key on the returned kind
+ * rather than on `sourceId` naming (contracts/fetch-guardrail.md R-001/FR-003).
+ */
+export function sourceKind(sourceId: string, dir: string): Source['kind'] | undefined {
+  return loadAllSources(dir).find((loaded) => loaded.source.sourceId === sourceId)?.source.kind;
+}
