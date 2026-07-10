@@ -8,6 +8,7 @@ import {
   validateOrphanAssets,
   validateOrphanRecords,
   validateSingleChecksum,
+  validateSourceGroups,
   validateVocab,
 } from '@/bibliography/validate-checks';
 
@@ -143,6 +144,7 @@ export function validate(model: CanonicalModel, opts?: ViewDriftOptions): Valida
     ...validateMissingRequired(model),
     ...validateDuplicateCopies(model),
     ...validateSingleChecksum(model),
+    ...validateSourceGroups(model),
   ];
   if (opts !== undefined) {
     findings.push(...validateViewDrift(model, opts));

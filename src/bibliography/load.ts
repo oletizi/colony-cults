@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
@@ -199,7 +199,18 @@ export function loadAllSources(dir: string): LoadedSource[] {
  * lookup miss, not missing data to throw on. Callers that need "is this a
  * source-group" (e.g. the fetch-source guardrail) key on the returned kind
  * rather than on `sourceId` naming (contracts/fetch-guardrail.md R-001/FR-003).
+ *
+ * `dir` itself being absent is ALSO treated as a lookup miss (not a throw):
+ * callers such as the fetch-source guardrail may run against a `repoRoot`
+ * that has no `bibliography/sources` SSOT at all (e.g. unit-test fixtures
+ * unrelated to bibliography), and "no SSOT reachable" collapses to the same
+ * "kind unknown" answer as "SSOT present but this id isn't in it." A caller
+ * that genuinely needs to fail loud on a missing SSOT directory (e.g. `bib
+ * validate`) uses {@link loadAllSources} directly, which still throws.
  */
 export function sourceKind(sourceId: string, dir: string): Source['kind'] | undefined {
+  if (!existsSync(dir)) {
+    return undefined;
+  }
   return loadAllSources(dir).find((loaded) => loaded.source.sourceId === sourceId)?.source.kind;
 }

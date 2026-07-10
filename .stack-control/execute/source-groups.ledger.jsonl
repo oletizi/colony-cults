@@ -8,3 +8,5 @@
 {"id":"T005","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"sourceKind(id,dir) lookup helper over loadAllSources + test; tsc clean"}
 {"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"validateSourceGroups impl (group-has-repository-records via derived model.repositoryRecords; dangling-part-of; part-of-not-a-group); T007 green 5/5"}
 {"id":"T011","tierLabel":"fast","model":"haiku","commitRange":"pending","reviewClean":true,"note":"STATUS_VALUES += discovered/approved-for-acquisition (ahead of wanted), excluded (terminal); T010 green"}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"fetch-source guardrail refuses source-group via sourceKind before sourceLayout; T004 green 3/3; sourceKind missing-dir -> undefined (restores 8 fetch-checkpoint tests)"}
+{"id":"T009","tierLabel":"fast","model":"haiku","commitRange":"pending","reviewClean":true,"note":"wired validateSourceGroups into validate() aggregator + 2 tests"}
