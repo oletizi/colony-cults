@@ -29,6 +29,10 @@ interface Props {
   pageCount: number;
   prevHref: string | null;
   nextHref: string | null;
+  /** Link to the source overview (`/sources/{sourceId}/`). */
+  sourceHref: string;
+  /** Link to this issue's first page -- "jump to issue start"; null if unknown. */
+  issueFirstPageHref: string | null;
 }
 const {
   sourceId,
@@ -40,6 +44,8 @@ const {
   pageCount,
   prevHref,
   nextHref,
+  sourceHref,
+  issueFirstPageHref,
 } = Astro.props;
 
 const pageLabel = `p.${positionInIssue}`;
@@ -58,9 +64,13 @@ const shaShort = prov.sha256.slice(0, 12);
   <div class="reading__frame">
     <div class="reading__chrome">
       <span class="reading__crumb">
-        <b>{sourceId}</b>
+        <a class="reading__crumb-link" href={sourceHref}><b>{sourceId}</b></a>
         <span class="reading__sep">›</span>
-        {issueDate}
+        {issueFirstPageHref ? (
+          <a class="reading__crumb-link" href={issueFirstPageHref}>{issueDate}</a>
+        ) : (
+          issueDate
+        )}
         <span class="reading__sep">›</span>
         <b>{pageLabel}</b>
       </span>
@@ -172,6 +182,21 @@ const shaShort = prov.sha256.slice(0, 12);
   .reading__crumb b {
     color: var(--ink);
     font-weight: 600;
+  }
+
+  .reading__crumb-link {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+
+  .reading__crumb-link:hover {
+    color: var(--oxide);
+    border-bottom-color: var(--oxide);
+  }
+
+  .reading__crumb-link:hover b {
+    color: var(--oxide);
   }
 
   .reading__sep {

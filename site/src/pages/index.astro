@@ -1,0 +1,251 @@
+---
+/**
+ * T019a -- the corpus LANDING (`/`). The dossier's cover sheet: a considered
+ * archival title page, not a bare list. Loads the corpus at build time and
+ * presents each source as a catalogue entry -- the source's title in the warm
+ * Didone voice, its apparatus (kind, issue count, id, ark, rights) in the cool
+ * monospace voice, echoing the reading view's provenance rail.
+ *
+ * Each entry links into the source overview (`/sources/{sourceId}/`). Counts
+ * are the real loaded corpus -- nothing is fabricated; if a source resolved to
+ * zero issues that reads as "0 issues", never a placeholder.
+ */
+import { loadCorpus } from '@/browser/load/corpus';
+import { resolveConfig } from '@/browser/config';
+import BaseLayout from '@site/layouts/BaseLayout.astro';
+
+const sourceHref = (sourceId: string): string => `/sources/${sourceId}/`;
+
+const { corpus } = loadCorpus(resolveConfig());
+
+const entries = corpus.sources.map((source) => {
+  const years = source.issues.map((i) => i.date.slice(0, 4));
+  const firstYear = years[0];
+  const lastYear = years[years.length - 1];
+  const yearRange =
+    firstYear === undefined ? '' : firstYear === lastYear ? firstYear : `${firstYear}–${lastYear}`;
+  return {
+    sourceId: source.sourceId,
+    title: source.title,
+    kindLabel: source.kind.charAt(0).toUpperCase() + source.kind.slice(1),
+    ark: source.ark,
+    rights: source.rights,
+    issueCount: source.issues.length,
+    yearRange,
+    href: sourceHref(source.sourceId),
+  };
+});
+
+const sourceNoun = entries.length === 1 ? 'source' : 'sources';
+---
+
+<BaseLayout
+  title="Corpus browser — a colonial-propaganda periodical, held as evidence"
+  description="An archival reading surface: each page shown as scan, French, and English at once."
+>
+  <main class="cover">
+    <header class="cover__head">
+      <p class="cover__eyebrow">Corpus<span class="cover__sep">·</span>archival dossier</p>
+      <h1 class="cover__title">A periodical, held as&nbsp;evidence.</h1>
+      <div class="cover__stamp" aria-hidden="true"></div>
+      <p class="cover__abstract">
+        The propaganda organ of a 19th-century colonization scheme, kept as a
+        study surface rather than reprinted as truth. Each page is held three
+        ways at once — the scanned leaf, its French words, and an English
+        reading — so the source can be examined without being believed.
+      </p>
+    </header>
+
+    <section class="holdings" aria-label="Holdings">
+      <p class="holdings__label">Holdings<span class="cover__sep">·</span>{entries.length} {sourceNoun}</p>
+      <ul class="holdings__list">
+        {entries.map((entry) => (
+          <li>
+            <a class="entry" href={entry.href}>
+              <div class="entry__head">
+                <h2 class="entry__title">{entry.title}</h2>
+                <span class="entry__open">Open<span class="entry__chev" aria-hidden="true">›</span></span>
+              </div>
+              <p class="entry__apparatus">
+                {entry.kindLabel}
+                <span class="cover__sep">·</span>
+                {entry.issueCount} {entry.issueCount === 1 ? 'issue' : 'issues'} catalogued
+                {entry.yearRange ? <><span class="cover__sep">·</span>{entry.yearRange}</> : null}
+              </p>
+              <p class="entry__rail">
+                {entry.sourceId}<span class="cover__sep">·</span>{entry.ark}<span class="cover__sep"
+                >·</span><span class="entry__rights">{entry.rights}</span>
+              </p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <footer class="colophon">
+      Corpus browser<span class="cover__sep">·</span>static, built from the archive<span
+        class="cover__sep">·</span>public-domain sources
+    </footer>
+  </main>
+</BaseLayout>
+
+<style>
+  .cover {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 64px 28px 96px;
+  }
+
+  .cover__head {
+    margin-bottom: 52px;
+  }
+
+  .cover__eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--oxide);
+    margin: 0 0 20px;
+  }
+
+  .cover__sep {
+    color: var(--rule);
+    margin: 0 7px;
+  }
+
+  .cover__title {
+    font-family: var(--didone);
+    font-weight: 400;
+    font-size: clamp(40px, 9vw, 92px);
+    line-height: 0.98;
+    letter-spacing: -0.015em;
+    margin: 0;
+    max-width: 12ch;
+  }
+
+  /* The catalogue stamp: the single oxide hairline under the title, the
+     archive's mark before the propaganda's own voice begins. */
+  .cover__stamp {
+    width: 132px;
+    height: 2px;
+    background: var(--oxide);
+    margin: 28px 0 24px;
+  }
+
+  .cover__abstract {
+    font-family: var(--grote);
+    font-size: clamp(15px, 2.2vw, 18px);
+    line-height: 1.62;
+    color: var(--slate);
+    max-width: 54ch;
+    margin: 0;
+  }
+
+  .holdings__label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .holdings__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+  }
+
+  .entry {
+    display: block;
+    padding: 24px 26px 22px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    box-shadow: 0 1px 0 var(--rule), 0 18px 38px -32px rgba(23, 21, 15, 0.4);
+    text-decoration: none;
+    color: var(--ink);
+    transition: border-color 120ms ease;
+  }
+
+  .entry:hover {
+    border-color: var(--oxide);
+  }
+
+  .entry__head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .entry__title {
+    font-family: var(--didone);
+    font-weight: 400;
+    font-size: clamp(24px, 4vw, 34px);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  .entry__open {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--slate);
+    white-space: nowrap;
+  }
+
+  .entry__chev {
+    margin-left: 7px;
+    color: var(--rule);
+    font-size: 13px;
+  }
+
+  .entry:hover .entry__open {
+    color: var(--oxide);
+  }
+
+  .entry:hover .entry__chev {
+    color: var(--oxide);
+  }
+
+  .entry__apparatus {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--faint);
+    margin: 0 0 12px;
+  }
+
+  .entry__rail {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--faint);
+    margin: 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule);
+    overflow-wrap: anywhere;
+  }
+
+  .entry__rights {
+    color: var(--oxide);
+  }
+
+  .colophon {
+    margin-top: 56px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: var(--faint);
+  }
+</style>

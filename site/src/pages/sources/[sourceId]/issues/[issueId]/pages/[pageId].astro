@@ -21,12 +21,20 @@ export const getStaticPaths = (() => {
   // module-scope helpers are not in scope here.
   const pageHref = (sourceId: string, issueId: string, pageId: string): string =>
     `/sources/${sourceId}/issues/${issueId}/pages/${pageId}/`;
+  const sourceHref = (sourceId: string): string => `/sources/${sourceId}/`;
 
   const { corpus } = loadCorpus(resolveConfig());
 
   return corpus.sources.flatMap((source) =>
-    source.issues.flatMap((issue) =>
-      issue.pages.map((page, index) => {
+    source.issues.flatMap((issue) => {
+      const firstPage = issue.pages[0];
+      // A loaded issue always carries pages; guard so the breadcrumb's
+      // "jump to issue start" link never points at a page that does not exist.
+      const issueFirstPageHref =
+        firstPage !== undefined
+          ? pageHref(source.sourceId, issue.issueId, firstPage.pageId)
+          : null;
+      return issue.pages.map((page, index) => {
         const prev = index > 0 ? issue.pages[index - 1] : null;
         const next = index < issue.pages.length - 1 ? issue.pages[index + 1] : null;
         return {
@@ -45,10 +53,12 @@ export const getStaticPaths = (() => {
             pageCount: issue.pageCount,
             prevHref: prev ? pageHref(source.sourceId, issue.issueId, prev.pageId) : null,
             nextHref: next ? pageHref(source.sourceId, issue.issueId, next.pageId) : null,
+            sourceHref: sourceHref(source.sourceId),
+            issueFirstPageHref,
           },
         };
-      })
-    )
+      });
+    })
   );
 }) satisfies GetStaticPaths;
 
@@ -62,6 +72,8 @@ interface Props {
   pageCount: number;
   prevHref: string | null;
   nextHref: string | null;
+  sourceHref: string;
+  issueFirstPageHref: string | null;
 }
 
 const props = Astro.props;
@@ -80,5 +92,7 @@ const docTitle = `${sourceTitle} · ${issueDate} · p.${positionInIssue}`;
     pageCount={props.pageCount}
     prevHref={props.prevHref}
     nextHref={props.nextHref}
+    sourceHref={props.sourceHref}
+    issueFirstPageHref={props.issueFirstPageHref}
   />
 </BaseLayout>
