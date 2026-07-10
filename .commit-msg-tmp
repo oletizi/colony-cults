@@ -1,6 +1,0 @@
-impl(corpus-browser): T001-T003 setup — astro/openseadragon/pagefind deps + site/ scaffold
-
-Added astro, openseadragon, and pagefind as dependencies. Scaffolded site/ directory with astro.config.mjs, tsconfig.json (with @/ and @site/* path mappings), and directory structure (src/pages/, src/components/, src/islands/). Added npm scripts for browser testing and site building.
-
-Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01KMLCW3B5hWmYGRKQSa7n8u
