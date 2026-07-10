@@ -10,3 +10,5 @@
 {"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"c1d1e4e","reviewClean":true,"note":"provider iface + source-iiif; 4 tests green"}
 {"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"68c6db7","reviewClean":true,"note":"translation test (test-first)"}
 {"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"68c6db7","reviewClean":true,"note":"translation+provenance impl; 9 tests green"}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"8c25dbd","reviewClean":true,"note":"integration test; fixture provenance-mutation realigned to sha256"}
+{"id":"T012","tierLabel":"powerful","model":"opus","commitRange":"8c25dbd","reviewClean":true,"note":"corpus core (corpus/issues/pages); scans collected issues; 26/26 suite. FLAG: full-corpus load throws on incomplete issue dirs — backlog"}
