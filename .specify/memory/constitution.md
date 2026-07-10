@@ -3,6 +3,15 @@
 
 ## Core Principles
 
+### I. Design Through the Design Skill (NON-NEGOTIABLE)
+All UX/UI work MUST go through `/frontend-design:frontend-design`. NO EXCEPTIONS. Never
+off-road and implement design work without it. Any task that creates or reshapes
+user-facing UI — layout, components, visual design, typography, styling — begins by
+invoking the frontend-design skill BEFORE any markup or CSS is written. This is a hard
+commandment and overrides any inclination to "just quickly" build UI directly.
+
+<!-- The principles below remain the unfilled Spec Kit template. Ratify via /speckit-constitution. -->
+
 ### [PRINCIPLE_1_NAME]
 <!-- Example: I. Library-First -->
 [PRINCIPLE_1_DESCRIPTION]
