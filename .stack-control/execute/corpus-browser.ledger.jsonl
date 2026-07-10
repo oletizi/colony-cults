@@ -1,0 +1,6 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"9bf38dc..bae5e21","reviewClean":true,"note":"setup bundle T001-T003"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"9bf38dc..bae5e21","reviewClean":true,"note":"setup bundle T001-T003"}
+{"id":"T003","tierLabel":"fast","model":"haiku","commitRange":"9bf38dc..bae5e21","reviewClean":true,"note":"setup bundle T001-T003"}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"298f1f8","reviewClean":true,"note":"view-model types"}
+{"id":"T005","tierLabel":"fast","model":"haiku","commitRange":"455af06","reviewClean":true,"note":"env-driven LoadConfig"}
+{"id":"T006","tierLabel":"fast","model":"haiku","commitRange":"c1f2bc5","reviewClean":true,"note":"integration fixtures; carried note: align drop-provenance-field mutation to loader-validated field in T012/T009"}
