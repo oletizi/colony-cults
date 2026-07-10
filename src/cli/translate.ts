@@ -1,6 +1,8 @@
+import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot } from '@/archive/location';
+import { sourceKind } from '@/bibliography/load';
 import { loadEngineConfig, resolveEngine, resolveModel } from '@/engine/config';
 import { createEngine } from '@/engine/factory';
 import type { TranslationEngine } from '@/engine/types';
@@ -155,9 +157,12 @@ export async function runTranslate(
       `translate: ${result.ark} refused -- ${result.message ?? 'rights gate failed'}`,
     );
   }
-  if (result.outcome === 'failed') {
+  // A single-issue command must NOT report success on a partial result: a
+  // `failed` or `incomplete` outcome exits non-zero (the resumable per-page
+  // artifacts stay on disk, but the requested translation did not complete).
+  if (result.outcome === 'failed' || result.outcome === 'incomplete') {
     throw new Error(
-      `translate: ${result.ark} failed -- ${result.message ?? '(no detail)'}`,
+      `translate: ${result.ark} ${result.outcome} -- ${result.message ?? '(no detail)'}`,
     );
   }
 }
@@ -194,6 +199,19 @@ export async function runTranslateSource(
   if (sourceId === undefined) {
     throw new Error('translate-source: missing required argument <sourceId>');
   }
+
+  // Guardrail: a Source Group is not an archival object -- it has no fetched
+  // issues to translate. Key on the SSOT canonical `kind` BEFORE `translateSource`
+  // consults `sourceLayout` (which would otherwise surface an opaque layout
+  // error), mirroring `fetch-source`'s guard.
+  const sourcesDir = path.join(process.cwd(), 'bibliography', 'sources');
+  if (sourceKind(sourceId, sourcesDir) === 'source-group') {
+    throw new Error(
+      `translate-source: "${sourceId}" is a Source Group — it has no archival object to translate. ` +
+        `Translate its concrete member Sources instead.`,
+    );
+  }
+
   const dryRun = args.flags.dryRun;
 
   const ctx: TranslateSourceCtx = {

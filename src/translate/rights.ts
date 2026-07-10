@@ -29,8 +29,11 @@ export interface IssueRights {
  * external storage and REMOVES the local `.jpg` files while KEEPING the
  * `f###.yml` companions in git. Reading rights must therefore not depend on a
  * local image being present -- only on its persistent provenance companion.
+ *
+ * Exported so `translateIssue`'s base-provenance path reuses the SAME scan:
+ * both consumers of "the first page" must stay object-store-robust together.
  */
-async function firstPageProvenanceYaml(issueDir: string): Promise<string> {
+export async function firstPageProvenanceYaml(issueDir: string): Promise<string> {
   const entries = await readdir(issueDir);
   const companions = entries
     .filter((name) => /^f\d{3}\.yml$/.test(name))

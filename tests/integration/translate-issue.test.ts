@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync, readdirSync, rmSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { translateIssue } from '@/translate/issue';
@@ -162,5 +162,29 @@ describe('translateIssue (T016/T017/T019)', () => {
     expect(existsSync(blankEn)).toBe(true);
     expect((await readFile(blankFr, 'utf-8')).trim()).toBe('');
     expect((await readFile(blankEn, 'utf-8')).trim()).toBe('');
+  });
+
+  it('translates when the object-store migration removed local images (f###.yml only, no f###.jpg)', async () => {
+    // The migration moves page images to external storage and removes the
+    // local .jpg, keeping the f###.yml companions. BOTH the rights gate and the
+    // base-provenance path must read the persistent companion, not the image.
+    for (const name of readdirSync(fetched.issueDir)) {
+      if (/^f\d{3}\.jpg$/.test(name)) {
+        rmSync(path.join(fetched.issueDir, name));
+      }
+    }
+
+    const { ctx, calls } = buildCtx(fetched);
+    const result = await translateIssue(fetched.issueArk, ctx);
+
+    expect(result.outcome).toBe('translated');
+    expect(result.pagesDone).toBe(3);
+    expect(calls.length).toBeGreaterThan(0);
+    // Provenance still carries the citation read from the f###.yml companion.
+    const enYml = await readFile(
+      path.join(fetched.issueDir, 'issue.en.txt.yml'),
+      'utf-8',
+    );
+    expect(enYml).toMatch(/^rights_status: "public-domain"$/m);
   });
 });

@@ -1,9 +1,9 @@
 import { existsSync } from 'node:fs';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { findIssueDir } from '@/archive/location';
 import { readProvenance, type ProvenanceFields } from '@/archive/provenance';
-import { companionYamlPath, isAssetRecorded, storeAsset } from '@/archive/store';
+import { isAssetRecorded, storeAsset } from '@/archive/store';
 import type { TranslationEngine } from '@/engine/types';
 import {
   buildTranslationProvenance,
@@ -13,7 +13,7 @@ import {
 } from '@/translate/artifacts';
 import { cleanupPage } from '@/translate/cleanup';
 import { assemble, splitPages } from '@/translate/pages';
-import { readIssueRights } from '@/translate/rights';
+import { firstPageProvenanceYaml, readIssueRights } from '@/translate/rights';
 import { translatePage } from '@/translate/translate-page';
 
 /** Per-issue outcome (data-model.md TranslateRunReport). */
@@ -88,26 +88,14 @@ function encode(text: string): Uint8Array {
 
 /**
  * Representative source-page provenance used as the base for every derived
- * translation artifact's `.yml` (citation, rights, ids). Mirrors how
- * `readIssueRights`/`ocr/run` pick "the first page": the lowest-numbered
- * `f###.jpg`, then its companion via {@link companionYamlPath}. Fails loud with
- * no fallback when the images or the companion are absent.
+ * translation artifact's `.yml` (citation, rights, ids). Reuses
+ * {@link firstPageProvenanceYaml} -- the SAME first-page-companion scan the
+ * rights gate uses -- so both stay object-store-robust (the migration removes
+ * the local `f###.jpg` while keeping the `f###.yml` companion). Fails loud with
+ * no fallback when no page provenance companion is present.
  */
 async function firstPageProvenance(issueDir: string): Promise<ProvenanceFields> {
-  const entries = await readdir(issueDir);
-  const pages = entries.filter((name) => /^f\d{3}\.jpg$/.test(name)).sort();
-  if (pages.length === 0) {
-    throw new Error(
-      `translateIssue: no page images (f###.jpg) found in ${issueDir} -- fetch its images first`,
-    );
-  }
-  const yamlPath = companionYamlPath(path.join(issueDir, pages[0]));
-  if (!existsSync(yamlPath)) {
-    throw new Error(
-      `translateIssue: no page provenance at "${yamlPath}" -- fetch its images first`,
-    );
-  }
-  return readProvenance(yamlPath);
+  return readProvenance(await firstPageProvenanceYaml(issueDir));
 }
 
 /**

@@ -1,13 +1,19 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import type { ParsedArgs } from '@/cli/parse';
 import type { TranslateCliDeps } from '@/cli/translate';
-import { buildTranslateCliDeps, runTranslateSource } from '@/cli/translate';
+import {
+  buildTranslateCliDeps,
+  runTranslate,
+  runTranslateSource,
+} from '@/cli/translate';
 import type { TranslationEngine } from '@/engine/types';
 import { CONSECUTIVE_FAILURE_ABORT } from '@/translate/source';
 import {
+  buildFetchedIssue,
   buildFetchedSource,
   buildSourceCtx,
   fakeClaude,
+  FIXED_DATE,
   type FetchedSource,
 } from './support/translate-archive';
 
@@ -147,5 +153,79 @@ describe('buildTranslateCliDeps (Task 7)', () => {
     const deps = await buildTranslateCliDeps(args);
 
     expect(deps.engine.name).toBe('codex-cli');
+  });
+});
+
+describe('CLI review fixes', () => {
+  const allFlags = {
+    dryRun: false,
+    force: false,
+    verify: false,
+    ocr: false,
+    objectStore: false,
+    reconcileRemote: false,
+    checkpoint: false,
+  };
+
+  it('runTranslateSource refuses a Source Group with an actionable redirect', async () => {
+    // PB-P004 is a registered Source Group in the bibliography SSOT; it has no
+    // archival object to translate. The guard fires before any archive access.
+    const deps: TranslateCliDeps = {
+      engine: { name: 'fake', run: async () => '' },
+      model: 'gpt-5.5',
+      archiveRoot: '/tmp/unused-by-the-group-guard',
+      clock: () => new Date(FIXED_DATE),
+      log: () => undefined,
+      preflight: async () => undefined,
+      delay: async () => undefined,
+    };
+    const args: ParsedArgs = {
+      command: 'translate-source',
+      positional: ['PB-P004'],
+      flags: allFlags,
+      options: {},
+    };
+
+    await expect(runTranslateSource(args, deps)).rejects.toThrow(
+      /Source Group/i,
+    );
+  });
+
+  it('runTranslate exits non-zero (throws) on an incomplete single issue', async () => {
+    const fetched = await buildFetchedIssue();
+    try {
+      // Echo the source (non-degenerate) for pages 1's two passes, then fail
+      // page 2's cleanup -> translateIssue returns `incomplete` (1/3 pages).
+      let n = 0;
+      const engine: TranslationEngine = {
+        name: 'fake',
+        run: async (_prompt, sourceText) => {
+          n += 1;
+          if (n >= 3) {
+            throw new Error('engine boom on page 2');
+          }
+          return sourceText;
+        },
+      };
+      const deps: TranslateCliDeps = {
+        engine,
+        model: 'test-model',
+        archiveRoot: fetched.archiveRoot,
+        clock: () => new Date(FIXED_DATE),
+        log: () => undefined,
+        preflight: async () => undefined,
+        delay: async () => undefined,
+      };
+      const args: ParsedArgs = {
+        command: 'translate',
+        positional: [fetched.issueArk],
+        flags: allFlags,
+        options: { sourceId: fetched.sourceId },
+      };
+
+      await expect(runTranslate(args, deps)).rejects.toThrow(/incomplete/i);
+    } finally {
+      fetched.cleanup();
+    }
   });
 });
