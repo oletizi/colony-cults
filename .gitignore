@@ -19,3 +19,12 @@ build/
 
 # audit-barrage run dirs are prunable runtime artifacts (stackctl audit-runs)
 .stack-control/audit-runs/
+
+# corpus-browser: transient preview/verification debug artifacts (screenshots, playwright logs)
+.playwright-mcp/
+/landing.png
+/source-index.png
+/search.png
+/search-results.png
+/reading-view-*.png
+/final-*.png

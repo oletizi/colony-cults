@@ -1,0 +1,112 @@
+---
+/**
+ * Within-issue page navigation -- prev / next arrows flanking a "page N / M"
+ * indicator. Pure links (no JS): each arrow is an <a> when a neighbour exists
+ * and an inert, aria-hidden glyph when it does not, so the control never lies
+ * about where you can go. Rendered twice per reading view: once in the sticky
+ * top chrome (so forward/back needs no scroll) and once in the footer beside
+ * the provenance line. The `compact` variant drops to icon-and-count for the
+ * cramped top bar.
+ */
+interface Props {
+  positionInIssue: number;
+  pageCount: number;
+  prevHref: string | null;
+  nextHref: string | null;
+  /** Tighter spacing + shorter label for the sticky top bar. */
+  compact?: boolean;
+}
+const { positionInIssue, pageCount, prevHref, nextHref, compact = false } = Astro.props;
+---
+
+<div class:list={['pagenav', { 'pagenav--compact': compact }]}>
+  {prevHref ? (
+    <a class="pagenav__arrow" href={prevHref} rel="prev" aria-label="Page précédente">‹</a>
+  ) : (
+    <span class="pagenav__arrow pagenav__arrow--off" aria-hidden="true">‹</span>
+  )}
+  <span class="pagenav__count">
+    <span class="pagenav__word">page</span>
+    <b>{positionInIssue}</b>
+    <span class="pagenav__sep">/</span>
+    {pageCount}
+  </span>
+  {nextHref ? (
+    <a class="pagenav__arrow" href={nextHref} rel="next" aria-label="Page suivante">›</a>
+  ) : (
+    <span class="pagenav__arrow pagenav__arrow--off" aria-hidden="true">›</span>
+  )}
+</div>
+
+<style>
+  .pagenav {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 0.05em;
+  }
+
+  .pagenav__arrow {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    background: #fff;
+    color: var(--slate);
+    font-size: 15px;
+    line-height: 1;
+    text-decoration: none;
+  }
+
+  .pagenav__arrow:hover {
+    border-color: var(--oxide);
+    color: var(--oxide);
+  }
+
+  .pagenav__arrow--off {
+    color: var(--rule);
+    background: transparent;
+    cursor: default;
+  }
+
+  .pagenav__count {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .pagenav__count b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .pagenav__word {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 10px;
+  }
+
+  .pagenav__sep {
+    color: var(--rule);
+  }
+
+  .pagenav--compact {
+    gap: 7px;
+  }
+
+  .pagenav--compact .pagenav__arrow {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+  }
+
+  .pagenav--compact .pagenav__word {
+    display: none;
+  }
+</style>

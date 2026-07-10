@@ -46,6 +46,16 @@ Move the archive's binary image masters from git to Backblaze B2 (S3-compatible;
 - design: docs/superpowers/specs/2026-07-08-canonical-source-metadata-design.md
 Two-level (really multi-level) canonical source metadata model: Source (intellectual work; stable internal ID PB-###; work-level identifiers ISBN/ISSN/OCLC; titles as data) separate from Repository Record (one source-archive's copy: Gallica/SLQ/IA/HathiTrust; copy-level identifiers ARK/IIIF-manifest/scan-DOI; provenance). Sits ABOVE the per-asset provenance the archive-object-store feature already emits; for serials adds Repository->Issue->Asset. Consolidates the 5 existing overlapping metadata representations into one SSOT. From a third-party design brief, with refinements. Depends-on archive-object-store (edge to add once that merges to main). Scope: sources only.
 
+## impl:feature/corpus-browser
+- status: planned
+- closes: TASK-9, TASK-10, TASK-11
+- analyze-clean: yes
+- spec: specs/005-corpus-browser
+- design-approved: yes
+- design: docs/superpowers/specs/2026-07-09-corpus-browser-design.md
+- depends-on: impl:feature/archive-object-store
+Static Astro website to browse the corpus (v1: PB-P001 La Nouvelle France): source->issue->page reading view with a deep-zoom page-image viewer beside French OCR + English translation (chosen layout: Facsimile & parallel text). Configurable image-source provider (source-archive IIIF e.g. Gallica, or our B2/CDN) via a flag. Client-side search (Pagefind) over OCR+translation. Public-reader, internal-first (build reads the private archive locally; public deploy is a deliberate export of PD text/images). Visual identity: cool archival 'Prospectus/Dossier' direction, provenance-rail signature. Also depends on source-translation output (in-flight).
+
 ## impl:feature/source-groups
 - status: closed
 - validated: yes

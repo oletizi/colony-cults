@@ -7,7 +7,11 @@
     "gallica": "src/index.ts"
   },
   "scripts": {
+    "browser:test": "vitest run tests/unit/browser tests/integration/browser",
     "gallica": "tsx src/index.ts",
+    "site:build": "astro build --root site && pagefind --site site/dist",
+    "site:export-public": "tsx scripts/export-public.ts",
+    "site:preview": "astro preview --root site",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -23,10 +27,13 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1083.0",
     "fast-xml-parser": "^5.9.3",
+    "openseadragon": "^3.1.0",
     "yaml": "^2.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
+    "astro": "^4.14.0",
+    "pagefind": "^1.1.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vitest": "^3.2.7"
