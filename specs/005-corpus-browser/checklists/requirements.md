@@ -32,5 +32,5 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
-- **Open questions**: The design's seven open questions are captured in the spec's *Open Questions* section (OQ-1..OQ-7), each with a documented working assumption in *Assumptions*, rather than as inline `[NEEDS CLARIFICATION]` markers — so the spec is complete and testable now. They are non-blocking and are the agenda for `/speckit-clarify`, the next step.
+- **Open questions**: `/speckit-clarify` (Session 2026-07-09) resolved OQ-1, OQ-2, OQ-3, OQ-5 — see the spec's *Clarifications* section. Notably OQ-1 and OQ-3 corrected stale design premises against the real archive (page-level translation exists; the corpus is public-domain / no credentials). OQ-4, OQ-6, OQ-7 are deferred as plan-level/later-scope with documented working assumptions; none block planning.
 - **Implementation-technology note**: The approved design record fixes the stack (static Astro, OpenSeadragon, Pagefind, configurable image provider). The spec deliberately keeps these out of the functional requirements (which stay user-facing/testable) and confines them to Assumptions/Dependencies and the linked design record, so the spec reads for stakeholders while the decided tech is not lost.

@@ -18,9 +18,18 @@
 
 The corpus — page-image masters (in the archive object store), OCR issue text, corrected-French and English translations, census data, and canonical source metadata — is not readable by a human without a purpose-built surface. This feature delivers a **static, build-time-generated website** that presents each source page as a **facsimile beside its parallel text** (French OCR + English translation), inside a cool archival frame whose signature is a monospace **provenance rail** — the archive's hand on the propaganda.
 
-The audience is **public-reader, internal-first**: the build reads the private archive locally to generate the site; publishing to a public host is a **deliberate, separate export** of public-domain text and images (a later decision, designed-for but not foreclosed here).
+The audience is **public-reader, internal-first**: the build reads the corpus from a local archive clone to generate the site. The corpus content is **public-domain** and requires no credentials; publishing to a public host is a **deliberate, separate export** (a later editorial/readiness decision, designed-for but not foreclosed here).
 
 > **UX/UI gate (project commandment — Constitution Principle I):** All user-facing design work for this feature — the reading view, navigation surfaces, search UI, and the "Prospectus/Dossier" visual identity — MUST be carried out through the `/frontend-design:frontend-design` skill. No off-road UI implementation. The reading-view mockup referenced above was itself produced under that skill and is the design reference.
+
+## Clarifications
+
+### Session 2026-07-09
+
+- Q: OQ-2 — Which text layers should the reading view surface beside the scan? → A: Raw French OCR + English translation as the shown layers, with corrected-French available (it exists per-page, so "as available" = present for PB-P001).
+- Q: OQ-1 — Translation granularity vs the design's "issue-level" claim → A: **Page-level parallel text.** Verified against the archive: each issue has `translation/pNNN.fr.txt` (corrected French) + `translation/pNNN.en.txt` (English) per page with provenance sidecars, and `issue.txt` OCR carries per-page form-feed breaks. The design record's "issue-level translation" was stale; the reading view presents true page-aligned FR/EN.
+- Q: OQ-5 — Search index granularity → A: Per-page index across both languages (French + English); results link to the page reading view.
+- Q: OQ-3 — Build access to private data / credentials → A: **No credentials required.** The corpus content is public-domain (`rights_status: public-domain`) and image handles are public (Gallica IIIF / public object-store+CDN); the build reads the corpus from a local archive clone. There are no build-time secrets.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -123,7 +132,7 @@ A maintainer produces a public deployment that contains only public-domain text 
 ### Edge Cases
 
 - **Missing/inconsistent corpus data** (no scan handle, no OCR, no translation, mismatched issue/page counts): the build MUST fail loud identifying the offending source/issue/page — never silently placeholder or skip (no fallbacks).
-- **Issue-level vs page-level translation**: the English translation is currently issue-level while OCR is page-level. The reading view must present translation coherently against page-level OCR (exact alignment strategy is an open question below).
+- **Page-count mismatch across layers**: an issue whose image count (`fNNN`), OCR form-feed segment count, and `translation/pNNN.*` count disagree MUST fail the build loud (which page in which issue) rather than silently mis-pairing text to a scan.
 - **Noisy OCR**: pages whose OCR is degraded ("Contraste insuffisant") must keep the scan authoritative and not present OCR as clean text.
 - **Strict CSP on the public host**: external font/asset hosts are blocked; the display face and any required assets must be embedded (e.g. inlined) rather than fetched from a CDN.
 - **A source with no archival identifier** under the source-identifier image provider, or **no CDN base** under the object-store provider: build fails loud (US5 AS4).
@@ -142,7 +151,7 @@ A maintainer produces a public deployment that contains only public-domain text 
 **Reading & navigation**
 
 - **FR-004**: The site MUST render **stable, deep-linkable routes** for each source, each issue, and each page.
-- **FR-005**: Each page reading view MUST present the page's **master scan in a deep-zoom viewer** (zoom + pan) as the leading element, with the page's **French OCR** and **English translation** presented alongside it (layout ① "Facsimile & parallel text").
+- **FR-005**: Each page reading view MUST present the page's **master scan in a deep-zoom viewer** (zoom + pan) as the leading element, with the page's **raw French OCR** and **English translation** presented **page-aligned** alongside it (layout ① "Facsimile & parallel text"). Per-page raw OCR is derived by splitting the issue OCR on its form-feed page breaks; the English text comes from the page-level `translation/pNNN.en.txt`. Per-page **corrected French** (`translation/pNNN.fr.txt`) is available and MAY be surfaced alongside/in place of the raw OCR.
 - **FR-006**: The reader MUST be able to **navigate forward and backward through pages within an issue**, and from a source to its issues to a page.
 - **FR-007**: The reading view MUST keep the **scan authoritative** — noisy/degraded OCR must be framed as such, not presented as clean truth.
 
@@ -150,7 +159,7 @@ A maintainer produces a public deployment that contains only public-domain text 
 
 - **FR-008**: The site MUST provide **client-side search** (no server) over the corpus's **OCR and translation text**, indexed at build time.
 - **FR-009**: Search results MUST **link to the reading view** of the page (or issue) containing the match.
-- **FR-010**: Search MUST cover **both language layers** (French and English) as configured (granularity — per-page vs per-issue — is an open question below).
+- **FR-010**: Search MUST cover **both language layers** (French and English) and MUST be indexed **per page**; each result MUST link to the containing page's reading view.
 
 **Image-source provider**
 
@@ -167,15 +176,14 @@ A maintainer produces a public deployment that contains only public-domain text 
 
 **Audience / deployment**
 
-- **FR-018**: The **internal build** MUST read the **private archive locally** to generate the site.
-- **FR-019**: A **public deployment** MUST be a **deliberate export** of public-domain text and images, distinct from the internal build, and MUST NOT be an incidental side effect of the internal build.
-- **FR-020**: Secrets/credentials required to read private data or object-store handles MUST be kept **out of version control** (mechanism is an open question below).
+- **FR-018**: The build MUST read the corpus from a **local archive clone**. The corpus content is **public-domain** and the build requires **no credentials or secrets** (image handles are public — Gallica IIIF and/or a public object-store+CDN).
+- **FR-019**: A **public deployment** MUST be a **deliberate export**, distinct from the internal build, and MUST NOT be an incidental side effect of the internal build. (Because the corpus is public-domain, the export boundary is an editorial/readiness decision, not a secrecy one.)
 
 ### Key Entities
 
 - **Source**: A corpus source (e.g. PB-P001, *La Nouvelle France*). Carries canonical metadata: source id, archival identifier (ARK), rights, and image-provider handles. Has many Issues.
-- **Issue**: One issue of a source (78 for PB-P001). Carries issue-level text (English translation is currently issue-level) and belongs to a Source. Has many Pages.
-- **Page**: A single page within an issue. Carries the master scan handle, page-level French OCR text, a page identifier, and a content hash (sha256). Belongs to an Issue.
+- **Issue**: One issue of a source (78 for PB-P001). Carries the issue OCR (`issue.txt`, form-feed-delimited by page) and belongs to a Source. Has many Pages. (Folio/view image files are numbered `fNNN`; logical pages are numbered `pNNN` — 1:1 for the observed issues but distinct concepts.)
+- **Page**: A single page within an issue. Carries the master scan handle (`fNNN`), the page's raw French OCR (a form-feed segment of the issue OCR), page-level **corrected French** (`translation/pNNN.fr.txt`) and **English translation** (`translation/pNNN.en.txt`), a page identifier, and a content hash (sha256) from its provenance sidecar. Belongs to an Issue.
 - **Image-source provider (config)**: Selects how page image URLs are built — source-identifier or object-store + CDN — plus that provider's required parameters (e.g. CDN base).
 - **Provenance record**: The identifying facts surfaced in the provenance rail (source id, ARK, date, rights, page, sha256), derived from canonical metadata.
 
@@ -192,22 +200,26 @@ A maintainer produces a public deployment that contains only public-domain text 
 - **SC-007**: The site renders its display typeface and assets under a strict content-security policy with no external font/asset host requests.
 - **SC-008**: A public deployment can be produced as a distinct deliberate action whose output contains only public-domain material, without altering the internal build.
 
-## Open Questions *(non-blocking — resolve in `/speckit-clarify`)*
+## Open Questions
 
-Carried verbatim from the approved design record; none are blockers to planning. Each has a documented working assumption (see Assumptions) so the spec is complete; clarify will confirm or change them.
+### Resolved in clarification (Session 2026-07-09)
 
-- **OQ-1 — Text↔image alignment**: Page-level OCR is extractable, but the English translation is currently **issue-level**. Align translation to pages approximately, or present translation issue-level beside per-page OCR? (Coordinate with the `source-translation` feature's output shape.)
-- **OQ-2 — Which text layers to surface**: Raw OCR + corrected French + English, or a curated subset (e.g. corrected-French primary with raw OCR on demand)?
-- **OQ-3 — Build access to private data**: How the generator reads the private archive (OCR/translations), object-store image handles, and config/credentials — keeping secrets out of git.
-- **OQ-4 — Public export pipeline**: What public-domain text/images get published and how (a deliberate export step vs building straight from the archive).
-- **OQ-5 — Search granularity**: Per-page vs per-issue index; covering French + English.
-- **OQ-6 — Object-store image tiling**: IIIF tiling vs full-image + client-side zoom for the object-store (CDN) provider; CDN in front of the object store.
-- **OQ-7 — Data-layer generalization**: Monograph vs periodical vs source-group shape in the data layer (ties to the `source-groups` feature).
+- **OQ-1 — Text↔image alignment** → **RESOLVED**: page-level parallel text. Per-page corrected-French + English translations exist (`translation/pNNN.*`) and per-page raw OCR is form-feed-extractable from `issue.txt`. The design's "issue-level" premise was stale.
+- **OQ-2 — Which text layers to surface** → **RESOLVED**: raw French OCR + English translation as the shown layers, with per-page corrected-French available alongside/in place of raw OCR.
+- **OQ-3 — Build access to private data / secrets** → **RESOLVED**: no credentials; the corpus is public-domain and the build reads a local archive clone with public image handles.
+- **OQ-5 — Search granularity** → **RESOLVED**: per-page index over both languages, linking to the page reading view.
+
+### Deferred (plan-level / later-scope — not blocking planning)
+
+- **OQ-4 — Public export pipeline**: What public-domain text/images get published and how (a deliberate export step vs building straight from the local clone). Deferred: the corpus being public-domain removes the secrecy urgency; the export boundary is an editorial decision resolvable during/after planning.
+- **OQ-6 — Object-store image tiling**: IIIF tiling vs full-image + client-side zoom for the object-store (CDN) provider; CDN in front of the object store. Deferred: a technical/performance detail for the plan; working assumption is full-image + client-side deep-zoom.
+- **OQ-7 — Data-layer generalization**: Monograph vs periodical vs source-group shape in the data layer (ties to the `source-groups` feature). Deferred: v1 models the periodical shape (Source → Issue → Page); broader generalization is a plan/roadmap concern.
 
 ## Assumptions
 
-- **Working assumptions for the open questions** (to be confirmed in clarify): OQ-1 → present English translation at issue level beside per-page OCR until alignment data exists; OQ-2 → surface raw OCR (French) + English translation, with corrected-French folded in as it becomes available; OQ-3 → the build reads the private archive from a local path and reads credentials from the environment (not committed); OQ-4 → public export is a separate deliberate step, not built in v1's internal path; OQ-5 → index per page across both languages; OQ-6 → full-image + client-side deep-zoom for the object-store provider initially; OQ-7 → model the data layer as periodical (Source → Issue → Page) with room to generalize.
-- **Dependencies**: consumes the shipped `canonical-source-metadata` (Source/Repository model) and `archive-object-store` (object-store image handles); consumes `source-translation` output (in-flight — governs OQ-1/OQ-2).
+- **Resolved by clarification** (Session 2026-07-09): OQ-1 page-level parallel text; OQ-2 raw FR OCR + EN shown, corrected-French available; OQ-3 no credentials (public-domain corpus, local clone); OQ-5 per-page index over both languages. **Deferred working assumptions**: OQ-4 → public export is a separate deliberate step, not built in v1's internal path; OQ-6 → full-image + client-side deep-zoom for the object-store provider initially; OQ-7 → model the data layer as periodical (Source → Issue → Page) with room to generalize.
+- **Corpus layout (verified, PB-P001)**: each issue directory holds `fNNN.jpg` page images + `fNNN.yml` sidecars, `issue.txt` (form-feed-delimited OCR) + `issue.fr.txt` / `issue.en.txt`, and a `translation/` dir of per-page `pNNN.fr.txt` (corrected French) / `pNNN.en.txt` (English) each with a provenance `.yml` (id, ARK/catalog_url, date, rights_status, sha256, original_url IIIF).
+- **Dependencies**: consumes the shipped `canonical-source-metadata` (Source/Repository model) and `archive-object-store` (object-store image handles); the page-level translation output from `source-translation` is already present in the archive clone.
 - **Content scope**: v1 content is PB-P001 (*La Nouvelle France*); the data layer is built to generalize but only PB-P001 is populated in v1.
 - **Deployment**: the deployed public artifact is a static site requiring no application server; target hosts apply a strict content-security policy.
 - **Users**: readers use a modern browser capable of running the deep-zoom viewer and client-side search; the primary audience is human readers/researchers of the corpus.
@@ -217,5 +229,5 @@ Carried verbatim from the approved design record; none are blockers to planning.
 
 - **`impl:feature/canonical-source-metadata`** (shipped) — Source/Repository/metadata model feeding provenance and provider handles.
 - **`impl:feature/archive-object-store`** (shipped) — object-store image handles for the object-store + CDN provider.
-- **`impl:feature/source-translation`** (in-flight) — translation output shape; governs the text-layer and alignment open questions (OQ-1, OQ-2).
-- **`impl:feature/source-groups`** — informs the data-layer generalization open question (OQ-7).
+- **`impl:feature/source-translation`** — its page-level translation output (`translation/pNNN.{fr,en}.txt`) is already present in the archive clone and feeds the parallel-text reading view.
+- **`impl:feature/source-groups`** — informs the deferred data-layer generalization question (OQ-7).
