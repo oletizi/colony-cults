@@ -1,0 +1,84 @@
+---
+/**
+ * T015 -- the reading-view static route (layout ①). One deep-linkable page per
+ * `PageView` (routes contract B-1, B-6): `getStaticPaths` loads the corpus and
+ * enumerates every source → issue → page, emitting `{ sourceId, issueId, pageId }`
+ * with the `PageView` and its within-issue prev/next neighbours as props.
+ *
+ * Fail-loud by construction: `loadCorpus` throws on any incomplete/corrupt page
+ * rather than emitting a route for it (routes contract G-2), and the props below
+ * read required fields directly -- nothing is defaulted or mocked.
+ */
+import type { GetStaticPaths } from 'astro';
+import { loadCorpus } from '@/browser/load/corpus';
+import { resolveConfig } from '@/browser/config';
+import type { PageView } from '@/browser/model';
+import BaseLayout from '@site/layouts/BaseLayout.astro';
+import ReadingView from '@site/components/ReadingView.astro';
+
+export const getStaticPaths = (() => {
+  // Defined inside getStaticPaths: Astro evaluates this export in isolation, so
+  // module-scope helpers are not in scope here.
+  const pageHref = (sourceId: string, issueId: string, pageId: string): string =>
+    `/sources/${sourceId}/issues/${issueId}/pages/${pageId}/`;
+
+  const { corpus } = loadCorpus(resolveConfig());
+
+  return corpus.sources.flatMap((source) =>
+    source.issues.flatMap((issue) =>
+      issue.pages.map((page, index) => {
+        const prev = index > 0 ? issue.pages[index - 1] : null;
+        const next = index < issue.pages.length - 1 ? issue.pages[index + 1] : null;
+        return {
+          params: {
+            sourceId: source.sourceId,
+            issueId: issue.issueId,
+            pageId: page.pageId,
+          },
+          props: {
+            sourceId: source.sourceId,
+            sourceTitle: source.title,
+            issueId: issue.issueId,
+            issueDate: issue.date,
+            page,
+            positionInIssue: index + 1,
+            pageCount: issue.pageCount,
+            prevHref: prev ? pageHref(source.sourceId, issue.issueId, prev.pageId) : null,
+            nextHref: next ? pageHref(source.sourceId, issue.issueId, next.pageId) : null,
+          },
+        };
+      })
+    )
+  );
+}) satisfies GetStaticPaths;
+
+interface Props {
+  sourceId: string;
+  sourceTitle: string;
+  issueId: string;
+  issueDate: string;
+  page: PageView;
+  positionInIssue: number;
+  pageCount: number;
+  prevHref: string | null;
+  nextHref: string | null;
+}
+
+const props = Astro.props;
+const { sourceTitle, issueDate, positionInIssue } = props;
+const docTitle = `${sourceTitle} · ${issueDate} · p.${positionInIssue}`;
+---
+
+<BaseLayout title={docTitle} description={`Reading view for ${sourceTitle}, ${issueDate}, page ${positionInIssue}.`}>
+  <ReadingView
+    sourceId={props.sourceId}
+    sourceTitle={props.sourceTitle}
+    issueId={props.issueId}
+    issueDate={props.issueDate}
+    page={props.page}
+    positionInIssue={props.positionInIssue}
+    pageCount={props.pageCount}
+    prevHref={props.prevHref}
+    nextHref={props.nextHref}
+  />
+</BaseLayout>

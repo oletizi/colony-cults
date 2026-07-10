@@ -10,6 +10,7 @@
  * specs/005-corpus-browser/data-model.md.
  */
 
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -72,11 +73,33 @@ export function loadCorpus(config: LoadConfig): LoadResult {
   return { corpus: { sources }, skipped };
 }
 
-/** Resolves the repo root (containing `bibliography/sources/`) from this module's location. */
+/**
+ * Resolves the repo root -- the nearest ancestor directory that contains
+ * `bibliography/sources/`.
+ *
+ * Anchored on this module's own location and walked upward (rather than a fixed
+ * offset) so it is correct whether the module runs from source (`src/browser/
+ * load/corpus.ts`, e.g. under vitest/tsx) or from a bundle that a build tool
+ * emitted deeper inside the repo (e.g. Astro's `site/dist/...` server output,
+ * whose ancestors still include the repo root). Fail-loud: throws if no such
+ * ancestor exists rather than returning a wrong path.
+ */
 function resolveRepoRoot(): string {
-  const here = fileURLToPath(import.meta.url);
-  // src/browser/load/corpus.ts -> up three -> repo root.
-  return path.resolve(path.dirname(here), '..', '..', '..');
+  let dir = path.dirname(fileURLToPath(import.meta.url));
+  for (;;) {
+    if (existsSync(path.join(dir, 'bibliography', 'sources'))) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      throw new Error(
+        'loadCorpus: could not locate the repo root -- no ancestor of ' +
+          `${JSON.stringify(path.dirname(fileURLToPath(import.meta.url)))} contains ` +
+          'a "bibliography/sources" directory.'
+      );
+    }
+    dir = parent;
+  }
 }
 
 /** A loaded source's normalized view plus the issues skipped while loading it. */

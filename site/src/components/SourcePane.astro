@@ -1,0 +1,105 @@
+---
+/**
+ * The source pane -- the propaganda's OWN voice, set warm (vellum ground, serif
+ * / Didone). It carries the raw French OCR verbatim (line breaks preserved: it
+ * is a transcription of the scan, not prose). When a corrected French reading
+ * exists it is offered without demoting the raw OCR. When an OCR-condition note
+ * is present it is stamped in oxide-red -- the single critical mark on the page,
+ * the archive flagging the scan's noise while the facsimile stays authoritative.
+ */
+interface Props {
+  ocrFrench: string;
+  correctedFrench: string | null;
+  ocrCondition: string | null;
+}
+const { ocrFrench, correctedFrench, ocrCondition } = Astro.props;
+const raw = ocrFrench.trim();
+const corrected = correctedFrench?.trim() ?? '';
+const hasCorrected = corrected.length > 0;
+const condition = ocrCondition?.trim() ?? '';
+const hasCondition = condition.length > 0;
+---
+
+<section class="source" aria-label="Texte source en français">
+  <p class="source__label">Texte source&nbsp;· français</p>
+
+  {hasCondition ? (
+    <p class="source__condition" role="note">
+      <span class="source__condition-mark">Condition au scan</span>
+      {condition}
+    </p>
+  ) : null}
+
+  <div class="source__ocr">{raw}</div>
+
+  {hasCorrected ? (
+    <details class="source__corrected">
+      <summary>Lecture corrigée&nbsp;· français</summary>
+      <div class="source__ocr source__ocr--corrected">{corrected}</div>
+    </details>
+  ) : null}
+</section>
+
+<style>
+  .source {
+    background: var(--vellum);
+    padding: 26px 28px;
+  }
+
+  .source__label {
+    font-family: var(--didone);
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--oxide);
+    margin: 0 0 14px;
+  }
+
+  .source__ocr {
+    font-family: var(--serif);
+    font-size: 15px;
+    line-height: 1.6;
+    color: #2a2820;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* The single oxide mark: the archive's hand on the propaganda's noise. */
+  .source__condition {
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.5;
+    color: #4a463c;
+    border-left: 2px solid var(--oxide);
+    padding: 4px 0 4px 10px;
+    margin: 0 0 18px;
+  }
+
+  .source__condition-mark {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--oxide);
+    margin-right: 8px;
+  }
+
+  .source__corrected {
+    margin-top: 18px;
+    border-top: 1px solid var(--rule);
+    padding-top: 14px;
+  }
+
+  .source__corrected > summary {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    cursor: pointer;
+  }
+
+  .source__ocr--corrected {
+    margin-top: 12px;
+  }
+</style>

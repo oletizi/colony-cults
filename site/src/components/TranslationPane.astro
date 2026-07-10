@@ -1,0 +1,66 @@
+---
+/**
+ * The translation pane -- the critical frame's voice, set cool (slate ground,
+ * grotesque / mono). It carries the English translation and is explicitly
+ * marked as machine-assisted and not human-reviewed, so the apparatus never
+ * lets the machine reading pass for an authoritative one. Line breaks preserved.
+ */
+interface Props {
+  english: string;
+}
+const { english } = Astro.props;
+const text = english.trim();
+const hasText = text.length > 0;
+---
+
+<section class="translation" aria-label="Translation into English">
+  <p class="translation__label">Translation&nbsp;· English&nbsp;· machine-assisted</p>
+  {hasText ? (
+    <div class="translation__body">{text}</div>
+  ) : (
+    <p class="translation__empty">No English translation is available for this page.</p>
+  )}
+  <p class="translation__stamp">machine-assisted · not human-reviewed</p>
+</section>
+
+<style>
+  .translation {
+    background: var(--slate);
+    color: #edeff1;
+    padding: 26px 28px;
+  }
+
+  .translation__label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #9fb0bc;
+    margin: 0 0 14px;
+  }
+
+  .translation__body {
+    font-family: var(--grote);
+    font-size: 14px;
+    line-height: 1.6;
+    color: #dde3e7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .translation__empty {
+    font-family: var(--grote);
+    font-size: 13px;
+    font-style: italic;
+    color: #9fb0bc;
+    margin: 0;
+  }
+
+  .translation__stamp {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: #8ea1ad;
+    margin: 16px 0 0;
+  }
+</style>

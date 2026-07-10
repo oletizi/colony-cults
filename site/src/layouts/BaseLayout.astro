@@ -1,0 +1,91 @@
+---
+/**
+ * The site shell for the corpus browser -- the "Prospectus / Dossier" ground:
+ * a swindle's glowing prospectus held inside a cool archival dossier. Cool
+ * mat-board grey ground, iron-gall ink, warm vellum for the source's own voice,
+ * cool slate for the critical apparatus, and oxide stamp-red reserved for
+ * critical marks only (the archive's hand on the propaganda).
+ *
+ * Deliberately single-theme (an archival light-box, per design). Type roles are
+ * system-font stacks here -- CSP-safe, no external hosts; the display face is
+ * embedded as a data-URI in a later task (US4). This layout carries only the
+ * shared tokens + reset; page identity is styled by the components it wraps.
+ */
+interface Props {
+  title: string;
+  /** Optional short description for the document head. */
+  description?: string;
+}
+const { title, description } = Astro.props;
+---
+
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    {description ? <meta name="description" content={description} /> : null}
+    <title>{title}</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    /* Prospectus / Dossier palette (design: 2026-07-09-corpus-browser-design.md). */
+    --paper: #e4e3dd; /* cool mat-board grey ground */
+    --ink: #17150f; /* iron-gall ink */
+    --vellum: #f3f0e7; /* warm source pane */
+    --slate: #33404a; /* cool apparatus */
+    --oxide: #9a3324; /* stamp-red -- critical marks only */
+    --rule: #c7c4b8;
+    --faint: #7c7a70;
+
+    /* Two voices: the source speaks warm serif/Didone; the apparatus + English
+       translation speak cool grotesque/mono (source vs critical frame). */
+    --serif: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --didone: "Didot", "Bodoni 72", Georgia, serif;
+    --grote: "Neue Haas Grotesk Text", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--grote);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--oxide);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+</style>
