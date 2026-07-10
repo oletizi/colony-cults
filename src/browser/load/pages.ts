@@ -21,8 +21,14 @@ import { splitIssueOcr } from '@/browser/load/ocr-pages';
 import { loadPageTranslation } from '@/browser/load/translation';
 import type { IssueDir } from '@/browser/load/issues';
 
-/** `fNNN.jpg` page-image file. */
-const IMAGE_PATTERN = /^f(\d+)\.jpg$/;
+/**
+ * `fNNN.yml` page-image SIDECAR (one per folio, carrying the object_store key).
+ * Folios are enumerated from the sidecars, NOT the `fNNN.jpg` binaries: the
+ * build never reads image bytes (images are resolved to Gallica/CDN URLs and
+ * fetched client-side), and the archive drops the JPEGs (they live in B2). The
+ * `.yml` sidecar survives that removal and holds everything enumeration needs.
+ */
+const IMAGE_PATTERN = /^f(\d+)\.yml$/;
 
 /** `pNNN.en.txt` required-translation file. */
 const EN_TRANSLATION_PATTERN = /^p(\d+)\.en\.txt$/;
@@ -35,7 +41,7 @@ const EN_TRANSLATION_PATTERN = /^p(\d+)\.en\.txt$/;
  *  - no `issue.txt` (the OCR layer was never collected),
  *  - no `translation/` directory or one with zero `pNNN.en.txt` files (the
  *    English translation layer was never collected), or
- *  - zero `fNNN.jpg` page images (the image layer was never collected).
+ *  - zero `fNNN.yml` image sidecars (the image layer was never catalogued).
  *
  * A PRESENT-but-PARTIAL layer (e.g. 7 of 8 translation pairs, a single page's
  * English missing, an image/OCR skew) is NOT detected here -- that is a
@@ -51,7 +57,7 @@ export function detectNotCollected(issueDir: string): string | null {
     missing.push('issue.txt (OCR layer)');
   }
   if (listFolios(issueDir).length === 0) {
-    missing.push('page images (fNNN.jpg)');
+    missing.push('image sidecars (fNNN.yml)');
   }
   if (countEnglishTranslations(issueDir) === 0) {
     missing.push('translation/ English layer (pNNN.en.txt)');
@@ -78,7 +84,7 @@ export function buildRawIssuePages(
   issue: IssueDir
 ): RawPage[] {
   const folios = listFolios(issue.dir);
-  const imageCount = folios.length;
+  const sidecarCount = folios.length;
 
   const issueTextPath = path.join(issue.dir, 'issue.txt');
   if (!existsSync(issueTextPath)) {
@@ -89,16 +95,16 @@ export function buildRawIssuePages(
   const ocrSegments = splitIssueOcr(readFileSync(issueTextPath, 'utf-8'));
   const ocrCount = ocrSegments.length;
 
-  if (imageCount !== ocrCount) {
+  if (sidecarCount !== ocrCount) {
     throw new Error(
       `loadCorpus(${sourceId} / ${issue.issueId}): page-count mismatch (corpus-loader G-1) -- ` +
-        `${imageCount} page image(s) vs ${ocrCount} OCR segment(s). ` +
-        'The image count and OCR form-feed segment count must be equal.'
+        `${sidecarCount} image sidecar(s) vs ${ocrCount} OCR segment(s). ` +
+        'The image-sidecar count and OCR form-feed segment count must be equal.'
     );
   }
 
   const translationCount = countEnglishTranslations(issue.dir);
-  const pageCount = imageCount;
+  const pageCount = sidecarCount;
 
   const pages: RawPage[] = folios.map((folio, index) =>
     buildRawPage(sourceId, issue, folio, ocrSegments[index])
@@ -122,7 +128,7 @@ interface Folio {
   num: number;
 }
 
-/** Lists `fNNN.jpg` folios in the issue directory, ordered by page number. */
+/** Lists folios (from `fNNN.yml` sidecars) in the issue directory, ordered by page number. */
 function listFolios(issueDir: string): Folio[] {
   const folios: Folio[] = [];
   for (const name of readdirSync(issueDir)) {
@@ -130,7 +136,7 @@ function listFolios(issueDir: string): Folio[] {
     if (match === null) {
       continue;
     }
-    folios.push({ folioId: path.basename(name, '.jpg'), num: Number.parseInt(match[1], 10) });
+    folios.push({ folioId: path.basename(name, '.yml'), num: Number.parseInt(match[1], 10) });
   }
   folios.sort((a, b) => a.num - b.num);
   return folios;

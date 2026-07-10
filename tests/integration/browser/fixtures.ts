@@ -176,7 +176,7 @@ export function makeCleanArchive(): string {
  *    mutation stripped `object_store:` from `f003.yml`, but the loader does
  *    not validate that field for the `source-iiif` provider, so it did not
  *    trigger a throw. See T009 note.)
- *  - `skew-page-count`: deletes `f003.jpg` to create an image/OCR-count
+ *  - `skew-page-count`: deletes `f003.yml` to create a folio/OCR-count
  *    mismatch while images remain present (corrupt -- throw naming the issue).
  *
  * NOT-COLLECTED / incomplete mutations (a WHOLE required layer entirely
@@ -218,10 +218,11 @@ export function makeCorruptedCopy(mutation: Mutation): string {
       }
 
       case 'skew-page-count': {
-        // Delete f003.jpg to create an image/OCR-count mismatch.
-        const imageFile = path.join(issueDir, 'f003.jpg');
-        if (existsSync(imageFile)) {
-          rmSync(imageFile);
+        // Delete f003.yml (the image sidecar folios are enumerated from) to
+        // create a folio/OCR-count mismatch.
+        const sidecarFile = path.join(issueDir, 'f003.yml');
+        if (existsSync(sidecarFile)) {
+          rmSync(sidecarFile);
         }
         break;
       }
