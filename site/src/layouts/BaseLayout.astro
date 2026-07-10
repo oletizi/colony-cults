@@ -6,11 +6,15 @@
  * cool slate for the critical apparatus, and oxide stamp-red reserved for
  * critical marks only (the archive's hand on the propaganda).
  *
- * Deliberately single-theme (an archival light-box, per design). Type roles are
- * system-font stacks here -- CSP-safe, no external hosts; the display face is
- * embedded as a data-URI in a later task (US4). This layout carries only the
- * shared tokens + reset; page identity is styled by the components it wraps.
+ * Deliberately single-theme (an archival light-box, per design). The apparatus
+ * voices are system-font stacks (CSP-safe, no external hosts); the warm Didone
+ * display face is embedded as a base64 woff2 data-URI in `styles/fonts.css`
+ * (US4 / T026) -- no runtime font request, degrading to system Didot if it
+ * fails. This layout carries only the shared tokens + reset; page identity is
+ * styled by the components it wraps.
  */
+import '@site/styles/fonts.css';
+
 interface Props {
   title: string;
   /** Optional short description for the document head. */
@@ -46,7 +50,7 @@ const { title, description } = Astro.props;
     /* Two voices: the source speaks warm serif/Didone; the apparatus + English
        translation speak cool grotesque/mono (source vs critical frame). */
     --serif: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-    --didone: "Didot", "Bodoni 72", Georgia, serif;
+    --didone: "Playfair Display", "Didot", "Bodoni 72", Georgia, serif;
     --grote: "Neue Haas Grotesk Text", "Helvetica Neue", Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
