@@ -43,7 +43,10 @@ Usage:
   gallica <command> <ark> [options]
 
 Commands:
-  bib <subaction>                Bibliography SSOT verbs (migrate, show, ...)
+  bib <subaction>                Bibliography SSOT verbs: migrate, show,
+                                 validate, regenerate; source-group pipeline:
+                                 inventory, verify-member, promote,
+                                 exclude-member, acquire, discover
   census <periodicalArk>        Build/refresh the per-source census
   fetch-issue <issueArk>        Fetch one issue's page images (private archive)
   fetch-source <periodicalArk>  Fetch every issue in a source's census
