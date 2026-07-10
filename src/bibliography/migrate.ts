@@ -309,6 +309,21 @@ async function safeGather(sourceId: string, archiveRoot: string): Promise<AssetP
 }
 
 /**
+ * Convert a PB-P004-shaped monograph Source to a source-group.
+ *
+ * Takes a `Source` with `kind: 'monograph'` and optional `partOf` (should be absent),
+ * and returns a new Source with `kind: 'source-group'`, preserving all other fields
+ * (titles, case, creator, language, notes, identifiers). The migration is idempotent:
+ * calling it on an already-migrated source-group returns an unchanged result.
+ *
+ * Note: This function is a stub for T013 implementation. Currently throws.
+ * (T012 writes the test; T013 implements the migration.)
+ */
+export function migrateSourceToGroup(source: Source): Source {
+  throw new Error('migrateSourceToGroup not implemented');
+}
+
+/**
  * Fold the five legacy representations into the canonical SSOT (T013):
  *
  *  1. `bibliography/legacy/sources.csv`            -- the Source spine (required).

@@ -1,3 +1,7 @@
 {"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"baseline","reviewClean":true,"note":"baseline green: 275 passed 2 skipped; branch feature/source-groups; PB-P004 kind:monograph pre-migration"}
 {"id":"T002","tierLabel":"powerful","model":"opus","commitRange":"6ffe8ce","reviewClean":true,"note":"Source.kind widened + partOf added; tsc clean; 275/2 green; no downstream breakage"}
-{"id":"T003","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"loader+serializer recognize kind:source-group and partOf; round-trip test; 280/2 green"}
+{"id":"T003","tierLabel":"balanced","model":"sonnet","commitRange":"be35ca9","reviewClean":true,"note":"loader+serializer recognize kind:source-group and partOf; round-trip test; 280/2 green"}
+{"id":"T004","tierLabel":"fast","model":"haiku","commitRange":"RED","reviewClean":true,"note":"RED integration test: fetch-source refuses source-group; 1 positive control passes"}
+{"id":"T007","tierLabel":"fast","model":"haiku","commitRange":"RED","reviewClean":true,"note":"RED validate-checks tests (5); added validateSourceGroups stub + 3 finding kinds (replaced by T008)"}
+{"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"RED","reviewClean":true,"note":"RED vocab tests (3): discovered/approved-for-acquisition/excluded not yet in STATUS_VALUES"}
+{"id":"T012","tierLabel":"fast","model":"haiku","commitRange":"RED","reviewClean":true,"note":"RED migrate test (3); added migrateSourceToGroup stub (replaced by T013)"}

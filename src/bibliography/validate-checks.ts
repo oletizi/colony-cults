@@ -259,3 +259,14 @@ export function validateSingleChecksum(model: CanonicalModel): ValidationFinding
   }
   return findings;
 }
+
+/**
+ * STUB: This function will be implemented in T008.
+ * Validates source groups per specs/005-source-groups/contracts/validation.md:
+ * - `group-has-repository-records`: a Source with kind 'source-group' carrying >= 1 repository record
+ * - `dangling-part-of`: a member whose partOf names a sourceId that does not exist
+ * - `part-of-not-a-group`: a member whose partOf names an existing source whose kind !== 'source-group'
+ */
+export function validateSourceGroups(model: CanonicalModel): ValidationFinding[] {
+  throw new Error('validateSourceGroups is not implemented yet (T008)');
+}

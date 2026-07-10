@@ -3,8 +3,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { migrate } from '@/bibliography/migrate';
+import { migrate, migrateSourceToGroup } from '@/bibliography/migrate';
 import { loadSourceFile } from '@/bibliography/load';
+import type { Source } from '@/model/source';
 
 /**
  * Unit tests for the five-representation -> SSOT migration (T013). Every
@@ -235,5 +236,66 @@ describe('migrate', () => {
 
     // The model was still built (public reps only, no archive enrichment).
     expect(result.model.sources.map((s) => s.sourceId).sort()).toEqual(['PB-P001', 'PB-P002']);
+  });
+});
+
+describe('migrateSourceToGroup (T012 — User Story 4 / PB-P004)', () => {
+  /**
+   * Fixture: PB-P004-shaped Source record (monograph kind, single to-collect
+   * Gallica repository record, preserved across the migration).
+   * Matches the current state of bibliography/sources/PB-P004.yml.
+   */
+  const pb004Fixture = (): Source => ({
+    sourceId: 'PB-P004',
+    kind: 'monograph',
+    case: 'port-breton',
+    language: 'French',
+    creator: 'various',
+    titles: [
+      {
+        text: 'French trial and legal proceedings relating to the Marquis de Rays',
+        role: 'canonical',
+      },
+    ],
+    identifiers: [],
+    notes: 'Years: 1880s | Access: archives/public domain | Public domain: likely | Core source for the fraud prosecution and official findings.',
+  });
+
+  it('converts a PB-P004-shaped monograph Source to kind: source-group, preserving all metadata', () => {
+    const monograph = pb004Fixture();
+
+    const migrated = migrateSourceToGroup(monograph);
+
+    // After migration, the source should be a source-group.
+    expect(migrated.kind).toBe('source-group');
+
+    // All other metadata should be preserved exactly.
+    expect(migrated.sourceId).toBe('PB-P004');
+    expect(migrated.case).toBe('port-breton');
+    expect(migrated.language).toBe('French');
+    expect(migrated.creator).toBe('various');
+    expect(migrated.titles).toEqual(monograph.titles);
+    expect(migrated.notes).toBe(monograph.notes);
+    expect(migrated.identifiers).toEqual([]);
+  });
+
+  it('is idempotent: migrating an already-migrated source-group yields the same result', () => {
+    const monograph = pb004Fixture();
+
+    const migrated1 = migrateSourceToGroup(monograph);
+    const migrated2 = migrateSourceToGroup(migrated1);
+
+    // The result should be identical after a second migration (deep equality).
+    expect(migrated2).toEqual(migrated1);
+    expect(migrated2.kind).toBe('source-group');
+  });
+
+  it('does NOT set partOf on a source-group (groups themselves are never members)', () => {
+    const monograph = pb004Fixture();
+
+    const migrated = migrateSourceToGroup(monograph);
+
+    // A source-group is not a member of another group.
+    expect(migrated.partOf).toBeUndefined();
   });
 });

@@ -27,7 +27,10 @@ export type ValidationFindingKind =
   | 'missing-required'
   | 'duplicate-copy'
   | 'single-checksum'
-  | 'view-drift';
+  | 'view-drift'
+  | 'group-has-repository-records'
+  | 'dangling-part-of'
+  | 'part-of-not-a-group';
 
 /**
  * One `bib validate` finding. Findings are DATA, not errors -- `validate`
