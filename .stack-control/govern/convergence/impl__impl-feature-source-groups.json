@@ -17,5 +17,5 @@
   "outcome": "override-eligible",
   "anchorRoot": "/Users/orion/work/colony-cults-work/source-groups",
   "override": true,
-  "overrideReason": "Cross-model audit-barrage ran over the whole-feature diff (3 run dirs; sonnet/claude/codex lanes emitting) but does not converge to a verdict in this environment (spins rounds; killed). Findings harvested and verified: HIGH (discovered member stub unloadable -> added Source.status field + loader/serializer) fixed; group-is-member invariant + test-strength items lifted; verified non-issues (status-index-as-ordinal, exhaustive status switch) as such; fresh-migration PB-P004 auto-promotion folded into backlog TASK-8. Live validation green: 318 passed 2 skipped, tsc clean, working tree clean, all 19 commits pushed. Override recorded per this environment documented barrage-non-convergence limitation."
+  "overrideReason": "Re-recorded after PR#11 review refinement (split status into Source-lifecycle vs RepositoryRecord-acquisition vocabularies). Cross-model barrage remains non-convergent in this env; findings from the prior run harvested+verified+lifted; this refinement live-validated: tsc clean, 343 passed 2 skipped, bib validate clean. Override per documented barrage-non-convergence limitation; merge gated on operator review."
 }
