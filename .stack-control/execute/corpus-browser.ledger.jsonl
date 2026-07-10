@@ -26,3 +26,6 @@
 {"id":"T019","tierLabel":"powerful","model":"opus","commitRange":"a8e4f9b","reviewClean":true,"note":"landing + source index via /frontend-design; cross-issue nav + breadcrumb links; verified visually"}
 {"id":"T022","tierLabel":"fast","model":"opus","commitRange":"1416946","reviewClean":true,"note":"pagefind wired into site:build; data-pagefind-body + colon-safe meta; indexed 927 pages/117k words"}
 {"id":"T023","tierLabel":"powerful","model":"opus","commitRange":"1416946","reviewClean":true,"note":"search UI (Concordance) via /frontend-design; pagefind JS API; FR+EN findable, links to pages; verified real browser"}
+{"id":"T024","tierLabel":"powerful","model":"opus","commitRange":"77c5a2a","reviewClean":true,"note":"standalone ProvenanceRail (6 fields) via /frontend-design; fixed old 4-field inline that leaked issueId"}
+{"id":"T025","tierLabel":"powerful","model":"opus","commitRange":"77c5a2a","reviewClean":true,"note":"visual-system audit across 4 surfaces; fixed one oxide misuse; noisy-OCR framing intact"}
+{"id":"T026","tierLabel":"balanced","model":"opus","commitRange":"77c5a2a","reviewClean":true,"note":"embedded Playfair Display (SIL OFL) as ~27KB data-URI woff2; no external font host (CSP-safe)"}
