@@ -51,12 +51,13 @@ export interface LoadResult {
 }
 
 /**
- * A source's kind. `'periodical'` is the only value produced in v1; the
- * union is intentionally left open to widen with `'monograph' |
- * 'source-group'` later (OQ-7 deferred) without a breaking change to
- * `SourceView.kind`'s declared type.
+ * A source's kind, as reflected in the loaded view. A `'periodical'` resolves
+ * to many issue directories under `newspapers/<slug>`; a `'monograph'` (a
+ * book) resolves to exactly ONE unit -- its book directory under `books/` --
+ * rendered as a single {@link IssueView}. `'source-group'` is not a loadable
+ * corpus kind (it holds no assets of its own) and is not part of this union.
  */
-export type SourceKind = 'periodical';
+export type SourceKind = 'periodical' | 'monograph';
 
 /**
  * One bibliographic source (e.g. a periodical) and its issues.
@@ -69,7 +70,7 @@ export interface SourceView {
   sourceId: string;
   /** Canonical title (SSOT `titles[role=canonical]`). */
   title: string;
-  /** SSOT `kind`; v1 always produces `'periodical'`. */
+  /** SSOT `kind` (`'periodical'` or `'monograph'`). */
   kind: SourceKind;
   /** Archival identifier (SSOT repository record / page sidecars); used by the `source-iiif` provider. */
   ark: string;
@@ -224,7 +225,7 @@ export interface RawSource {
   sourceId: string;
   /** Canonical title. */
   title: string;
-  /** v1 always `'periodical'`. */
+  /** SSOT `kind` (`'periodical'` or `'monograph'`). */
   kind: SourceKind;
   /** Source-level archival identifier. */
   ark: string;
