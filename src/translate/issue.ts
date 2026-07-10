@@ -111,6 +111,28 @@ async function firstPageProvenance(issueDir: string): Promise<ProvenanceFields> 
 }
 
 /**
+ * Minimum "real" (letter/digit) character count for a page to be treated as
+ * having translatable content. A genuine newspaper page has hundreds; an
+ * unscannable/blank page whose OCR is only a scan-condition marker plus a
+ * shelfmark (e.g. "Contraste insuffisant\nNF Z 43-120-14") falls far below
+ * this. Such pages have nothing to translate, so they are recorded as blank
+ * rather than sent to the engine (whose empty result would otherwise fail the
+ * whole issue).
+ */
+const BLANK_PAGE_MIN_ALNUM = 40;
+
+/**
+ * True when a source page has no translatable content -- empty, whitespace, or
+ * only scan artifacts (condition markers, shelfmarks). Measured by alphanumeric
+ * (Unicode letter/digit) character count so punctuation and layout noise do not
+ * mask a blank page.
+ */
+function isBlankPage(rawPage: string): boolean {
+  const alnum = rawPage.replace(/[^\p{L}\p{N}]/gu, '');
+  return alnum.length < BLANK_PAGE_MIN_ALNUM;
+}
+
+/**
  * Persist one translation artifact through the guarded store path. `model` is
  * the run's already-resolved model id (the exact value passed to the engine),
  * so the recorded provenance can never disagree with what actually ran.
@@ -312,6 +334,21 @@ export async function translateIssue(
     if (!needsWork[i - 1]) {
       ctx.log(`  skip  page ${i}/${pagesTotal} (already translated)`);
       pagesDone += 1;
+      continue;
+    }
+
+    if (isBlankPage(pages[i - 1])) {
+      // A blank / scan-artifact-only page has nothing to translate. Persist
+      // empty artifacts and count it done rather than sending it to the engine
+      // (whose empty output would fail the whole issue). Empty artifacts keep
+      // the page idempotent-skippable on a re-run and let the whole-issue
+      // assembly reflect the blank page faithfully (data-model.md: an empty
+      // page chunk is reported, never fabricated).
+      await persist('', frPath, base, 'corrected-french', model, ctx);
+      await persist('', enPath, base, 'english', model, ctx);
+      workDone = true;
+      pagesDone += 1;
+      ctx.log(`  blank page ${i}/${pagesTotal} (no translatable content)`);
       continue;
     }
 

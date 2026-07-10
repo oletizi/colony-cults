@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { existsSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { translateIssue } from '@/translate/issue';
@@ -129,5 +129,38 @@ describe('translateIssue (T016/T017/T019)', () => {
     expect(secondResult.pagesTotal).toBe(3);
     expect(second.preflightCalls.n).toBe(0);
     expect(second.calls).toHaveLength(0);
+  });
+
+  it('records a blank / scan-artifact page as empty and still completes the issue', async () => {
+    // Overwrite issue.txt so the third page is an unscannable blank page whose
+    // OCR is only a scan-condition marker + shelfmark (a real Gallica artifact,
+    // e.g. "Contraste insuffisant"). It has nothing to translate.
+    const real1 =
+      'Ceci est une vraie page de journal avec suffisamment de contenu textuel a traduire pour depasser le seuil.';
+    const real2 =
+      'Une deuxieme page reelle contenant assez de mots pour etre traitee normalement par le moteur de traduction.';
+    const blank = 'Contraste insuffisant\nNF Z 43-120-14';
+    writeFileSync(
+      path.join(fetched.issueDir, 'issue.txt'),
+      `${real1}\f${real2}\f${blank}`,
+    );
+
+    const { ctx, calls } = buildCtx(fetched);
+    const result = await translateIssue(fetched.issueArk, ctx);
+
+    // The issue COMPLETES -- a blank page is reported, not a failure.
+    expect(result.outcome).toBe('translated');
+    expect(result.pagesDone).toBe(3);
+    expect(result.pagesTotal).toBe(3);
+    // The engine ran for the 2 real pages only (cleanup + translate = 4 calls);
+    // the blank page never reaches the engine.
+    expect(calls).toHaveLength(4);
+    // The blank page's artifacts exist but are empty (reported, not fabricated).
+    const blankFr = path.join(fetched.issueDir, 'translation', 'p003.fr.txt');
+    const blankEn = path.join(fetched.issueDir, 'translation', 'p003.en.txt');
+    expect(existsSync(blankFr)).toBe(true);
+    expect(existsSync(blankEn)).toBe(true);
+    expect((await readFile(blankFr, 'utf-8')).trim()).toBe('');
+    expect((await readFile(blankEn, 'utf-8')).trim()).toBe('');
   });
 });
