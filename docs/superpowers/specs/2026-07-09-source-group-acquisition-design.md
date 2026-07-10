@@ -26,12 +26,14 @@ feature touches directly (verified against `src/model/source.ts` and
   key is a flat `PB-P###` / `PB-S###` id (`PB-P001`…`PB-P006`, `PB-S001/002`); the
   model comment states *"Group membership is derived from these edges (a group holds
   no member list)."* Identity is deliberately decoupled from organization.
-- **Two disjoint lifecycle vocabularies.** A `Source`'s lifecycle
-  (`discovered → approved-for-acquisition → excluded`) and a `RepositoryRecord`'s
-  acquisition status (`wanted → to-collect → collecting → collected → archived`) are
-  separate state machines; the model rejects a cross-domain value as a `vocab`
-  validation error. A Source's lifecycle *ends* at `approved-for-acquisition`, where
-  a RepositoryRecord's status *begins* (`wanted`/`to-collect`).
+- **Two disjoint lifecycle vocabularies.** A `Source`'s lifecycle and a
+  `RepositoryRecord`'s acquisition status (`wanted → to-collect → collecting →
+  collected → archived`) are separate state machines; the model rejects a
+  cross-domain value as a `vocab` validation error. The Source lifecycle values are
+  a **set of outcomes, not an ordered chain**: from `discovered`, a Source goes to
+  **either** `approved-for-acquisition` **or** `excluded` (alternatives, not a
+  sequence). A Source's lifecycle *ends* at `approved-for-acquisition`, where a
+  RepositoryRecord's status *begins* (`wanted`/`to-collect`).
 
 ## Solution space
 
@@ -68,11 +70,17 @@ Discover → Inventory → Technical verification → Research approval (Promote
    (OAIRecord retrievable), normalized rights permit acquisition, required metadata
    is present, and it is not a duplicate (Decision 8). Emits a machine verdict; it
    does **not** decide corpus relevance.
-4. **Research approval / Promote** — `promote PB-P007 --group PB-P004`: records the
-   **researcher's judgment** that the item is a relevant member of the legal corpus,
-   advancing the Source `discovered → approved-for-acquisition` and the
-   RepositoryRecord `wanted → to-collect`. This is where "valid archival object" and
-   "relevant member of this corpus" are kept distinct.
+4. **Research approval / Promote** — `promote PB-P007`: records the **researcher's
+   judgment** that the item is a relevant member of the legal corpus, advancing the
+   Source `discovered → approved-for-acquisition` and the RepositoryRecord
+   `wanted → to-collect`. Membership is **not re-supplied** here — `promote` loads
+   the source, confirms its existing `partOf` resolves to a valid source-group, and
+   transitions; it never establishes or alters membership. (If a `--group` flag is
+   kept for operator clarity it may only *assert equality* with the existing
+   `partOf`, never set it.) **Exclusion is a separate operation** (`discovered →
+   excluded`), not a step after approval; an approved source is not silently
+   excluded without an explicit reconsideration. This is where "valid archival
+   object" and "relevant member of this corpus" are kept distinct.
 5. **Acquire** — reuses the **shipped fetcher**. The acquire step **resolves the ARK
    from the member's RepositoryRecord** and passes it to
    `fetch-source <ark> --source-id PB-P007 --object-store`, so the operator never
@@ -126,7 +134,11 @@ the `partOf` edge; the id is flat and opaque.
 5. **Technical verification is separated from research approval.** `verify-member`
    is deterministic (resolve, rights, dedup, required-fields); `promote` records the
    research judgment. The Source lifecycle gate (`approved-for-acquisition`) *is* the
-   research-approval gate.
+   research-approval gate. **`promote` treats the existing `partOf` as authoritative
+   membership** — it never re-supplies or alters the group. **`approved-for-acquisition`
+   and `excluded` are alternative outcomes of `discovered`**, not a sequence;
+   exclusion is a separate operation with its own reconsideration path, never a
+   silent step after approval.
 6. **Inventory preserves raw + normalized metadata** (raw response, `retrievedAt`,
    endpoint, normalization version; `rightsRaw` + `rightsStatus`). Raw is evidence;
    normalized is a project decision. *(Touches the `004-canonical-source-metadata`
@@ -164,11 +176,37 @@ authoring the spec — the spec sequences the discovery spike as its first gated
   search, *distinct* from the anti-bot-blocked Gallica web search). Spike-time
   comparison candidates only: another documented BnF API, or explicitly
   manual/operator-supplied candidates. The spec must **not** promise a search helper
-  until the spike proves its underlying service.
-- ⟐ **Raw-metadata preservation → amendment to `004-canonical-source-metadata`.**
+  until the spike proves its underlying service. The spike is a **gated first task**;
+  **if no reliable API is found, explicitly adopt operator-supplied candidate
+  identifiers** — never fall back to fragile browser automation as an implicit
+  substitute.
+- ⟐ **Raw-metadata storage & versioning model → decide before implementation.**
   Preserving raw response / endpoint / timestamp / normalization-version and
-  `rightsRaw` adds fields to the canonical data model. Confirm whether this is an
-  explicit amendment to 004 (recorded there) folded into v1, or deferred.
+  `rightsRaw` adds surface to the canonical `004-canonical-source-metadata` data
+  model. The spec must choose among: (1) embed the raw response in the
+  Source/RepositoryRecord schema; (2) a **separate immutable acquisition snapshot**
+  referenced by the RepositoryRecord; or (3) preserve raw in the private archive
+  with a public metadata reference. **Recommended: option 2** — a separate immutable
+  snapshot keeps the canonical record readable while retaining full upstream
+  evidence, and re-inventorying creates a *new* snapshot rather than overwriting the
+  original. Illustrative shape:
+
+  ```yaml
+  repositoryRecord:
+    sourceArchive: Gallica
+    identifiers:
+      ark: ark:/12148/...
+    rightsRaw: "..."
+    rightsStatus: public-domain
+    metadataSnapshot:
+      path: metadata/repository-responses/...
+      retrievedAt: 2026-07-10T...
+      endpoint: https://...
+      normalizationVersion: 1
+  ```
+
+  Confirm whether this is an explicit amendment to 004 (recorded there) folded into
+  v1, or deferred.
 - ⟐ **Metadata-driven fetcher resolution → v1 or target-only.** Decision 9 keeps v1
   ARK-passed-internally (no fetcher change); the `--repository` target is new fetch
   code. Confirm it stays a named target vs. pulled into scope.
@@ -185,6 +223,12 @@ authoring the spec — the spec sequences the discovery spike as its first gated
 - Origin: interactive brainstorming session, 2026-07-09; decisions from operator
   answers (discovery approach, scope, member-ID scheme). Extends the third-party
   PB-P004 design guidance now that `source-groups` shipped.
+- **Approved by the operator 2026-07-10** ("approve for specification") with three
+  clarifications folded in and carried to `/stack-control:define`: (1) model
+  `approved-for-acquisition` and `excluded` as alternative `discovered` outcomes;
+  (2) make existing `partOf` authoritative during `promote` (never re-supply the
+  group); (3) define the raw-metadata storage/versioning model (recommended: a
+  separate immutable acquisition snapshot) before implementation.
 - Revised 2026-07-10 after a third-party review, grounded against the shipped model.
   The review drove nine changes — the four that were *architectural corrections*
   (opaque IDs, separate status vocabularies, verify/promote split, duplicate
