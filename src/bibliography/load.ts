@@ -13,8 +13,8 @@ import {
   requireObject,
   requireString,
 } from '@/bibliography/load-primitives';
-import { isAllowed } from '@/bibliography/vocab';
-import type { Status } from '@/bibliography/vocab';
+import { isSourceLifecycleStatus } from '@/bibliography/vocab';
+import type { SourceLifecycleStatus } from '@/bibliography/vocab';
 import type { Source, WorkIdentifier } from '@/model/source';
 
 /**
@@ -50,9 +50,17 @@ function isSourceKind(value: string): value is Source['kind'] {
   return value === 'periodical' || value === 'monograph' || value === 'source-group';
 }
 
-/** `status`'s closed vocab is the same `STATUS_VALUES` a RepositoryRecord's `status` is checked against (`@/bibliography/vocab`'s `isAllowed`); reused rather than duplicated. */
-function isStatusValue(value: string): value is Status {
-  return isAllowed('status', value);
+/**
+ * A `Source`'s own lifecycle status is a DIFFERENT, narrower state machine
+ * from a RepositoryRecord's acquisition `status`
+ * (`@/bibliography/vocab`'s `REPOSITORY_ACQUISITION_STATUS_VALUES`, checked
+ * via `isAllowed('status', ...)`) -- so it is validated against the separate
+ * `SOURCE_LIFECYCLE_STATUS_VALUES` vocab via `isSourceLifecycleStatus`. An
+ * acquisition-only value (e.g. `archived`) authored on a Source is a
+ * cross-domain error and is rejected here, not silently accepted.
+ */
+function isStatusValue(value: string): value is SourceLifecycleStatus {
+  return isSourceLifecycleStatus(value);
 }
 
 function readFileText(filePath: string): string {
@@ -114,10 +122,18 @@ export function loadSourceFile(filePath: string): LoadedSource {
 
   // The Source's own lifecycle status (US3), e.g. `discovered` on a member
   // stub. Absent stays undefined -- no default is invented. An authored value
-  // outside the closed vocab fails loud (no silent drop, matching `kind`).
+  // outside the closed SOURCE lifecycle vocab fails loud (no silent drop,
+  // matching `kind`) -- including a RepositoryRecord acquisition-only value
+  // (e.g. `archived`), which is a cross-domain error on a Source.
   const statusRaw = optionalString(obj.status, filePath, 'status');
   if (statusRaw !== undefined && !isStatusValue(statusRaw)) {
-    fail(filePath, `status "${statusRaw}" is not in the closed status vocabulary`);
+    fail(
+      filePath,
+      `status "${statusRaw}" is not in the closed Source lifecycle status vocabulary ` +
+        `(discovered / approved-for-acquisition / excluded) -- RepositoryRecord ` +
+        `acquisition statuses (wanted / to-collect / collecting / collected / archived) ` +
+        `belong on a repositoryRecords entry, not on the Source itself`,
+    );
   }
   const status = statusRaw;
 

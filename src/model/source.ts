@@ -1,4 +1,4 @@
-import type { Status } from '@/bibliography/vocab';
+import type { SourceLifecycleStatus } from '@/bibliography/vocab';
 import type { WorkLevelIdentifierType } from '@/model/identifiers';
 
 /**
@@ -29,14 +29,18 @@ export interface Source {
    */
   partOf?: string;
   /**
-   * The discovery/acquisition lifecycle status of this Source itself (US3),
-   * e.g. `discovered` on a member stub not yet reviewed for inclusion.
-   * Distinct from a RepositoryRecord's own `status`, which tracks the
-   * acquisition state of one held copy at one archive; this field tracks the
-   * work-level source, independent of any repository record. Absent on a
+   * The discovery/acquisition-handoff lifecycle status of this Source itself
+   * (US3), e.g. `discovered` on a member stub not yet reviewed for inclusion.
+   * A DIFFERENT, narrower state machine from a RepositoryRecord's own
+   * `status` (`RepositoryAcquisitionStatus`), which tracks the acquisition
+   * state of one held copy at one archive; this field tracks the work-level
+   * source, independent of any repository record, and ends where a
+   * RepositoryRecord's status picks up (`approved-for-acquisition` ->
+   * `wanted`/`to-collect`). An acquisition-only value (e.g. `archived`) is
+   * REJECTED here as cross-domain (see `@/bibliography/load`). Absent on a
    * fully-processed Source with no lifecycle tracking needed.
    */
-  status?: Status;
+  status?: SourceLifecycleStatus;
   /** Author/editor of the work, if known. */
   creator?: string;
   /** Primary language of the work, e.g. `French`. */

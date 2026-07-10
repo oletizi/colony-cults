@@ -197,6 +197,35 @@ describe('validateVocab (FR-019)', () => {
 
     expect(validate(model).filter((f) => f.kind === 'vocab')).toEqual([]);
   });
+
+  describe('cross-domain rejection: Source lifecycle values on a RepositoryRecord', () => {
+    it.each(['discovered', 'excluded', 'approved-for-acquisition'])(
+      'reports a vocab finding for a RepositoryRecord authored with Source lifecycle status "%s"',
+      (status) => {
+        const source = makeSource();
+        const record = makeRecord({ status });
+        const model = makeModel({ sources: [source], repositoryRecords: [record] });
+
+        const vocabFindings = validate(model).filter((f) => f.kind === 'vocab');
+        expect(vocabFindings).toHaveLength(1);
+        expect(vocabFindings[0].detail).toContain('status');
+        expect(vocabFindings[0].detail).toContain(status);
+      },
+    );
+  });
+
+  describe('regression guard: existing acquisition statuses still validate on a RepositoryRecord', () => {
+    it.each(['wanted', 'to-collect', 'collecting', 'collected', 'archived'])(
+      'reports no vocab finding for RepositoryRecord acquisition status "%s"',
+      (status) => {
+        const source = makeSource();
+        const record = makeRecord({ status });
+        const model = makeModel({ sources: [source], repositoryRecords: [record] });
+
+        expect(validate(model).filter((f) => f.kind === 'vocab')).toEqual([]);
+      },
+    );
+  });
 });
 
 describe('validateMissingRequired (FR-019)', () => {

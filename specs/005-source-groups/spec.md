@@ -187,6 +187,16 @@ and any derived outputs still build without error.
   review (Rec 4). The review's other points either matched existing decisions or (its
   hierarchical `PB-P004-003` ID example) conflicted with the settled flat-opaque-ID
   decision (FR-007) and were not adopted.
+- Q: Should the Source lifecycle values (`discovered`/`approved-for-acquisition`/`excluded`)
+  and the RepositoryRecord acquisition values (`wanted`/`to-collect`/`collecting`/`collected`/
+  `archived`) continue to share one flat 8-value status vocabulary? → A: No — **split into two
+  distinct, per-entity vocabularies** (`SourceLifecycleStatus` and `RepositoryAcquisitionStatus`
+  in `src/bibliography/vocab.ts`) so the type system and runtime validator reject cross-domain
+  values: a `Source` authored with an acquisition-only value (e.g. `archived`) now fails loud at
+  load, and a `RepositoryRecord` authored with a discovery-only value (e.g. `discovered`/
+  `excluded`) is reported as a `vocab` validation finding. A Source's lifecycle and a
+  RepositoryRecord's acquisition status are different state machines with a one-way handoff at
+  `approved-for-acquisition`, not one shared pipeline. Raised by PR review.
 
 ## Requirements *(mandatory)*
 
@@ -220,14 +230,22 @@ and any derived outputs still build without error.
   consistent with the shipped canonical principle that identifiers are permanent and
   structure is a relationship (the `part_of` edge), not encoded in the identifier.
   Hierarchical composite ids (e.g. `PB-P004-001`) MUST NOT be used.
-- **FR-008**: The status vocabulary MUST be extended with `discovered`,
-  `approved-for-acquisition`, and `excluded` to express the collection lifecycle Discover →
-  Inventory → Verify → Promote → Acquire → Preserve, plus intentional exclusion. A candidate
-  that is discovered but deliberately not promoted (duplicate / irrelevant / incomplete /
-  superseded / out-of-scope) MUST be recordable as `excluded` with the reason captured in the
-  record's existing `notes` field — the discovery is preserved, not deleted, so the exclusion
-  and its rationale remain in the SSOT. All previously-valid status values MUST continue to
-  validate unchanged.
+- **FR-008**: The system MUST express the collection lifecycle Discover → Inventory → Verify →
+  Promote → Acquire → Preserve, plus intentional exclusion, via **two distinct, per-entity
+  closed vocabularies** rather than one shared vocabulary — a `Source`'s own lifecycle status
+  (`discovered`, `approved-for-acquisition`, `excluded`) is a separate state machine from a
+  `RepositoryRecord`'s acquisition status (`wanted`, `to-collect`, `collecting`, `collected`,
+  `archived`), linked only by a one-way handoff: a Source's lifecycle ends at
+  `approved-for-acquisition`, at which point a RepositoryRecord may be authored for it beginning
+  at `wanted`/`to-collect`. A candidate that is discovered but deliberately not promoted
+  (duplicate / irrelevant / incomplete / superseded / out-of-scope) MUST be recordable as
+  `excluded` with the reason captured in the record's existing `notes` field — the discovery is
+  preserved, not deleted, so the exclusion and its rationale remain in the SSOT. All
+  previously-valid RepositoryRecord acquisition status values MUST continue to validate
+  unchanged. **Cross-domain values MUST be rejected**: authoring a RepositoryRecord acquisition
+  value (e.g. `archived`) on a `Source` MUST fail loud at load; authoring a Source lifecycle
+  value (e.g. `discovered`/`excluded`) on a `RepositoryRecord` MUST be reported as a validation
+  finding.
 - **FR-009**: `PB-P004` MUST be reclassified from a monograph-with-repository-record into
   a source group whose single existing `to-collect` repository record is migrated into a
   members list. The migration MUST NOT break existing bibliography derivation or
@@ -251,9 +269,14 @@ and any derived outputs still build without error.
   archival identity — independently acquirable.
 - **RepositoryRecord**: Unchanged, separate entity — the held copy of a Source at a given
   archive (ARK, rights, assets). Present on non-group sources; absent on source groups.
-- **Status vocabulary**: The closed set of lifecycle values a record may carry, extended
-  with `discovered`, `approved-for-acquisition`, and `excluded` (the last preserving an
-  intentionally-excluded discovery, reason in `notes`).
+- **Source lifecycle status vocabulary**: The closed set of values (`discovered`,
+  `approved-for-acquisition`, `excluded`) a `Source` itself may carry, tracking its
+  discovery/approval position — a distinct vocabulary from a RepositoryRecord's acquisition
+  status, with `excluded` preserving an intentionally-excluded discovery (reason in `notes`).
+- **RepositoryRecord acquisition status vocabulary**: The unchanged closed set of values
+  (`wanted`, `to-collect`, `collecting`, `collected`, `archived`) a `RepositoryRecord` may carry,
+  tracking a held copy's own acquisition/preservation progress. A Source's lifecycle vocabulary
+  and this one are separate — cross-domain values are rejected by validation.
 - **Discovery record / candidate inventory**: The pre-promotion inventory of candidate
   members (title / creator / ARK / repository / rights / relevance / status). Represented
   as **member stubs carrying `status: discovered`** — the same record type that later

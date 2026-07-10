@@ -35,48 +35,75 @@ Not a separate type — a Source instance. Distinguishing properties:
 - Identifier: an ordinary opaque `PB-###` id (e.g. `PB-P004`). Structure is NOT in the id.
 - Holds: titles, `case`, `creator?`, `language?`, `notes?`. Holds **no** repository records.
 - Members: derived; each member is a full Source with `partOf` set to this group's id.
-- Lifecycle: a group itself is not "acquired"; its members move through the status pipeline.
+- Lifecycle: a group itself is not "acquired"; its members move through the two linked status
+  vocabularies below (Source lifecycle, then RepositoryRecord acquisition).
 
 ## Member (conceptual — a Source with `partOf` set)
 
 - A full, independently-catalogued Source (its own opaque `PB-###` id) — becomes independently
   fetchable once it has a stable archival identity (ARK/DOI/ISBN/OCLC/repository id).
 - `partOf` names exactly one group. Multi-group membership is out of scope (one level).
-- Passes through the status pipeline (below) as it is discovered → verified → acquired.
+- Passes through its own Source lifecycle status (discovered → verified/approved, or excluded)
+  and then, once a RepositoryRecord is authored for it, that record's separate acquisition status
+  (wanted → … → archived) — see "Status vocabulary" below.
 
-## Status vocabulary (edited)
+## Status vocabulary (edited — split into TWO linked state machines)
 
-`src/bibliography/vocab.ts` — `STATUS_VALUES` gains three values: two prepended to the
-acquisition lifecycle so the full pipeline is ordered, plus `excluded` as an off-pipeline
-terminal state:
+**Design-review update (2026-07-09):** the original design treated Source lifecycle and
+RepositoryRecord acquisition as one flat 8-value `STATUS_VALUES` pipeline shared by both
+entities. Review found this let an acquisition-only value (e.g. `archived`) be authored on a
+`Source`, or a discovery-only value (e.g. `discovered`/`excluded`) be authored on a
+`RepositoryRecord` — cross-domain values the type system and runtime validator should reject,
+since a Source's lifecycle and a RepositoryRecord's acquisition status are genuinely different
+state machines with different owners, different terminal states, and a one-way handoff between
+them. `src/bibliography/vocab.ts` now defines two separate closed vocabularies instead:
 
 ```
-discovered → approved-for-acquisition → wanted → to-collect → collecting → collected → archived
-     └──────────────> excluded  (intentional exclusion; reason in notes)
+Source lifecycle (SOURCE_LIFECYCLE_STATUS_VALUES):
+  discovered ──verify+promote──> approved-for-acquisition ──handoff──┐
+       └── verify rejects / out-of-scope ──> excluded (terminal)     │
+                                                                      ▼
+RepositoryRecord acquisition (REPOSITORY_ACQUISITION_STATUS_VALUES):
+  wanted ──> to-collect ──> collecting ──> collected ──> archived
 ```
 
-| Value | Change | Meaning |
-|-------|--------|---------|
-| `discovered` | **new** | A candidate member found during Discover/Inventory; not yet verified/approved. |
-| `approved-for-acquisition` | **new** | Verified and promoted; cleared to enter the existing acquisition flow. |
-| `excluded` | **new** | A discovered candidate intentionally NOT promoted (duplicate / irrelevant / incomplete / superseded / out-of-scope). Retained in the SSOT; the reason lives in the record's `notes`. Preserves discovery history without a separate store. |
-| `wanted`, `to-collect`, `collecting`, `collected`, `archived` | unchanged | Existing acquisition/preservation states. |
+A Source's own lifecycle status (`SourceLifecycleStatus`, checked via `isSourceLifecycleStatus`)
+tracks the candidate's position in Discover → Verify → Promote, and ENDS at
+`approved-for-acquisition` (or terminates early at `excluded`). A RepositoryRecord's acquisition
+status (`RepositoryAcquisitionStatus`, checked via the field-name-keyed `isAllowed('status', ...)`)
+tracks a held copy's own Acquire → Preserve progress, and BEGINS at `wanted`/`to-collect` once a
+RepositoryRecord is authored for an approved Source. The handoff between the two vocabularies is a
+record-authoring event (a human/migration adds a `repositoryRecords` entry to a
+`approved-for-acquisition` Source), not a validated state transition — there is no single field
+that crosses both vocabularies.
 
-All previously-valid status values continue to validate unchanged (FR-008). The three new values
-are valid on any Source but are meaningful primarily on member stubs of a group.
+| Value | Vocabulary | Meaning |
+|-------|------------|---------|
+| `discovered` | Source lifecycle | A candidate member found during Discover/Inventory; not yet verified/approved. |
+| `approved-for-acquisition` | Source lifecycle | Verified and promoted; cleared for a RepositoryRecord to be authored. Terminal for the Source lifecycle. |
+| `excluded` | Source lifecycle | A discovered candidate intentionally NOT promoted (duplicate / irrelevant / incomplete / superseded / out-of-scope). Retained in the SSOT; the reason lives in the record's `notes`. Terminal. |
+| `wanted`, `to-collect`, `collecting`, `collected`, `archived` | RepositoryRecord acquisition | Unchanged existing acquisition/preservation states — now a self-contained vocabulary of their own, no longer sharing a tuple with the Source lifecycle values. |
+
+All previously-valid RepositoryRecord acquisition status values continue to validate unchanged on
+a RepositoryRecord (FR-008). **Cross-domain values are rejected**: a Source authored with
+`status: archived` (or any acquisition-only value) fails loud at load with a cross-domain error; a
+RepositoryRecord authored with `status: discovered`/`excluded`/`approved-for-acquisition` is
+reported as a `vocab` validation finding.
 
 ## State transitions (member lifecycle)
 
 ```
 (new candidate)
-   └─> discovered ──verify+promote──> approved-for-acquisition ──> wanted / to-collect
-          │                                                             └─> collecting ─> collected ─> archived
+   └─> discovered ──verify+promote──> approved-for-acquisition ──(RepositoryRecord authored)──> wanted / to-collect
+          │                                                                                            └─> collecting ─> collected ─> archived
           └── verify rejects / out-of-scope ──> excluded  (terminal; reason in notes; record retained)
 ```
 
-- Backward transitions (e.g. `approved-for-acquisition` → `discovered` on a failed verification)
-  are permitted by the vocabulary; no ordering is *enforced* by validation (status is a label,
-  not a state machine) — consistent with the existing model, which does not enforce status order.
+- Backward transitions within the Source lifecycle vocabulary (e.g. `approved-for-acquisition` →
+  `discovered` on a failed verification) are permitted; no ordering is *enforced* by validation
+  within either vocabulary (status is a label, not a state machine) — consistent with the existing
+  model, which does not enforce status order. What IS enforced is membership: a value must belong
+  to the vocabulary of the entity it is authored on.
 
 ## Derived views impact (regenerate)
 

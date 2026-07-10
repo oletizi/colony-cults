@@ -115,7 +115,12 @@ function vocabFinding(sourceId: string, field: string, value: string, owner: str
  * Validate every closed-vocabulary field the derived model actually exposes
  * a value for (FR-019): `status` and `rights.status` per Repository Record,
  * plus `manifest.objectStore.provider` where an object-store location is
- * present. `status === ''` is the loader's own "unset" sentinel (see
+ * present. `record.status` is checked against `RepositoryAcquisitionStatus`
+ * (`@/bibliography/vocab`'s `REPOSITORY_ACQUISITION_STATUS_VALUES`, via the
+ * field-name-keyed `isAllowed('status', ...)`) -- a Source-lifecycle value
+ * (`discovered`/`approved-for-acquisition`/`excluded`) authored on a
+ * RepositoryRecord is a cross-domain error and is correctly rejected here.
+ * `status === ''` is the loader's own "unset" sentinel (see
  * `deriveModel`), not a vocab violation -- `validateMissingRequired` reports
  * that case instead, so it is skipped here to avoid double-reporting the
  * same gap under two finding kinds. `ocr_status` has no reachable field on

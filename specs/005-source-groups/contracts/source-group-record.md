@@ -35,7 +35,8 @@ case: port-breton
 titles:
   - text: Acte d'accusation contre le Marquis de Rays
     role: canonical
-status: discovered          # NEW status; matures to approved-for-acquisition → to-collect → ...
+status: discovered          # NEW Source-lifecycle status; matures to approved-for-acquisition,
+                            # then a repositoryRecords entry is authored beginning at to-collect/wanted
 notes: "Candidate — ARK pending verification."
 # repositoryRecords added once the member has a real archival copy to acquire.
 ```
@@ -45,7 +46,14 @@ Rules:
   error `dangling-part-of` (target missing) or `part-of-not-a-group` (target is not a group).
 - A member is an ordinary Source: it MAY carry `repositoryRecords` once it has a stable archival
   identity, at which point it is independently fetchable.
-- `status: discovered` / `approved-for-acquisition` are valid vocab values (see validation.md).
+- `status: discovered` / `approved-for-acquisition` / `excluded` are valid values of the Source's
+  OWN **Source lifecycle status vocabulary** (`SourceLifecycleStatus` in `@/bibliography/vocab`) —
+  a distinct, closed vocabulary from a `repositoryRecords[].status` entry's **RepositoryRecord
+  acquisition status vocabulary** (`RepositoryAcquisitionStatus`: `wanted` / `to-collect` /
+  `collecting` / `collected` / `archived`). See contracts/validation.md. Authoring an acquisition
+  value (e.g. `archived`) as a member's own `status` is a cross-domain error and fails loud at
+  load; authoring a lifecycle value (e.g. `discovered`) inside a `repositoryRecords[].status` is
+  reported as a `vocab` validation finding.
 - Member id is opaque (`PB-###`), never a hierarchical `PB-P004-001` (FR-007).
 
 ## Serialization determinism

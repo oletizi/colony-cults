@@ -499,6 +499,33 @@ titles:
     expect(serialized).not.toMatch(/status:/);
   });
 
+  it.each(['discovered', 'approved-for-acquisition', 'excluded'])(
+    'loads and round-trips a Source lifecycle status: %s',
+    (status) => {
+      const filePath = writeSource(
+        'PB-P037.yml',
+        `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+status: ${status}
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+      );
+      const loaded = loadSourceFile(filePath);
+      expect(loaded.source.status).toBe(status);
+
+      const reserialized = serializeSource({ source: loaded.source, records: loaded.records });
+      expect(reserialized).toMatch(new RegExp(`status:\\s*${status}`));
+
+      writeFileSync(filePath, reserialized, 'utf-8');
+      const reloaded = loadSourceFile(filePath);
+      expect(reloaded.source.status).toBe(status);
+    },
+  );
+
   it('throws on an invalid status value', () => {
     const filePath = writeSource(
       'PB-P037.yml',
@@ -512,8 +539,31 @@ titles:
     role: canonical
 `,
     );
-    expect(() => loadSourceFile(filePath)).toThrow(/status "acquired" is not in the closed status vocabulary/);
+    expect(() => loadSourceFile(filePath)).toThrow(
+      /status "acquired" is not in the closed Source lifecycle status vocabulary/,
+    );
   });
+
+  it.each(['wanted', 'to-collect', 'collecting', 'collected', 'archived'])(
+    'throws a clear cross-domain error when a Source is authored with a RepositoryRecord acquisition status: %s',
+    (status) => {
+      const filePath = writeSource(
+        'PB-P037.yml',
+        `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+status: ${status}
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+      );
+      expect(() => loadSourceFile(filePath)).toThrow(
+        /is not in the closed Source lifecycle status vocabulary.*RepositoryRecord acquisition statuses/s,
+      );
+    },
+  );
 
   it('throws on an unknown kind value', () => {
     const filePath = writeSource(

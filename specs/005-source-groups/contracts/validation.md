@@ -24,6 +24,15 @@ Notes:
 
 - **Identifier-leak / vocab / uniqueness / required-core** checks run unchanged over group and
   member records (a group is a Source; a member is a Source).
+- **Status vocab is now split into two per-entity closed vocabularies**
+  (`src/bibliography/vocab.ts`'s `SourceLifecycleStatus` and `RepositoryAcquisitionStatus` —
+  design-review update): a member's own `status` (`discovered` / `approved-for-acquisition` /
+  `excluded`) is validated at LOAD time against the Source lifecycle vocab
+  (`@/bibliography/load`'s `isStatusValue`, throwing on a cross-domain acquisition value); a
+  RepositoryRecord's `status` (`wanted` / `to-collect` / `collecting` / `collected` / `archived`)
+  is validated at `bib validate` time by the existing `vocab` finding
+  (`validateVocab`), which now correctly rejects a cross-domain Source lifecycle value (e.g.
+  `discovered`) authored on a RepositoryRecord.
 - **View-drift** check: regenerated views must include the source-group row and member rows;
   drift detection compares byte-for-byte, so regeneration (R-002) must emit them deterministically.
 - A source group is exempt from any "must have a repository record to be acquirable" expectation —
