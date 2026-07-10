@@ -35,16 +35,14 @@ fi
 
 git -C "$ARCHIVE_REPO" fetch --quiet origin || true
 
-# Clean, sparse (image-binary-free), detached worktree pinned to the exact ref.
+# Clean, detached worktree pinned to the exact ref. The archive is metadata-only
+# (image binaries live in B2), so a full checkout is small -- no sparse needed.
 if git -C "$ARCHIVE_REPO" worktree list --porcelain | grep -qx "worktree $ARCHIVE_WORKTREE"; then
-  git -C "$ARCHIVE_WORKTREE" sparse-checkout set '/**' '!*.jpg'
+  git -C "$ARCHIVE_WORKTREE" sparse-checkout disable 2>/dev/null || true
   git -C "$ARCHIVE_WORKTREE" checkout --quiet --detach "$REF"
   git -C "$ARCHIVE_WORKTREE" reset --hard --quiet "$REF"
 else
-  git -C "$ARCHIVE_REPO" worktree add --quiet --no-checkout --detach "$ARCHIVE_WORKTREE" "$REF"
-  git -C "$ARCHIVE_WORKTREE" sparse-checkout init --no-cone
-  git -C "$ARCHIVE_WORKTREE" sparse-checkout set '/**' '!*.jpg'
-  git -C "$ARCHIVE_WORKTREE" checkout --quiet
+  git -C "$ARCHIVE_REPO" worktree add --quiet --detach "$ARCHIVE_WORKTREE" "$REF"
 fi
 
 echo "regen-snapshot: archive worktree $ARCHIVE_WORKTREE @ $(git -C "$ARCHIVE_WORKTREE" rev-parse --short HEAD) (pinned $REF)"

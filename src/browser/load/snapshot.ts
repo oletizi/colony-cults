@@ -1,26 +1,44 @@
 /**
  * The committed-snapshot read/write path. A snapshot is the serializable
- * {@link CorpusSnapshot} for ONE source, persisted as
- * `<snapshotDir>/<sourceId>.json` (one file per source, deterministic key
- * order). The Astro build reads these instead of the private archive when no
- * archive clone is available (e.g. on Netlify) -- the corpus is public-domain,
- * so the snapshot is committed to the repo (see scripts/build-snapshot.ts and
- * site/README.md).
+ * {@link CorpusSnapshot} for ONE source, persisted GZIPPED as
+ * `<snapshotDir>/<sourceId>.json.gz` (one file per source, deterministic key
+ * order under a fixed-mtime gzip). The Astro build reads these instead of the
+ * private archive when no archive clone is available (e.g. on Netlify) -- the
+ * corpus is public-domain, so the snapshot is committed to the repo (see
+ * scripts/build-snapshot.ts and site/README.md).
  *
  * The snapshot carries only what the build renders (text + metadata + image
  * handles); the bloated redundant `rights_raw` archive XML is never part of the
  * corpus model, so it is absent by construction.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import path from 'node:path';
 
 import type { CorpusSnapshot, RawSource, SkippedIssue } from '@/browser/model';
 import { parseCorpusSnapshot } from '@/browser/load/snapshot-guards';
 
-/** The on-disk path of a single source's snapshot file. */
+/** The on-disk path of a single source's gzipped snapshot file. */
 export function snapshotFilePath(snapshotDir: string, sourceId: string): string {
-  return path.join(snapshotDir, `${sourceId}.json`);
+  return path.join(snapshotDir, `${sourceId}.json.gz`);
+}
+
+/**
+ * Serializes + gzips a snapshot and writes it to `<snapshotDir>/<sourceId>.json.gz`.
+ * Deterministic: the JSON is stably serialized and Node's gzip writes a zero
+ * mtime header, so re-running over the same corpus yields byte-identical output
+ * on a given platform. Returns the written byte size.
+ */
+export function writeSnapshotFile(
+  snapshotDir: string,
+  sourceId: string,
+  snapshot: CorpusSnapshot
+): number {
+  const json = serializeSnapshot(snapshot);
+  const gz = gzipSync(Buffer.from(json, 'utf-8'), { level: 9 });
+  writeFileSync(snapshotFilePath(snapshotDir, sourceId), gz);
+  return gz.byteLength;
 }
 
 /**
@@ -63,7 +81,13 @@ export function readSnapshotCorpus(snapshotDir: string, sources: string[]): Corp
       );
     }
 
-    const text = readFileSync(file, 'utf-8');
+    let text: string;
+    try {
+      text = gunzipSync(readFileSync(file)).toString('utf-8');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`readSnapshotCorpus: ${file} could not be gunzipped -- ${message}`);
+    }
     let parsed: unknown;
     try {
       parsed = JSON.parse(text);

@@ -11,6 +11,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import path from 'node:path';
 import os from 'node:os';
 
@@ -24,6 +25,7 @@ import {
   serializeSnapshot,
   snapshotAvailable,
   snapshotFilePath,
+  writeSnapshotFile,
 } from '@/browser/load/snapshot';
 import { parseCorpusSnapshot } from '@/browser/load/snapshot-guards';
 import { loadCorpus } from '@/browser/load/corpus';
@@ -37,10 +39,6 @@ function core(snapshot: CorpusSnapshot): Pick<CorpusSnapshot, 'sources' | 'skipp
 
 function tmpSnapshotDir(): string {
   return mkdtempSync(path.join(os.tmpdir(), 'corpus-snapshot-'));
-}
-
-function writeSnapshotFile(dir: string, sourceId: string, snapshot: CorpusSnapshot): void {
-  writeFileSync(snapshotFilePath(dir, sourceId), serializeSnapshot(snapshot), 'utf-8');
 }
 
 describe('corpus snapshot round-trip (PB-P001 fixture)', () => {
@@ -134,8 +132,19 @@ describe('snapshot reader fail-loud (no archive needed)', () => {
   it('throws when the snapshot file is not valid JSON', () => {
     const dir = tmpSnapshotDir();
     try {
-      writeFileSync(snapshotFilePath(dir, 'PB-P001'), '{ not json', 'utf-8');
+      // Gzipped, but the decompressed payload is not JSON.
+      writeFileSync(snapshotFilePath(dir, 'PB-P001'), gzipSync(Buffer.from('{ not json', 'utf-8')));
       expect(() => readSnapshotCorpus(dir, ['PB-P001'])).toThrow(/not valid JSON/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('throws when the snapshot file is not gzip', () => {
+    const dir = tmpSnapshotDir();
+    try {
+      writeFileSync(snapshotFilePath(dir, 'PB-P001'), 'plain text, not gzip', 'utf-8');
+      expect(() => readSnapshotCorpus(dir, ['PB-P001'])).toThrow(/gunzipped/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

@@ -18,13 +18,13 @@
  * Regenerate + commit whenever the corpus changes (see site/README.md).
  */
 
-import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 import { resolveConfig } from '@/browser/config';
 import { readRawCorpus } from '@/browser/load/raw-corpus';
 import { resolveRepoRoot } from '@/browser/load/repo-root';
-import { serializeSnapshot, snapshotFilePath } from '@/browser/load/snapshot';
+import { snapshotFilePath, writeSnapshotFile } from '@/browser/load/snapshot';
 
 function main(): void {
   const config = resolveConfig();
@@ -54,10 +54,8 @@ function main(): void {
     // One file per source: read the raw corpus for just this source.
     const snapshot = readRawCorpus(config.archivePath, [sourceId], repoRoot);
     const file = snapshotFilePath(snapshotDir, sourceId);
-    const json = serializeSnapshot(snapshot);
-    writeFileSync(file, json, 'utf-8');
+    const bytes = writeSnapshotFile(snapshotDir, sourceId, snapshot);
 
-    const bytes = statSync(file).size;
     const pageCount = snapshot.sources.reduce(
       (sum, source) => sum + source.issues.reduce((s, issue) => s + issue.pages.length, 0),
       0

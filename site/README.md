@@ -37,7 +37,7 @@ With `CORPUS_ARCHIVE_PATH` unset, the same `npm run site:build` builds entirely 
 
 The build needs only **public-domain text + metadata** — page images are resolved to Gallica/CDN URLs and fetched client-side, never bundled. So the corpus is exported to a committed snapshot the build reads instead of the private archive:
 
-- `site/data/<sourceId>.json` — the serializable corpus for one source (text, provenance, and image **handles**: `folioId`, `ark`, `objectStoreKey`), deterministic (sorted) key order. Public-domain, so it is **committed** to the repo (not git-ignored). Folios are enumerated from the archive's `fNNN.yml` sidecars (not the `.jpg` binaries — the archive keeps only metadata; images live in B2/Gallica).
+- `site/data/<sourceId>.json.gz` — the serializable corpus for one source (text, provenance, and image **handles**: `folioId`, `ark`, `objectStoreKey`), deterministic (sorted) key order, **gzipped** (~5.5 MB vs ~17 MB raw). Public-domain, so it is **committed** to the repo (not git-ignored). Folios are enumerated from the archive's `fNNN.yml` sidecars (not the `.jpg` binaries — the archive keeps only metadata; images live in B2/Gallica).
 
 ### Reproducible regeneration (mechanically pinned)
 

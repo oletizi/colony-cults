@@ -14,14 +14,15 @@ trap 'rm -rf "$TMP"' EXIT
 bash "$REPO_ROOT/scripts/regen-snapshot.sh" "$TMP" >/dev/null
 
 fail=0
-for committed in "$REPO_ROOT"/site/data/*.json; do
+for committed in "$REPO_ROOT"/site/data/*.json.gz; do
   name="$(basename "$committed")"
-  [ "$name" = "archive-source.json" ] && continue
   fresh="$TMP/$name"
   if [ ! -f "$fresh" ]; then
     echo "snapshot:check DRIFT -- $name has no counterpart in a fresh regen" >&2
     fail=1
-  elif ! diff -q "$committed" "$fresh" >/dev/null; then
+  # Compare DECOMPRESSED content so gzip-encoding differences (zlib version) do
+  # not cause false drift -- only real content drift fails.
+  elif ! diff -q <(gunzip -c "$committed") <(gunzip -c "$fresh") >/dev/null; then
     echo "snapshot:check DRIFT -- $name differs from a fresh regen (run: npm run snapshot)" >&2
     fail=1
   fi
