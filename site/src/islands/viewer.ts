@@ -97,13 +97,12 @@ function readDescriptor(mount: HTMLElement): ImageDescriptor {
   }
 
   const parsed: unknown = JSON.parse(raw);
-  if (typeof parsed !== 'object' || parsed === null) {
+  if (!isRecord(parsed)) {
     throw new Error('viewer: data-osd-descriptor did not parse to an object.');
   }
 
-  const record = parsed as Record<string, unknown>;
-  const kind = record.kind;
-  const url = record.url;
+  const kind = parsed.kind;
+  const url = parsed.url;
   if (kind !== 'iiif' && kind !== 'full-image') {
     throw new Error(
       `viewer: data-osd-descriptor.kind must be one of ${IMAGE_KINDS.join(' | ')}; got ${JSON.stringify(kind)}.`
@@ -114,9 +113,14 @@ function readDescriptor(mount: HTMLElement): ImageDescriptor {
   }
 
   const descriptor: ImageDescriptor = { kind, url };
-  if (typeof record.width === 'number') descriptor.width = record.width;
-  if (typeof record.height === 'number') descriptor.height = record.height;
+  if (typeof parsed.width === 'number') descriptor.width = parsed.width;
+  if (typeof parsed.height === 'number') descriptor.height = parsed.height;
   return descriptor;
+}
+
+/** Narrows an unknown (e.g. JSON.parse output) to an indexable record. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 /** Wires the reading view's zoom-in / zoom-out / reset controls to `viewer`. */
