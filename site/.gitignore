@@ -1,3 +1,6 @@
 # Astro build output and generated type cache
 dist/
 .astro/
+
+# site:export-public deliberate-export artifact (generated, see scripts/export-public.ts)
+public-export/
