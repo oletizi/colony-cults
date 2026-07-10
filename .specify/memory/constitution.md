@@ -118,6 +118,14 @@ they MUST NOT be silently bypassed (no `--no-verify` end-runs) — instead remov
 underlying failure. Rationale: durable, portable enforcement cannot rely on an opt-in local
 side-channel.
 
+### XI. Design Through the Design Skill (NON-NEGOTIABLE)
+
+All UX/UI work MUST go through `/frontend-design:frontend-design`. NO EXCEPTIONS. Never off-road
+and implement design work without it. Any task that creates or reshapes user-facing UI — layout,
+components, visual design, typography, styling — begins by invoking the frontend-design skill
+BEFORE any markup or CSS is written. This is a hard commandment and overrides any inclination to
+"just quickly" build UI directly.
+
 ## Additional Constraints (Technology & Conventions)
 
 - **Runtime**: TypeScript executed with `tsx`. Do NOT use `ts-node`. (`tsx`, not "nox tsx".)

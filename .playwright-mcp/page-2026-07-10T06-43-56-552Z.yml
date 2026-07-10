@@ -1,0 +1,17 @@
+- main [ref=f1e2]:
+  - generic [ref=f1e3]:
+    - paragraph [ref=f1e4]: Corpus·archival dossier
+    - heading "A periodical, held as evidence." [level=1] [ref=f1e5]
+    - paragraph [ref=f1e7]: The propaganda organ of a 19th-century colonization scheme, kept as a study surface rather than reprinted as truth. Each page is held three ways at once — the scanned leaf, its French words, and an English reading — so the source can be examined without being believed.
+  - region "Holdings" [ref=f1e8]:
+    - paragraph [ref=f1e9]: Holdings·1 source
+    - list [ref=f1e10]:
+      - listitem [ref=f1e11]:
+        - link "La Nouvelle France Open Periodical · 73 issues catalogued ·1879–1885 PB-P001·ark:/12148/cb328261098/date·public-domain" [ref=f1e12] [cursor=pointer]:
+          - /url: /sources/PB-P001/
+          - generic [ref=f1e13]:
+            - heading "La Nouvelle France" [level=2] [ref=f1e14]
+            - generic [ref=f1e15]: Open›
+          - paragraph [ref=f1e16]: Periodical · 73 issues catalogued ·1879–1885
+          - paragraph [ref=f1e17]: PB-P001·ark:/12148/cb328261098/date·public-domain
+  - generic [ref=f1e18]: Corpus browser·static, built from the archive·public-domain sources

@@ -1,0 +1,40 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"9bf38dc..bae5e21","reviewClean":true,"note":"setup bundle T001-T003"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"9bf38dc..bae5e21","reviewClean":true,"note":"setup bundle T001-T003"}
+{"id":"T003","tierLabel":"fast","model":"haiku","commitRange":"9bf38dc..bae5e21","reviewClean":true,"note":"setup bundle T001-T003"}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"298f1f8","reviewClean":true,"note":"view-model types"}
+{"id":"T005","tierLabel":"fast","model":"haiku","commitRange":"455af06","reviewClean":true,"note":"env-driven LoadConfig"}
+{"id":"T006","tierLabel":"fast","model":"haiku","commitRange":"c1f2bc5","reviewClean":true,"note":"integration fixtures; carried note: align drop-provenance-field mutation to loader-validated field in T012/T009"}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commitRange":"c83deac","reviewClean":true,"note":"ocr-pages test (test-first)"}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"c83deac","reviewClean":true,"note":"ocr-pages impl; 8 tests green"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"c1d1e4e","reviewClean":true,"note":"provider test (test-first)"}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"c1d1e4e","reviewClean":true,"note":"provider iface + source-iiif; 4 tests green"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"68c6db7","reviewClean":true,"note":"translation test (test-first)"}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"68c6db7","reviewClean":true,"note":"translation+provenance impl; 9 tests green"}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"8c25dbd","reviewClean":true,"note":"integration test; fixture provenance-mutation realigned to sha256"}
+{"id":"T012","tierLabel":"powerful","model":"opus","commitRange":"8c25dbd","reviewClean":true,"note":"corpus core (corpus/issues/pages); scans collected issues; 26/26 suite. FLAG: full-corpus load throws on incomplete issue dirs — backlog"}
+{"id":"TASK-9","tierLabel":"powerful","model":"opus","commitRange":"950fc40","reviewClean":true,"note":"loader render-complete-report-skipped policy (operator decision); real corpus 73 issues/927 pages/5 skipped; 28 tests"}
+{"id":"T016","tierLabel":"balanced","model":"opus","commitRange":"2a38037","reviewClean":true,"note":"OpenSeadragon viewer island; iiif info.json vs full-image; provider-agnostic"}
+{"id":"T015","tierLabel":"powerful","model":"opus","commitRange":"2a38037","reviewClean":true,"note":"reading view layout ① via /frontend-design; built all 927 pages; sample page verified. US1 MVP complete"}
+{"id":"TASK-10","tierLabel":"balanced","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"source-iiif folio un-padding fix (scan blank); found in MVP preview; 6 provider tests"}
+{"id":"TASK-11","tierLabel":"balanced","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"scan-blank CORS fix: full-image descriptor + drop crossOriginPolicy; 30 tests; found in phone review"}
+{"id":"T015-ux","tierLabel":"powerful","model":"opus","commitRange":"f71c0b1","reviewClean":true,"note":"reading-view UX (operator feedback via /frontend-design): English-first, both French readings collapsed <details>, sticky top page-nav; 927 pages rebuilt"}
+{"id":"T015-scanfix","tierLabel":"powerful","model":"opus","commitRange":"eb6a60c","reviewClean":true,"note":"facsimile mount had 0 height (OSD sets position:relative; height:100% cannot resolve vs min-height) -> sticky panel with explicit height; VERIFIED stage 637x832, OSD pulls full tiles, scan renders. Also reverted TASK-11 to tiled IIIF+CORS."}
+{"id":"T020","tierLabel":"balanced","model":"sonnet","commitRange":"c3bc9b7","reviewClean":true,"note":"search documents (per-page, both langs, routeUrl)"}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"c3bc9b7","reviewClean":true,"note":"search-docs unit test; 5 green"}
+{"id":"T017","tierLabel":"balanced","model":"opus","commitRange":"a8e4f9b","reviewClean":true,"note":"source/issue route enumeration"}
+{"id":"T018","tierLabel":"balanced","model":"opus","commitRange":"a8e4f9b","reviewClean":true,"note":"routes coherence test; 5 green"}
+{"id":"T019","tierLabel":"powerful","model":"opus","commitRange":"a8e4f9b","reviewClean":true,"note":"landing + source index via /frontend-design; cross-issue nav + breadcrumb links; verified visually"}
+{"id":"T022","tierLabel":"fast","model":"opus","commitRange":"1416946","reviewClean":true,"note":"pagefind wired into site:build; data-pagefind-body + colon-safe meta; indexed 927 pages/117k words"}
+{"id":"T023","tierLabel":"powerful","model":"opus","commitRange":"1416946","reviewClean":true,"note":"search UI (Concordance) via /frontend-design; pagefind JS API; FR+EN findable, links to pages; verified real browser"}
+{"id":"T024","tierLabel":"powerful","model":"opus","commitRange":"77c5a2a","reviewClean":true,"note":"standalone ProvenanceRail (6 fields) via /frontend-design; fixed old 4-field inline that leaked issueId"}
+{"id":"T025","tierLabel":"powerful","model":"opus","commitRange":"77c5a2a","reviewClean":true,"note":"visual-system audit across 4 surfaces; fixed one oxide misuse; noisy-OCR framing intact"}
+{"id":"T026","tierLabel":"balanced","model":"opus","commitRange":"77c5a2a","reviewClean":true,"note":"embedded Playfair Display (SIL OFL) as ~27KB data-URI woff2; no external font host (CSP-safe)"}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"6b0fff3","reviewClean":true,"note":"b2-cdn provider (cdnBase/objectStoreKey -> full-image); makeProvider wired"}
+{"id":"T028","tierLabel":"balanced","model":"sonnet","commitRange":"6b0fff3","reviewClean":true,"note":"b2-cdn tests + swap parity (SC-005); 46 tests green"}
+{"id":"T029","tierLabel":"fast","model":"sonnet","commitRange":"6b0fff3","reviewClean":true,"note":"provider swap verified both build variants; quickstart Scenario 4 updated"}
+{"id":"T030","tierLabel":"balanced","model":"sonnet","commitRange":"1004fa9","reviewClean":true,"note":"deliberate public-export seam; refuses without --confirm; site/public-export; OQ-4 deferred honestly"}
+{"id":"T031","tierLabel":"fast","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"quickstart scenarios 1-6 verified via tests/builds/browser drives + CSP check"}
+{"id":"T032","tierLabel":"fast","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"site/README.md"}
+{"id":"T033","tierLabel":"balanced","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"quality audit: removed the one as-cast (isRecord guard); no any/ts-ignore; files <=500; CSP clean"}
+{"id":"T034","tierLabel":"balanced","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"end-to-end verify via real-browser drive of landing/source/reading/scan/search/provenance/nav"}
+{"id":"GOVERN","tierLabel":"powerful","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"govern --mode implement: fixed real findings (fonts.css oversize->same-origin woff2); barrage cannot complete in sandbox (24KB envelope vs legitimate large artifacts); operator-approved --override (validated live); terminal-outcome=graduated"}

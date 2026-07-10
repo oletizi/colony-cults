@@ -22,3 +22,12 @@ build/
 
 # git worktrees (harness-managed, never tracked)
 .claude/worktrees/
+
+# corpus-browser: transient preview/verification debug artifacts (screenshots, playwright logs)
+.playwright-mcp/
+/landing.png
+/source-index.png
+/search.png
+/search-results.png
+/reading-view-*.png
+/final-*.png
