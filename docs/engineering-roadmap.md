@@ -55,3 +55,9 @@ Two-level (really multi-level) canonical source metadata model: Source (intellec
 - design: docs/superpowers/specs/2026-07-09-source-groups-design.md
 - depends-on: impl:feature/canonical-source-metadata
 Source Group kind for research-defined collections that are discovered before acquired (resolves PB-P004 mis-model + backlog TASK-3). Extend Source.kind to periodical|monograph|source-group; a source-group has members (part_of edges), NOT repositoryRecords, and is never fetchable; fetcher/acquisition fails loud+informatively on a source-group keyed on kind. Add discovered/approved-for-acquisition to the status vocab. Reclassify PB-P004 (French legal corpus) as the first source-group with member children. Discover->Inventory->Verify->Promote->Acquire pipeline. Does NOT add repository-record to the kind enum (already a separate entity). From a third-party design guidance doc, with refinements.
+
+## impl:feature/source-group-acquisition
+- status: planned
+- design: docs/superpowers/specs/2026-07-09-source-group-acquisition-design.md
+- depends-on: impl:feature/gallica-fetcher
+Reusable Discover->Inventory->Verify->Promote->Acquire pipeline for source-group members (agent-assisted discovery + judgment), proven end-to-end by acquiring PB-P004's Rays legal corpus. Builds inventory/verify-member/promote CLI commands over the shipped source-group model (member Source with partOf + lifecycle status discovered->approved-for-acquisition); members get namespaced IDs PB-P004-00N; acquire reuses the fetcher (--object-store to B2). Discovery search mechanism is a spike (BnF catalogue SRU lead, Playwright browser fallback). Resolves the PB-P004 blocked-assets gap that source-groups intentionally created. Newspaper trial coverage routes to PB-N###, not PB-P004.
