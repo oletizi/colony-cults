@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
@@ -13,6 +13,8 @@ import {
   requireObject,
   requireString,
 } from '@/bibliography/load-primitives';
+import { isSourceLifecycleStatus } from '@/bibliography/vocab';
+import type { SourceLifecycleStatus } from '@/bibliography/vocab';
 import type { Source, WorkIdentifier } from '@/model/source';
 
 /**
@@ -34,6 +36,8 @@ const SOURCE_KEYS = new Set([
   'sourceId',
   'titles',
   'kind',
+  'partOf',
+  'status',
   'creator',
   'language',
   'identifiers',
@@ -43,7 +47,20 @@ const SOURCE_KEYS = new Set([
 ]);
 
 function isSourceKind(value: string): value is Source['kind'] {
-  return value === 'periodical' || value === 'monograph';
+  return value === 'periodical' || value === 'monograph' || value === 'source-group';
+}
+
+/**
+ * A `Source`'s own lifecycle status is a DIFFERENT, narrower state machine
+ * from a RepositoryRecord's acquisition `status`
+ * (`@/bibliography/vocab`'s `REPOSITORY_ACQUISITION_STATUS_VALUES`, checked
+ * via `isAllowed('status', ...)`) -- so it is validated against the separate
+ * `SOURCE_LIFECYCLE_STATUS_VALUES` vocab via `isSourceLifecycleStatus`. An
+ * acquisition-only value (e.g. `archived`) authored on a Source is a
+ * cross-domain error and is rejected here, not silently accepted.
+ */
+function isStatusValue(value: string): value is SourceLifecycleStatus {
+  return isSourceLifecycleStatus(value);
 }
 
 function readFileText(filePath: string): string {
@@ -95,8 +112,30 @@ export function loadSourceFile(filePath: string): LoadedSource {
 
   const kindRaw = requireString(obj.kind, filePath, 'kind');
   if (!isSourceKind(kindRaw)) {
-    fail(filePath, `kind "${kindRaw}" must be "periodical" or "monograph"`);
+    fail(filePath, `kind "${kindRaw}" must be "periodical", "monograph", or "source-group"`);
   }
+
+  // The member -> source-group edge (FR-006). Absent stays undefined -- no
+  // default is invented. Group/member split + dangling-partOf validation are
+  // out of scope here (later validation task).
+  const partOf = optionalString(obj.partOf, filePath, 'partOf');
+
+  // The Source's own lifecycle status (US3), e.g. `discovered` on a member
+  // stub. Absent stays undefined -- no default is invented. An authored value
+  // outside the closed SOURCE lifecycle vocab fails loud (no silent drop,
+  // matching `kind`) -- including a RepositoryRecord acquisition-only value
+  // (e.g. `archived`), which is a cross-domain error on a Source.
+  const statusRaw = optionalString(obj.status, filePath, 'status');
+  if (statusRaw !== undefined && !isStatusValue(statusRaw)) {
+    fail(
+      filePath,
+      `status "${statusRaw}" is not in the closed Source lifecycle status vocabulary ` +
+        `(discovered / approved-for-acquisition / excluded) -- RepositoryRecord ` +
+        `acquisition statuses (wanted / to-collect / collecting / collected / archived) ` +
+        `belong on a repositoryRecords entry, not on the Source itself`,
+    );
+  }
+  const status = statusRaw;
 
   const creator = optionalString(obj.creator, filePath, 'creator');
   const language = optionalString(obj.language, filePath, 'language');
@@ -156,6 +195,8 @@ export function loadSourceFile(filePath: string): LoadedSource {
     sourceId,
     titles,
     kind: kindRaw,
+    partOf,
+    status,
     identifiers,
     creator,
     language,
@@ -183,4 +224,27 @@ export function loadAllSources(dir: string): LoadedSource[] {
     .filter((name) => SOURCE_FILE_PATTERN.test(name))
     .sort();
   return names.map((name) => loadSourceFile(path.join(dir, name)));
+}
+
+/**
+ * Resolve a single source's canonical `kind` from the SSOT (`dir` is the
+ * `bibliography/sources` directory, same convention as {@link loadAllSources}).
+ * Returns `undefined` when no source with `sourceId` exists -- that is a
+ * lookup miss, not missing data to throw on. Callers that need "is this a
+ * source-group" (e.g. the fetch-source guardrail) key on the returned kind
+ * rather than on `sourceId` naming (contracts/fetch-guardrail.md R-001/FR-003).
+ *
+ * `dir` itself being absent is ALSO treated as a lookup miss (not a throw):
+ * callers such as the fetch-source guardrail may run against a `repoRoot`
+ * that has no `bibliography/sources` SSOT at all (e.g. unit-test fixtures
+ * unrelated to bibliography), and "no SSOT reachable" collapses to the same
+ * "kind unknown" answer as "SSOT present but this id isn't in it." A caller
+ * that genuinely needs to fail loud on a missing SSOT directory (e.g. `bib
+ * validate`) uses {@link loadAllSources} directly, which still throws.
+ */
+export function sourceKind(sourceId: string, dir: string): Source['kind'] | undefined {
+  if (!existsSync(dir)) {
+    return undefined;
+  }
+  return loadAllSources(dir).find((loaded) => loaded.source.sourceId === sourceId)?.source.kind;
 }

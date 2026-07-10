@@ -25,7 +25,17 @@ export interface RepositoryRecord {
   originalUrl?: string;
   /** Retrieval timestamp (ISO). */
   retrievedAt?: string;
-  /** Acquisition status; validated against the closed vocab at runtime. */
+  /**
+   * Acquisition status; validated against the closed
+   * `RepositoryAcquisitionStatus` vocab at runtime
+   * (`@/bibliography/vocab`'s `REPOSITORY_ACQUISITION_STATUS_VALUES`, via
+   * `validateVocab`) -- a distinct state machine from a `Source`'s own
+   * lifecycle status. Kept as plain `string` here (not the narrower union)
+   * because this field is also used to carry the loader's `''` unset
+   * sentinel for a derived-only record with no authored acquisition data
+   * (see `@/bibliography/derive`); narrowing to `RepositoryAcquisitionStatus`
+   * would make that sentinel unrepresentable without a cast.
+   */
   status: string;
   /** Where this copy's mirrored assets live (storage axis). */
   manifest?: AssetManifestRef;

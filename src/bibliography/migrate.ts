@@ -309,6 +309,43 @@ async function safeGather(sourceId: string, archiveRoot: string): Promise<AssetP
 }
 
 /**
+ * Convert a PB-P004-shaped monograph Source to a source-group (R-003).
+ *
+ * Returns a new Source with `kind: 'source-group'`, preserving `sourceId`,
+ * `titles`, `case`, `creator`, `language`, `notes`, and `identifiers` exactly.
+ * `partOf` is never copied -- a source-group is never itself a member (FR-001).
+ * `Source` carries no repository-record-bearing field (those live in the
+ * separate `AuthoredRepositoryRecord`/SSOT YAML), so there is nothing else to
+ * strip here; the authored `to-collect` record is dropped at the SSOT/serialize
+ * layer (T015), not on this in-memory model.
+ *
+ * Idempotent: since the result's `kind` is unconditionally `'source-group'`
+ * and every other field is copied straight through, re-running this on an
+ * already-migrated source-group yields an equivalent Source.
+ */
+export function migrateSourceToGroup(source: Source): Source {
+  const group: Source = {
+    sourceId: source.sourceId,
+    titles: source.titles,
+    kind: 'source-group',
+    identifiers: source.identifiers,
+  };
+  if (source.creator !== undefined) {
+    group.creator = source.creator;
+  }
+  if (source.language !== undefined) {
+    group.language = source.language;
+  }
+  if (source.case !== undefined) {
+    group.case = source.case;
+  }
+  if (source.notes !== undefined) {
+    group.notes = source.notes;
+  }
+  return group;
+}
+
+/**
  * Fold the five legacy representations into the canonical SSOT (T013):
  *
  *  1. `bibliography/legacy/sources.csv`            -- the Source spine (required).
@@ -385,10 +422,34 @@ export async function migrate(opts: MigrateOptions): Promise<MigrateResult> {
   migrated.sort((a, b) => (a.source.sourceId < b.source.sourceId ? -1 : 1));
 
   const sourcesDir = path.join(opts.repoRoot, 'bibliography', 'sources');
+
+  // R-003: a source-group promotion already recorded in the SSOT MUST survive
+  // a re-run of migrate -- the legacy CSVs know nothing about source-groups
+  // (detectKind only ever answers periodical/monograph), so without this the
+  // legacy-derived monograph would silently overwrite the promotion on every
+  // run. Load whatever SSOT already exists BEFORE it is overwritten below,
+  // and re-derive (not merely re-copy) each existing source-group's Source
+  // via the same idempotent migrateSourceToGroup used for the initial
+  // promotion, with zero repository records (a group holds none).
+  const existingGroups = new Map<string, Source>();
+  if (existsSync(sourcesDir)) {
+    for (const existing of loadAllSources(sourcesDir)) {
+      if (existing.source.kind === 'source-group') {
+        existingGroups.set(existing.source.sourceId, existing.source);
+      }
+    }
+  }
+  const finalized: MigratedSource[] = migrated.map((entry) => {
+    const existingGroup = existingGroups.get(entry.source.sourceId);
+    return existingGroup === undefined
+      ? entry
+      : { source: migrateSourceToGroup(existingGroup), records: [] };
+  });
+
   const written: string[] = [];
   if (write) {
     mkdirSync(sourcesDir, { recursive: true });
-    for (const entry of migrated) {
+    for (const entry of finalized) {
       const filePath = path.join(sourcesDir, `${entry.source.sourceId}.yml`);
       writeFileSync(filePath, serializeSource(entry), 'utf-8');
       written.push(filePath);
@@ -397,7 +458,7 @@ export async function migrate(opts: MigrateOptions): Promise<MigrateResult> {
 
   const loaded: LoadedSource[] = write
     ? loadAllSources(sourcesDir)
-    : migrated.map((entry) => ({ source: entry.source, records: entry.records, identifierLeaks: [] }));
+    : finalized.map((entry) => ({ source: entry.source, records: entry.records, identifierLeaks: [] }));
 
   const provenanceBySource = new Map<string, AssetProvenance[]>();
   if (archiveAvailable) {

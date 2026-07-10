@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
+import { sourceKind } from '@/bibliography/load';
 import { issueDir, monographDir, sourceLayout } from '@/archive/location';
 import { buildCensus } from '@/census/build';
 import { serializeCensus } from '@/census/serialize';
@@ -40,6 +41,19 @@ export async function runFetchSource(
     throw new Error('fetch-source: missing required argument <periodicalArk>');
   }
   const sourceId = requireOption(args.options.sourceId, 'source-id', 'fetch-source');
+
+  // Guardrail (TASK-3 / contracts/fetch-guardrail.md): a Source Group has no
+  // archival object of its own to fetch. Key on the SSOT canonical `kind`
+  // (FR-003), NOT on `sourceLayout`'s registry -- an unregistered group would
+  // otherwise surface the opaque "no archive layout registered" error instead
+  // of this actionable redirect. Must run BEFORE `sourceLayout` is consulted.
+  const sourcesDir = path.join(deps.repoRoot, 'bibliography', 'sources');
+  if (sourceKind(sourceId, sourcesDir) === 'source-group') {
+    throw new Error(
+      `fetch-source: "${sourceId}" is a Source Group — it has no archival object to fetch. ` +
+        `Discover and inventory its members, then fetch the members.`,
+    );
+  }
 
   if (sourceLayout(sourceId).kind === 'monograph') {
     await runFetchSourceMonograph(args, deps, sourceId, ark);

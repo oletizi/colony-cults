@@ -27,6 +27,17 @@ function makeSource(overrides: Partial<Source> = {}): Source {
   };
 }
 
+/** A minimal, valid source-group {@link Source} fixture. */
+function makeSourceGroup(overrides: Partial<Source> = {}): Source {
+  return {
+    sourceId: 'PB-P004',
+    kind: 'source-group',
+    titles: [{ text: 'Port-Breton Group', role: 'canonical' }],
+    identifiers: [],
+    ...overrides,
+  };
+}
+
 /** A minimal, valid {@link RepositoryRecord} fixture. */
 function makeRecord(overrides: Partial<RepositoryRecord> = {}): RepositoryRecord {
   return {
@@ -186,6 +197,35 @@ describe('validateVocab (FR-019)', () => {
 
     expect(validate(model).filter((f) => f.kind === 'vocab')).toEqual([]);
   });
+
+  describe('cross-domain rejection: Source lifecycle values on a RepositoryRecord', () => {
+    it.each(['discovered', 'excluded', 'approved-for-acquisition'])(
+      'reports a vocab finding for a RepositoryRecord authored with Source lifecycle status "%s"',
+      (status) => {
+        const source = makeSource();
+        const record = makeRecord({ status });
+        const model = makeModel({ sources: [source], repositoryRecords: [record] });
+
+        const vocabFindings = validate(model).filter((f) => f.kind === 'vocab');
+        expect(vocabFindings).toHaveLength(1);
+        expect(vocabFindings[0].detail).toContain('status');
+        expect(vocabFindings[0].detail).toContain(status);
+      },
+    );
+  });
+
+  describe('regression guard: existing acquisition statuses still validate on a RepositoryRecord', () => {
+    it.each(['wanted', 'to-collect', 'collecting', 'collected', 'archived'])(
+      'reports no vocab finding for RepositoryRecord acquisition status "%s"',
+      (status) => {
+        const source = makeSource();
+        const record = makeRecord({ status });
+        const model = makeModel({ sources: [source], repositoryRecords: [record] });
+
+        expect(validate(model).filter((f) => f.kind === 'vocab')).toEqual([]);
+      },
+    );
+  });
 });
 
 describe('validateMissingRequired (FR-019)', () => {
@@ -301,5 +341,38 @@ describe('validate -- full consistency (SC-007)', () => {
     expect(findings.some((f) => f.kind === 'identifier-leak')).toBe(true);
     expect(findings.some((f) => f.kind === 'orphan-record')).toBe(true);
     expect(findings.some((f) => f.kind === 'missing-required')).toBe(true);
+  });
+});
+
+describe('validateSourceGroups wired into validate() aggregator', () => {
+  it('surfaces a group-has-repository-records finding via validate() when a source-group carries a repository record', () => {
+    const group = makeSourceGroup();
+    const record = makeRecord({ sourceId: 'PB-P004', sourceArchive: 'Gallica / BnF' });
+    const model = makeModel({ sources: [group], repositoryRecords: [record] });
+
+    const findings = validate(model);
+
+    const groupRecordFindings = findings.filter((f) => f.kind === 'group-has-repository-records');
+    expect(groupRecordFindings).toHaveLength(1);
+    expect(groupRecordFindings[0].sourceId).toBe('PB-P004');
+    expect(groupRecordFindings[0].detail).toContain('PB-P004');
+    expect(groupRecordFindings[0].detail).toMatch(/must not hold repository records/);
+  });
+
+  it('reports no source-group findings for a clean model with a valid group and members', () => {
+    const group = makeSourceGroup({ sourceId: 'PB-P004' });
+    const member1 = makeSource({ sourceId: 'PB-P005', partOf: 'PB-P004' });
+    const member2 = makeSource({ sourceId: 'PB-P006', partOf: 'PB-P004' });
+    const model = makeModel({ sources: [group, member1, member2] });
+
+    const findings = validate(model);
+
+    const sourceGroupFindings = findings.filter(
+      (f) =>
+        f.kind === 'group-has-repository-records' ||
+        f.kind === 'dangling-part-of' ||
+        f.kind === 'part-of-not-a-group',
+    );
+    expect(sourceGroupFindings).toHaveLength(0);
   });
 });

@@ -55,3 +55,13 @@ Two-level (really multi-level) canonical source metadata model: Source (intellec
 - design: docs/superpowers/specs/2026-07-09-corpus-browser-design.md
 - depends-on: impl:feature/archive-object-store
 Static Astro website to browse the corpus (v1: PB-P001 La Nouvelle France): source->issue->page reading view with a deep-zoom page-image viewer beside French OCR + English translation (chosen layout: Facsimile & parallel text). Configurable image-source provider (source-archive IIIF e.g. Gallica, or our B2/CDN) via a flag. Client-side search (Pagefind) over OCR+translation. Public-reader, internal-first (build reads the private archive locally; public deploy is a deliberate export of PD text/images). Visual identity: cool archival 'Prospectus/Dossier' direction, provenance-rail signature. Also depends on source-translation output (in-flight).
+
+## impl:feature/source-groups
+- status: closed
+- validated: yes
+- analyze-clean: yes
+- spec: specs/005-source-groups
+- design-approved: yes
+- design: docs/superpowers/specs/2026-07-09-source-groups-design.md
+- depends-on: impl:feature/canonical-source-metadata
+Source Group kind for research-defined collections that are discovered before acquired (resolves PB-P004 mis-model + backlog TASK-3). Extend Source.kind to periodical|monograph|source-group; a source-group has members (part_of edges), NOT repositoryRecords, and is never fetchable; fetcher/acquisition fails loud+informatively on a source-group keyed on kind. Add discovered/approved-for-acquisition to the status vocab. Reclassify PB-P004 (French legal corpus) as the first source-group with member children. Discover->Inventory->Verify->Promote->Acquire pipeline. Does NOT add repository-record to the kind enum (already a separate entity). From a third-party design guidance doc, with refinements.
