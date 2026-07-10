@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/corpus-browser",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-browser",
+  "override": true,
+  "overrideReason": "Operator override (validated live). The cross-model govern barrage cannot complete in this sandbox: it FATALs on legitimate artifacts exceeding the 24KB fleet envelope (86KB reading-view design mockup, 27KB embedded font woff2, 263KB package-lock.json) which are not code-quality issues and cannot be shrunk. All real issues govern surfaced were fixed (oversized fonts.css data-URI to same-origin woff2; stray screenshots untracked). Feature is validated: 46 vitest tests green; every surface driven and confirmed in a real browser (facsimile scan renders via Gallica IIIF, English-first reading view, Concordance search over 927 pages returning FR+EN results, six-field provenance rail, cross-issue nav); design operator-approved; quality audit clean (no any/as/ts-ignore, all files <=500 lines, CSP-safe with embedded same-origin font and same-origin search). Recorded per the established env practice."
+}
