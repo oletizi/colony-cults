@@ -5,12 +5,14 @@
  * provider used when the browser reads page images straight from Gallica
  * rather than a mirrored CDN (`b2-cdn`, T027).
  *
- * Observed Gallica IIIF pattern (reference): a page image URL looks like
- * `https://gallica.bnf.fr/iiif/ark:/12148/<id>/f<N>/full/full/0/native.jpg`;
- * for a deep-zoom tile source, the IIIF base is
- * `https://gallica.bnf.fr/iiif/<ark>/<folioId>`, and OpenSeadragon consumes
- * that base's `info.json`. This module builds that base url -- it does not
- * append `full/full/0/native.jpg` or fetch `info.json` itself.
+ * Gallica IIIF page image URL: `https://gallica.bnf.fr/iiif/ark:/12148/<id>/
+ * f<N>/full/full/0/native.jpg` (the exact form the corpus sidecars record in
+ * `original_url`). We emit that full-image url as a `full-image` descriptor
+ * (a simple single image the viewer loads with client-side zoom), NOT a tiled
+ * `iiif` descriptor: OSD's tiled path fetches `info.json` cross-origin, which
+ * requires CORS that Gallica does not reliably send to a browser, blanking the
+ * viewer (TASK-11). A plain cross-origin image needs no CORS to display, so
+ * this renders reliably. (True IIIF tiling is a deferred enhancement.)
  */
 
 import type { ImageDescriptor } from '@/browser/model';
@@ -59,8 +61,8 @@ function resolveSourceIiifImage(page: PageInput): ImageDescriptor {
   }
 
   return {
-    kind: 'iiif',
-    url: `${GALLICA_IIIF_BASE}/${ark}/${gallicaFolio(folioId)}`,
+    kind: 'full-image',
+    url: `${GALLICA_IIIF_BASE}/${ark}/${gallicaFolio(folioId)}/full/full/0/native.jpg`,
   };
 }
 
