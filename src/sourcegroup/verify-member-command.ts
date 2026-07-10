@@ -28,6 +28,7 @@
 
 import type { LoadedSource } from '@/bibliography/load';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
+import { authoredToRepositoryRecord } from '@/bibliography/authored-record';
 import { describeError } from '@/bibliography/load-primitives';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { verifyMember } from '@/sourcegroup/verify-member';
@@ -70,28 +71,6 @@ export interface RunVerifyMemberResult {
 /** The record's ark value (the first `ark`-typed copy identifier), if any. */
 function arkOf(record: AuthoredRepositoryRecord): string | undefined {
   return record.identifiers?.find((identifier) => identifier.type === 'ark')?.value;
-}
-
-/**
- * Widen an authored (SSOT-shape) record into the full `RepositoryRecord`
- * shape `record-select`/`verifyMember` operate on, by attaching the owning
- * `sourceId` -- the SSOT's one-file-per-source layout implies it rather than
- * repeating it (contracts/source-record.md). Deliberately excludes the
- * authored-only `census` pointer, which neither consumer needs.
- */
-function toRepositoryRecord(sourceId: string, authored: AuthoredRepositoryRecord): RepositoryRecord {
-  return {
-    sourceId,
-    sourceArchive: authored.sourceArchive,
-    status: authored.status,
-    identifiers: authored.identifiers,
-    rights: authored.rights,
-    catalogUrl: authored.catalogUrl,
-    originalUrl: authored.originalUrl,
-    retrievedAt: authored.retrievedAt,
-    metadataSnapshot: authored.metadataSnapshot,
-    verification: authored.verification,
-  };
 }
 
 /**
@@ -175,7 +154,7 @@ export async function runVerifyMember(input: RunVerifyMemberInput): Promise<RunV
   let record: RepositoryRecord;
   try {
     const candidates = member.records.map((authored) =>
-      toRepositoryRecord(member.source.sourceId, authored),
+      authoredToRepositoryRecord(member.source.sourceId, authored),
     );
     // (sourceId, sourceArchive) is unique within one member's authored
     // records (loadSourceFile rule 5), so this selection is exactly the

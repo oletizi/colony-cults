@@ -1,10 +1,10 @@
 import { existsSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { authoredToRepositoryRecord } from '@/bibliography/authored-record';
 import { loadSourceFile, sourceKind } from '@/bibliography/load';
 import { serializeSource } from '@/bibliography/migrate-serialize';
-import type { AuthoredRepositoryRecord } from '@/bibliography/model';
-import type { RepositoryRecord, VerificationVerdict } from '@/model/repository-record';
+import type { VerificationVerdict } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import {
@@ -103,42 +103,6 @@ function assertWellFormed(input: PromoteInput): void {
   }
 }
 
-/**
- * Adapt an authored record to the {@link RepositoryRecord} shape
- * `selectRepositoryRecord`/`verifyMember` consume, injecting the owning
- * `sourceId` (implied by the SSOT file, not repeated in the authored record).
- * Only the fields those two consumers read are carried; nothing is fabricated.
- */
-function toRepositoryRecord(
-  sourceId: string,
-  authored: AuthoredRepositoryRecord,
-): RepositoryRecord {
-  const record: RepositoryRecord = {
-    sourceId,
-    sourceArchive: authored.sourceArchive,
-    status: authored.status,
-  };
-  if (authored.identifiers !== undefined) {
-    record.identifiers = authored.identifiers;
-  }
-  if (authored.rights !== undefined) {
-    record.rights = authored.rights;
-  }
-  if (authored.catalogUrl !== undefined) {
-    record.catalogUrl = authored.catalogUrl;
-  }
-  if (authored.originalUrl !== undefined) {
-    record.originalUrl = authored.originalUrl;
-  }
-  if (authored.retrievedAt !== undefined) {
-    record.retrievedAt = authored.retrievedAt;
-  }
-  if (authored.metadataSnapshot !== undefined) {
-    record.metadataSnapshot = authored.metadataSnapshot;
-  }
-  return record;
-}
-
 /** The names of the HARD checks that failed, for a loud, specific abort message. */
 function failedCheckNames(verdict: MemberVerdict): string[] {
   const failed: string[] = [];
@@ -230,7 +194,7 @@ export async function runPromote(input: PromoteInput): Promise<PromoteResult> {
   resolvePartOfGroup(source, input);
 
   // Select the copy (infer-one / fail-loud ambiguity, FR-009a).
-  const converted = records.map((authored) => toRepositoryRecord(input.sourceId, authored));
+  const converted = records.map((authored) => authoredToRepositoryRecord(input.sourceId, authored));
   const selected = selectRepositoryRecord(converted, input.archive);
   const selectedIndex = converted.indexOf(selected);
   const selectedAuthored = records[selectedIndex];
