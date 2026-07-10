@@ -1,0 +1,16 @@
+# Netlify build config for the corpus-browser static site.
+#
+# The site builds from the COMMITTED public-domain snapshot under site/data/
+# (one <sourceId>.json per source), NOT the private archive clone. Netlify has
+# no CORPUS_ARCHIVE_PATH, so loadCorpus reads the snapshot (see
+# src/browser/load/corpus.ts and site/README.md). Regenerate + commit the
+# snapshot with `npm run site:snapshot` whenever the corpus changes.
+
+[build]
+  command = "npm ci && npm run site:build"
+  publish = "site/dist"
+
+[build.environment]
+  # Resolve page images straight from Gallica's public IIIF service (no CDN /
+  # object-store mirror required for a public deploy).
+  CORPUS_IMAGE_PROVIDER = "source-iiif"

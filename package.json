@@ -11,6 +11,7 @@
     "gallica": "tsx src/index.ts",
     "site:build": "astro build --root site && pagefind --site site/dist",
     "site:export-public": "tsx scripts/export-public.ts",
+    "site:snapshot": "tsx scripts/build-snapshot.ts",
     "site:preview": "astro preview --root site",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

@@ -7,16 +7,19 @@ Spec: [`specs/005-corpus-browser/`](../specs/005-corpus-browser/). The headless 
 ## Prerequisites
 
 - Node 20, repo deps installed (`npm install` at the repo root).
-- A local **archive clone** with the corpus (default on this machine: `/Users/orion/work/colony-cults-archive`). The corpus content is **public-domain** — no credentials are required.
+- To build from the archive OR to regenerate the snapshot: a local **archive clone** with the corpus (default on this machine: `/Users/orion/work/colony-cults-archive`). To build from the committed snapshot (e.g. on Netlify): **no archive needed**. The corpus content is **public-domain** — no credentials are required either way.
 
 ## Configuration (environment, no secrets)
 
 | Var | Required | Meaning |
 |-----|----------|---------|
-| `CORPUS_ARCHIVE_PATH` | **yes** (build) | Path to the local archive clone. Fail-loud if unset/missing. |
+| `CORPUS_ARCHIVE_PATH` | no | Path to the local archive clone. When set and present, the build reads it fresh; when unset, the build reads the committed snapshot (below). |
+| `CORPUS_SNAPSHOT_DIR` | no (default `site/data`) | Where the committed snapshot lives (one `<sourceId>.json` per source). Absolute, or relative to the repo root. |
 | `CORPUS_SOURCES` | no (default `PB-P001`) | Comma-separated source ids to include. |
 | `CORPUS_IMAGE_PROVIDER` | no (default `source-iiif`) | `source-iiif` (Gallica IIIF) or `b2-cdn` (object-store + CDN). |
 | `CORPUS_CDN_BASE` | only for `b2-cdn` | CDN base fronting the B2 bucket. Fail-loud if the provider is `b2-cdn` and this is unset. |
+
+`loadCorpus` picks the corpus source by explicit precedence (no silent fallback): **archive** if `CORPUS_ARCHIVE_PATH` is set and exists, **else** the committed snapshot if present, **else** it throws naming both. Image URLs are always (re-)resolved from the stored handles by the active provider, so the same snapshot serves either `source-iiif` or `b2-cdn`.
 
 ## Build & preview
 
@@ -27,6 +30,23 @@ npm run site:preview -- --host 0.0.0.0                                  # serve 
 ```
 
 `site:build` runs `astro build --root site && pagefind --site site/dist`. Output is the static `site/dist/` (git-ignored). `site:preview` serves it — no application server, no env var needed at serve time.
+
+With `CORPUS_ARCHIVE_PATH` unset, the same `npm run site:build` builds entirely from the committed snapshot (no archive) — this is what the public/Netlify deploy runs.
+
+## Publishable snapshot (build without the archive)
+
+The build needs only **public-domain text + metadata** — page images are resolved to Gallica/CDN URLs and fetched client-side, never bundled. So the corpus is exported to a committed snapshot the build reads instead of the private archive:
+
+- `site/data/<sourceId>.json` — the serializable corpus for one source (text, provenance, and image **handles**: `folioId`, `ark`, `objectStoreKey`), deterministic (sorted) key order. Public-domain, so it is **committed** to the repo (not git-ignored).
+
+Regenerate it whenever the corpus changes, then commit the result:
+
+```bash
+CORPUS_ARCHIVE_PATH=/path/to/colony-cults-archive npm run site:snapshot
+git add site/data/*.json && git commit -m "corpus-browser: refresh snapshot"
+```
+
+A build with no `CORPUS_ARCHIVE_PATH` reads these files; image URLs are re-resolved at build time by the active provider, so swapping `CORPUS_IMAGE_PROVIDER` needs no archive. This closes **OQ-3 / OQ-4** for the public deploy: the build's access to corpus data is the committed public-domain snapshot — no credentials, no archive access, no build-time secrets.
 
 ## Image-source provider
 
@@ -41,9 +61,9 @@ A missing provider config fails the build loud — there is no silent fallback.
 
 Client-side, no server: [Pagefind](https://pagefind.app) indexes the built reading-view HTML (both French and English) at build time. The landing-page "Concordance" searches every page and links each result to its reading view.
 
-## Deploy (static)
+## Deploy (static, no archive)
 
-Any static host (Netlify / Cloudflare Pages): publish `site/dist/`, build command `npm run site:build` with `CORPUS_ARCHIVE_PATH` set in the build environment. If you enforce a Content-Security-Policy, the site is self-contained (embedded display font as a `data:` URI, same-origin search bundle) — the only external request is to the **image host** (`gallica.bnf.fr` for `source-iiif`, or your CDN for `b2-cdn`), which you allow-list in `img-src`.
+Any static host (Netlify / Cloudflare Pages) builds from the committed snapshot with **no archive clone**. The repo ships [`netlify.toml`](../netlify.toml): build command `npm ci && npm run site:build`, publish `site/dist`, and `CORPUS_IMAGE_PROVIDER = "source-iiif"`. Netlify has no `CORPUS_ARCHIVE_PATH`, so the build reads `site/data/*.json`. If you enforce a Content-Security-Policy, the site is self-contained (embedded display font as a `data:` URI, same-origin search bundle) — the only external request is to the **image host** (`gallica.bnf.fr` for `source-iiif`, or your CDN for `b2-cdn`), which you allow-list in `img-src`.
 
 ### Public export
 

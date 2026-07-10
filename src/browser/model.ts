@@ -176,6 +176,80 @@ export interface ProvenanceRecord {
 }
 
 /**
+ * The SERIALIZABLE, image-UNRESOLVED corpus form: the raw text + metadata read
+ * from the archive (or a committed snapshot), carrying each page's image
+ * HANDLES (`folioId`, `ark`, `objectStoreKey`) but NOT a resolved
+ * {@link ImageDescriptor}. `resolveImages(raw, provider)` (see
+ * `src/browser/load/resolve-images.ts`) turns a {@link CorpusSnapshot} into the
+ * rendered {@link CorpusView}. This is the shape written to `site/data/<sourceId>.json`
+ * so the Astro build can run WITHOUT the private archive (see
+ * `scripts/build-snapshot.ts`).
+ */
+export interface RawPage {
+  /** Stable page identifier within the issue (e.g. `p001`). */
+  pageId: string;
+  /** The image/view id (`f001`). */
+  folioId: string;
+  /** The image-resolution ark (the ISSUE ark); handed to the provider as `PageInput.ark`. */
+  ark: string;
+  /** The archive `object_store` key for this page's image, or `null` when absent (used by `b2-cdn`). */
+  objectStoreKey: string | null;
+  /** Raw French OCR for this page (a form-feed segment of `issue.txt`); may be noisy. */
+  ocrFrench: string;
+  /** Corrected French (`translation/pNNN.fr.txt`) when present. */
+  correctedFrench: string | null;
+  /** English translation (`translation/pNNN.en.txt`). */
+  english: string;
+  /** A surfaced OCR-condition note when detected, else `null`. */
+  ocrCondition: string | null;
+  /** The provenance-rail facts. */
+  provenance: ProvenanceRecord;
+}
+
+/** The image-unresolved form of {@link IssueView}. */
+export interface RawIssue {
+  /** Stable slug (e.g. `1879-08-15_bpt6k56068358`). */
+  issueId: string;
+  /** ISO date (`1879-08-15`). */
+  date: string;
+  /** Order within the source (1-based, over the LOADED/complete issues). */
+  sequence: number;
+  /** Ordered by page number. */
+  pages: RawPage[];
+}
+
+/** The image-unresolved form of {@link SourceView}. */
+export interface RawSource {
+  /** Canonical id, e.g. `PB-P001`. */
+  sourceId: string;
+  /** Canonical title. */
+  title: string;
+  /** v1 always `'periodical'`. */
+  kind: SourceKind;
+  /** Source-level archival identifier. */
+  ark: string;
+  /** Rights determination, e.g. `public-domain`. */
+  rights: string;
+  /** Ordered by date. */
+  issues: RawIssue[];
+}
+
+/**
+ * The serializable, image-unresolved corpus: the exact shape read from the
+ * archive (`readRawCorpus`) and persisted as the committed public-domain
+ * snapshot (`site/data/<sourceId>.json`). {@link resolveImages} converts it to
+ * a {@link LoadResult}.
+ */
+export interface CorpusSnapshot {
+  /** One per source in this snapshot. */
+  sources: RawSource[];
+  /** Issues skipped (not-collected/incomplete) while reading. */
+  skipped: SkippedIssue[];
+  /** Optional provenance of how this snapshot was generated (advisory; not rendered). */
+  generatedFrom?: { sourceIds: string[]; note: string };
+}
+
+/**
  * One indexed unit fed to the Pagefind search index -- one per page, both
  * languages (FR-008..FR-010, OQ-5).
  *
