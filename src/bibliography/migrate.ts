@@ -422,10 +422,34 @@ export async function migrate(opts: MigrateOptions): Promise<MigrateResult> {
   migrated.sort((a, b) => (a.source.sourceId < b.source.sourceId ? -1 : 1));
 
   const sourcesDir = path.join(opts.repoRoot, 'bibliography', 'sources');
+
+  // R-003: a source-group promotion already recorded in the SSOT MUST survive
+  // a re-run of migrate -- the legacy CSVs know nothing about source-groups
+  // (detectKind only ever answers periodical/monograph), so without this the
+  // legacy-derived monograph would silently overwrite the promotion on every
+  // run. Load whatever SSOT already exists BEFORE it is overwritten below,
+  // and re-derive (not merely re-copy) each existing source-group's Source
+  // via the same idempotent migrateSourceToGroup used for the initial
+  // promotion, with zero repository records (a group holds none).
+  const existingGroups = new Map<string, Source>();
+  if (existsSync(sourcesDir)) {
+    for (const existing of loadAllSources(sourcesDir)) {
+      if (existing.source.kind === 'source-group') {
+        existingGroups.set(existing.source.sourceId, existing.source);
+      }
+    }
+  }
+  const finalized: MigratedSource[] = migrated.map((entry) => {
+    const existingGroup = existingGroups.get(entry.source.sourceId);
+    return existingGroup === undefined
+      ? entry
+      : { source: migrateSourceToGroup(existingGroup), records: [] };
+  });
+
   const written: string[] = [];
   if (write) {
     mkdirSync(sourcesDir, { recursive: true });
-    for (const entry of migrated) {
+    for (const entry of finalized) {
       const filePath = path.join(sourcesDir, `${entry.source.sourceId}.yml`);
       writeFileSync(filePath, serializeSource(entry), 'utf-8');
       written.push(filePath);
@@ -434,7 +458,7 @@ export async function migrate(opts: MigrateOptions): Promise<MigrateResult> {
 
   const loaded: LoadedSource[] = write
     ? loadAllSources(sourcesDir)
-    : migrated.map((entry) => ({ source: entry.source, records: entry.records, identifierLeaks: [] }));
+    : finalized.map((entry) => ({ source: entry.source, records: entry.records, identifierLeaks: [] }));
 
   const provenanceBySource = new Map<string, AssetProvenance[]>();
   if (archiveAvailable) {
