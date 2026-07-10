@@ -24,6 +24,42 @@ const IMAGE_PATTERN = /^f(\d+)\.jpg$/;
 const EN_TRANSLATION_PATTERN = /^p(\d+)\.en\.txt$/;
 
 /**
+ * Detects whether `issueDir` is NOT-COLLECTED / incomplete: a WHOLE required
+ * layer is ENTIRELY ABSENT (never acquired/processed), which the loader skips
+ * and reports rather than throwing. The conditions (any one triggers a skip):
+ *
+ *  - no `issue.txt` (the OCR layer was never collected),
+ *  - no `translation/` directory or one with zero `pNNN.en.txt` files (the
+ *    English translation layer was never collected), or
+ *  - zero `fNNN.jpg` page images (the image layer was never collected).
+ *
+ * A PRESENT-but-PARTIAL layer (e.g. 7 of 8 translation pairs, a single page's
+ * English missing, an image/OCR skew) is NOT detected here -- that is a
+ * collected-but-corrupt defect that {@link buildIssuePages} throws on.
+ *
+ * @returns a reason string naming the absent layer(s), or `null` when every
+ *   required layer is present (the issue is complete enough to load).
+ */
+export function detectNotCollected(issueDir: string): string | null {
+  const missing: string[] = [];
+
+  if (!existsSync(path.join(issueDir, 'issue.txt'))) {
+    missing.push('issue.txt (OCR layer)');
+  }
+  if (listFolios(issueDir).length === 0) {
+    missing.push('page images (fNNN.jpg)');
+  }
+  if (countEnglishTranslations(issueDir) === 0) {
+    missing.push('translation/ English layer (pNNN.en.txt)');
+  }
+
+  if (missing.length === 0) {
+    return null;
+  }
+  return `not collected -- absent layer(s): ${missing.join(', ')}`;
+}
+
+/**
  * Builds every {@link PageView} of `issue`, in page-number order, resolving
  * each image through `provider`.
  *

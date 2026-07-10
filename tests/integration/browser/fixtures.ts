@@ -6,7 +6,15 @@
  * the REAL archive — no fabricated corpus content, fail-loud on missing data.
  */
 
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
@@ -20,6 +28,16 @@ import os from 'node:os';
 const CASE = 'port-breton';
 const NEWSPAPER_SLUG = 'la-nouvelle-france';
 const ISSUE_DIR_NAME = '1879-08-15_bpt6k56068358';
+
+/**
+ * A second, real, COMPLETE PB-P001 issue used by the not-collected/skip
+ * fixtures. When the canonical issue is mutated into a skip, this sibling is
+ * copied alongside it so the source still resolves at least one complete issue
+ * (the loader's `deriveRights` requires the source to have some pages) -- which
+ * exercises the real production shape: a mix of complete + skipped issues in
+ * one source.
+ */
+export const SIBLING_ISSUE_ID = '1879-09-15_bpt6k5606840k';
 
 /**
  * The archive clone root, derived from CORPUS_ARCHIVE_PATH.
@@ -60,7 +78,12 @@ export function hasFixture(): boolean {
   return ARCHIVE_ROOT !== null && existsSync(FIXTURE_ISSUE_DIR);
 }
 
-type Mutation = 'drop-translation' | 'drop-provenance-field' | 'skew-page-count';
+type Mutation =
+  | 'drop-translation'
+  | 'drop-provenance-field'
+  | 'skew-page-count'
+  | 'drop-issue-ocr'
+  | 'drop-translation-dir';
 
 /**
  * Builds a fresh, self-contained archive root in an OS temp dir that mirrors
@@ -72,11 +95,16 @@ type Mutation = 'drop-translation' | 'drop-provenance-field' | 'skew-page-count'
  * so `loadCorpus({ archivePath: root, sources: ['PB-P001'], ... })` resolves
  * the source's newspapers directory and enumerates exactly one issue.
  *
+ * When `withSibling` is set, a second real COMPLETE issue
+ * ({@link SIBLING_ISSUE_ID}) is copied alongside the canonical one, so that a
+ * mutation which SKIPS the canonical issue still leaves the source with a
+ * loadable issue (required by the not-collected/skip fixtures).
+ *
  * @throws if hasFixture() is false (archive not available).
  * @returns `{ root, issueDir }` -- the archive root to hand to `loadCorpus`
- *   and the absolute path of the copied issue directory (for mutation).
+ *   and the absolute path of the copied CANONICAL issue directory (for mutation).
  */
-function buildArchiveRoot(): { root: string; issueDir: string } {
+function buildArchiveRoot(withSibling = false): { root: string; issueDir: string } {
   if (!hasFixture()) {
     throw new Error(
       'Cannot build fixture archive: fixture is not available. ' +
@@ -85,19 +113,25 @@ function buildArchiveRoot(): { root: string; issueDir: string } {
   }
 
   const root = mkdtempSync(path.join(os.tmpdir(), 'corpus-browser-fixture-'));
-  const issueDir = path.join(
-    root,
-    'archive',
-    'cases',
-    CASE,
-    'newspapers',
-    NEWSPAPER_SLUG,
-    ISSUE_DIR_NAME
-  );
+  const newspapersDir = path.join(root, 'archive', 'cases', CASE, 'newspapers', NEWSPAPER_SLUG);
+  const issueDir = path.join(newspapersDir, ISSUE_DIR_NAME);
 
   try {
     mkdirSync(issueDir, { recursive: true });
     cpSync(FIXTURE_ISSUE_DIR, issueDir, { recursive: true });
+
+    if (withSibling) {
+      const siblingSrc = sourceIssueDir(SIBLING_ISSUE_ID);
+      if (!existsSync(siblingSrc)) {
+        throw new Error(
+          `Cannot build sibling fixture: complete sibling issue not found at ${siblingSrc}.`
+        );
+      }
+      const siblingDest = path.join(newspapersDir, SIBLING_ISSUE_ID);
+      mkdirSync(siblingDest, { recursive: true });
+      cpSync(siblingSrc, siblingDest, { recursive: true });
+    }
+
     return { root, issueDir };
   } catch (error) {
     if (existsSync(root)) {
@@ -105,6 +139,14 @@ function buildArchiveRoot(): { root: string; issueDir: string } {
     }
     throw error;
   }
+}
+
+/** Absolute path to a real source issue directory in the archive clone. */
+function sourceIssueDir(issueName: string): string {
+  if (!ARCHIVE_ROOT) {
+    throw new Error('sourceIssueDir: CORPUS_ARCHIVE_PATH is not set.');
+  }
+  return path.join(ARCHIVE_ROOT, 'archive', 'cases', CASE, 'newspapers', NEWSPAPER_SLUG, issueName);
 }
 
 /**
@@ -123,10 +165,11 @@ export function makeCleanArchive(): string {
  * applies the specified mutation to the copied issue, returning the archive
  * root so `loadCorpus` can be pointed at the corrupted copy.
  *
- * Mutations:
+ * COLLECTED-BUT-CORRUPT mutations (a PRESENT layer made internally
+ * inconsistent -- the loader must THROW, naming source / issue / page):
  *  - `drop-translation`: deletes `translation/p003.en.txt` to simulate a
- *    missing required translation layer (corpus-loader must detect and throw,
- *    naming the page).
+ *    single missing required translation (the `translation/` layer is still
+ *    present, so this is corrupt, not un-collected -- throw naming the page).
  *  - `drop-provenance-field`: removes the `sha256:` line from the page's
  *    translation provenance sidecar (`translation/p003.fr.txt.yml`) -- the
  *    sidecar the loader assembles `ProvenanceRecord` from. (The previous
@@ -134,13 +177,23 @@ export function makeCleanArchive(): string {
  *    not validate that field for the `source-iiif` provider, so it did not
  *    trigger a throw. See T009 note.)
  *  - `skew-page-count`: deletes `f003.jpg` to create an image/OCR-count
- *    mismatch (corpus-loader must detect and throw, naming the issue).
+ *    mismatch while images remain present (corrupt -- throw naming the issue).
+ *
+ * NOT-COLLECTED / incomplete mutations (a WHOLE required layer entirely
+ * absent -- the loader must SKIP and REPORT the issue, never throw):
+ *  - `drop-issue-ocr`: deletes `issue.txt` entirely (the OCR layer was never
+ *    collected -- the issue is skipped).
+ *  - `drop-translation-dir`: deletes the whole `translation/` directory (the
+ *    English translation layer was never collected -- the issue is skipped).
  *
  * @throws if hasFixture() is false (archive not available).
- * @returns absolute path to the temp archive root containing the corrupted copy.
+ * @returns absolute path to the temp archive root containing the mutated copy.
  */
 export function makeCorruptedCopy(mutation: Mutation): string {
-  const { root, issueDir } = buildArchiveRoot();
+  // The not-collected/skip mutations need a complete sibling issue so the
+  // source still resolves after the canonical issue is skipped.
+  const withSibling = mutation === 'drop-issue-ocr' || mutation === 'drop-translation-dir';
+  const { root, issueDir } = buildArchiveRoot(withSibling);
 
   try {
     switch (mutation) {
@@ -169,6 +222,27 @@ export function makeCorruptedCopy(mutation: Mutation): string {
         const imageFile = path.join(issueDir, 'f003.jpg');
         if (existsSync(imageFile)) {
           rmSync(imageFile);
+        }
+        break;
+      }
+
+      case 'drop-issue-ocr': {
+        // Delete issue.txt entirely: the whole OCR layer is absent, so the
+        // issue is NOT-COLLECTED (skip + report), not corrupt.
+        const issueTxt = path.join(issueDir, 'issue.txt');
+        if (existsSync(issueTxt)) {
+          rmSync(issueTxt);
+        }
+        break;
+      }
+
+      case 'drop-translation-dir': {
+        // Delete the whole translation/ directory: the English translation
+        // layer is entirely absent, so the issue is NOT-COLLECTED (skip +
+        // report), not corrupt.
+        const translationDir = path.join(issueDir, 'translation');
+        if (existsSync(translationDir)) {
+          rmSync(translationDir, { recursive: true, force: true });
         }
         break;
       }

@@ -19,6 +19,7 @@ import {
   hasFixture,
   makeCleanArchive,
   makeCorruptedCopy,
+  SIBLING_ISSUE_ID,
 } from './fixtures';
 
 const FIXTURE_ISSUE_ID = '1879-08-15_bpt6k56068358';
@@ -58,7 +59,10 @@ describe('loadCorpus (integration, PB-P001)', () => {
 
     const archive = makeCleanArchive();
     try {
-      const corpus = loadCorpus(configFor(archive));
+      const { corpus, skipped } = loadCorpus(configFor(archive));
+
+      // A clean single-complete-issue archive skips nothing.
+      expect(skipped).toEqual([]);
 
       // SourceView scaffold.
       const source = fixtureSource(corpus);
@@ -148,6 +152,51 @@ describe('loadCorpus (integration, PB-P001)', () => {
       expect(() => loadCorpus(configFor(archive))).toThrow(
         /PB-P001[\s\S]*1879-08-15_bpt6k56068358|1879-08-15_bpt6k56068358[\s\S]*PB-P001/
       );
+    } finally {
+      cleanupCopy(archive);
+    }
+  });
+
+  it('SKIPS (not throws) when the whole OCR layer is absent (drop-issue-ocr)', () => {
+    if (!hasFixture()) {
+      return;
+    }
+
+    const archive = makeCorruptedCopy('drop-issue-ocr');
+    try {
+      const { corpus, skipped } = loadCorpus(configFor(archive));
+
+      // The mutated issue is skipped + reported, not thrown; the complete
+      // sibling still loads (a mix of complete + skipped in one source).
+      const loadedIds = fixtureSource(corpus).issues.map((i) => i.issueId);
+      expect(loadedIds).toEqual([SIBLING_ISSUE_ID]);
+      expect(loadedIds).not.toContain(FIXTURE_ISSUE_ID);
+
+      expect(skipped).toHaveLength(1);
+      expect(skipped[0].issueId).toBe(FIXTURE_ISSUE_ID);
+      expect(skipped[0].sourceId).toBe('PB-P001');
+      expect(skipped[0].reason).toMatch(/issue\.txt/);
+    } finally {
+      cleanupCopy(archive);
+    }
+  });
+
+  it('SKIPS (not throws) when the whole translation dir is absent (drop-translation-dir)', () => {
+    if (!hasFixture()) {
+      return;
+    }
+
+    const archive = makeCorruptedCopy('drop-translation-dir');
+    try {
+      const { corpus, skipped } = loadCorpus(configFor(archive));
+
+      const loadedIds = fixtureSource(corpus).issues.map((i) => i.issueId);
+      expect(loadedIds).toEqual([SIBLING_ISSUE_ID]);
+      expect(loadedIds).not.toContain(FIXTURE_ISSUE_ID);
+
+      expect(skipped).toHaveLength(1);
+      expect(skipped[0].issueId).toBe(FIXTURE_ISSUE_ID);
+      expect(skipped[0].reason).toMatch(/translation/);
     } finally {
       cleanupCopy(archive);
     }

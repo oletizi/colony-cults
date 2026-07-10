@@ -21,6 +21,36 @@ export interface CorpusView {
 }
 
 /**
+ * One scanned issue directory the loader deliberately SKIPPED because a whole
+ * required layer was entirely absent (never collected / incomplete), rather
+ * than throwing. Distinct from a collected-but-corrupt issue (a present layer
+ * that is internally inconsistent), which still fails the build loud.
+ *
+ * Every skip is reported (never silently dropped): the loader records one of
+ * these and emits a `console.warn` line so a build visibly reports its caps.
+ */
+export interface SkippedIssue {
+  /** Stable slug of the skipped issue directory (e.g. `1883-12-16_bpt6k5606895j`). */
+  issueId: string;
+  /** The source the skipped issue belongs to (e.g. `PB-P001`). */
+  sourceId: string;
+  /** Human-readable explanation naming the absent layer(s). */
+  reason: string;
+}
+
+/**
+ * The result of {@link CorpusView} loading: the corpus of complete issues plus
+ * the report of issues that were skipped because they were not fully collected.
+ * Corrupt issues never appear here -- they throw.
+ */
+export interface LoadResult {
+  /** The complete, renderable corpus (skipped issues excluded). */
+  corpus: CorpusView;
+  /** Every not-collected/incomplete issue skipped during the load, across all sources. */
+  skipped: SkippedIssue[];
+}
+
+/**
  * A source's kind. `'periodical'` is the only value produced in v1; the
  * union is intentionally left open to widen with `'monograph' |
  * 'source-group'` later (OQ-7 deferred) without a breaking change to
