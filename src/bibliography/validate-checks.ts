@@ -115,7 +115,12 @@ function vocabFinding(sourceId: string, field: string, value: string, owner: str
  * Validate every closed-vocabulary field the derived model actually exposes
  * a value for (FR-019): `status` and `rights.status` per Repository Record,
  * plus `manifest.objectStore.provider` where an object-store location is
- * present. `status === ''` is the loader's own "unset" sentinel (see
+ * present. `record.status` is checked against `RepositoryAcquisitionStatus`
+ * (`@/bibliography/vocab`'s `REPOSITORY_ACQUISITION_STATUS_VALUES`, via the
+ * field-name-keyed `isAllowed('status', ...)`) -- a Source-lifecycle value
+ * (`discovered`/`approved-for-acquisition`/`excluded`) authored on a
+ * RepositoryRecord is a cross-domain error and is correctly rejected here.
+ * `status === ''` is the loader's own "unset" sentinel (see
  * `deriveModel`), not a vocab violation -- `validateMissingRequired` reports
  * that case instead, so it is skipped here to avoid double-reporting the
  * same gap under two finding kinds. `ocr_status` has no reachable field on
@@ -258,4 +263,91 @@ export function validateSingleChecksum(model: CanonicalModel): ValidationFinding
     }
   }
   return findings;
+}
+
+/**
+ * `group-has-repository-records` findings: one per `Source` with `kind ===
+ * 'source-group'` that has >= 1 entry in `model.repositoryRecords` keyed to
+ * its `sourceId` (FR-001/data-model invariant 1). A source group never
+ * carries a `repositoryRecords` field of its own on the `Source` type --
+ * repository records are folded into `model.repositoryRecords` by
+ * `deriveModel`, keyed by `sourceId` -- so membership in that array is the
+ * only representation to check.
+ */
+function groupRepositoryRecordFindings(model: CanonicalModel): ValidationFinding[] {
+  const recordSourceIds = new Set(model.repositoryRecords.map((record) => record.sourceId));
+  return model.sources
+    .filter((source) => source.kind === 'source-group' && recordSourceIds.has(source.sourceId))
+    .map((group) => ({
+      kind: 'group-has-repository-records',
+      sourceId: group.sourceId,
+      detail: `source group "${group.sourceId}" must not hold repository records`,
+    }));
+}
+
+/**
+ * `dangling-part-of` / `part-of-not-a-group` findings: for every `Source`
+ * with `partOf` set, resolve it against `model.sources` (data-model
+ * invariant 5). A `partOf` naming no existing `sourceId` is `dangling-part-
+ * of`; a `partOf` naming an existing Source whose `kind !== 'source-group'`
+ * is `part-of-not-a-group`. A `partOf` resolving to an existing source-group
+ * is valid membership and yields no finding.
+ */
+function partOfFindings(model: CanonicalModel): ValidationFinding[] {
+  const sourcesById = new Map(model.sources.map((source) => [source.sourceId, source]));
+  const findings: ValidationFinding[] = [];
+  for (const member of model.sources) {
+    if (member.partOf === undefined) {
+      continue;
+    }
+    const target = sourcesById.get(member.partOf);
+    if (target === undefined) {
+      findings.push({
+        kind: 'dangling-part-of',
+        sourceId: member.sourceId,
+        detail: `member "${member.sourceId}" has part_of "${member.partOf}" but no such source exists`,
+      });
+      continue;
+    }
+    if (target.kind !== 'source-group') {
+      findings.push({
+        kind: 'part-of-not-a-group',
+        sourceId: member.sourceId,
+        detail: `member "${member.sourceId}" has part_of "${member.partOf}", which is not a source group (kind: ${target.kind})`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
+ * `group-is-member` findings: one per `Source` that is itself `kind ===
+ * 'source-group'` but ALSO carries `partOf` (i.e. it is nested as a member of
+ * another group). The intended invariant is that a source-group is never a
+ * member of anything -- groups are a flat, one-level container.
+ */
+function groupIsMemberFindings(model: CanonicalModel): ValidationFinding[] {
+  return model.sources
+    .filter((source) => source.kind === 'source-group' && source.partOf !== undefined)
+    .map((group) => ({
+      kind: 'group-is-member',
+      sourceId: group.sourceId,
+      detail: `source group "${group.sourceId}" must not itself be a member (has partOf "${group.partOf}")`,
+    }));
+}
+
+/**
+ * Validate source-group invariants (FR-001/FR-005/FR-006 --
+ * specs/005-source-groups/contracts/validation.md): a group must not hold
+ * repository records, every member's `partOf` must resolve to an existing
+ * source-group, and a source-group must never itself be a member of another
+ * group. A zero-member group, or a group with members and no repository
+ * records, is valid and yields no finding (FR-005).
+ */
+export function validateSourceGroups(model: CanonicalModel): ValidationFinding[] {
+  return [
+    ...groupRepositoryRecordFindings(model),
+    ...partOfFindings(model),
+    ...groupIsMemberFindings(model),
+  ];
 }

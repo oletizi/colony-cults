@@ -8,6 +8,7 @@ import {
   validateOrphanAssets,
   validateOrphanRecords,
   validateSingleChecksum,
+  validateSourceGroups,
   validateVocab,
 } from '@/bibliography/validate-checks';
 
@@ -27,7 +28,11 @@ export type ValidationFindingKind =
   | 'missing-required'
   | 'duplicate-copy'
   | 'single-checksum'
-  | 'view-drift';
+  | 'view-drift'
+  | 'group-has-repository-records'
+  | 'dangling-part-of'
+  | 'part-of-not-a-group'
+  | 'group-is-member';
 
 /**
  * One `bib validate` finding. Findings are DATA, not errors -- `validate`
@@ -140,6 +145,7 @@ export function validate(model: CanonicalModel, opts?: ViewDriftOptions): Valida
     ...validateMissingRequired(model),
     ...validateDuplicateCopies(model),
     ...validateSingleChecksum(model),
+    ...validateSourceGroups(model),
   ];
   if (opts !== undefined) {
     findings.push(...validateViewDrift(model, opts));

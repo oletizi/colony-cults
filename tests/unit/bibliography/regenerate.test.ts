@@ -150,6 +150,87 @@ describe('generateAcquisitionTrackerCsv', () => {
   });
 });
 
+/** A zero-member `source-group` Source (specs/005-source-groups/research.md R-002), e.g. PB-P004 post-migration. */
+function pbGroupSource(): Source {
+  return {
+    sourceId: 'PB-P004',
+    kind: 'source-group',
+    case: 'port-breton',
+    titles: [{ text: 'Trial and Sentencing Records', role: 'canonical' }],
+    identifiers: [],
+  };
+}
+
+/** A member stub `partOf` the group -- an ordinary Source, just carrying the edge. */
+function pbGroupMemberSource(): Source {
+  return {
+    sourceId: 'PB-P004-01',
+    kind: 'monograph',
+    partOf: 'PB-P004',
+    case: 'port-breton',
+    titles: [{ text: 'Indictment', role: 'canonical' }],
+    identifiers: [],
+  };
+}
+
+/** A model with a zero-repository-record source-group plus one member stub, alongside the base fixture. */
+function groupFixtureModel(): CanonicalModel {
+  const base = fixtureModel();
+  return {
+    sources: [...base.sources, pbGroupSource(), pbGroupMemberSource()],
+    repositoryRecords: base.repositoryRecords,
+    identifierLeaks: [],
+  };
+}
+
+describe('R-002: source-group tolerance (empty group, no repository records)', () => {
+  it('sources.csv emits one row for the group with kind projected and acquisition-shaped columns empty', () => {
+    const table = parseCsv(generateSourcesCsv(groupFixtureModel()));
+    const group = table.rows.find((row) => row.id === 'PB-P004');
+    expect(group).toBeDefined();
+    expect(group?.title).toBe('Trial and Sentencing Records');
+    expect(group?.type).toBe('source-group');
+    expect(group?.case).toBe('port-breton');
+    // Acquisition-shaped columns are empty for every Source (group or not) --
+    // never fabricated, and there is nothing to acquire for a group.
+    expect(group?.status).toBe('');
+    expect(group?.access).toBe('');
+    expect(group?.public_domain).toBe('');
+  });
+
+  it('sources.csv emits the member stub as its own ordinary row', () => {
+    const table = parseCsv(generateSourcesCsv(groupFixtureModel()));
+    const member = table.rows.find((row) => row.id === 'PB-P004-01');
+    expect(member).toBeDefined();
+    expect(member?.title).toBe('Indictment');
+    expect(member?.type).toBe('monograph');
+  });
+
+  it('acquisition-tracker.csv emits NO row for the source-group', () => {
+    const table = parseCsv(generateAcquisitionTrackerCsv(groupFixtureModel()));
+    expect(table.rows.find((row) => row.id === 'PB-P004')).toBeUndefined();
+    // Sanity: the tracker still has rows for the non-group sources (fixture's
+    // two plus the member stub), so the filter targets kind, not just "no records".
+    expect(table.rows.map((row) => row.id).sort()).toEqual(
+      ['PB-P001', 'PB-P004-01', 'PB-S001'].sort(),
+    );
+  });
+
+  it('acquisition-tracker.csv still gives the member stub its own row with empty acquisition columns (no records yet)', () => {
+    const table = parseCsv(generateAcquisitionTrackerCsv(groupFixtureModel()));
+    const member = table.rows.find((row) => row.id === 'PB-P004-01');
+    expect(member).toBeDefined();
+    expect(member?.vendor_or_archive).toBe('');
+    expect(member?.status).toBe('');
+  });
+
+  it('a group with zero members regenerates deterministically across both views', () => {
+    const model = groupFixtureModel();
+    expect(generateSourcesCsv(model)).toBe(generateSourcesCsv(model));
+    expect(generateAcquisitionTrackerCsv(model)).toBe(generateAcquisitionTrackerCsv(model));
+  });
+});
+
 describe('buildViewRegistry', () => {
   it('builds exactly the two PUBLIC CSVs -- the archive-side register + stubs are curated migrate input, not generated views', () => {
     const views = buildViewRegistry(fixtureModel());

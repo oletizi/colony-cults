@@ -63,6 +63,16 @@ export function serializeSource(migrated: MigratedSource): string {
     sourceId: source.sourceId,
     kind: source.kind,
   };
+  if (source.partOf !== undefined) {
+    out.partOf = source.partOf;
+  }
+  // Field order: sourceId, kind, partOf, status, case, language, creator,
+  // titles, identifiers, notes, repositoryRecords -- status sits right after
+  // partOf since both describe the Source's place in the group/lifecycle
+  // model, ahead of the more descriptive/bibliographic fields.
+  if (source.status !== undefined) {
+    out.status = source.status;
+  }
   if (source.case !== undefined) {
     out.case = source.case;
   }

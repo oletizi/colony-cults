@@ -1,3 +1,4 @@
+import type { SourceLifecycleStatus } from '@/bibliography/vocab';
 import type { WorkLevelIdentifierType } from '@/model/identifiers';
 
 /**
@@ -12,8 +13,34 @@ export interface Source {
   sourceId: string;
   /** One or more titles; none is authoritative (FR-003). */
   titles: Title[];
-  /** Determines whether a census is built. */
-  kind: 'periodical' | 'monograph';
+  /**
+   * Determines whether a census is built. A `source-group` (FR-001) is a
+   * research-defined container of member Sources -- it is never fetchable and
+   * holds no repository records; its members are derived from their `partOf`
+   * edges, not listed here.
+   */
+  kind: 'periodical' | 'monograph' | 'source-group';
+  /**
+   * The `sourceId` of the source-group this Source is a member of (FR-006).
+   * Present only on members; absent on standalone sources and on the group
+   * itself. Its presence does NOT change the member's own kind -- a member is
+   * still a `monograph`/`periodical`. Group membership is derived from these
+   * edges (a group holds no member list).
+   */
+  partOf?: string;
+  /**
+   * The discovery/acquisition-handoff lifecycle status of this Source itself
+   * (US3), e.g. `discovered` on a member stub not yet reviewed for inclusion.
+   * A DIFFERENT, narrower state machine from a RepositoryRecord's own
+   * `status` (`RepositoryAcquisitionStatus`), which tracks the acquisition
+   * state of one held copy at one archive; this field tracks the work-level
+   * source, independent of any repository record, and ends where a
+   * RepositoryRecord's status picks up (`approved-for-acquisition` ->
+   * `wanted`/`to-collect`). An acquisition-only value (e.g. `archived`) is
+   * REJECTED here as cross-domain (see `@/bibliography/load`). Absent on a
+   * fully-processed Source with no lifecycle tracking needed.
+   */
+  status?: SourceLifecycleStatus;
   /** Author/editor of the work, if known. */
   creator?: string;
   /** Primary language of the work, e.g. `French`. */

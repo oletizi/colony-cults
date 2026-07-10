@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { loadAllSources, loadSourceFile } from '@/bibliography/load';
+import { loadAllSources, loadSourceFile, sourceKind } from '@/bibliography/load';
+import { serializeSource } from '@/bibliography/migrate-serialize';
 
 const VALID_YAML = `
 sourceId: PB-P001
@@ -333,5 +334,278 @@ describe('loadAllSources', () => {
     writeSource('PB-P001.yml', VALID_YAML);
     writeSource('PB-P002.yml', 'key: [1, 2');
     expect(() => loadAllSources(dir)).toThrow(/malformed YAML/);
+  });
+});
+
+describe('source-group kind and partOf edge (T003)', () => {
+  it('loads a kind: source-group record with no repositoryRecords', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+case: port-breton
+titles:
+  - text: "French trial and legal proceedings relating to the Marquis de Rays"
+    role: canonical
+`,
+    );
+    const { source, records } = loadSourceFile(filePath);
+    expect(source.kind).toBe('source-group');
+    expect(source.partOf).toBeUndefined();
+    expect(records).toEqual([]);
+  });
+
+  it('loads a member record carrying partOf pointing at its group', () => {
+    const filePath = writeSource(
+      'PB-P037.yml',
+      `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.kind).toBe('monograph');
+    expect(source.partOf).toBe('PB-P004');
+  });
+
+  it('round-trips a source-group + partOf member through load -> serialize -> load, preserving both fields', () => {
+    const groupPath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+case: port-breton
+titles:
+  - text: "French trial and legal proceedings relating to the Marquis de Rays"
+    role: canonical
+`,
+    );
+    const memberPath = writeSource(
+      'PB-P037.yml',
+      `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+case: port-breton
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+    );
+
+    const loadedGroup = loadSourceFile(groupPath);
+    const loadedMember = loadSourceFile(memberPath);
+
+    const reserializedGroup = serializeSource({
+      source: loadedGroup.source,
+      records: loadedGroup.records,
+    });
+    const reserializedMember = serializeSource({
+      source: loadedMember.source,
+      records: loadedMember.records,
+    });
+
+    // A group has no partOf line at all.
+    expect(reserializedGroup).not.toMatch(/partOf/);
+    expect(reserializedGroup).toMatch(/kind:\s*source-group/);
+
+    // A member's partOf line appears immediately after kind.
+    const memberLines = reserializedMember.split('\n');
+    const kindIndex = memberLines.findIndex((line) => line.startsWith('kind:'));
+    expect(kindIndex).toBeGreaterThanOrEqual(0);
+    expect(memberLines[kindIndex + 1]).toBe('partOf: PB-P004');
+
+    // Reload each reserialized record from its own filename stem (overwriting
+    // the originals) to prove the round trip preserves kind + partOf without
+    // data loss.
+    writeFileSync(groupPath, reserializedGroup, 'utf-8');
+    writeFileSync(memberPath, reserializedMember, 'utf-8');
+
+    const reloadedGroup = loadSourceFile(groupPath);
+    expect(reloadedGroup.source.kind).toBe('source-group');
+    expect(reloadedGroup.source.partOf).toBeUndefined();
+
+    const reloadedMember = loadSourceFile(memberPath);
+    expect(reloadedMember.source.kind).toBe('monograph');
+    expect(reloadedMember.source.partOf).toBe('PB-P004');
+  });
+
+  it('serializes an ordinary source without partOf, omitting the field entirely', () => {
+    const filePath = writeSource('PB-P001.yml', VALID_YAML);
+    const { source, records } = loadSourceFile(filePath);
+    const serialized = serializeSource({ source, records });
+    expect(serialized).not.toMatch(/partOf/);
+  });
+
+  it('loads a member stub carrying status: discovered (US3)', () => {
+    const filePath = writeSource(
+      'PB-P037.yml',
+      `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+status: discovered
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.kind).toBe('monograph');
+    expect(source.partOf).toBe('PB-P004');
+    expect(source.status).toBe('discovered');
+  });
+
+  it('round-trips a member stub with status: discovered through load -> serialize -> load', () => {
+    const memberPath = writeSource(
+      'PB-P037.yml',
+      `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+status: discovered
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+    );
+    const loadedMember = loadSourceFile(memberPath);
+    expect(loadedMember.source.status).toBe('discovered');
+
+    const reserialized = serializeSource({
+      source: loadedMember.source,
+      records: loadedMember.records,
+    });
+    expect(reserialized).toMatch(/status:\s*discovered/);
+
+    writeFileSync(memberPath, reserialized, 'utf-8');
+    const reloaded = loadSourceFile(memberPath);
+    expect(reloaded.source.kind).toBe('monograph');
+    expect(reloaded.source.partOf).toBe('PB-P004');
+    expect(reloaded.source.status).toBe('discovered');
+  });
+
+  it('leaves status undefined when absent', () => {
+    const filePath = writeSource('PB-P001.yml', VALID_YAML);
+    const { source } = loadSourceFile(filePath);
+    expect(source.status).toBeUndefined();
+
+    const serialized = serializeSource({ source, records: [] });
+    expect(serialized).not.toMatch(/status:/);
+  });
+
+  it.each(['discovered', 'approved-for-acquisition', 'excluded'])(
+    'loads and round-trips a Source lifecycle status: %s',
+    (status) => {
+      const filePath = writeSource(
+        'PB-P037.yml',
+        `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+status: ${status}
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+      );
+      const loaded = loadSourceFile(filePath);
+      expect(loaded.source.status).toBe(status);
+
+      const reserialized = serializeSource({ source: loaded.source, records: loaded.records });
+      expect(reserialized).toMatch(new RegExp(`status:\\s*${status}`));
+
+      writeFileSync(filePath, reserialized, 'utf-8');
+      const reloaded = loadSourceFile(filePath);
+      expect(reloaded.source.status).toBe(status);
+    },
+  );
+
+  it('throws on an invalid status value', () => {
+    const filePath = writeSource(
+      'PB-P037.yml',
+      `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+status: acquired
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(
+      /status "acquired" is not in the closed Source lifecycle status vocabulary/,
+    );
+  });
+
+  it.each(['wanted', 'to-collect', 'collecting', 'collected', 'archived'])(
+    'throws a clear cross-domain error when a Source is authored with a RepositoryRecord acquisition status: %s',
+    (status) => {
+      const filePath = writeSource(
+        'PB-P037.yml',
+        `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+status: ${status}
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+      );
+      expect(() => loadSourceFile(filePath)).toThrow(
+        /is not in the closed Source lifecycle status vocabulary.*RepositoryRecord acquisition statuses/s,
+      );
+    },
+  );
+
+  it('throws on an unknown kind value', () => {
+    const filePath = writeSource(
+      'PB-P001.yml',
+      `
+sourceId: PB-P001
+kind: anthology
+titles:
+  - text: "Whatever"
+    role: canonical
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/must be "periodical", "monograph", or "source-group"/);
+  });
+});
+
+describe('sourceKind (T005)', () => {
+  it('returns "source-group" for a source-group fixture', () => {
+    writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+case: port-breton
+titles:
+  - text: "French trial and legal proceedings relating to the Marquis de Rays"
+    role: canonical
+`,
+    );
+
+    expect(sourceKind('PB-P004', dir)).toBe('source-group');
+  });
+
+  it('returns the kind of an ordinary source', () => {
+    writeSource('PB-P001.yml', VALID_YAML);
+
+    expect(sourceKind('PB-P001', dir)).toBe('periodical');
+  });
+
+  it('returns undefined for an unknown sourceId', () => {
+    writeSource('PB-P001.yml', VALID_YAML);
+
+    expect(sourceKind('PB-NOPE', dir)).toBeUndefined();
   });
 });

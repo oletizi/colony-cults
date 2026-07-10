@@ -3,8 +3,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { migrate } from '@/bibliography/migrate';
+import { migrate, migrateSourceToGroup } from '@/bibliography/migrate';
 import { loadSourceFile } from '@/bibliography/load';
+import type { Source } from '@/model/source';
 
 /**
  * Unit tests for the five-representation -> SSOT migration (T013). Every
@@ -235,5 +236,155 @@ describe('migrate', () => {
 
     // The model was still built (public reps only, no archive enrichment).
     expect(result.model.sources.map((s) => s.sourceId).sort()).toEqual(['PB-P001', 'PB-P002']);
+  });
+});
+
+describe('migrateSourceToGroup (T012 — User Story 4 / PB-P004)', () => {
+  /**
+   * Fixture: PB-P004-shaped Source record (monograph kind, single to-collect
+   * Gallica repository record, preserved across the migration).
+   * Matches the current state of bibliography/sources/PB-P004.yml.
+   */
+  const pb004Fixture = (): Source => ({
+    sourceId: 'PB-P004',
+    kind: 'monograph',
+    case: 'port-breton',
+    language: 'French',
+    creator: 'various',
+    titles: [
+      {
+        text: 'French trial and legal proceedings relating to the Marquis de Rays',
+        role: 'canonical',
+      },
+    ],
+    identifiers: [],
+    notes: 'Years: 1880s | Access: archives/public domain | Public domain: likely | Core source for the fraud prosecution and official findings.',
+  });
+
+  it('converts a PB-P004-shaped monograph Source to kind: source-group, preserving all metadata', () => {
+    const monograph = pb004Fixture();
+
+    const migrated = migrateSourceToGroup(monograph);
+
+    // After migration, the source should be a source-group.
+    expect(migrated.kind).toBe('source-group');
+
+    // All other metadata should be preserved exactly.
+    expect(migrated.sourceId).toBe('PB-P004');
+    expect(migrated.case).toBe('port-breton');
+    expect(migrated.language).toBe('French');
+    expect(migrated.creator).toBe('various');
+    expect(migrated.titles).toEqual(monograph.titles);
+    expect(migrated.notes).toBe(monograph.notes);
+    expect(migrated.identifiers).toEqual([]);
+  });
+
+  it('is idempotent: migrating an already-migrated source-group yields the same result', () => {
+    const monograph = pb004Fixture();
+
+    const migrated1 = migrateSourceToGroup(monograph);
+    const migrated2 = migrateSourceToGroup(migrated1);
+
+    // The result should be identical after a second migration (deep equality).
+    expect(migrated2).toEqual(migrated1);
+    expect(migrated2.kind).toBe('source-group');
+  });
+
+  it('does NOT set partOf on a source-group (groups themselves are never members)', () => {
+    const monograph = pb004Fixture();
+
+    const migrated = migrateSourceToGroup(monograph);
+
+    // A source-group is not a member of another group.
+    expect(migrated.partOf).toBeUndefined();
+  });
+});
+
+describe('migrate: source-group preservation across a re-run (R-003)', () => {
+  // PB-P004's legacy row types as "court records" -- NOT periodical/newspaper,
+  // so detectKind() would derive `kind: monograph` on every run. PB-X001 is a
+  // plain regression-guard row with no pre-existing SSOT file, so it must
+  // still fold exactly as `migrate` always has.
+  const GROUP_SOURCES_CSV = [
+    'id,case,title,creator,year,type,language,status,access,public_domain,notes',
+    'PB-P004,port-breton,"French trial and legal proceedings relating to the Marquis de Rays",various,1880s,court records,French,to locate,archives/public domain,likely,"Core source for the fraud prosecution and official findings."',
+    'PB-X001,port-breton,"Some Other Source",Someone,1900,monograph,French,wanted,archives,likely,"Regression guard normal source."',
+    '',
+  ].join('\n');
+
+  const EMPTY_TRACKER_CSV = ['id,title,priority,status,next_action,vendor_or_archive,url_or_reference,notes', ''].join(
+    '\n',
+  );
+
+  /** Seed a repo root with only the two public legacy CSVs (no archive side). */
+  function seedGroupRepo(): string {
+    const repo = tempDir('migrate-group-repo-');
+    mkdirSync(path.join(repo, 'bibliography', 'legacy'), { recursive: true });
+    writeFileSync(path.join(repo, 'bibliography', 'legacy', 'sources.csv'), GROUP_SOURCES_CSV);
+    writeFileSync(
+      path.join(repo, 'bibliography', 'legacy', 'acquisition-tracker.csv'),
+      EMPTY_TRACKER_CSV,
+    );
+    return repo;
+  }
+
+  const EXISTING_PB_P004_GROUP_YML = [
+    'sourceId: PB-P004',
+    'kind: source-group',
+    'case: port-breton',
+    'language: French',
+    'creator: various',
+    'titles:',
+    '  - text: French trial and legal proceedings relating to the Marquis de Rays',
+    '    role: canonical',
+    'notes: "Years: 1880s | Access: archives/public domain | Public domain: likely | Core source for the fraud prosecution and official findings."',
+    '',
+  ].join('\n');
+
+  it('preserves an already-promoted source-group instead of reverting it to the legacy-derived monograph', async () => {
+    const repo = seedGroupRepo();
+    const sourcesDir = path.join(repo, 'bibliography', 'sources');
+    mkdirSync(sourcesDir, { recursive: true });
+    writeFileSync(path.join(sourcesDir, 'PB-P004.yml'), EXISTING_PB_P004_GROUP_YML);
+
+    await migrate({ repoRoot: repo, write: true });
+
+    const loaded = loadSourceFile(sourcePath(repo, 'PB-P004'));
+    expect(loaded.source.kind).toBe('source-group');
+    expect(loaded.records).toEqual([]);
+    // Everything else survives the round-trip untouched.
+    expect(loaded.source.creator).toBe('various');
+    expect(loaded.source.case).toBe('port-breton');
+    expect(loaded.source.language).toBe('French');
+  });
+
+  it('is idempotent across repeated runs once a source is promoted to a source-group', async () => {
+    const repo = seedGroupRepo();
+    const sourcesDir = path.join(repo, 'bibliography', 'sources');
+    mkdirSync(sourcesDir, { recursive: true });
+    writeFileSync(path.join(sourcesDir, 'PB-P004.yml'), EXISTING_PB_P004_GROUP_YML);
+
+    await migrate({ repoRoot: repo, write: true });
+    const first = readFileSync(sourcePath(repo, 'PB-P004'), 'utf-8');
+
+    await migrate({ repoRoot: repo, write: true });
+    const second = readFileSync(sourcePath(repo, 'PB-P004'), 'utf-8');
+
+    expect(second).toBe(first);
+    expect(loadSourceFile(sourcePath(repo, 'PB-P004')).source.kind).toBe('source-group');
+  });
+
+  it('regression guard: a normal (non-group) source still folds from the legacy CSV as before', async () => {
+    const repo = seedGroupRepo();
+    const sourcesDir = path.join(repo, 'bibliography', 'sources');
+    mkdirSync(sourcesDir, { recursive: true });
+    writeFileSync(path.join(sourcesDir, 'PB-P004.yml'), EXISTING_PB_P004_GROUP_YML);
+
+    await migrate({ repoRoot: repo, write: true });
+
+    const loaded = loadSourceFile(sourcePath(repo, 'PB-X001'));
+    expect(loaded.source.kind).toBe('monograph');
+    expect(loaded.source.creator).toBe('Someone');
+    expect(loaded.records).toEqual([]);
   });
 });

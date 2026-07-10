@@ -53,7 +53,15 @@ export interface CanonicalModel {
 export interface AuthoredRepositoryRecord {
   /** Holding archive, e.g. `Gallica / BnF`. Part of the `(sourceId, sourceArchive)` key. */
   sourceArchive: string;
-  /** Acquisition status; validated against the closed vocab at runtime. */
+  /**
+   * Acquisition status; validated against the closed
+   * `RepositoryAcquisitionStatus` vocab at runtime
+   * (`@/bibliography/vocab`'s `REPOSITORY_ACQUISITION_STATUS_VALUES`, via
+   * `validateVocab`) -- a distinct state machine from a `Source`'s own
+   * lifecycle status. Kept as plain `string` (parsed unvalidated at the YAML
+   * boundary in `@/bibliography/load-fields`; the closed-vocab check runs
+   * later, at `bib validate` time).
+   */
   status: string;
   /** Catalog / landing page URL at the holding archive. */
   catalogUrl?: string;
