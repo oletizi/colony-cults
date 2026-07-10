@@ -1,10 +1,10 @@
 ---
 id: TASK-10
 title: source-iiif-folio-padding
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-10 04:41'
-updated_date: '2026-07-10 04:41'
+updated_date: '2026-07-10 04:43'
 labels:
   - agent-found
   - 'type:bug'
@@ -24,4 +24,6 @@ The source-iiif provider builds the IIIF folio segment from the zero-padded imag
 
 <!-- SECTION:NOTES:BEGIN -->
 - **Node:** impl:feature/corpus-browser
+
+Closed: Fixed in 81da98e: source-iiif un-pads folioId (f001->f1) for Gallica IIIF; provider tests added; site rebuilt, built pages now emit /f1.
 <!-- SECTION:NOTES:END -->

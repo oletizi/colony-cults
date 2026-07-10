@@ -15,3 +15,4 @@
 {"id":"TASK-9","tierLabel":"powerful","model":"opus","commitRange":"950fc40","reviewClean":true,"note":"loader render-complete-report-skipped policy (operator decision); real corpus 73 issues/927 pages/5 skipped; 28 tests"}
 {"id":"T016","tierLabel":"balanced","model":"opus","commitRange":"2a38037","reviewClean":true,"note":"OpenSeadragon viewer island; iiif info.json vs full-image; provider-agnostic"}
 {"id":"T015","tierLabel":"powerful","model":"opus","commitRange":"2a38037","reviewClean":true,"note":"reading view layout ① via /frontend-design; built all 927 pages; sample page verified. US1 MVP complete"}
+{"id":"TASK-10","tierLabel":"balanced","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"source-iiif folio un-padding fix (scan blank); found in MVP preview; 6 provider tests"}
