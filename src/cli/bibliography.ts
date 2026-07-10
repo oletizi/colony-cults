@@ -18,8 +18,8 @@ import type { RepositoryRecord } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 
 /** Subactions the `bib` verb group recognizes (contracts/cli.md). */
-type Subaction = 'migrate' | 'show' | 'validate' | 'regenerate';
-const SUBACTIONS: readonly Subaction[] = ['migrate', 'show', 'validate', 'regenerate'];
+type Subaction = 'migrate' | 'show' | 'validate' | 'regenerate' | 'inventory' | 'verify-member' | 'promote' | 'exclude-member' | 'acquire' | 'discover';
+const SUBACTIONS: readonly Subaction[] = ['migrate', 'show', 'validate', 'regenerate', 'inventory', 'verify-member', 'promote', 'exclude-member', 'acquire', 'discover'];
 
 function isSubaction(value: string): value is Subaction {
   return (SUBACTIONS as readonly string[]).includes(value);
@@ -410,5 +410,23 @@ export async function runBibliography(argv: string[]): Promise<number> {
       return runValidate(rest);
     case 'regenerate':
       return runRegenerate(rest);
+    case 'inventory':
+      console.error('bib inventory: not yet implemented (task T019)');
+      return 2;
+    case 'verify-member':
+      console.error('bib verify-member: not yet implemented (task T019)');
+      return 2;
+    case 'promote':
+      console.error('bib promote: not yet implemented (task T019)');
+      return 2;
+    case 'exclude-member':
+      console.error('bib exclude-member: not yet implemented (task T019)');
+      return 2;
+    case 'acquire':
+      console.error('bib acquire: not yet implemented (task T019)');
+      return 2;
+    case 'discover':
+      console.error('bib discover: not yet implemented (task T019)');
+      return 2;
   }
 }

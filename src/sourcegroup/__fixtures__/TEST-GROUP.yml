@@ -1,0 +1,9 @@
+sourceId: TG-001
+kind: source-group
+case: test-case
+language: English
+creator: test-author
+titles:
+  - text: Test Source Group Collection
+    role: canonical
+notes: "SYNTHETIC TEST FIXTURE - Not a real source. Used for testing the source-group acquisition pipeline reusability. Language: English | Creator: test-author"
