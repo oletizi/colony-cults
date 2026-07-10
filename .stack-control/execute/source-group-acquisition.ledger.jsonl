@@ -1,0 +1,3 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"7b0c81b","reviewClean":true,"note":"src/sourcegroup/index.ts barrel; typecheck clean"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"7b0c81b","reviewClean":true,"note":"__fixtures__ PB-P004 + TG-001 second source-group"}
+{"id":"T003","tierLabel":"fast","model":"haiku","commitRange":"7b0c81b","reviewClean":true,"note":"6 bib subaction stubs fail-loud; 432 lines; typecheck clean"}
