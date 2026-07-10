@@ -15,3 +15,20 @@
 {"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"immutable snapshot store write-once+read; ref type unified to model"}
 {"id":"T016","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"verifyMember RED test, 17 cases, injected I/O"}
 {"id":"T017","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"shared deterministic verifyMember(); no relevance; reused by verify+promote"}
+{"id":"T018","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"inventory RED test, 9 cases"}
+{"id":"T019","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"runInventory: Source+wanted record+snapshot, atomic alloc"}
+{"id":"T020","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass (elevated fast->opus: subsumed concrete resolver)"}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"verify-member cmd RED test, 10 cases"}
+{"id":"T022","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"runVerifyMember wrapper; verdict=0 tooling-err=1"}
+{"id":"T023","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass"}
+{"id":"T024","tierLabel":"powerful","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"promote RED test, 13 cases"}
+{"id":"T025","tierLabel":"powerful","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"runPromote rerun+record, atomic abort, partOf authoritative"}
+{"id":"T026","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"exclude-member RED test, 9 cases"}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"runExcludeMember discovered->excluded, reason in notes"}
+{"id":"T028","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass"}
+{"id":"T029","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"acquire RED test, 15 cases"}
+{"id":"T030","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"runAcquire reuses runFetchSource unchanged"}
+{"id":"T031","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass"}
+{"id":"T032","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"bnf-sru RED test, 11 cases, live-confirmed XML"}
+{"id":"T033","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"BnfSruDiscoveryMechanism concrete client"}
+{"id":"T034","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass; ark-resolver.ts built (concrete resolver, un-tasked, opus)"}
