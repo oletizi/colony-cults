@@ -1,0 +1,5 @@
+{
+  "repo": "git@github.com:oletizi/colony-cults-archive.git",
+  "ref": "dc5211810bae7c94a735a2c8037b484196e694ce",
+  "note": "Pinned archive commit the committed corpus snapshot(s) in this directory were generated from. `npm run snapshot` regenerates them deterministically from this exact ref (via a clean, sparse, text-only archive worktree). `npm run snapshot:check` regenerates and fails on drift. To refresh the corpus: bump this ref deliberately, run `npm run snapshot`, and commit the changed data."
+}

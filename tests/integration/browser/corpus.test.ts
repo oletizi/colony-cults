@@ -30,6 +30,7 @@ const FIXTURE_PAGE_COUNT = 8;
 function configFor(archivePath: string): LoadConfig {
   return {
     archivePath,
+    snapshotDir: 'site/data',
     sources: ['PB-P001'],
     provider: { kind: 'source-iiif' },
   };
