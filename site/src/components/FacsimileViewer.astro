@@ -51,7 +51,12 @@ const descriptorJson = JSON.stringify(image);
   .facsimile {
     position: relative;
     margin: 0;
-    min-height: 560px;
+    /* A DEFINITE height (not min-height): the OSD mount below resolves its
+       `height: 100%` against this. min-height cannot anchor a percentage
+       height, so a min-height-only figure collapsed the mount to 0. The
+       value is supplied by the reading view (tuned to the sticky offset);
+       the fallback keeps the viewer self-contained if used standalone. */
+    height: var(--facsimile-height, min(82vh, 900px));
     background: #d9d7ce;
     border-right: 1px solid var(--rule);
   }
@@ -113,7 +118,7 @@ const descriptorJson = JSON.stringify(image);
 
   @media (max-width: 820px) {
     .facsimile {
-      min-height: 340px;
+      height: var(--facsimile-height, min(68vh, 460px));
       border-right: 0;
       border-bottom: 1px solid var(--rule);
     }
