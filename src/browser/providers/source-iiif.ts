@@ -60,6 +60,27 @@ function resolveSourceIiifImage(page: PageInput): ImageDescriptor {
 
   return {
     kind: 'iiif',
-    url: `${GALLICA_IIIF_BASE}/${ark}/${folioId}`,
+    url: `${GALLICA_IIIF_BASE}/${ark}/${gallicaFolio(folioId)}`,
   };
+}
+
+/**
+ * Normalizes an archive folio id (zero-padded, e.g. `f001`) to the UN-padded
+ * form Gallica's IIIF service uses (`f1`). Archive page images are named
+ * `fNNN.jpg`, but Gallica addresses folios as `f1`, `f2`, ... `f10`, so a
+ * verbatim `f001` yields a 404/403 and a blank viewer (TASK-10). The page
+ * sidecar's own `original_url` confirms the `.../f1/...` form.
+ *
+ * @throws Error if `folioId` is not the expected `f<digits>` shape -- fail
+ *   loud rather than emit a malformed IIIF url.
+ */
+function gallicaFolio(folioId: string): string {
+  const match = /^f(\d+)$/.exec(folioId);
+  if (!match) {
+    throw new Error(
+      `source-iiif provider: unexpected folioId ${JSON.stringify(folioId)} -- ` +
+        'expected the form "f<digits>" (e.g. "f001") to map to a Gallica IIIF folio.'
+    );
+  }
+  return `f${Number(match[1])}`;
 }

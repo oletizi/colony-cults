@@ -29,6 +29,27 @@ describe('makeProvider', () => {
       expect(descriptor.url).toContain('f1');
     });
 
+    it('maps a zero-padded archive folioId to the un-padded Gallica IIIF folio (TASK-10: f001 -> f1, f012 -> f12)', () => {
+      const provider = makeProvider({ kind: 'source-iiif' });
+      const ark = 'ark:/12148/bpt6k56068358';
+
+      const p1 = provider.resolve({ ark, folioId: 'f001', objectStoreKey: null });
+      // The IIIF folio segment must be the un-padded `f1`, not `f001`.
+      expect(p1.url.endsWith('/f1')).toBe(true);
+      expect(p1.url).not.toContain('f001');
+
+      const p12 = provider.resolve({ ark, folioId: 'f012', objectStoreKey: null });
+      expect(p12.url.endsWith('/f12')).toBe(true);
+      expect(p12.url).not.toContain('f012');
+    });
+
+    it('throws on a folioId that is not the f<digits> shape', () => {
+      const provider = makeProvider({ kind: 'source-iiif' });
+      expect(() =>
+        provider.resolve({ ark: 'ark:/12148/x', folioId: 'plate-3', objectStoreKey: null })
+      ).toThrow(/folioId/);
+    });
+
     it('reports its kind as source-iiif', () => {
       const provider = makeProvider({ kind: 'source-iiif' });
       expect(provider.kind).toBe('source-iiif');
