@@ -16,3 +16,4 @@
 {"id":"T016","tierLabel":"balanced","model":"opus","commitRange":"2a38037","reviewClean":true,"note":"OpenSeadragon viewer island; iiif info.json vs full-image; provider-agnostic"}
 {"id":"T015","tierLabel":"powerful","model":"opus","commitRange":"2a38037","reviewClean":true,"note":"reading view layout ① via /frontend-design; built all 927 pages; sample page verified. US1 MVP complete"}
 {"id":"TASK-10","tierLabel":"balanced","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"source-iiif folio un-padding fix (scan blank); found in MVP preview; 6 provider tests"}
+{"id":"TASK-11","tierLabel":"balanced","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"scan-blank CORS fix: full-image descriptor + drop crossOriginPolicy; 30 tests; found in phone review"}
