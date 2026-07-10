@@ -53,6 +53,16 @@ export interface ProvenanceFields {
   format: string;
   /** OCR outcome: `none` | `searchable` | `failed`. */
   ocr_status: string;
+  /**
+   * Machine-assistance engine that produced a derived artifact, e.g.
+   * `claude-code-cli` / `codex-cli` (FR-006/FR-007). Additive OPTIONAL key:
+   * absent on non-translation records, which must re-serialize byte-identically.
+   */
+  engine?: string;
+  /** Resolved model id for a machine-assisted run, e.g. the `--model` value. */
+  model?: string;
+  /** Translation provenance label, e.g. `machine-assisted` (FR-007). */
+  translation?: string;
   /** Integer byte count of the asset (T008), emitted as a bare integer. */
   size: number;
   /** Object-store master location (T009), or `null` when not yet uploaded. */
@@ -84,6 +94,9 @@ const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'size',
   'format',
   'ocr_status',
+  'engine',
+  'model',
+  'translation',
   'object_store',
   'notes',
   'rights_raw',
@@ -157,12 +170,23 @@ function emitObjectStore(location: ObjectStoreLocation | null): string {
 }
 
 /** Emit one provenance line/block, dispatching the two non-string fields. */
-function emitEntry(key: keyof ProvenanceFields, fields: ProvenanceFields): string {
+function emitEntry(
+  key: keyof ProvenanceFields,
+  fields: ProvenanceFields,
+): string | undefined {
   switch (key) {
     case 'size':
       return emitInteger(fields.size);
     case 'object_store':
       return emitObjectStore(fields.object_store);
+    case 'engine':
+    case 'model':
+    case 'translation': {
+      // Additive OPTIONAL keys: omit entirely when unset so non-translation
+      // records (without them) re-serialize byte-identically.
+      const value = fields[key];
+      return value === undefined ? undefined : emitField(key, value);
+    }
     default:
       return emitField(key, fields[key]);
   }
@@ -174,7 +198,9 @@ function emitEntry(key: keyof ProvenanceFields, fields: ProvenanceFields): strin
  * newline.
  */
 export function serializeProvenance(fields: ProvenanceFields): string {
-  const body = KEY_ORDER.map((key) => emitEntry(key, fields)).join('\n');
+  const body = KEY_ORDER.map((key) => emitEntry(key, fields))
+    .filter((line): line is string => line !== undefined)
+    .join('\n');
   return `${body}\n`;
 }
 
@@ -387,6 +413,11 @@ export function parseProvenance(text: string): ProvenanceFields {
     size: requireInteger(scalars, 'size'),
     format: requireField(scalars, 'format'),
     ocr_status: requireField(scalars, 'ocr_status'),
+    // Additive OPTIONAL keys: present -> string, absent -> undefined (omitted
+    // on re-serialize); a stray null is normalized to undefined.
+    engine: scalars.get('engine') ?? undefined,
+    model: scalars.get('model') ?? undefined,
+    translation: scalars.get('translation') ?? undefined,
     object_store: objectStore,
     notes: scalars.get('notes') ?? null,
     rights_raw: requireField(scalars, 'rights_raw'),

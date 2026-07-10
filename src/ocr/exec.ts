@@ -20,10 +20,21 @@ export interface ExecResult {
  * reported via `exitCode` (a missing executable surfaces as a non-zero,
  * platform-dependent code) so callers can produce one descriptive, fail-loud
  * message rather than juggling thrown vs. returned failures.
+ *
+ * `stdin` is OPTIONAL and, when provided, is written to the child process's
+ * stdin and the stream is ended (source-translation T004 -- the Claude CLI
+ * needs the source text on stdin; `@/claude/exec` is the first caller). When
+ * omitted, behavior is byte-for-byte identical to the original two-argument
+ * form, so `@/ocr/preflight` and `@/ocr/run` (which call with exactly two
+ * arguments) are unaffected.
  */
-export function execCommand(command: string, args: string[]): Promise<ExecResult> {
+export function execCommand(
+  command: string,
+  args: string[],
+  stdin?: string,
+): Promise<ExecResult> {
   return new Promise((resolve) => {
-    execFile(
+    const child = execFile(
       command,
       args,
       { maxBuffer: 1024 * 1024 * 64 },
@@ -36,5 +47,8 @@ export function execCommand(command: string, args: string[]): Promise<ExecResult
         resolve({ stdout, stderr, exitCode: 0 });
       },
     );
+    if (stdin !== undefined) {
+      child.stdin?.end(stdin);
+    }
   });
 }

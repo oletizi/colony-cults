@@ -11,7 +11,11 @@ import { runOcr } from '@/cli/ocr';
 /** A command handler: given the parsed invocation, performs the command. */
 type Handler = (args: ParsedArgs) => Promise<void>;
 
-const HANDLERS: Record<Command, Handler> = {
+// Partial: the shared `Command` union also carries the `translate` /
+// `translate-source` verbs, which belong to the separate `translate` bin
+// (src/translate-index.ts). The gallica bin does not wire them and fails
+// loud (see main) if one is invoked here.
+const HANDLERS: Partial<Record<Command, Handler>> = {
   census: (args) => runCensus(args),
   'fetch-issue': (args) => runFetchIssue(args),
   'fetch-source': (args) => runFetchSource(args),
@@ -88,6 +92,12 @@ async function main(argv: string[]): Promise<void> {
 
   const parsed = parse(argv);
   const handler = HANDLERS[parsed.command];
+  if (handler === undefined) {
+    throw new Error(
+      `command "${parsed.command}" is not a gallica command ` +
+        `(did you mean the "translate" bin?)`,
+    );
+  }
   await handler(parsed);
 }
 

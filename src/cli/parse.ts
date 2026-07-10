@@ -1,13 +1,21 @@
 import { parseArgs as nodeParseArgs } from 'node:util';
 
 /** Commands recognized by the gallica CLI (see contracts/cli.md). */
-export type Command = 'census' | 'fetch-issue' | 'fetch-source' | 'ocr';
+export type Command =
+  | 'census'
+  | 'fetch-issue'
+  | 'fetch-source'
+  | 'ocr'
+  | 'translate'
+  | 'translate-source';
 
 const COMMANDS: readonly Command[] = [
   'census',
   'fetch-issue',
   'fetch-source',
   'ocr',
+  'translate',
+  'translate-source',
 ];
 
 function isCommand(value: string): value is Command {
@@ -40,6 +48,8 @@ const REQUIRED_POSITIONAL_NAME: Record<Command, string> = {
   'fetch-issue': 'issueArk',
   'fetch-source': 'periodicalArk',
   ocr: 'issueArk',
+  translate: 'issueArk',
+  'translate-source': 'sourceId',
 };
 
 /** Global boolean flags shared by every command (contracts/cli.md). */
@@ -85,6 +95,10 @@ export interface ParsedOptions {
   sourceId?: string;
   /** Filename slug, e.g. `la-nouvelle-france` (census: required). */
   slug?: string;
+  /** Claude model alias/id to pin for a translation run (contracts/cli.md). */
+  model?: string;
+  /** Translation engine selector (`claude`/`codex`); CLI flag beats config beats the built-in default. */
+  engine?: string;
   /**
    * Explicit override for the private-archive root (T016), passed as the
    * `override` arg to `resolveArchiveRoot`. Absent -> existing precedence
@@ -132,6 +146,8 @@ export function parse(argv: string[]): ParsedArgs {
       checkpoint: { type: 'boolean', default: false },
       'source-id': { type: 'string' },
       slug: { type: 'string' },
+      model: { type: 'string' },
+      engine: { type: 'string' },
       'archive-root': { type: 'string' },
       'checkpoint-every': { type: 'string' },
     },
@@ -174,6 +190,8 @@ export function parse(argv: string[]): ParsedArgs {
     options: {
       sourceId: values['source-id'],
       slug: values.slug,
+      model: values.model,
+      engine: values.engine,
       archiveRoot: values['archive-root'],
       checkpointEvery: parseCheckpointEvery(values['checkpoint-every']),
     },

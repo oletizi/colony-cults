@@ -169,6 +169,126 @@ this preflight.
   a malformed host response, a missing OCR toolchain, an unconfirmed rights
   status) throw a descriptive error rather than silently degrading.
 
+## Source Translation (`translate` CLI tool)
+
+A second TypeScript CLI tool in the `gallica-fetcher` package that turns
+archived French OCR text (the `issue.txt` produced by the gallica-fetcher) into
+corrected French and English translations. The tool processes each issue page by
+page, cleaning OCR artifacts and translating via a **pluggable translation
+engine** — the Claude Code CLI (`claude`) or the Codex CLI (`codex`), selectable
+per run with `--engine claude|codex` (or a `translate.config.json` default) — then
+stores both the corrected French transcription and the English translation
+alongside the source with YAML provenance records documenting the engine,
+model, and machine-assisted nature of the translation.
+
+> **Which engine/model should I use?** See
+> [ENGINE-COMPARISON.md](ENGINE-COMPARISON.md) for a controlled comparison of
+> Codex vs Claude and of the model/reasoning tiers within each, with guidance and
+> caveats. Short version: Codex (`gpt-5.5`) and Claude Opus are quality-equivalent
+> on this corpus; the cheaper settings (`codex` `none` reasoning, `claude sonnet`)
+> match them; `claude haiku` is a false economy.
+
+### Commands
+
+Run via `npm run translate -- <command> <id> [options]` (or `npx tsx src/index.ts
+<command> ...`).
+
+#### `translate <issueArk>`
+
+Translate a single archived periodical issue from French to English.
+
+```bash
+npx tsx src/index.ts translate ark:/12148/bpt6k5603637g --source-id PB-P001
+```
+
+- Processes the issue page by page: reads the archived `issue.txt`, splits on
+  form feeds, then for each page runs cleanup (dehyphenation, line-joining,
+  OCR error repair) followed by translation to English.
+- Assembles the whole-issue corrected French transcription (`issue.fr.txt`) and
+  English translation (`issue.en.txt`), each with a `.yml` provenance companion.
+- Rights-gated: refuses (throws, writes nothing) unless the issue's stored page
+  provenance confirms public domain.
+- Resumable: already-processed pages are skipped on re-run unless `--force` is
+  given.
+- `--dry-run` reports the intended work and rights status without requiring
+  `claude` to be installed.
+
+```bash
+npx tsx src/index.ts translate ark:/12148/bpt6k5603637g --source-id PB-P001 --dry-run
+npx tsx src/index.ts translate ark:/12148/bpt6k5603637g --source-id PB-P001 --force
+```
+
+#### `translate-source <sourceId>`
+
+Translate every archived issue of a source (e.g. all issues of a periodical).
+
+```bash
+npx tsx src/index.ts translate-source PB-P001
+```
+
+- Iterates the source's archived issues, translating each not-yet-translated
+  issue and skipping those that already have translation artifacts (unless
+  `--force` is given).
+- Paces Claude calls politely to respect rate limits.
+- If one issue fails, logs the error and continues with the remaining issues;
+  aborts the whole run only after N consecutive issue failures (a small
+  threshold signalling a systemic problem like an expired auth token).
+- Prints a per-issue outcome report.
+
+```bash
+npx tsx src/index.ts translate-source PB-P001 --dry-run
+npx tsx src/index.ts translate-source PB-P001 --force
+```
+
+### Options
+
+| Flag | Meaning |
+|------|---------|
+| `--dry-run` | Report intended work (translate / skip / refuse-on-rights) and rights status for each issue; write nothing. Does not require `claude` to be installed. |
+| `--force` | Re-translate issues and pages that already have artifacts. |
+| `--model <name>` | Claude model alias or full name to pin for the run; recorded in provenance. Optional; a default is used if omitted. |
+| `--help`, `-h` | Show help. |
+| `--version`, `-v` | Show version. |
+
+### Outputs
+
+Translation produces a set of artifacts stored alongside the source in the
+private archive:
+
+- `issue.fr.txt` — the corrected French transcription (OCR cleaned,
+  dehyphenated, line-joined, obvious errors repaired).
+- `issue.fr.txt.yml` — provenance sidecar for the French transcription.
+- `issue.en.txt` — the English translation (produced from the corrected
+  French, not from raw OCR).
+- `issue.en.txt.yml` — provenance sidecar for the English translation.
+- `translation/pNNN.fr.txt`, `translation/pNNN.fr.txt.yml` — per-page
+  intermediate French outputs (`NNN` is the 1-based page number zero-padded to
+  three digits, e.g. `p001.fr.txt`; durable and individually recorded so a
+  re-run resumes at the first incomplete page).
+- `translation/pNNN.en.txt`, `translation/pNNN.en.txt.yml` — per-page
+  intermediate English outputs.
+
+### Machine-assisted translation and public-domain policy
+
+Translation is **machine-assisted, not human-reviewed**. The provenance records
+for each artifact include:
+
+- `engine: claude-code-cli`
+- the Claude model identifier used for that run
+- `translation: machine-assisted`
+- the original-language citation (French)
+
+This labeling follows the project's policy documented in `AGENTS.md` § "Handling
+translations": retain the original-language citation and label translations as
+machine-assisted unless human reviewed.
+
+**Rights gate**: The tool only produces a committed full translation for issues
+confirmed public-domain (by reading `rights_status` from the issue's stored page
+provenance). For a source not confirmed public-domain, the tool refuses and
+fails loud, writing nothing — consistent with the project's copyright policy
+(documented in `AGENTS.md`). `--dry-run` reports the rights status instead of
+refusing hard, allowing a preview of intended work before requiring a full run.
+
 ## Legal and citation note
 
 This repository is intended to hold metadata, notes, citations, research leads, and links to lawful sources. Public-domain material may be linked or quoted within normal scholarly practice. Copyrighted works should be cited and summarized, not redistributed.

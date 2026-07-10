@@ -4,11 +4,13 @@
   "type": "module",
   "description": "TypeScript CLI for mirroring public-domain BnF Gallica sources",
   "bin": {
-    "gallica": "src/index.ts"
+    "gallica": "src/index.ts",
+    "translate": "src/translate-index.ts"
   },
   "scripts": {
     "browser:test": "vitest run tests/unit/browser tests/integration/browser",
     "gallica": "tsx src/index.ts",
+    "translate": "tsx src/translate-index.ts",
     "site:build": "astro build --root site && pagefind --site site/dist",
     "site:export-public": "tsx scripts/export-public.ts",
     "site:preview": "astro preview --root site",
