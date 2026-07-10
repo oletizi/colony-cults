@@ -17,3 +17,4 @@
 {"id":"T015","tierLabel":"powerful","model":"opus","commitRange":"2a38037","reviewClean":true,"note":"reading view layout ① via /frontend-design; built all 927 pages; sample page verified. US1 MVP complete"}
 {"id":"TASK-10","tierLabel":"balanced","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"source-iiif folio un-padding fix (scan blank); found in MVP preview; 6 provider tests"}
 {"id":"TASK-11","tierLabel":"balanced","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"scan-blank CORS fix: full-image descriptor + drop crossOriginPolicy; 30 tests; found in phone review"}
+{"id":"T015-ux","tierLabel":"powerful","model":"opus","commitRange":"f71c0b1","reviewClean":true,"note":"reading-view UX (operator feedback via /frontend-design): English-first, both French readings collapsed <details>, sticky top page-nav; 927 pages rebuilt"}
