@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/source-groups",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/source-groups",
+  "override": true,
+  "overrideReason": "Re-recorded after PR#11 review refinement (split status into Source-lifecycle vs RepositoryRecord-acquisition vocabularies). Cross-model barrage remains non-convergent in this env; findings from the prior run harvested+verified+lifted; this refinement live-validated: tsc clean, 343 passed 2 skipped, bib validate clean. Override per documented barrage-non-convergence limitation; merge gated on operator review."
+}

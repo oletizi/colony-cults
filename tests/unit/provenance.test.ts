@@ -27,8 +27,10 @@ function legacyFields(): ProvenanceFields {
     retrieved: '2026-07-08T00:00:00.000Z',
     local_path: 'archive/cases/port-breton/PB-P001/f001.jpg',
     sha256: 'deadbeef',
+    size: 2245452,
     format: 'image/jpeg',
     ocr_status: 'none',
+    object_store: null,
     rights_raw: '<results/>',
     notes: null,
   };
@@ -64,7 +66,7 @@ describe('serializeProvenance backward compatibility', () => {
 });
 
 describe('serializeProvenance machine-assistance keys', () => {
-  it('emits engine/model/translation in KEY_ORDER position (after ocr_status, before notes)', () => {
+  it('emits engine/model/translation in KEY_ORDER position (after ocr_status, before object_store)', () => {
     const fields: ProvenanceFields = {
       ...legacyFields(),
       type: 'english-translation',
@@ -82,13 +84,14 @@ describe('serializeProvenance machine-assistance keys', () => {
     const engineIdx = keys.indexOf('engine');
     const modelIdx = keys.indexOf('model');
     const translationIdx = keys.indexOf('translation');
-    const notesIdx = keys.indexOf('notes');
+    const objectStoreIdx = keys.indexOf('object_store');
 
     expect(ocrIdx).toBeGreaterThanOrEqual(0);
     expect(engineIdx).toBe(ocrIdx + 1);
     expect(modelIdx).toBe(engineIdx + 1);
     expect(translationIdx).toBe(modelIdx + 1);
-    expect(notesIdx).toBe(translationIdx + 1);
+    // The object-store block follows the machine-assistance keys (merged schema).
+    expect(objectStoreIdx).toBe(translationIdx + 1);
 
     expect(yaml).toContain('engine: "claude-code-cli"');
     expect(yaml).toContain('model: "claude-opus-4"');

@@ -78,13 +78,33 @@ export interface IssueLocation {
 }
 
 /**
- * Resolve the private archive location as the fixed sibling path
- * `../colony-cults-archive` relative to the public repository root (FR-006).
- * Returns an absolute path; no configuration, no override.
+ * Resolve the private archive root, with an explicit resolution precedence
+ * (FR-014) so dev/test can target a dedicated worktree instead of the fixed
+ * sibling clone:
+ *
+ *   1. `override`, if provided and non-empty -- an explicit, caller-supplied
+ *      archive root (e.g. threaded through from a CLI flag).
+ *   2. `env.COLONY_ARCHIVE_ROOT`, if set and non-empty.
+ *   3. The fixed sibling `../colony-cults-archive` relative to `repoRoot`
+ *      (FR-006), unchanged default behavior for existing callers.
+ *
+ * Always returns an absolute path. `env` defaults to `process.env` so
+ * existing callers (`resolveArchiveRoot(repoRoot)`) keep working unchanged.
  */
-export function resolveArchiveRoot(repoRoot: string): string {
+export function resolveArchiveRoot(
+  repoRoot: string,
+  override?: string,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
   if (repoRoot.trim().length === 0) {
     throw new Error('resolveArchiveRoot: repoRoot is required');
+  }
+  if (override !== undefined && override.trim().length > 0) {
+    return path.resolve(override);
+  }
+  const envRoot = env.COLONY_ARCHIVE_ROOT;
+  if (envRoot !== undefined && envRoot.trim().length > 0) {
+    return path.resolve(envRoot);
   }
   return path.resolve(repoRoot, '..', ARCHIVE_DIR_NAME);
 }

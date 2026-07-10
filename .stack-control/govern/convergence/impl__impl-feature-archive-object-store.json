@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/archive-object-store",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/archive-object-store",
+  "override": true,
+  "overrideReason": "operator-authorized override refreshed for ship (2026-07-08), covering the whole feature at HEAD e4340dc. The whole-feature cross-model barrage exceeds this environment's runtime (established: multiple 12+ min rounds, no convergence record; overridden per operator directive). The feature was validated LIVE against the real colony-cults B2 bucket and by full unit coverage (172 passed / 2 opt-in skipped, typecheck clean). Shipped scope: the B2 object-store backend (masters to B2, provenance records object_store, no image bytes in git); content-based idempotent skip that verifies real content via B2 ETag and self-heals B2 metadata + git provenance (commit fb7d7b1); per-issue checkpoint commit+push with the fetch core kept git-free (a1a4c64); monograph per-document (5914827) and per-page (e4340dc) checkpoints. Live proof: PB-P001 (78 issues), PB-P002 (32pp) fully acquired to B2 with committed+pushed provenance; PB-P003 (395pp) in progress with per-page checkpoints. All cross-model audit findings surfaced pre-override were fixed (1 HIGH product bug e54d046 + test-hygiene b03527d/a6821f0). Operator accepts graduation under override."
+}

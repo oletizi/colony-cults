@@ -1,11 +1,19 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import type { ParsedFlags } from '@/cli/parse';
+import type { ParsedArgs, ParsedFlags } from '@/cli/parse';
 import type { GallicaClient, IssueMetaClient } from '@/gallica/gallica-client';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
 import { resolveArchiveRoot, sourceLayout } from '@/archive/location';
 import { verifyAsset } from '@/archive/store';
+import type { ObjectStore } from '@/archive/object-store';
+import { resolveObjectStoreConfig } from '@/archive/b2-config';
+import { S3ObjectStore } from '@/archive/s3-object-store';
+import {
+  commitAndPushIssueCheckpoint,
+  type IssueCheckpoint,
+  type PageStored,
+} from '@/cli/archive-checkpoint';
 import { resolveRights } from '@/rights/gate';
 import {
   fetchIssue,
@@ -53,6 +61,38 @@ export interface FetchDeps {
   ocrPreflight: () => Promise<void>;
   /** Injected OCR command runner (T030), used when `--ocr` wires OCR in. */
   ocrRunner: OcrCommandRunner;
+  /**
+   * Object-store backend for page-image masters (T015/T016), opt-in via
+   * `--object-store`. Undefined -- the default -- means legacy local-only
+   * behavior: no upload, `object_store` stays null in provenance. OCR text
+   * assets never use this (they stay local/git regardless).
+   */
+  objectStore?: ObjectStore;
+  /**
+   * Coordinates recorded in provenance's `object_store` block; only
+   * meaningful together with {@link FetchDeps.objectStore}. The object key
+   * itself is re-derived from the archive layout, not carried here.
+   */
+  objectStoreCoords?: { provider: string; bucket: string; endpoint: string };
+  /**
+   * Per-issue checkpoint hook, opt-in via `--checkpoint`. The fetch core
+   * (`src/fetch/*`) never calls this and never imports git; only the CLI
+   * orchestration layer (`fetch-issue.ts`/`fetch-source.ts`) invokes it, once
+   * per completed issue. Undefined -- the default -- means checkpointing is
+   * off: tests and dry-runs never touch git. When wired (by
+   * {@link defaultFetchDeps}), it delegates to
+   * {@link commitAndPushIssueCheckpoint}, the only place `git` is invoked.
+   */
+  onIssueComplete?: (checkpoint: IssueCheckpoint) => Promise<void>;
+  /**
+   * Per-page checkpoint hook, opt-in via `--checkpoint` (MONOGRAPH sources
+   * only -- a periodical's issues are already bounded by `onIssueComplete`,
+   * so this stays undefined for them). Threaded straight through to the
+   * fetch core's `DocumentFetchContext` (`src/fetch/issue.ts`), which never
+   * imports git; only {@link defaultFetchDeps} wires a git-touching
+   * implementation in, via {@link buildMonographPageCheckpointHook}.
+   */
+  onPageStored?: (p: PageStored) => Promise<void>;
 }
 
 /**
@@ -65,17 +105,147 @@ export interface FetchDeps {
 const IMAGE_FETCH_CONCURRENCY = 1;
 const IMAGE_FETCH_MIN_INTERVAL_MS = 2000;
 
-/** Build the default (real network + disk) dependencies. */
-export function defaultFetchDeps(): FetchDeps {
+/**
+ * Shape of {@link commitAndPushIssueCheckpoint}, injected into {@link
+ * buildMonographPageCheckpointHook} so the page-cadence logic itself can be
+ * unit tested with a fake commit function -- no real git required.
+ */
+export type CommitCheckpointFn = (
+  archiveRoot: string,
+  checkpoint: IssueCheckpoint,
+  opts: { push: boolean },
+) => Promise<void>;
+
+/**
+ * Build a STATEFUL per-page checkpoint hook for a MONOGRAPH fetch
+ * (`--checkpoint` + `--checkpoint-every <N>`): commits+pushes (via `commit`)
+ * every `checkpointEvery` pages, closing over running written/skipped
+ * counters so each checkpoint's commit message reflects only the pages
+ * stored since the LAST checkpoint (or document start).
+ *
+ * This state is scoped to ONE closure instance -- callers must build a fresh
+ * hook per fetch invocation (never share one across documents/runs); {@link
+ * defaultFetchDeps} does exactly this, once per `defaultFetchDeps` call.
+ *
+ * A periodical issue never uses this -- it stays bounded by the existing
+ * per-issue `onIssueComplete` hook; only a monograph document (unbounded
+ * page count) needs page-level cadence.
+ */
+export function buildMonographPageCheckpointHook(
+  archiveRoot: string,
+  checkpointEvery: number,
+  commit: CommitCheckpointFn,
+): (stored: PageStored) => Promise<void> {
+  if (!Number.isInteger(checkpointEvery) || checkpointEvery < 1) {
+    throw new Error(
+      `buildMonographPageCheckpointHook: checkpointEvery must be a positive ` +
+        `integer (got ${checkpointEvery})`,
+    );
+  }
+
+  let pagesSinceCheckpoint = 0;
+  let writtenSinceCheckpoint = 0;
+  let skippedSinceCheckpoint = 0;
+
+  return async (stored: PageStored): Promise<void> => {
+    if (stored.skipped) {
+      skippedSinceCheckpoint += 1;
+    } else {
+      writtenSinceCheckpoint += 1;
+    }
+    pagesSinceCheckpoint += 1;
+
+    if (pagesSinceCheckpoint < checkpointEvery) {
+      return;
+    }
+
+    const checkpoint: IssueCheckpoint = {
+      sourceId: stored.sourceId,
+      ark: stored.ark,
+      dir: stored.dir,
+      pageCount: stored.pageCount,
+      written: writtenSinceCheckpoint,
+      skipped: skippedSinceCheckpoint,
+      page: stored.page,
+    };
+
+    pagesSinceCheckpoint = 0;
+    writtenSinceCheckpoint = 0;
+    skippedSinceCheckpoint = 0;
+
+    await commit(archiveRoot, checkpoint, { push: true });
+  };
+}
+
+/**
+ * Build the default (real network + disk) dependencies.
+ *
+ * `args` supplies the CLI-level overrides threaded in via T016:
+ * `--archive-root <path>` (passed as `resolveArchiveRoot`'s `override`) and
+ * the opt-in `--object-store` flag. When `--object-store` is absent (the
+ * default), no `ObjectStore` is constructed and the archive stays
+ * local-only, unchanged from prior behavior. When present,
+ * `resolveObjectStoreConfig()` is called eagerly here so a missing
+ * config/credential fails loud before any fetch work begins, rather than
+ * failing mid-run on the first page.
+ */
+export function defaultFetchDeps(args: ParsedArgs): FetchDeps {
   const repoRoot = process.cwd();
+  const archiveRoot = resolveArchiveRoot(repoRoot, args.options.archiveRoot);
   const http = new HttpClient({
     maxConcurrent: IMAGE_FETCH_CONCURRENCY,
     minRequestIntervalMs: IMAGE_FETCH_MIN_INTERVAL_MS,
   });
+
+  let objectStore: ObjectStore | undefined;
+  let objectStoreCoords: FetchDeps['objectStoreCoords'];
+  if (args.flags.objectStore) {
+    const config = resolveObjectStoreConfig();
+    objectStore = new S3ObjectStore(config);
+    objectStoreCoords = {
+      provider: config.provider,
+      bucket: config.bucket,
+      endpoint: config.endpoint,
+    };
+  }
+
+  // `--checkpoint` (operator's design): commit AND push after every issue.
+  // Absent/false leaves `onIssueComplete` undefined, so tests/dry-runs never
+  // touch git -- checkpointing is opt-in and this is the ONLY place the git
+  // adapter (`@/cli/archive-checkpoint`) is constructed. This same hook also
+  // serves as a monograph's FINAL FLUSH: `runFetchSourceMonograph` calls it
+  // once at document end with the full document totals, so any pages stored
+  // since the last page-cadence checkpoint (below) are committed too -- a
+  // clean no-op if the last page-cadence checkpoint already covers them.
+  const onIssueComplete: FetchDeps['onIssueComplete'] = args.flags.checkpoint
+    ? (checkpoint) =>
+        commitAndPushIssueCheckpoint(archiveRoot, checkpoint, { push: true })
+    : undefined;
+
+  // Page-level cadence (`--checkpoint-every <N>`, default 1) applies ONLY to
+  // a MONOGRAPH source -- a periodical's issues are already bounded, so they
+  // keep the per-issue-only behavior above (`onPageStored` stays undefined).
+  // `args.options.sourceId` may be absent/unregistered at this point for
+  // commands that do not need it; that is caught later by `requireOption`/
+  // `sourceLayout`, so it is treated as "not a monograph" here rather than
+  // thrown on -- this function must stay side-effect-free on that path.
+  let onPageStored: FetchDeps['onPageStored'];
+  if (args.flags.checkpoint && args.options.sourceId !== undefined) {
+    const isMonograph = sourceLayout(args.options.sourceId).kind === 'monograph';
+    if (isMonograph) {
+      const checkpointEvery = args.options.checkpointEvery ?? 1;
+      onPageStored = buildMonographPageCheckpointHook(
+        archiveRoot,
+        checkpointEvery,
+        commitAndPushIssueCheckpoint,
+      );
+    }
+  }
+
   return {
     client: new GallicaHttpClient(http),
     repoRoot,
-    archiveRoot: resolveArchiveRoot(repoRoot),
+    archiveRoot,
     clock: () => new Date(),
     builtAt: new Date().toISOString().slice(0, 10),
     log: (message) => {
@@ -83,6 +253,10 @@ export function defaultFetchDeps(): FetchDeps {
     },
     ocrPreflight: () => assertOcrToolchain(),
     ocrRunner: defaultOcrCommandRunner(),
+    objectStore,
+    objectStoreCoords,
+    onIssueComplete,
+    onPageStored,
   };
 }
 
@@ -170,6 +344,10 @@ export async function realFetchIssue(
     clock: deps.clock,
     force: flags.force,
     log: deps.log,
+    objectStore: deps.objectStore,
+    objectStoreCoords: deps.objectStoreCoords,
+    reconcileRemote: flags.reconcileRemote,
+    onPageStored: deps.onPageStored,
   });
   deps.log(
     `fetch-issue: ${result.issueArk} -> ${result.dir} :: ` +
@@ -199,6 +377,10 @@ export async function realFetchMonograph(
     clock: deps.clock,
     force: flags.force,
     log: deps.log,
+    objectStore: deps.objectStore,
+    objectStoreCoords: deps.objectStoreCoords,
+    reconcileRemote: flags.reconcileRemote,
+    onPageStored: deps.onPageStored,
   });
   deps.log(
     `fetch-source (monograph): ${result.issueArk} -> ${result.dir} :: ` +
@@ -228,15 +410,23 @@ export async function runOcrForIssue(
     log: deps.log,
   });
   deps.log(
-    `  ocr   ${result.pdf.path} (${result.pdf.skipped ? 'skipped' : 'written'}), ` +
-      `${result.text.path} (${result.text.skipped ? 'skipped' : 'written'})`,
+    `  ocr   ${result.text.path} (${result.text.skipped ? 'skipped' : 'written'})`,
   );
 }
 
-/** Re-hash every `f<NNN>.jpg` present in a directory; returns mismatch count. */
+/**
+ * Re-hash every `f<NNN>.jpg` present in a directory; returns mismatch count.
+ *
+ * When `objectStore` is supplied (the `--object-store` backend is enabled),
+ * each object-store-backed page is verified against its B2 master rather than
+ * the local file (FR-008, SC-002/SC-004) -- a legacy page with
+ * `object_store: null` still falls back to local verification, handled by
+ * {@link verifyAsset} itself.
+ */
 export async function verifyIssueDir(
   dir: string,
   log: (message: string) => void,
+  objectStore?: ObjectStore,
 ): Promise<number> {
   if (!existsSync(dir)) {
     log(`  verify: no archive directory ${dir} (nothing fetched yet)`);
@@ -251,7 +441,7 @@ export async function verifyIssueDir(
   }
   let mismatches = 0;
   for (const name of pageFiles) {
-    const result = await verifyAsset(path.join(dir, name));
+    const result = await verifyAsset(path.join(dir, name), { objectStore });
     if (result.ok) {
       log(`  ok    ${name}`);
     } else {

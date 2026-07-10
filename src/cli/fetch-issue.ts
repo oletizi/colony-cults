@@ -3,6 +3,7 @@ import type { ParsedArgs } from '@/cli/parse';
 import { issueDir, sourceLayout } from '@/archive/location';
 import { loadCensus } from '@/census/load';
 import { censusPath } from '@/cli/census';
+import type { IssueCheckpoint } from '@/cli/archive-checkpoint';
 import {
   bareArk,
   defaultFetchDeps,
@@ -26,7 +27,7 @@ import {
  */
 export async function runFetchIssue(
   args: ParsedArgs,
-  deps: FetchDeps = defaultFetchDeps(),
+  deps: FetchDeps = defaultFetchDeps(args),
 ): Promise<void> {
   // SC-008 / AS2: an OCR-enabled run fails loud BEFORE any work when the
   // toolchain is missing; an images-only run (no --ocr) never calls this.
@@ -52,7 +53,7 @@ export async function runFetchIssue(
   if (args.flags.verify) {
     const dir = issueDir(sourceId, { ark: bareArk(issueArk), date }, deps.archiveRoot);
     deps.log(`fetch-issue (verify): ${issueArk}`);
-    const mismatches = await verifyIssueDir(dir, deps.log);
+    const mismatches = await verifyIssueDir(dir, deps.log, deps.objectStore);
     if (mismatches > 0) {
       throw new Error(
         `fetch-issue: ${mismatches} checksum mismatch(es) for ${issueArk}`,
@@ -72,6 +73,16 @@ export async function runFetchIssue(
   if (args.flags.ocr) {
     await runOcrForIssue(deps, result.dir, args.flags);
   }
+  const checkpoint: IssueCheckpoint = {
+    sourceId,
+    ark: bareArk(issueArk),
+    date,
+    dir: result.dir,
+    pageCount: result.pageCount,
+    written: result.pages.length - result.skippedCount,
+    skipped: result.skippedCount,
+  };
+  await deps.onIssueComplete?.(checkpoint);
 }
 
 /**

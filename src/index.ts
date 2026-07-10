@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { parse } from '@/cli/parse';
 import type { Command, ParsedArgs } from '@/cli/parse';
+import { runBibliography } from '@/cli/bibliography';
 import { runCensus } from '@/cli/census';
 import { runFetchIssue, runFetchSource } from '@/cli/fetch';
 import { runOcr } from '@/cli/ocr';
@@ -46,18 +47,23 @@ Usage:
   gallica <command> <ark> [options]
 
 Commands:
+  bib <subaction>                Bibliography SSOT verbs (migrate, show, ...)
   census <periodicalArk>        Build/refresh the per-source census
   fetch-issue <issueArk>        Fetch one issue's page images (private archive)
   fetch-source <periodicalArk>  Fetch every issue in a source's census
   ocr <issueArk>                OCR already-fetched images for an issue
 
 Options:
-  --help, -h     Show this help message
-  --version, -v  Show version
-  --dry-run      Report intended actions; write nothing
-  --force        Re-fetch/regenerate assets that already exist
-  --verify       Re-hash existing assets against recorded checksums
-  --ocr          Opt into OCR during a fetch
+  --help, -h             Show this help message
+  --version, -v          Show version
+  --dry-run              Report intended actions; write nothing
+  --force                Re-fetch/regenerate assets that already exist
+  --verify               Re-hash existing assets against recorded checksums
+  --ocr                  Opt into OCR during a fetch
+  --archive-root <path>  Override the private-archive root (else
+                         COLONY_ARCHIVE_ROOT env, else the sibling clone)
+  --object-store         Opt into the object-store (B2) backend for
+                         page-image masters (else local-only)
 `;
 
 function wantsHelp(argv: string[]): boolean {
@@ -69,6 +75,11 @@ function wantsVersion(argv: string[]): boolean {
 }
 
 async function main(argv: string[]): Promise<void> {
+  if (argv[0] === 'bib') {
+    process.exitCode = await runBibliography(argv.slice(1));
+    return;
+  }
+
   if (wantsHelp(argv)) {
     console.log(HELP_TEXT);
     return;

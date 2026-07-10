@@ -91,6 +91,12 @@ export function buildTranslationProvenance(
     retrieved,
     local_path: base.local_path,
     sha256: base.sha256,
+    // `size` and `object_store` are placeholders here: `storeAsset` overwrites
+    // both at write time (size = actual byte count; object_store = the upload
+    // location, or null for a git-resident text artifact), the same way it
+    // fills `sha256`/`local_path`.
+    size: 0,
+    object_store: null,
     format: 'text/plain',
     ocr_status: base.ocr_status,
     engine: engineName,

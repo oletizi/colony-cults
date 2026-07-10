@@ -36,7 +36,7 @@ describe('runTranslateSource (T024)', () => {
     return {
       command: 'translate-source',
       positional: [sourceId],
-      flags: { dryRun: false, force: false, verify: false, ocr: false },
+      flags: { dryRun: false, force: false, verify: false, ocr: false, objectStore: false, reconcileRemote: false, checkpoint: false },
       options: {},
     };
   }
@@ -125,7 +125,7 @@ describe('runTranslateSource (T024)', () => {
     const args: ParsedArgs = {
       command: 'translate-source',
       positional: [],
-      flags: { dryRun: false, force: false, verify: false, ocr: false },
+      flags: { dryRun: false, force: false, verify: false, ocr: false, objectStore: false, reconcileRemote: false, checkpoint: false },
       options: {},
     };
 
@@ -140,7 +140,7 @@ describe('buildTranslateCliDeps (Task 7)', () => {
     const args: ParsedArgs = {
       command: 'translate',
       positional: ['ark'],
-      flags: { dryRun: false, force: false, verify: false, ocr: false },
+      flags: { dryRun: false, force: false, verify: false, ocr: false, objectStore: false, reconcileRemote: false, checkpoint: false },
       options: { engine: 'codex' },
     };
 

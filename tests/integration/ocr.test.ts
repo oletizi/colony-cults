@@ -35,8 +35,10 @@ const BASE_PAGE_PROVENANCE: ProvenanceFields = {
   retrieved: '2026-07-08T00:00:00.000Z',
   local_path: 'archive/cases/port-breton/newspapers/la-nouvelle-france/x/f001.jpg',
   sha256: 'deadbeef',
+  size: 0,
   format: 'image/jpeg',
   ocr_status: 'none',
+  object_store: null,
   rights_raw: '<oai_dc:dc><dc:rights>domaine public</dc:rights></oai_dc:dc>',
   notes: null,
 };
@@ -96,7 +98,7 @@ describe('ocrIssue (T030/T033)', () => {
     rmSync(archiveRoot, { recursive: true, force: true });
   });
 
-  it('produces issue.pdf + issue.txt with companion YAML and marks pages searchable', async () => {
+  it('produces issue.txt (searchable PDF transient, not stored) with companion YAML and marks pages searchable', async () => {
     await writePageProvenance(issueDir, [1, 2]);
 
     const result = await ocrIssue(issueDir, {
@@ -105,33 +107,25 @@ describe('ocrIssue (T030/T033)', () => {
       clock: () => new Date('2026-07-09T00:00:00.000Z'),
     });
 
-    expect(result.pdf.skipped).toBe(false);
     expect(result.text.skipped).toBe(false);
 
     const pdfPath = path.join(issueDir, 'issue.pdf');
     const txtPath = path.join(issueDir, 'issue.txt');
-    expect(existsSync(pdfPath)).toBe(true);
+    // The searchable PDF is a transient intermediate: NOT persisted.
+    expect(existsSync(pdfPath)).toBe(false);
+    expect(existsSync(`${pdfPath}.yml`)).toBe(false);
     expect(existsSync(txtPath)).toBe(true);
-    expect(existsSync(`${pdfPath}.yml`)).toBe(true);
     expect(existsSync(`${txtPath}.yml`)).toBe(true);
-    expect(() => assertInsideArchive(pdfPath, archiveRoot)).not.toThrow();
     expect(() => assertInsideArchive(txtPath, archiveRoot)).not.toThrow();
 
-    const pdfBytes = await readFile(pdfPath, 'utf-8');
-    expect(pdfBytes).toBe('FAKE-SEARCHABLE-PDF-A');
     const txtBytes = await readFile(txtPath, 'utf-8');
     expect(txtBytes).toBe('FAKE OCR TEXT\n');
-
-    const pdfYaml = await readFile(`${pdfPath}.yml`, 'utf-8');
-    expect(pdfYaml).toContain('type: "pdf-a"');
-    expect(pdfYaml).toContain('ocr_status: "searchable"');
-    expect(pdfYaml).toContain('format: "application/pdf"');
-    expect(pdfYaml).toContain('rights_status: "public-domain"');
 
     const txtYaml = await readFile(`${txtPath}.yml`, 'utf-8');
     expect(txtYaml).toContain('type: "ocr-text"');
     expect(txtYaml).toContain('ocr_status: "searchable"');
     expect(txtYaml).toContain('format: "text/plain"');
+    expect(txtYaml).toContain('rights_status: "public-domain"');
 
     // Page provenance is updated from 'none' to 'searchable' (T030).
     const page1Yaml = await readFile(path.join(issueDir, 'f001.yml'), 'utf-8');
@@ -139,16 +133,16 @@ describe('ocrIssue (T030/T033)', () => {
     const page2Yaml = await readFile(path.join(issueDir, 'f002.yml'), 'utf-8');
     expect(page2Yaml).toContain('ocr_status: "searchable"');
 
-    // The integrity manifest picked up both derived assets.
+    // The integrity manifest picked up the text but NOT the transient PDF.
     const manifest = await readFile(
       path.join(archiveRoot, 'manifests', 'MANIFEST.sha256'),
       'utf-8',
     );
-    expect(manifest).toMatch(/issue\.pdf$/m);
+    expect(manifest).not.toMatch(/issue\.pdf$/m);
     expect(manifest).toMatch(/issue\.txt$/m);
   });
 
-  it('skips already-recorded issue.pdf/issue.txt on a second run (resumability)', async () => {
+  it('skips an already-recorded issue.txt on a second run (resumability)', async () => {
     await writePageProvenance(issueDir, [1, 2]);
     const ctx = {
       runner: fakeRunner(),
@@ -167,7 +161,6 @@ describe('ocrIssue (T030/T033)', () => {
     };
     const rerun = await ocrIssue(issueDir, { ...ctx, runner: countingRunner });
 
-    expect(rerun.pdf.skipped).toBe(true);
     expect(rerun.text.skipped).toBe(true);
     expect(toolchainCalls).toBe(0);
   });

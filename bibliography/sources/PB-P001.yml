@@ -1,0 +1,20 @@
+sourceId: PB-P001
+kind: periodical
+case: port-breton
+language: French
+creator: Marquis de Rays / colonial enterprise
+titles:
+  - text: La Nouvelle France
+    role: canonical
+notes: "Years: 1879-1882 | Access: digital archive | Public domain: likely | Recruitment and propaganda newspaper for the colony. | SLQ record id: slq_alma99183978086302061; call number: RBS 919.5 004"
+repositoryRecords:
+  - sourceArchive: Gallica / BnF
+    status: collecting
+    catalogUrl: https://gallica.bnf.fr/ark:/12148/cb328261098/date
+    identifiers:
+      - type: ark
+        value: ark:/12148/cb328261098/date
+    census: data/census/PB-P001-la-nouvelle-france.json
+  - sourceArchive: State Library of Queensland
+    status: to-collect
+    catalogUrl: https://onesearch.slq.qld.gov.au/permalink/61SLQ_INST/bumb4u/alma99183978086302061

@@ -25,7 +25,7 @@ export interface OcrContext {
   archiveRoot: string;
   /** Injected clock for the retrieval timestamp (testability, determinism). */
   clock: () => Date;
-  /** Re-run OCR even when `issue.pdf`/`issue.txt` are already recorded. */
+  /** Re-run OCR even when `issue.txt` is already recorded. */
   force?: boolean;
   /** Optional line-oriented progress sink. */
   log?: (message: string) => void;
@@ -35,8 +35,6 @@ export interface OcrContext {
 export interface OcrResult {
   /** The issue directory OCR ran against. */
   issueDir: string;
-  /** Store outcome for `issue.pdf` (searchable PDF/A). */
-  pdf: StoreResult;
   /** Store outcome for `issue.txt` (plain-text sidecar). */
   text: StoreResult;
 }
@@ -111,19 +109,25 @@ function derivedProvenance(
 }
 
 /**
- * OCR an already-fetched issue's page images into a searchable PDF/A plus a
- * plain-text sidecar (T030, FR-011/012). Runs entirely offline against what
- * is already on disk: `img2pdf` -> `ocrmypdf --deskew --rotate-pages
- * --language fra --output-type pdfa` -> `pdftotext`, via the injected
- * `ctx.runner` (an external CLI tool, shelled out -- never a library).
+ * OCR an already-fetched issue's page images into a plain-text sidecar
+ * (T030, FR-011/012). Runs entirely offline against what is already on disk:
+ * `img2pdf` -> `ocrmypdf --deskew --rotate-pages --language fra --output-type
+ * pdfa` -> `pdftotext`, via the injected `ctx.runner` (an external CLI tool,
+ * shelled out -- never a library).
  *
- * Rights/catalog metadata for the derived assets' provenance is copied from
+ * The searchable PDF/A is produced only as a TRANSIENT intermediate (the OCR
+ * text layer that `pdftotext` reads); it is NOT persisted, because it merely
+ * re-embeds the page-image masters already stored as `f###.jpg` and is
+ * trivially regenerable from them. Only `issue.txt` + provenance is kept
+ * (archive storage decision, 2026-07-08).
+ *
+ * Rights/catalog metadata for the derived text's provenance is copied from
  * the first page's already-written companion YAML (the rights gate already
  * ran at fetch time; OCR never re-verifies rights or touches the network).
  *
- * Resumable: when `issue.pdf` and `issue.txt` are already recorded and
- * `force` is not set, the toolchain is not re-run. On any tool failure, every
- * page's `ocr_status` is stamped `failed` before the error is rethrown.
+ * Resumable: when `issue.txt` is already recorded and `force` is not set, the
+ * toolchain is not re-run. On any tool failure, every page's `ocr_status` is
+ * stamped `failed` before the error is rethrown.
  */
 export async function ocrIssue(
   issueDir: string,
@@ -135,18 +139,12 @@ export async function ocrIssue(
 
   const pageFiles = await gatherPageImages(issueDir);
 
-  const pdfTarget = path.join(issueDir, 'issue.pdf');
   const textTarget = path.join(issueDir, 'issue.txt');
 
-  if (
-    ctx.force !== true &&
-    (await isAssetRecorded(pdfTarget)) &&
-    (await isAssetRecorded(textTarget))
-  ) {
-    ctx.log?.('  skip  issue.pdf/issue.txt (already recorded)');
+  if (ctx.force !== true && (await isAssetRecorded(textTarget))) {
+    ctx.log?.('  skip  issue.txt (already recorded)');
     return {
       issueDir,
-      pdf: { path: pdfTarget, sha256: '', skipped: true },
       text: { path: textTarget, sha256: '', skipped: true },
     };
   }
@@ -170,19 +168,13 @@ export async function ocrIssue(
     ]);
     await runStep(ctx.runner, 'pdftotext', [searchablePdf, textFile]);
 
-    const pdfBytes = await readFile(searchablePdf);
+    // The searchable PDF (searchablePdf) is intentionally NOT stored -- it only
+    // re-embeds the f###.jpg masters and is regenerable from them. Keep the text.
     const textBytes = await readFile(textFile);
 
     const basePage = await readProvenance(companionYamlPath(pageFiles[0]));
     const retrieved = ctx.clock().toISOString();
 
-    const pdfResult = await storeAsset(
-      pdfBytes,
-      pdfTarget,
-      derivedProvenance(basePage, 'pdf-a', 'application/pdf', retrieved),
-      ctx.archiveRoot,
-      { force: ctx.force },
-    );
     const textResult = await storeAsset(
       textBytes,
       textTarget,
@@ -193,10 +185,11 @@ export async function ocrIssue(
 
     await markPageOcrStatus(pageFiles, 'searchable');
     ctx.log?.(
-      `  ocr   issue.pdf + issue.txt written for ${path.basename(issueDir)}`,
+      `  ocr   issue.txt written for ${path.basename(issueDir)} ` +
+        `(searchable PDF derived transiently, not stored)`,
     );
 
-    return { issueDir, pdf: pdfResult, text: textResult };
+    return { issueDir, text: textResult };
   } catch (error) {
     await markPageOcrStatus(pageFiles, 'failed').catch(() => {
       // Best-effort status update; never mask the original failure.

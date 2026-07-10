@@ -79,7 +79,15 @@ function baseArgs(): ParsedArgs {
   return {
     command: 'fetch-issue',
     positional: [ISSUE_ARK],
-    flags: { dryRun: true, force: false, verify: false, ocr: false },
+    flags: {
+      dryRun: true,
+      force: false,
+      verify: false,
+      ocr: false,
+      objectStore: false,
+      reconcileRemote: false,
+      checkpoint: false,
+    },
     options: { sourceId: SOURCE_ID, slug: undefined },
   };
 }

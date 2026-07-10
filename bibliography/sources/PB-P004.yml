@@ -1,0 +1,9 @@
+sourceId: PB-P004
+kind: source-group
+case: port-breton
+language: French
+creator: various
+titles:
+  - text: French trial and legal proceedings relating to the Marquis de Rays
+    role: canonical
+notes: "Years: 1880s | Access: archives/public domain | Public domain: likely | Core source for the fraud prosecution and official findings."
