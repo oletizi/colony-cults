@@ -19,6 +19,7 @@ import type { GetStaticPaths } from 'astro';
 import { loadCorpus } from '@/browser/load/corpus';
 import { resolveConfig } from '@/browser/config';
 import BaseLayout from '@site/layouts/BaseLayout.astro';
+import Masthead from '@site/components/Masthead.astro';
 
 export const getStaticPaths = (() => {
   // Defined inside getStaticPaths: Astro evaluates this export in isolation, so
@@ -102,11 +103,7 @@ const docTitle = `${title} · ${sourceId}`;
 <BaseLayout title={docTitle} description={`Issue ledger for ${title} (${sourceId}) — ${issueCount} ${issueNoun}.`}>
   <article class="ledger" aria-label={`Source overview — ${title}`}>
     <header class="ledger__masthead">
-      <p class="ledger__eyebrow">
-        <a class="ledger__home" href="/">Corpus</a>
-        <span class="ledger__sep">·</span>
-        {sourceId}
-      </p>
+      <Masthead tail={sourceId} gap={12} />
       <h1 class="ledger__title">{title}</h1>
       <p class="ledger__sub">
         {kindLabel}
@@ -161,25 +158,6 @@ const docTitle = `${title} · ${sourceId}`;
 
   .ledger__masthead {
     margin-bottom: 26px;
-  }
-
-  .ledger__eyebrow {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--oxide);
-    margin: 0 0 12px;
-  }
-
-  .ledger__home {
-    color: var(--oxide);
-    text-decoration: none;
-    border-bottom: 1px solid transparent;
-  }
-
-  .ledger__home:hover {
-    border-bottom-color: var(--oxide);
   }
 
   .ledger__title {

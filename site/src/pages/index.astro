@@ -14,6 +14,7 @@ import { loadCorpus } from '@/browser/load/corpus';
 import { resolveConfig } from '@/browser/config';
 import BaseLayout from '@site/layouts/BaseLayout.astro';
 import SearchPanel from '@site/components/SearchPanel.astro';
+import Masthead from '@site/components/Masthead.astro';
 
 const sourceHref = (sourceId: string): string => `/sources/${sourceId}/`;
 
@@ -46,7 +47,7 @@ const sourceNoun = entries.length === 1 ? 'source' : 'sources';
 >
   <main class="cover">
     <header class="cover__head">
-      <p class="cover__eyebrow">Corpus<span class="cover__sep">·</span>archival dossier</p>
+      <Masthead tail="archival dossier" current gap={20} />
       <h1 class="cover__title">A periodical, held as&nbsp;evidence.</h1>
       <div class="cover__stamp" aria-hidden="true"></div>
       <p class="cover__abstract">
@@ -101,15 +102,6 @@ const sourceNoun = entries.length === 1 ? 'source' : 'sources';
 
   .cover__head {
     margin-bottom: 52px;
-  }
-
-  .cover__eyebrow {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: var(--oxide);
-    margin: 0 0 20px;
   }
 
   .cover__sep {

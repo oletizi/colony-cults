@@ -18,6 +18,7 @@ import SourcePane from './SourcePane.astro';
 import TranslationPane from './TranslationPane.astro';
 import PageNav from './PageNav.astro';
 import ProvenanceRail from './ProvenanceRail.astro';
+import Masthead from './Masthead.astro';
 
 interface Props {
   sourceId: string;
@@ -57,7 +58,7 @@ const searchTitle = `${sourceTitle} · ${issueDate} · ${pageLabel}`;
 
 <article class="reading" aria-label={`Reading view — ${sourceTitle}, ${issueDate}, ${pageLabel}`}>
   <header class="reading__masthead">
-    <p class="reading__eyebrow">Corpus&nbsp;· {sourceId}</p>
+    <Masthead tail={sourceId} gap={10} />
     <h1 class="reading__title">{sourceTitle}</h1>
     <p class="reading__issue">{issueDate}&nbsp;· {pageLabel}</p>
   </header>
@@ -128,15 +129,6 @@ const searchTitle = `${sourceTitle} · ${issueDate} · ${pageLabel}`;
 
   .reading__masthead {
     margin-bottom: 26px;
-  }
-
-  .reading__eyebrow {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--oxide);
-    margin: 0 0 10px;
   }
 
   .reading__title {
