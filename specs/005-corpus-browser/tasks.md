@@ -130,7 +130,7 @@ description: "Task list for Corpus Browser implementation"
 
 **Independent Test**: producing a public deployment is an explicit action whose output excludes non-public-domain material; the internal build is unchanged.
 
-- [ ] T030 [US6] [tier:balanced] A distinct `site:export-public` entrypoint (script) that runs the build and emits only public-domain text/images — separate from `site:build`; documented as a deliberate step. Note OQ-4 is deferred; do not fold export into the internal build.
+- [ ] T030 [US6] [tier:balanced] A distinct `site:export-public` entrypoint (script) — separate from `site:build`, gated on an explicit editorial-readiness decision — that produces the public deployment. The corpus is already public-domain, so this is a readiness/curation gate, not a rights filter. Document it as a deliberate step. Note OQ-4 is deferred; do not fold export into the internal build.
 
 **Checkpoint**: the internal/public boundary is explicit.
 

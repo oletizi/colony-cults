@@ -120,12 +120,12 @@ A maintainer produces a public deployment that contains only public-domain text 
 
 **Why this priority**: The audience decision is public-reader, internal-first. The internal build is the substrate (P1); the public export is a designed-for, deliberate later action. Capturing it now keeps the internal/public boundary explicit rather than accidental, but it is not required to make the internal reading surface usable.
 
-**Independent Test**: Confirm that producing a public deployment is a distinct, deliberate operation and that its output excludes non-public-domain material, without weakening the internal build.
+**Independent Test**: Confirm that producing a public deployment is a distinct, deliberate operation gated on an explicit editorial-readiness decision, without weakening the internal build.
 
 **Acceptance Scenarios**:
 
-1. **Given** the internal build reads private archive data, **When** a public deployment is produced, **Then** it is the result of an explicit export action, not an incidental side effect of the internal build.
-2. **Given** a public deployment, **When** it is inspected, **Then** it contains only public-domain text and images intended for public release.
+1. **Given** the internal build reads the local archive clone, **When** a public deployment is produced, **Then** it is the result of an explicit export action, not an incidental side effect of the internal build.
+2. **Given** a public deployment, **When** it is produced, **Then** it is a deliberate editorial-readiness decision (the corpus is already public-domain, so this is a readiness/curation gate, not a rights-filtering one).
 
 ---
 
@@ -198,7 +198,7 @@ A maintainer produces a public deployment that contains only public-domain text 
 - **SC-005**: The same page renders correctly under both image-source providers with no change to the reading view or viewer behavior.
 - **SC-006**: Any missing or inconsistent corpus field causes the build to fail with a message naming the offending source/issue/page and field — verified by removing a required field and observing a loud failure (never a silent placeholder).
 - **SC-007**: The site renders its display typeface and assets under a strict content-security policy with no external font/asset host requests.
-- **SC-008**: A public deployment can be produced as a distinct deliberate action whose output contains only public-domain material, without altering the internal build.
+- **SC-008**: A public deployment can be produced as a distinct deliberate action, gated on an explicit editorial-readiness decision, without altering the internal build.
 
 ## Open Questions
 
