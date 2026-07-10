@@ -442,6 +442,79 @@ titles:
     expect(serialized).not.toMatch(/partOf/);
   });
 
+  it('loads a member stub carrying status: discovered (US3)', () => {
+    const filePath = writeSource(
+      'PB-P037.yml',
+      `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+status: discovered
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.kind).toBe('monograph');
+    expect(source.partOf).toBe('PB-P004');
+    expect(source.status).toBe('discovered');
+  });
+
+  it('round-trips a member stub with status: discovered through load -> serialize -> load', () => {
+    const memberPath = writeSource(
+      'PB-P037.yml',
+      `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+status: discovered
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+    );
+    const loadedMember = loadSourceFile(memberPath);
+    expect(loadedMember.source.status).toBe('discovered');
+
+    const reserialized = serializeSource({
+      source: loadedMember.source,
+      records: loadedMember.records,
+    });
+    expect(reserialized).toMatch(/status:\s*discovered/);
+
+    writeFileSync(memberPath, reserialized, 'utf-8');
+    const reloaded = loadSourceFile(memberPath);
+    expect(reloaded.source.kind).toBe('monograph');
+    expect(reloaded.source.partOf).toBe('PB-P004');
+    expect(reloaded.source.status).toBe('discovered');
+  });
+
+  it('leaves status undefined when absent', () => {
+    const filePath = writeSource('PB-P001.yml', VALID_YAML);
+    const { source } = loadSourceFile(filePath);
+    expect(source.status).toBeUndefined();
+
+    const serialized = serializeSource({ source, records: [] });
+    expect(serialized).not.toMatch(/status:/);
+  });
+
+  it('throws on an invalid status value', () => {
+    const filePath = writeSource(
+      'PB-P037.yml',
+      `
+sourceId: PB-P037
+kind: monograph
+partOf: PB-P004
+status: acquired
+titles:
+  - text: "Acte d'accusation contre le Marquis de Rays"
+    role: canonical
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/status "acquired" is not in the closed status vocabulary/);
+  });
+
   it('throws on an unknown kind value', () => {
     const filePath = writeSource(
       'PB-P001.yml',

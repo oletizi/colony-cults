@@ -317,14 +317,14 @@ describe('validate -- full consistency (SC-007)', () => {
 
 describe('validateSourceGroups wired into validate() aggregator', () => {
   it('surfaces a group-has-repository-records finding via validate() when a source-group carries a repository record', () => {
-    const group = makeSourceGroup({ sourceId: 'PB-P004' });
+    const group = makeSourceGroup();
     const record = makeRecord({ sourceId: 'PB-P004', sourceArchive: 'Gallica / BnF' });
     const model = makeModel({ sources: [group], repositoryRecords: [record] });
 
     const findings = validate(model);
 
     const groupRecordFindings = findings.filter((f) => f.kind === 'group-has-repository-records');
-    expect(groupRecordFindings.length).toBeGreaterThan(0);
+    expect(groupRecordFindings).toHaveLength(1);
     expect(groupRecordFindings[0].sourceId).toBe('PB-P004');
     expect(groupRecordFindings[0].detail).toContain('PB-P004');
     expect(groupRecordFindings[0].detail).toMatch(/must not hold repository records/);

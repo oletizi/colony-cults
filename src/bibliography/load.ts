@@ -13,6 +13,8 @@ import {
   requireObject,
   requireString,
 } from '@/bibliography/load-primitives';
+import { isAllowed } from '@/bibliography/vocab';
+import type { Status } from '@/bibliography/vocab';
 import type { Source, WorkIdentifier } from '@/model/source';
 
 /**
@@ -35,6 +37,7 @@ const SOURCE_KEYS = new Set([
   'titles',
   'kind',
   'partOf',
+  'status',
   'creator',
   'language',
   'identifiers',
@@ -45,6 +48,11 @@ const SOURCE_KEYS = new Set([
 
 function isSourceKind(value: string): value is Source['kind'] {
   return value === 'periodical' || value === 'monograph' || value === 'source-group';
+}
+
+/** `status`'s closed vocab is the same `STATUS_VALUES` a RepositoryRecord's `status` is checked against (`@/bibliography/vocab`'s `isAllowed`); reused rather than duplicated. */
+function isStatusValue(value: string): value is Status {
+  return isAllowed('status', value);
 }
 
 function readFileText(filePath: string): string {
@@ -103,6 +111,15 @@ export function loadSourceFile(filePath: string): LoadedSource {
   // default is invented. Group/member split + dangling-partOf validation are
   // out of scope here (later validation task).
   const partOf = optionalString(obj.partOf, filePath, 'partOf');
+
+  // The Source's own lifecycle status (US3), e.g. `discovered` on a member
+  // stub. Absent stays undefined -- no default is invented. An authored value
+  // outside the closed vocab fails loud (no silent drop, matching `kind`).
+  const statusRaw = optionalString(obj.status, filePath, 'status');
+  if (statusRaw !== undefined && !isStatusValue(statusRaw)) {
+    fail(filePath, `status "${statusRaw}" is not in the closed status vocabulary`);
+  }
+  const status = statusRaw;
 
   const creator = optionalString(obj.creator, filePath, 'creator');
   const language = optionalString(obj.language, filePath, 'language');
@@ -163,6 +180,7 @@ export function loadSourceFile(filePath: string): LoadedSource {
     titles,
     kind: kindRaw,
     partOf,
+    status,
     identifiers,
     creator,
     language,

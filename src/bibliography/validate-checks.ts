@@ -316,12 +316,33 @@ function partOfFindings(model: CanonicalModel): ValidationFinding[] {
 }
 
 /**
+ * `group-is-member` findings: one per `Source` that is itself `kind ===
+ * 'source-group'` but ALSO carries `partOf` (i.e. it is nested as a member of
+ * another group). The intended invariant is that a source-group is never a
+ * member of anything -- groups are a flat, one-level container.
+ */
+function groupIsMemberFindings(model: CanonicalModel): ValidationFinding[] {
+  return model.sources
+    .filter((source) => source.kind === 'source-group' && source.partOf !== undefined)
+    .map((group) => ({
+      kind: 'group-is-member',
+      sourceId: group.sourceId,
+      detail: `source group "${group.sourceId}" must not itself be a member (has partOf "${group.partOf}")`,
+    }));
+}
+
+/**
  * Validate source-group invariants (FR-001/FR-005/FR-006 --
  * specs/005-source-groups/contracts/validation.md): a group must not hold
- * repository records, and every member's `partOf` must resolve to an
- * existing source-group. A zero-member group, or a group with members and no
- * repository records, is valid and yields no finding (FR-005).
+ * repository records, every member's `partOf` must resolve to an existing
+ * source-group, and a source-group must never itself be a member of another
+ * group. A zero-member group, or a group with members and no repository
+ * records, is valid and yields no finding (FR-005).
  */
 export function validateSourceGroups(model: CanonicalModel): ValidationFinding[] {
-  return [...groupRepositoryRecordFindings(model), ...partOfFindings(model)];
+  return [
+    ...groupRepositoryRecordFindings(model),
+    ...partOfFindings(model),
+    ...groupIsMemberFindings(model),
+  ];
 }

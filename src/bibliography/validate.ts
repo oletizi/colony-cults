@@ -31,7 +31,8 @@ export type ValidationFindingKind =
   | 'view-drift'
   | 'group-has-repository-records'
   | 'dangling-part-of'
-  | 'part-of-not-a-group';
+  | 'part-of-not-a-group'
+  | 'group-is-member';
 
 /**
  * One `bib validate` finding. Findings are DATA, not errors -- `validate`

@@ -128,4 +128,19 @@ describe('validateSourceGroups', () => {
     expect(finding.detail).toContain('PB-P003');
     expect(finding.detail).toMatch(/not a source group/);
   });
+
+  it('(f) reports group-is-member when a source-group itself carries partOf (nested as a member of another group)', () => {
+    const outerGroup = makeSourceGroup({ sourceId: 'PB-P004' });
+    const nestedGroup = makeSourceGroup({ sourceId: 'PB-P010', partOf: 'PB-P004' });
+    const model = makeModel({ sources: [outerGroup, nestedGroup] });
+
+    const findings = validateSourceGroups(model);
+
+    const groupIsMemberFindings = findings.filter((f) => f.kind === 'group-is-member');
+    expect(groupIsMemberFindings).toHaveLength(1);
+    const [finding] = groupIsMemberFindings;
+    expect(finding.sourceId).toBe('PB-P010');
+    expect(finding.detail).toContain('PB-P010');
+    expect(finding.detail).toMatch(/must not itself be a member/);
+  });
 });

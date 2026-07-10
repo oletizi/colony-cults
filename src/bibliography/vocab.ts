@@ -6,7 +6,14 @@
  * See specs/004-canonical-source-metadata/data-model.md.
  */
 
-/** Acquisition status of a `RepositoryRecord`. */
+/**
+ * Acquisition status of a `RepositoryRecord` (and, since US3, of a `Source`
+ * itself -- see `@/model/source`'s `status`). This tuple is used for
+ * MEMBERSHIP validation only (`isAllowed('status', ...)`); its order is NOT
+ * significant -- no consumer treats the index as an ordinal. In particular,
+ * `excluded` being listed last and `approved-for-acquisition` preceding
+ * `wanted` carry no lifecycle-sequencing meaning.
+ */
 export const STATUS_VALUES = [
   'discovered',
   'approved-for-acquisition',

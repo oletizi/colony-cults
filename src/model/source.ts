@@ -1,3 +1,4 @@
+import type { Status } from '@/bibliography/vocab';
 import type { WorkLevelIdentifierType } from '@/model/identifiers';
 
 /**
@@ -27,6 +28,15 @@ export interface Source {
    * edges (a group holds no member list).
    */
   partOf?: string;
+  /**
+   * The discovery/acquisition lifecycle status of this Source itself (US3),
+   * e.g. `discovered` on a member stub not yet reviewed for inclusion.
+   * Distinct from a RepositoryRecord's own `status`, which tracks the
+   * acquisition state of one held copy at one archive; this field tracks the
+   * work-level source, independent of any repository record. Absent on a
+   * fully-processed Source with no lifecycle tracking needed.
+   */
+  status?: Status;
   /** Author/editor of the work, if known. */
   creator?: string;
   /** Primary language of the work, e.g. `French`. */
