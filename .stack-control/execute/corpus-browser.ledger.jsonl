@@ -4,3 +4,9 @@
 {"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"298f1f8","reviewClean":true,"note":"view-model types"}
 {"id":"T005","tierLabel":"fast","model":"haiku","commitRange":"455af06","reviewClean":true,"note":"env-driven LoadConfig"}
 {"id":"T006","tierLabel":"fast","model":"haiku","commitRange":"c1f2bc5","reviewClean":true,"note":"integration fixtures; carried note: align drop-provenance-field mutation to loader-validated field in T012/T009"}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commitRange":"c83deac","reviewClean":true,"note":"ocr-pages test (test-first)"}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"c83deac","reviewClean":true,"note":"ocr-pages impl; 8 tests green"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"c1d1e4e","reviewClean":true,"note":"provider test (test-first)"}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"c1d1e4e","reviewClean":true,"note":"provider iface + source-iiif; 4 tests green"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"68c6db7","reviewClean":true,"note":"translation test (test-first)"}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"68c6db7","reviewClean":true,"note":"translation+provenance impl; 9 tests green"}
