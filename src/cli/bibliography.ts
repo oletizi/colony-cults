@@ -1,8 +1,16 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseArgs as nodeParseArgs } from 'node:util';
 
+import {
+  resolveRepoRoot,
+  runAcquireCli,
+  runDiscoverCli,
+  runExcludeMemberCli,
+  runInventoryCli,
+  runPromoteCli,
+  runVerifyMemberCli,
+} from '@/cli/bib-sourcegroup';
 import { deriveModel, gatherCensusForAll, gatherProvenance } from '@/bibliography/derive';
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
@@ -32,17 +40,6 @@ interface BibArgs {
   archiveRoot?: string;
   /** `bib regenerate --check`: write nothing, report drift only. */
   check: boolean;
-}
-
-/**
- * Resolve the repo root from THIS module's location -- `src/cli/` is two
- * levels below the repo root -- so `bib` behaves the same regardless of the
- * caller's `process.cwd()`, matching how `src/index.ts` resolves
- * `package.json` relative to its own module URL.
- */
-function resolveRepoRoot(): string {
-  const here = fileURLToPath(import.meta.url);
-  return path.resolve(path.dirname(here), '..', '..');
 }
 
 /** Parse a subaction's `rest` argv into positionals + the shared flags. Throws (fail loud) on an unknown flag. */
@@ -411,22 +408,16 @@ export async function runBibliography(argv: string[]): Promise<number> {
     case 'regenerate':
       return runRegenerate(rest);
     case 'inventory':
-      console.error('bib inventory: not yet implemented (task T019)');
-      return 2;
+      return runInventoryCli(rest);
     case 'verify-member':
-      console.error('bib verify-member: not yet implemented (task T019)');
-      return 2;
+      return runVerifyMemberCli(rest);
     case 'promote':
-      console.error('bib promote: not yet implemented (task T019)');
-      return 2;
+      return runPromoteCli(rest);
     case 'exclude-member':
-      console.error('bib exclude-member: not yet implemented (task T019)');
-      return 2;
+      return runExcludeMemberCli(rest);
     case 'acquire':
-      console.error('bib acquire: not yet implemented (task T019)');
-      return 2;
+      return runAcquireCli(rest);
     case 'discover':
-      console.error('bib discover: not yet implemented (task T019)');
-      return 2;
+      return runDiscoverCli(rest);
   }
 }
