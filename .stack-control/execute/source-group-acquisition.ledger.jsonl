@@ -37,3 +37,4 @@
 {"id":"T037","tierLabel":"powerful","model":"opus","commitRange":"bc3291c","reviewClean":false,"note":"OPERATOR-ACCEPTANCE [~]: live PB-P004 acquisition to B2; excluded from tasks-complete gate; run after govern"}
 {"id":"T038","tierLabel":"balanced","model":"sonnet","commitRange":"bc3291c","reviewClean":true,"note":"reusability proven (2nd group); fixture TG-001->PB-S901 conformance fix"}
 {"id":"T039","tierLabel":"fast","model":"opus","commitRange":"bc3291c","reviewClean":true,"note":"bib help refreshed (controller-inline); quickstart current"}
+{"id":"GOVERN","tierLabel":"n/a","model":"cross-model-fleet","commitRange":"eb93540","reviewClean":true,"note":"whole-feature govern OVERRIDDEN (barrage cannot complete in this env); operator-authorized; terminal-outcome=graduated; phase implementing->merging"}

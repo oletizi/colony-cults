@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/source-group-acquisition",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/source-group-acquisition",
+  "override": true,
+  "overrideReason": "Cross-model audit-barrage cannot complete in this environment (known infra limitation). Live validation performed instead: npm run typecheck clean, full vitest suite 489 passed / 2 skipped, all 39 tasks TDD with per-task review + ledger, clone-detection finding (authored->record widening) resolved via shared helper. Operator-authorized override per recorded env practice (validate-live + govern --override). T037 (live PB-P004 acquisition) held as operator-acceptance."
+}
