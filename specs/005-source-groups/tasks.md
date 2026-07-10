@@ -32,7 +32,7 @@ Single-project TypeScript CLI: `src/`, `tests/` at repository root (per plan.md 
 
 **Purpose**: Establish a green baseline before touching the model.
 
-- [ ] T001 [tier:fast] Run `vitest run` and record a green baseline; confirm branch is `feature/source-groups` and `bibliography/sources/PB-P004.yml` is present (pre-migration `kind: monograph`).
+- [x] T001 [tier:fast] Run `vitest run` and record a green baseline; confirm branch is `feature/source-groups` and `bibliography/sources/PB-P004.yml` is present (pre-migration `kind: monograph`).
 
 ---
 
@@ -42,8 +42,8 @@ Single-project TypeScript CLI: `src/`, `tests/` at repository root (per plan.md 
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 [tier:powerful] Extend the canonical model in `src/model/source.ts`: widen `Source.kind` to `'periodical' | 'monograph' | 'source-group'` and add optional `partOf?: string` (member→group edge). Audit and resolve every downstream `kind` switch/exhaustiveness site the widening surfaces (e.g. `src/bibliography/regenerate.ts`, `src/bibliography/model.ts`, `src/archive/location.ts`) so the build stays green and unhandled `source-group` never falls through silently (fail-loud where a fetchable-only path is reached).
-- [ ] T003 [tier:balanced] Extend `src/bibliography/load-fields.ts` to parse and narrow `kind: 'source-group'` and the `partOf` field from the SSOT YAML, so `loadAllSources` returns source-group and member records with `partOf` populated.
+- [x] T002 [tier:powerful] Extend the canonical model in `src/model/source.ts`: widen `Source.kind` to `'periodical' | 'monograph' | 'source-group'` and add optional `partOf?: string` (member→group edge). Audit and resolve every downstream `kind` switch/exhaustiveness site the widening surfaces (e.g. `src/bibliography/regenerate.ts`, `src/bibliography/model.ts`, `src/archive/location.ts`) so the build stays green and unhandled `source-group` never falls through silently (fail-loud where a fetchable-only path is reached).
+- [x] T003 [tier:balanced] Extend `src/bibliography/load-fields.ts` to parse and narrow `kind: 'source-group'` and the `partOf` field from the SSOT YAML, so `loadAllSources` returns source-group and member records with `partOf` populated.
 
 **Checkpoint**: Model + loader recognize source groups and member edges; `vitest run` still green.
 
@@ -57,12 +57,12 @@ Single-project TypeScript CLI: `src/`, `tests/` at repository root (per plan.md 
 
 ### Tests for User Story 1
 
-- [ ] T004 [P] [US1] [tier:fast] RED integration test in `tests/integration/source-groups.test.ts`: a `kind: source-group` fixture fed to `runFetchSource` throws with the actionable group message; a `monograph`/`periodical` source is unaffected. Assert it fails before implementation.
+- [x] T004 [P] [US1] [tier:fast] RED integration test in `tests/integration/source-groups.test.ts`: a `kind: source-group` fixture fed to `runFetchSource` throws with the actionable group message; a `monograph`/`periodical` source is unaffected. Assert it fails before implementation.
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] [tier:balanced] Add a focused canonical-kind lookup (e.g. `sourceKind(sourceId)`) over `loadAllSources` in `src/bibliography/load.ts` (or a small helper module) so the guardrail can resolve a source's SSOT kind without a full per-fetch corpus cost beyond one load.
-- [ ] T006 [US1] [tier:balanced] Implement the guardrail in `src/cli/fetch-source.ts` (`runFetchSource`): after resolving `sourceId` and BEFORE calling `sourceLayout`, refuse a `source-group` with the message from `contracts/fetch-guardrail.md` (names the id; directs to discover/inventory/acquire members). Leave the non-group path unchanged.
+- [x] T005 [US1] [tier:balanced] Add a focused canonical-kind lookup (e.g. `sourceKind(sourceId)`) over `loadAllSources` in `src/bibliography/load.ts` (or a small helper module) so the guardrail can resolve a source's SSOT kind without a full per-fetch corpus cost beyond one load.
+- [x] T006 [US1] [tier:balanced] Implement the guardrail in `src/cli/fetch-source.ts` (`runFetchSource`): after resolving `sourceId` and BEFORE calling `sourceLayout`, refuse a `source-group` with the message from `contracts/fetch-guardrail.md` (names the id; directs to discover/inventory/acquire members). Leave the non-group path unchanged.
 
 **Checkpoint**: US1 fully functional — fetching a source group is refused informatively; T004 passes.
 
@@ -76,12 +76,12 @@ Single-project TypeScript CLI: `src/`, `tests/` at repository root (per plan.md 
 
 ### Tests for User Story 2
 
-- [ ] T007 [P] [US2] [tier:fast] RED unit tests in `tests/unit/bibliography/validate-checks.test.ts` for `validateSourceGroups`: (a) group with members + no repository records → clean; (b) zero-member group → clean; (c) group with repository records → `group-has-repository-records`; (d) member with missing `partOf` target → `dangling-part-of`; (e) member `partOf` pointing at a non-group → `part-of-not-a-group`.
+- [x] T007 [P] [US2] [tier:fast] RED unit tests in `tests/unit/bibliography/validate-checks.test.ts` for `validateSourceGroups`: (a) group with members + no repository records → clean; (b) zero-member group → clean; (c) group with repository records → `group-has-repository-records`; (d) member with missing `partOf` target → `dangling-part-of`; (e) member `partOf` pointing at a non-group → `part-of-not-a-group`.
 
 ### Implementation for User Story 2
 
-- [ ] T008 [US2] [tier:balanced] Add the new finding kinds to `ValidationFindingKind` and implement `validateSourceGroups(model): ValidationFinding[]` in `src/bibliography/validate-checks.ts` per `contracts/validation.md` (never flags a zero-member group).
-- [ ] T009 [US2] [tier:fast] Wire `validateSourceGroups(model)` into `validate()` in `src/bibliography/validate.ts` alongside the existing leak/view-drift checks.
+- [x] T008 [US2] [tier:balanced] Add the new finding kinds to `ValidationFindingKind` and implement `validateSourceGroups(model): ValidationFinding[]` in `src/bibliography/validate-checks.ts` per `contracts/validation.md` (never flags a zero-member group).
+- [x] T009 [US2] [tier:fast] Wire `validateSourceGroups(model)` into `validate()` in `src/bibliography/validate.ts` alongside the existing leak/view-drift checks.
 
 **Checkpoint**: US1 and US2 both work independently; the group/member contract is enforced.
 
@@ -95,11 +95,11 @@ Single-project TypeScript CLI: `src/`, `tests/` at repository root (per plan.md 
 
 ### Tests for User Story 3
 
-- [ ] T010 [P] [US3] [tier:fast] RED unit test in `tests/unit/bibliography/vocab.test.ts`: `STATUS_VALUES` accepts `discovered`, `approved-for-acquisition`, and `excluded`; the five existing values still validate; an unknown status still rejects.
+- [x] T010 [P] [US3] [tier:fast] RED unit test in `tests/unit/bibliography/vocab.test.ts`: `STATUS_VALUES` accepts `discovered`, `approved-for-acquisition`, and `excluded`; the five existing values still validate; an unknown status still rejects.
 
 ### Implementation for User Story 3
 
-- [ ] T011 [US3] [tier:fast] Extend `STATUS_VALUES` in `src/bibliography/vocab.ts` with `discovered` and `approved-for-acquisition` (ordered ahead of the acquisition states) and `excluded` (off-pipeline terminal; reason carried in the record `notes`), per data-model.md.
+- [x] T011 [US3] [tier:fast] Extend `STATUS_VALUES` in `src/bibliography/vocab.ts` with `discovered` and `approved-for-acquisition` (ordered ahead of the acquisition states) and `excluded` (off-pipeline terminal; reason carried in the record `notes`), per data-model.md.
 
 **Checkpoint**: US1–US3 independently functional; the discovery pipeline is expressible.
 
@@ -113,13 +113,13 @@ Single-project TypeScript CLI: `src/`, `tests/` at repository root (per plan.md 
 
 ### Tests for User Story 4
 
-- [ ] T012 [P] [US4] [tier:fast] RED unit test in `tests/unit/bibliography/migrate.test.ts`: migrating a monograph `PB-P004` fixture yields `kind: source-group` with no `repositoryRecords`, titles/case/notes preserved; re-running the migration is a no-op (idempotent).
+- [x] T012 [P] [US4] [tier:fast] RED unit test in `tests/unit/bibliography/migrate.test.ts`: migrating a monograph `PB-P004` fixture yields `kind: source-group` with no `repositoryRecords`, titles/case/notes preserved; re-running the migration is a no-op (idempotent).
 
 ### Implementation for User Story 4
 
-- [ ] T013 [US4] [tier:balanced] Implement the PB-P004 migration in `src/bibliography/migrate.ts` per research.md R-003: monograph→`source-group`, drop the single `to-collect` repository record, preserve descriptive fields, idempotent.
-- [ ] T014 [US4] [tier:balanced] Make derivation/regeneration tolerate a repository-record-less source group in `src/bibliography/model.ts` and `src/bibliography/regenerate.ts` (R-002): emit one `sources.csv` row for the group (empty acquisition columns), no acquisition-tracker/register row; keep regeneration byte-deterministic.
-- [ ] T015 [US4] [tier:balanced] Apply the migration to the real `bibliography/sources/PB-P004.yml`, regenerate the derived views, and commit the migrated SSOT + regenerated views.
+- [x] T013 [US4] [tier:balanced] Implement the PB-P004 migration in `src/bibliography/migrate.ts` per research.md R-003: monograph→`source-group`, drop the single `to-collect` repository record, preserve descriptive fields, idempotent.
+- [x] T014 [US4] [tier:balanced] Make derivation/regeneration tolerate a repository-record-less source group in `src/bibliography/model.ts` and `src/bibliography/regenerate.ts` (R-002): emit one `sources.csv` row for the group (empty acquisition columns), no acquisition-tracker/register row; keep regeneration byte-deterministic.
+- [x] T015 [US4] [tier:balanced] Apply the migration to the real `bibliography/sources/PB-P004.yml`, regenerate the derived views, and commit the migrated SSOT + regenerated views.
 
 **Checkpoint**: All four user stories independently functional against the live PB-P004 record.
 
@@ -127,8 +127,8 @@ Single-project TypeScript CLI: `src/`, `tests/` at repository root (per plan.md 
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T016 [P] [tier:balanced] Walk every scenario in `specs/005-source-groups/quickstart.md` end-to-end (validate, fetch-refuse, member stub, regenerate determinism, migration idempotency) and confirm the observed output matches.
-- [ ] T017 [P] [tier:fast] Run the full `vitest run` plus typecheck; confirm zero regressions across the existing suite and the new source-group tests.
+- [x] T016 [P] [tier:balanced] Walk every scenario in `specs/005-source-groups/quickstart.md` end-to-end (validate, fetch-refuse, member stub, regenerate determinism, migration idempotency) and confirm the observed output matches.
+- [x] T017 [P] [tier:fast] Run the full `vitest run` plus typecheck; confirm zero regressions across the existing suite and the new source-group tests.
 
 ---
 
