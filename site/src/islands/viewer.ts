@@ -73,9 +73,11 @@ export function createReadingViewer(element: HTMLElement, descriptor: ImageDescr
     showFullPageControl: false,
     showSequenceControl: false,
     showNavigator: false,
-    // No crossOriginPolicy: displaying a cross-origin Gallica image needs no
-    // CORS; forcing crossOrigin="anonymous" would make the browser refuse the
-    // image when Gallica omits CORS headers, blanking the viewer (TASK-11).
+    // Gallica serves the IIIF tiles with `Access-Control-Allow-Origin: *`, so
+    // `Anonymous` lets OSD draw them to its canvas WITHOUT tainting (required
+    // for the tiled source to render). Dropping this taints the canvas on the
+    // cross-origin tiles and blanks the viewer (TASK-11).
+    crossOriginPolicy: 'Anonymous',
     gestureSettingsMouse: { scrollToZoom: true, clickToZoom: false, dblClickToZoom: true },
     minZoomImageRatio: 0.85,
     maxZoomPixelRatio: 2.5,

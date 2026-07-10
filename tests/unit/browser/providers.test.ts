@@ -13,7 +13,7 @@ import type { ImageProviderConfig } from '@/browser/model';
  */
 describe('makeProvider', () => {
   describe('source-iiif', () => {
-    it('resolves a page to a full-image ImageDescriptor whose url is the Gallica full-image (no CORS/info.json path)', () => {
+    it('resolves a page to a tiled iiif ImageDescriptor whose url is the Gallica IIIF image base', () => {
       const provider = makeProvider({ kind: 'source-iiif' });
       const page: PageInput = {
         ark: 'ark:/12148/bpt6k56068358',
@@ -23,10 +23,11 @@ describe('makeProvider', () => {
 
       const descriptor = provider.resolve(page);
 
-      // full-image (simple image), not tiled iiif — displays without CORS (TASK-11).
-      expect(descriptor.kind).toBe('full-image');
+      // Tiled IIIF: the descriptor carries the image base; the viewer drives OSD
+      // from `<base>/info.json` (Gallica serves valid IIIF + CORS).
+      expect(descriptor.kind).toBe('iiif');
       expect(descriptor.url).toContain('bpt6k56068358');
-      expect(descriptor.url).toContain('/f1/full/full/0/native.jpg');
+      expect(descriptor.url.endsWith('/f1')).toBe(true);
     });
 
     it('maps a zero-padded archive folioId to the un-padded Gallica IIIF folio (TASK-10: f001 -> f1, f012 -> f12)', () => {
@@ -35,11 +36,11 @@ describe('makeProvider', () => {
 
       const p1 = provider.resolve({ ark, folioId: 'f001', objectStoreKey: null });
       // The IIIF folio segment must be the un-padded `f1`, not `f001`.
-      expect(p1.url).toContain('/f1/full/full/0/native.jpg');
+      expect(p1.url.endsWith('/f1')).toBe(true);
       expect(p1.url).not.toContain('f001');
 
       const p12 = provider.resolve({ ark, folioId: 'f012', objectStoreKey: null });
-      expect(p12.url).toContain('/f12/full/full/0/native.jpg');
+      expect(p12.url.endsWith('/f12')).toBe(true);
       expect(p12.url).not.toContain('f012');
     });
 

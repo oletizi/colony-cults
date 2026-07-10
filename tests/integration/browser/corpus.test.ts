@@ -91,13 +91,12 @@ describe('loadCorpus (integration, PB-P001)', () => {
       }
 
       // Image resolution (source-iiif) carries the ISSUE ark, not the source ark.
-      // The provider emits a full-image Gallica url with the UN-padded folio
-      // (f001 -> f1) and no CORS/info.json path (TASK-10/TASK-11).
+      // Tiled IIIF descriptor with the UN-padded folio (f001 -> f1, TASK-10).
       const firstPage = issue.pages[0];
-      expect(firstPage.image.kind).toBe('full-image');
+      expect(firstPage.image.kind).toBe('iiif');
       expect(firstPage.image.url).toContain(FIXTURE_ISSUE_ARK);
       const unpaddedFolio = `f${Number(firstPage.folioId.replace(/^f/, ''))}`;
-      expect(firstPage.image.url).toContain(`/${unpaddedFolio}/full/full/0/native.jpg`);
+      expect(firstPage.image.url.endsWith(`/${unpaddedFolio}`)).toBe(true);
     } finally {
       cleanupCopy(archive);
     }
