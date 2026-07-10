@@ -58,6 +58,7 @@ Source Group kind for research-defined collections that are discovered before ac
 
 ## impl:feature/source-group-acquisition
 - status: planned
+- analyze-clean: yes
 - spec: specs/006-source-group-acquisition
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-09-source-group-acquisition-design.md
