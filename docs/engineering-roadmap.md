@@ -48,6 +48,7 @@ Two-level (really multi-level) canonical source metadata model: Source (intellec
 
 ## impl:feature/corpus-browser
 - status: planned
+- closes: TASK-9
 - analyze-clean: yes
 - spec: specs/005-corpus-browser
 - design-approved: yes

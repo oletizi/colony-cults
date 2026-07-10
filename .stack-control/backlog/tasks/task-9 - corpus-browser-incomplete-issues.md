@@ -1,10 +1,10 @@
 ---
 id: TASK-9
 title: corpus-browser-incomplete-issues
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-10 01:37'
-updated_date: '2026-07-10 01:37'
+updated_date: '2026-07-10 04:17'
 labels:
   - agent-found
   - 'type:gap'
@@ -24,4 +24,6 @@ loadCorpus fails-loud (correctly, per spec) on collected-but-incomplete PB-P001 
 
 <!-- SECTION:NOTES:BEGIN -->
 - **Node:** impl:feature/corpus-browser
+
+Closed: Implemented render-complete-report-skipped in loadCorpus (LoadResult{corpus,skipped}); real corpus loads 73 issues/927 pages, 5 not-collected issues skipped+reported, corrupt issues still throw. Commit 950fc40.
 <!-- SECTION:NOTES:END -->
