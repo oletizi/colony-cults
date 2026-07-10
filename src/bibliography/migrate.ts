@@ -309,18 +309,40 @@ async function safeGather(sourceId: string, archiveRoot: string): Promise<AssetP
 }
 
 /**
- * Convert a PB-P004-shaped monograph Source to a source-group.
+ * Convert a PB-P004-shaped monograph Source to a source-group (R-003).
  *
- * Takes a `Source` with `kind: 'monograph'` and optional `partOf` (should be absent),
- * and returns a new Source with `kind: 'source-group'`, preserving all other fields
- * (titles, case, creator, language, notes, identifiers). The migration is idempotent:
- * calling it on an already-migrated source-group returns an unchanged result.
+ * Returns a new Source with `kind: 'source-group'`, preserving `sourceId`,
+ * `titles`, `case`, `creator`, `language`, `notes`, and `identifiers` exactly.
+ * `partOf` is never copied -- a source-group is never itself a member (FR-001).
+ * `Source` carries no repository-record-bearing field (those live in the
+ * separate `AuthoredRepositoryRecord`/SSOT YAML), so there is nothing else to
+ * strip here; the authored `to-collect` record is dropped at the SSOT/serialize
+ * layer (T015), not on this in-memory model.
  *
- * Note: This function is a stub for T013 implementation. Currently throws.
- * (T012 writes the test; T013 implements the migration.)
+ * Idempotent: since the result's `kind` is unconditionally `'source-group'`
+ * and every other field is copied straight through, re-running this on an
+ * already-migrated source-group yields an equivalent Source.
  */
 export function migrateSourceToGroup(source: Source): Source {
-  throw new Error('migrateSourceToGroup not implemented');
+  const group: Source = {
+    sourceId: source.sourceId,
+    titles: source.titles,
+    kind: 'source-group',
+    identifiers: source.identifiers,
+  };
+  if (source.creator !== undefined) {
+    group.creator = source.creator;
+  }
+  if (source.language !== undefined) {
+    group.language = source.language;
+  }
+  if (source.case !== undefined) {
+    group.case = source.case;
+  }
+  if (source.notes !== undefined) {
+    group.notes = source.notes;
+  }
+  return group;
 }
 
 /**

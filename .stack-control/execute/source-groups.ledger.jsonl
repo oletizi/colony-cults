@@ -10,3 +10,5 @@
 {"id":"T011","tierLabel":"fast","model":"haiku","commitRange":"pending","reviewClean":true,"note":"STATUS_VALUES += discovered/approved-for-acquisition (ahead of wanted), excluded (terminal); T010 green"}
 {"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"fetch-source guardrail refuses source-group via sourceKind before sourceLayout; T004 green 3/3; sourceKind missing-dir -> undefined (restores 8 fetch-checkpoint tests)"}
 {"id":"T009","tierLabel":"fast","model":"haiku","commitRange":"pending","reviewClean":true,"note":"wired validateSourceGroups into validate() aggregator + 2 tests"}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"migrateSourceToGroup impl (idempotent; Source has no repo-record field so record-drop is at SSOT/T015); T012 green 3/3"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"regenerate tolerance: derive+sources.csv already tolerant; FIXED generateAcquisitionTrackerCsv emitting spurious source-group row (filter kind!=source-group); 5 tests"}

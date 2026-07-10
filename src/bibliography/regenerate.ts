@@ -91,6 +91,14 @@ const SOURCES_CSV_HEADER = [
  * lives per-copy on `repositoryRecords[].status`). Per house rule (no
  * fallbacks/fabrication), those columns are emitted EMPTY rather than
  * reconstructed by parsing `notes` back apart.
+ *
+ * A `kind: 'source-group'` Source (specs/005-source-groups/research.md R-002)
+ * gets a row here like any other Source -- it IS a catalogued Source, just
+ * one with no repository records. None of this view's columns derive from
+ * `repositoryRecords`, so a group's row is naturally well-formed with no
+ * special-casing: `type` reflects `kind` directly (`source-group`), and the
+ * acquisition-shaped columns (`status`/`access`/`public_domain`) are already
+ * always empty for every Source, group or not.
  */
 export function generateSourcesCsv(model: CanonicalModel): string {
   const rows = sortedSources(model).map((source) => [
@@ -137,29 +145,38 @@ function isbnOf(source: Source): string {
 }
 
 /**
- * `bibliography/acquisition-tracker.csv` -- one row per Source.
- * `vendor_or_archive` joins the Source's `repositoryRecords[].sourceArchive`
- * (the one column research R-006 / the task spec calls out explicitly as
- * SSOT-derivable). `priority`/`next_action` have no discrete SSOT field
- * (`migrate.ts` dropped them) and are emitted empty -- not fabricated.
- * `url_or_reference` round-trips a Source's work-level `isbn` identifier when
- * present (the only discrete SSOT value that column carries today); it is
- * empty for a Source with no ISBN.
+ * `bibliography/acquisition-tracker.csv` -- one row per Source that is
+ * actually acquirable. `vendor_or_archive` joins the Source's
+ * `repositoryRecords[].sourceArchive` (the one column research R-006 / the
+ * task spec calls out explicitly as SSOT-derivable). `priority`/`next_action`
+ * have no discrete SSOT field (`migrate.ts` dropped them) and are emitted
+ * empty -- not fabricated. `url_or_reference` round-trips a Source's
+ * work-level `isbn` identifier when present (the only discrete SSOT value
+ * that column carries today); it is empty for a Source with no ISBN.
+ *
+ * A `kind: 'source-group'` Source is EXCLUDED here (specs/005-source-groups/
+ * research.md R-002): a group is a research-defined container, not
+ * acquirable, and holds no repository records by construction (FR-004) -- it
+ * has nothing to track. This is a row-level filter only; an ordinary
+ * periodical/monograph with zero repository records (not yet acquired) still
+ * gets a row here with empty acquisition columns, same as before.
  */
 export function generateAcquisitionTrackerCsv(model: CanonicalModel): string {
-  const rows = sortedSources(model).map((source) => {
-    const records = recordsForSource(model, source.sourceId);
-    return [
-      source.sourceId,
-      canonicalTitle(source),
-      '', // priority -- not a discrete SSOT field
-      joinedStatus(records),
-      '', // next_action -- not a discrete SSOT field
-      joinedArchives(records),
-      isbnOf(source), // url_or_reference -- round-trips the work-level ISBN, else empty
-      source.notes ?? '',
-    ];
-  });
+  const rows = sortedSources(model)
+    .filter((source) => source.kind !== 'source-group')
+    .map((source) => {
+      const records = recordsForSource(model, source.sourceId);
+      return [
+        source.sourceId,
+        canonicalTitle(source),
+        '', // priority -- not a discrete SSOT field
+        joinedStatus(records),
+        '', // next_action -- not a discrete SSOT field
+        joinedArchives(records),
+        isbnOf(source), // url_or_reference -- round-trips the work-level ISBN, else empty
+        source.notes ?? '',
+      ];
+    });
   return renderCsv(TRACKER_CSV_HEADER, rows);
 }
 
