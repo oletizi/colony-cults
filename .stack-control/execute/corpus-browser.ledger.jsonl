@@ -19,3 +19,8 @@
 {"id":"TASK-11","tierLabel":"balanced","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"scan-blank CORS fix: full-image descriptor + drop crossOriginPolicy; 30 tests; found in phone review"}
 {"id":"T015-ux","tierLabel":"powerful","model":"opus","commitRange":"f71c0b1","reviewClean":true,"note":"reading-view UX (operator feedback via /frontend-design): English-first, both French readings collapsed <details>, sticky top page-nav; 927 pages rebuilt"}
 {"id":"T015-scanfix","tierLabel":"powerful","model":"opus","commitRange":"eb6a60c","reviewClean":true,"note":"facsimile mount had 0 height (OSD sets position:relative; height:100% cannot resolve vs min-height) -> sticky panel with explicit height; VERIFIED stage 637x832, OSD pulls full tiles, scan renders. Also reverted TASK-11 to tiled IIIF+CORS."}
+{"id":"T020","tierLabel":"balanced","model":"sonnet","commitRange":"c3bc9b7","reviewClean":true,"note":"search documents (per-page, both langs, routeUrl)"}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"c3bc9b7","reviewClean":true,"note":"search-docs unit test; 5 green"}
+{"id":"T017","tierLabel":"balanced","model":"opus","commitRange":"a8e4f9b","reviewClean":true,"note":"source/issue route enumeration"}
+{"id":"T018","tierLabel":"balanced","model":"opus","commitRange":"a8e4f9b","reviewClean":true,"note":"routes coherence test; 5 green"}
+{"id":"T019","tierLabel":"powerful","model":"opus","commitRange":"a8e4f9b","reviewClean":true,"note":"landing + source index via /frontend-design; cross-issue nav + breadcrumb links; verified visually"}
