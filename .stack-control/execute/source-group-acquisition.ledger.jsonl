@@ -32,3 +32,8 @@
 {"id":"T032","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"bnf-sru RED test, 11 cases, live-confirmed XML"}
 {"id":"T033","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"BnfSruDiscoveryMechanism concrete client"}
 {"id":"T034","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass; ark-resolver.ts built (concrete resolver, un-tasked, opus)"}
+{"id":"T035","tierLabel":"balanced","model":"sonnet","commitRange":"bc3291c","reviewClean":true,"note":"negative-path sweep, 8 tests; caught promote missing-snapshot gap"}
+{"id":"T036","tierLabel":"fast","model":"opus","commitRange":"bc3291c","reviewClean":true,"note":"hygiene sweep clean (controller-inline): no any/as/ts-ignore, @/ imports, <=500 lines"}
+{"id":"T037","tierLabel":"powerful","model":"opus","commitRange":"bc3291c","reviewClean":false,"note":"OPERATOR-ACCEPTANCE [~]: live PB-P004 acquisition to B2; excluded from tasks-complete gate; run after govern"}
+{"id":"T038","tierLabel":"balanced","model":"sonnet","commitRange":"bc3291c","reviewClean":true,"note":"reusability proven (2nd group); fixture TG-001->PB-S901 conformance fix"}
+{"id":"T039","tierLabel":"fast","model":"opus","commitRange":"bc3291c","reviewClean":true,"note":"bib help refreshed (controller-inline); quickstart current"}
