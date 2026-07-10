@@ -59,22 +59,37 @@ Expected: `sources.csv` contains one `PB-P004` row (kind `source-group`, empty a
 columns) plus member rows; the acquisition tracker/register contain **no** PB-P004 row.
 Re-running regenerate produces a byte-identical result (view-drift check clean).
 
-## Scenario 5 — Migration is idempotent (R-003)
+## Scenario 5 — Source-group migration is idempotent (R-003)
+
+The idempotency guarantee is on the `migrateSourceToGroup` converter and on the
+**source-group preservation** wired into `migrate()`: a record already promoted to
+`kind: source-group` in the SSOT survives a re-run of `bib migrate` unchanged.
 
 ```bash
-tsx src/cli/index.ts bib migrate        # or the specific migrate entry per migrate.ts
+npx tsx src/index.ts bib migrate        # legacy-fold verb; PB-P004 stays a source-group
+git diff bibliography/sources/PB-P004.yml   # expect NO diff — still kind: source-group, no repositoryRecords
 ```
 
-Expected: on an already-migrated `PB-P004.yml`, the migration is a no-op (no diff). On a
-pre-migration monograph record, it rewrites to `kind: source-group`, drops the single
-`to-collect` repository record, and preserves titles/case/notes.
+Expected: `PB-P004.yml` remains `kind: source-group` with no repository records after the
+run (the promotion is preserved — `migrate()` keeps existing source-groups rather than
+re-deriving them from the frozen legacy CSV).
+
+> **Caveat (pre-existing, out of 005 scope):** `bib migrate` is the one-time 004 legacy
+> fold — it rebuilds *non-group* SSOT records from `bibliography/legacy/*.csv`, so a re-run
+> may still revert hand-curation on non-group records (e.g. PB-P001's SLQ restore, PB-P002's
+> records). Only the source-group promotion is preserved here; the broader re-run hazard is
+> captured as a backlog item, not fixed by this feature.
+
+Function-level idempotency is covered by `tests/unit/bibliography/migrate.test.ts`
+(`migrateSourceToGroup` no-op on re-migrate; `migrate()` preserves an existing source-group).
 
 ## Automated coverage
 
-- `tests/unit/bibliography/validate-checks.test.ts` — the four group/member findings + zero-member OK.
-- `tests/unit/bibliography/vocab.test.ts` — the two new statuses; existing statuses unchanged.
-- `tests/unit/bibliography/migrate.test.ts` — PB-P004 monograph→group, idempotent.
-- `tests/unit/model/source.test.ts` — `kind` union + `partOf`.
-- `tests/integration/source-groups.test.ts` — validate + fetch-refuse + regenerate end-to-end.
+- `tests/unit/bibliography/validate-checks.test.ts` — the group/member findings + zero-member OK.
+- `tests/unit/bibliography/vocab.test.ts` — the new statuses (`discovered`, `approved-for-acquisition`, `excluded`); existing statuses unchanged.
+- `tests/unit/bibliography/migrate.test.ts` — `migrateSourceToGroup` monograph→group + idempotency; `migrate()` source-group preservation.
+- `tests/unit/bibliography/load.test.ts` — `kind: source-group` + `partOf` load↔serialize round-trip; `sourceKind` lookup.
+- `tests/unit/bibliography/regenerate.test.ts` — source-group row in `sources.csv`, absent from the acquisition tracker; determinism.
+- `tests/integration/source-groups.test.ts` — the fetch guardrail (refuse a source-group).
 
-Run all: `vitest run`.
+Run all: `npx vitest run`.
