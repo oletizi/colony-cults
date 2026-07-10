@@ -41,6 +41,65 @@ export interface RepositoryRecord {
   manifest?: AssetManifestRef;
   /** Derived per-issue breakdown; present only when `kind === 'periodical'`. */
   issues?: IssueRef[];
+  /**
+   * Reference to the immutable raw-response snapshot this record's
+   * normalized fields were derived from. Additive optional field
+   * (specs/006-source-group-acquisition/data-model.md § MetadataSnapshot,
+   * D-07) -- absent on records that predate it.
+   */
+  metadataSnapshot?: MetadataSnapshotRef;
+  /**
+   * The recorded verdict from `promote`'s rerun verification. Additive
+   * optional field (specs/006-source-group-acquisition/data-model.md §
+   * VerificationVerdict, D-03) -- absent until a member has been promoted.
+   */
+  verification?: VerificationVerdict;
+}
+
+/**
+ * A reference to one immutable raw repository response, written once and
+ * never overwritten (re-inventory appends a new snapshot rather than
+ * mutating this one).
+ *
+ * See specs/006-source-group-acquisition/data-model.md § MetadataSnapshot.
+ */
+export interface MetadataSnapshotRef {
+  /** Location of the stored raw response, under `bibliography/`. */
+  path: string;
+  /** ISO timestamp of retrieval. */
+  retrievedAt: string;
+  /** The discovery/repository endpoint used. */
+  endpoint: string;
+  /** The normalization scheme version applied to derive normalized fields. */
+  normalizationVersion: number;
+}
+
+/** One verification check's pass/fail outcome. */
+export type VerificationCheckResult = 'passed' | 'failed';
+
+/**
+ * The recorded verdict from `promote`'s rerun verification -- `promote`
+ * records a verdict only on a pass; a failing rerun aborts and records
+ * nothing (D-03).
+ *
+ * See specs/006-source-group-acquisition/data-model.md § VerificationVerdict.
+ */
+export interface VerificationVerdict {
+  /** `promote` only ever records a passing verdict. */
+  result: 'passed';
+  /** ISO timestamp of the rerun. */
+  verifiedAt: string;
+  /** Per-check outcomes. */
+  checks: {
+    identifierResolved: VerificationCheckResult;
+    rights: VerificationCheckResult;
+    requiredMetadata: VerificationCheckResult;
+    hardDuplicate: VerificationCheckResult;
+    /** A possible (soft) duplicate is either cleared or flagged for human review. */
+    possibleDuplicate: 'passed' | 'review-required';
+  };
+  /** The `metadataSnapshot` this verdict was computed against (ties verdict to evidence). */
+  snapshotRef: string;
 }
 
 /** A copy-level identifier (ark/IIIF manifest/scan DOI). */

@@ -12,4 +12,11 @@ export interface Rights {
   rawResponse: string;
   /** The parsed `dc:rights` values. */
   dcRights: string[];
+  /**
+   * The holding archive's verbatim rights statement (evidence), distinct
+   * from `status`'s normalized `public-domain` | `other` classification.
+   * Additive optional field (specs/006-source-group-acquisition/data-model.md
+   * § Rights, D-07) -- absent on rights determinations that predate it.
+   */
+  raw?: string;
 }

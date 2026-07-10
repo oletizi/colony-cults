@@ -75,3 +75,29 @@ All items below resolve a Technical-Context unknown or a spec decision. Format: 
 **Rationale**: deterministic unit tests without hitting the archive on every run; one gated live path proves the real integration (SC-001/SC-002). Mock data lives only in tests (project rule).
 
 **Alternatives considered**: live network in all tests (rejected — flaky, anti-bot risk); no live test (rejected — wouldn't prove SC-002).
+
+## Spike outcome (T004)
+
+**Decision: USE the BnF general-catalogue SRU as the single discovery mechanism.**
+
+The spike (T004) evaluated whether the BnF general-catalogue SRU at `catalogue.bnf.fr` is a reliable, documented, programmatically-callable search endpoint — distinct from the Gallica web search (`gallica.bnf.fr` SRU) that tripped anti-bot protection during the fetcher work. It is.
+
+### Evidence
+
+- **Documented public API.** BnF publishes the "API SRU Catalogue général" with a 17-page PDF spec (service_sru_bnf.pdf, 2019-04). The service is SRU **version 1.2**, accessible without authentication, callable over HTTP GET or POST, and explicitly intended for integration into code (RESTful web service). Sources: [api.bnf.fr — API SRU Catalogue général](https://api.bnf.fr/fr/api-sru-catalogue-general), [bnf.fr — Service SRU Catalogue général](https://www.bnf.fr/fr/service-sru-catalogue-general-de-la-bnf), [Service SRU de la BnF — Documentation générale (PDF)](https://www.bnf.fr/sites/default/files/2019-04/service_sru_bnf.pdf).
+- **Distinct host from the blocked Gallica search.** This is the bibliographic *catalogue* (`catalogue.bnf.fr/api/SRU`), not the Gallica digitized-object search that was anti-bot-blocked. Different service, different host.
+- **Live probe succeeded.** A single `searchRetrieve` probe for `bib.anywhere all "Marquis de Rays"` returned a well-formed `srw:searchRetrieveResponse` with `numberOfRecords = 18`, including an 1858 publication authored by the Marquis de Rays — i.e. real, relevant candidate records, no diagnostic, no anti-bot challenge.
+
+### Chosen endpoint and documented query shape
+
+- **Base URL:** `https://catalogue.bnf.fr/api/SRU`
+- **Fixed parameters:** `operation=searchRetrieve`, `version=1.2`
+- **Query:** `query=<CQL>` — CQL syntax. Useful bibliographic indexes: `bib.anywhere`, `bib.title`, `bib.author`, `bib.subject`, `bib.persistentid` (ARK), `bib.recordid`, `bib.publicationdate`. Example clause: `bib.anywhere all "Marquis de Rays"`.
+- **Record schema:** `recordSchema=` one of `unimarcXchange` (default), `unimarcXchange-anl`, `intermarcXchange`, `intermarcXchange-anl`, `dublincore` (bibliographic records only — the lightest to map to `DiscoveryCandidate` hints).
+- **Pagination:** `startRecord` (1-based), `maximumRecords`.
+- **Concrete example (from BnF docs):**
+  `https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=bib.anywhere%20all%20%22julien%20gracq%22&startRecord=1&maximumRecords=100&recordSchema=unimarcXchange`
+
+### Consequence for the `discover` verb
+
+The `discover` verb **will be shipped**, backed by exactly one `DiscoveryMechanism` — a BnF-general-catalogue-SRU client (concrete network client is task T033; T005 scaffolds only the interface, types, and fail-loud dispatcher). There is **no runtime fallback chain**: when the single configured mechanism is unavailable the dispatcher throws a clear error (project fail-loud principle, FR-018/FR-020). The operator-supplied-candidate-identifiers path (FR-019) remains available as an *explicit operator input*, not as an automatic fallback the software silently selects. Relevance judgment (original court record vs. later historical account) stays a human/agent decision; the SRU mechanism only surfaces candidates.

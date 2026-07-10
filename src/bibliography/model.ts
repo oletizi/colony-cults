@@ -1,4 +1,9 @@
-import type { CopyIdentifier, RepositoryRecord } from '@/model/repository-record';
+import type {
+  CopyIdentifier,
+  MetadataSnapshotRef,
+  RepositoryRecord,
+  VerificationVerdict,
+} from '@/model/repository-record';
 import type { Rights } from '@/model/rights';
 import type { Source } from '@/model/source';
 
@@ -75,4 +80,8 @@ export interface AuthoredRepositoryRecord {
   rights?: Rights;
   /** Path to the census JSON this record's issues derive from (serials only). */
   census?: string;
+  /** Reference to the immutable raw-response snapshot (D-07). Additive optional. */
+  metadataSnapshot?: MetadataSnapshotRef;
+  /** The recorded verdict from promote's rerun verification (D-03). Additive optional. */
+  verification?: VerificationVerdict;
 }
