@@ -10,6 +10,7 @@
 
 import type { ImageDescriptor, ImageProviderConfig } from '@/browser/model';
 import { makeSourceIiifProvider } from '@/browser/providers/source-iiif';
+import { makeB2CdnProvider } from '@/browser/providers/b2-cdn';
 
 /**
  * What both providers may need to resolve one page's image. Carries the
@@ -39,15 +40,10 @@ export interface ImageSourceProvider {
  * Selects the {@link ImageSourceProvider} implementation for `config`.
  *
  * Throws on missing required config -- there is no fallback between
- * providers (FR-013; image-provider contract G-1). The `b2-cdn`
- * implementation itself lands in T027; this factory already enforces its
- * required-config guarantee (a missing/empty `cdnBase` throws) ahead of
- * that work.
+ * providers (FR-013; image-provider contract G-1).
  *
  * @throws Error if `config.kind` is `'b2-cdn'` and `cdnBase` is missing or
  *   empty.
- * @throws Error if `config.kind` is `'b2-cdn'` (the implementation is not
- *   yet available -- T027).
  */
 export function makeProvider(config: ImageProviderConfig): ImageSourceProvider {
   if (config.kind === 'source-iiif') {
@@ -64,8 +60,5 @@ export function makeProvider(config: ImageProviderConfig): ImageSourceProvider {
     );
   }
 
-  throw new Error(
-    'makeProvider: the "b2-cdn" image provider is not yet implemented (T027). ' +
-      'Use { kind: "source-iiif" } until the b2-cdn implementation lands.'
-  );
+  return makeB2CdnProvider(config.cdnBase);
 }

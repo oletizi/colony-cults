@@ -46,10 +46,16 @@ Expected: results appear client-side and link to the containing **page** reading
 ## Scenario 4 — Provider swap [US5, SC-005]
 
 ```bash
-CORPUS_IMAGE_PROVIDER=b2-cdn CORPUS_CDN_BASE=https://cdn.example/pb npm --prefix site run build
+CORPUS_ARCHIVE_PATH=../colony-cults-archive CORPUS_IMAGE_PROVIDER=b2-cdn CORPUS_CDN_BASE=https://cdn.example/pb npm run site:build
 ```
 
-Expected: the same page renders with image URLs from the object-store+CDN provider; the viewer/reading view are unchanged. Building `b2-cdn` **without** `CORPUS_CDN_BASE` fails loud (no fallback).
+Expected: the build succeeds and every page's OSD descriptor switches from the default `source-iiif` provider's tiled `iiif` descriptor (`{"kind":"iiif","url":"https://gallica.bnf.fr/iiif/<ark>/<folio>"}`) to `b2-cdn`'s un-tiled `full-image` descriptor built from the page's archive `object_store` key, e.g.:
+
+```json
+{"kind":"full-image","url":"https://cdn.example/pb/archive/cases/port-breton/newspapers/la-nouvelle-france/1879-08-15_bpt6k56068358/f001.jpg"}
+```
+
+(grep a built page's `data-osd-descriptor` attribute, e.g. `site/dist/sources/PB-P001/issues/1879-08-15_bpt6k56068358/pages/p001/index.html`). The reading view markup around the viewer is unchanged (image-provider contract G-3) — only the descriptor `kind`/`url` differ. There is no live CDN in this environment, so this scenario validates URL construction at build time, not an actual image load; a real deploy additionally requires the CDN/B2 bucket to send CORS headers for the OSD viewer's `crossOriginPolicy: 'Anonymous'` (see `src/browser/providers/b2-cdn.ts`). Building `b2-cdn` **without** `CORPUS_CDN_BASE` fails loud (no fallback).
 
 ## Scenario 5 — Fail-loud on missing data [SC-006]
 

@@ -6,10 +6,11 @@ import type { ImageProviderConfig } from '@/browser/model';
 /**
  * `ImageSourceProvider` is the single interface every page image URL is
  * built through (see specs/005-corpus-browser/contracts/image-provider.md).
- * These tests exercise the factory + the `source-iiif` implementation
- * against the contract's guarantees (G-1..G-4); the `b2-cdn`
- * implementation itself is a later task (T027) -- here we only assert the
- * factory's missing-config throw (G-1).
+ * These tests exercise the factory + both implementations (`source-iiif`,
+ * `b2-cdn`) against the contract's guarantees (G-1..G-4), plus the
+ * provider-swap parity guarantee (G-3 / SC-005): the same page resolved by
+ * either provider yields a valid, non-empty descriptor -- the reading view
+ * is unchanged regardless of which provider built the url.
  */
 describe('makeProvider', () => {
   describe('source-iiif', () => {
@@ -78,6 +79,78 @@ describe('makeProvider', () => {
       const config: ImageProviderConfig = { kind: 'b2-cdn', cdnBase: '' };
 
       expect(() => makeProvider(config)).toThrow();
+    });
+
+    it('resolves a page with an objectStoreKey to a full-image ImageDescriptor whose url is cdnBase/key', () => {
+      const provider = makeProvider({ kind: 'b2-cdn', cdnBase: 'https://cdn.example' });
+      const page: PageInput = {
+        ark: 'ark:/12148/bpt6k56068358',
+        folioId: 'f001',
+        objectStoreKey:
+          'archive/cases/port-breton/newspapers/la-nouvelle-france/1879-08-15_bpt6k56068358/f001.jpg',
+      };
+
+      const descriptor = provider.resolve(page);
+
+      expect(descriptor.kind).toBe('full-image');
+      expect(descriptor.url).toBe(
+        'https://cdn.example/archive/cases/port-breton/newspapers/la-nouvelle-france/1879-08-15_bpt6k56068358/f001.jpg'
+      );
+    });
+
+    it('strips a trailing slash on cdnBase before joining the object-store key', () => {
+      const provider = makeProvider({ kind: 'b2-cdn', cdnBase: 'https://cdn.example/pb/' });
+      const descriptor = provider.resolve({
+        ark: null,
+        folioId: 'f001',
+        objectStoreKey: 'archive/f001.jpg',
+      });
+
+      expect(descriptor.url).toBe('https://cdn.example/pb/archive/f001.jpg');
+    });
+
+    it('throws, naming the folio, when objectStoreKey is null', () => {
+      const provider = makeProvider({ kind: 'b2-cdn', cdnBase: 'https://cdn.example' });
+      const page: PageInput = { ark: null, folioId: 'f009', objectStoreKey: null };
+
+      expect(() => provider.resolve(page)).toThrow(/f009/);
+    });
+
+    it('throws, naming the folio, when objectStoreKey is empty', () => {
+      const provider = makeProvider({ kind: 'b2-cdn', cdnBase: 'https://cdn.example' });
+      const page: PageInput = { ark: null, folioId: 'f009', objectStoreKey: '   ' };
+
+      expect(() => provider.resolve(page)).toThrow(/f009/);
+    });
+
+    it('reports its kind as b2-cdn', () => {
+      const provider = makeProvider({ kind: 'b2-cdn', cdnBase: 'https://cdn.example' });
+      expect(provider.kind).toBe('b2-cdn');
+    });
+  });
+
+  describe('provider-swap parity (SC-005)', () => {
+    it('the same page resolved by source-iiif vs b2-cdn both yield a valid, non-empty descriptor url', () => {
+      const page: PageInput = {
+        ark: 'ark:/12148/bpt6k56068358',
+        folioId: 'f001',
+        objectStoreKey:
+          'archive/cases/port-breton/newspapers/la-nouvelle-france/1879-08-15_bpt6k56068358/f001.jpg',
+      };
+
+      const iiifDescriptor = makeProvider({ kind: 'source-iiif' }).resolve(page);
+      const b2Descriptor = makeProvider({ kind: 'b2-cdn', cdnBase: 'https://cdn.example' }).resolve(
+        page
+      );
+
+      // Kinds legitimately differ (tiled iiif base vs full-image cdn url) --
+      // the contract only guarantees both are valid, non-empty descriptors
+      // the viewer can render (image-provider contract G-3).
+      expect(iiifDescriptor.kind).toBe('iiif');
+      expect(b2Descriptor.kind).toBe('full-image');
+      expect(iiifDescriptor.url.length).toBeGreaterThan(0);
+      expect(b2Descriptor.url.length).toBeGreaterThan(0);
+      expect(iiifDescriptor.url).not.toBe(b2Descriptor.url);
     });
   });
 });
