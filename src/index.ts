@@ -7,6 +7,7 @@ import { runBibliography } from '@/cli/bibliography';
 import { runCensus } from '@/cli/census';
 import { runFetchIssue, runFetchSource } from '@/cli/fetch';
 import { runOcr } from '@/cli/ocr';
+import { runRestoreImages } from '@/cli/restore-images';
 
 /** A command handler: given the parsed invocation, performs the command. */
 type Handler = (args: ParsedArgs) => Promise<void>;
@@ -20,6 +21,7 @@ const HANDLERS: Partial<Record<Command, Handler>> = {
   'fetch-issue': (args) => runFetchIssue(args),
   'fetch-source': (args) => runFetchSource(args),
   ocr: (args) => runOcr(args),
+  'restore-images': (args) => runRestoreImages(args),
 };
 
 /** Read this package's version from package.json (no hardcoded duplicate). */
@@ -52,6 +54,7 @@ Commands:
   fetch-issue <issueArk>        Fetch one issue's page images (private archive)
   fetch-source <periodicalArk>  Fetch every issue in a source's census
   ocr <issueArk>                OCR already-fetched images for an issue
+  restore-images <issueArk>     Pull page images from the public B2 cache
 
 Options:
   --help, -h             Show this help message
