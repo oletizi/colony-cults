@@ -1,11 +1,15 @@
 ---
 /**
  * The source pane -- the propaganda's OWN voice, set warm (vellum ground, serif
- * / Didone). It carries the raw French OCR verbatim (line breaks preserved: it
- * is a transcription of the scan, not prose). When a corrected French reading
- * exists it is offered without demoting the raw OCR. When an OCR-condition note
- * is present it is stamped in oxide-red -- the single critical mark on the page,
- * the archive flagging the scan's noise while the facsimile stays authoritative.
+ * / Didone). For an English-speaking reader the raw scan-transcription is the
+ * LEAST useful text on the page, so both French readings are FOLDED away by
+ * default and opened on demand via native <details> (CSP-safe, no JS): the
+ * cleaned "corrected" reading first, the noisy raw OCR last and most muted.
+ *
+ * The OCR-condition note stays visible above the fold, stamped in oxide-red --
+ * the single critical mark on the page, the archive flagging the scan's noise
+ * while the facsimile stays authoritative. Line breaks are preserved: these are
+ * transcriptions of the scan, not prose.
  */
 interface Props {
   ocrFrench: string;
@@ -21,7 +25,7 @@ const hasCondition = condition.length > 0;
 ---
 
 <section class="source" aria-label="Texte source en français">
-  <p class="source__label">Texte source&nbsp;· français</p>
+  <p class="source__label">Texte source&nbsp;· français&nbsp;· replié</p>
 
   {hasCondition ? (
     <p class="source__condition" role="note">
@@ -30,20 +34,31 @@ const hasCondition = condition.length > 0;
     </p>
   ) : null}
 
-  <div class="source__ocr">{raw}</div>
-
   {hasCorrected ? (
-    <details class="source__corrected">
-      <summary>Lecture corrigée&nbsp;· français</summary>
-      <div class="source__ocr source__ocr--corrected">{corrected}</div>
+    <details class="source__panel">
+      <summary class="source__summary">
+        <span class="source__marker" aria-hidden="true">▸</span>
+        <span class="source__name">Lecture corrigée</span>
+        <span class="source__hint">déplier</span>
+      </summary>
+      <div class="source__ocr">{corrected}</div>
     </details>
   ) : null}
+
+  <details class="source__panel source__panel--raw">
+    <summary class="source__summary">
+      <span class="source__marker" aria-hidden="true">▸</span>
+      <span class="source__name">OCR brut</span>
+      <span class="source__hint">transcription automatique&nbsp;· déplier</span>
+    </summary>
+    <div class="source__ocr source__ocr--raw">{raw}</div>
+  </details>
 </section>
 
 <style>
   .source {
     background: var(--vellum);
-    padding: 26px 28px;
+    padding: 22px 28px 26px;
   }
 
   .source__label {
@@ -55,15 +70,6 @@ const hasCondition = condition.length > 0;
     margin: 0 0 14px;
   }
 
-  .source__ocr {
-    font-family: var(--serif);
-    font-size: 15px;
-    line-height: 1.6;
-    color: #2a2820;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
   /* The single oxide mark: the archive's hand on the propaganda's noise. */
   .source__condition {
     font-family: var(--mono);
@@ -72,7 +78,7 @@ const hasCondition = condition.length > 0;
     color: #4a463c;
     border-left: 2px solid var(--oxide);
     padding: 4px 0 4px 10px;
-    margin: 0 0 18px;
+    margin: 0 0 16px;
   }
 
   .source__condition-mark {
@@ -84,22 +90,79 @@ const hasCondition = condition.length > 0;
     margin-right: 8px;
   }
 
-  .source__corrected {
-    margin-top: 18px;
+  .source__panel {
     border-top: 1px solid var(--rule);
-    padding-top: 14px;
   }
 
-  .source__corrected > summary {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--faint);
+  .source__panel:last-child {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .source__summary {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 11px 0;
     cursor: pointer;
+    list-style: none;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #55524a;
   }
 
-  .source__ocr--corrected {
-    margin-top: 12px;
+  /* Suppress the native disclosure triangle; we supply our own oxide marker. */
+  .source__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .source__summary:hover {
+    color: var(--oxide);
+  }
+
+  .source__marker {
+    color: var(--oxide);
+    font-size: 10px;
+    line-height: 1;
+    transform: translateY(-1px);
+    transition: transform 120ms ease;
+  }
+
+  details[open] > .source__summary > .source__marker {
+    transform: translateY(-1px) rotate(90deg);
+  }
+
+  .source__name {
+    color: #2a2820;
+    letter-spacing: 0.12em;
+  }
+
+  .source__hint {
+    margin-left: auto;
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    color: var(--faint);
+    text-transform: none;
+  }
+
+  /* Raw OCR is the least useful reading -- keep it the quietest of the two. */
+  .source__panel--raw .source__name {
+    color: #55524a;
+    font-weight: 400;
+  }
+
+  .source__ocr {
+    font-family: var(--serif);
+    font-size: 15px;
+    line-height: 1.6;
+    color: #2a2820;
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: 2px 0 16px;
+  }
+
+  .source__ocr--raw {
+    color: #4a463c;
   }
 </style>

@@ -1,9 +1,11 @@
 ---
 /**
  * The translation pane -- the critical frame's voice, set cool (slate ground,
- * grotesque / mono). It carries the English translation and is explicitly
- * marked as machine-assisted and not human-reviewed, so the apparatus never
- * lets the machine reading pass for an authoritative one. Line breaks preserved.
+ * grotesque / mono). For an English-speaking reader this is the PRIMARY text of
+ * the page, so it LEADS the text column next to the scan (the warm French
+ * readings are folded beneath it). It is explicitly marked as machine-assisted
+ * and not human-reviewed, so the apparatus never lets the machine reading pass
+ * for an authoritative one. Line breaks are preserved.
  */
 interface Props {
   english: string;
@@ -14,7 +16,10 @@ const hasText = text.length > 0;
 ---
 
 <section class="translation" aria-label="Translation into English">
-  <p class="translation__label">Translation&nbsp;· English&nbsp;· machine-assisted</p>
+  <p class="translation__label">
+    <span class="translation__lede-mark">Reading</span>
+    Translation&nbsp;· English
+  </p>
   {hasText ? (
     <div class="translation__body">{text}</div>
   ) : (
@@ -27,23 +32,36 @@ const hasText = text.length > 0;
   .translation {
     background: var(--slate);
     color: #edeff1;
-    padding: 26px 28px;
+    padding: 28px 30px 26px;
   }
 
   .translation__label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-family: var(--mono);
     font-size: 10.5px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: #9fb0bc;
-    margin: 0 0 14px;
+    margin: 0 0 16px;
+  }
+
+  /* Names this pane the primary reading -- the one text the reader is here for. */
+  .translation__lede-mark {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--slate);
+    background: #cdd6dc;
+    padding: 3px 7px;
+    border-radius: 2px;
   }
 
   .translation__body {
     font-family: var(--grote);
-    font-size: 14px;
-    line-height: 1.6;
-    color: #dde3e7;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #eef2f4;
     white-space: pre-wrap;
     word-break: break-word;
   }

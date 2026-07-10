@@ -1,10 +1,12 @@
 ---
 /**
  * The reading view -- layout ① "Facsimile & parallel text". The deep-zoom scan
- * LEADS (left, ~56%); the raw French OCR and the English translation are STACKED
- * beside it (the propaganda's warm voice over the critical frame's cool one).
- * A breadcrumb chrome bar sits above; a page-nav + compact provenance line sits
- * below (within-issue prev/next -- the fuller source/issue navigation is US2).
+ * LEADS (left, ~56%); beside it the text column is ordered by usefulness to an
+ * English-speaking reader: the ENGLISH TRANSLATION reads first and prominent,
+ * and the two warm French readings (corrected + raw OCR) are FOLDED beneath it
+ * (SourcePane's native <details>). The breadcrumb chrome bar STICKS to the top
+ * of the viewport and carries a page-nav, so within-issue forward/back never
+ * needs a scroll; a fuller page-nav + provenance line repeats in the footer.
  *
  * Every datum shown is required by the loader (fail-loud); this component
  * substitutes nothing. The full monospace provenance-rail signature and the
@@ -14,6 +16,7 @@ import type { PageView } from '@/browser/model';
 import FacsimileViewer from './FacsimileViewer.astro';
 import SourcePane from './SourcePane.astro';
 import TranslationPane from './TranslationPane.astro';
+import PageNav from './PageNav.astro';
 
 interface Props {
   sourceId: string;
@@ -62,7 +65,13 @@ const shaShort = prov.sha256.slice(0, 12);
         <b>{pageLabel}</b>
       </span>
       <span class="reading__spacer"></span>
-      <span class="reading__pill reading__pill--on">FR + EN</span>
+      <PageNav
+        positionInIssue={positionInIssue}
+        pageCount={pageCount}
+        prevHref={prevHref}
+        nextHref={nextHref}
+        compact
+      />
     </div>
 
     <div class="reading__body">
@@ -70,27 +79,22 @@ const shaShort = prov.sha256.slice(0, 12);
         <FacsimileViewer image={page.image} label={facsimileLabel} />
       </div>
       <div class="reading__text">
+        <TranslationPane english={page.english} />
         <SourcePane
           ocrFrench={page.ocrFrench}
           correctedFrench={page.correctedFrench}
           ocrCondition={page.ocrCondition}
         />
-        <TranslationPane english={page.english} />
       </div>
     </div>
 
     <nav class="reading__pagenav" aria-label="Navigation dans le numéro">
-      {prevHref ? (
-        <a class="reading__arrow" href={prevHref} rel="prev" aria-label="Page précédente">‹</a>
-      ) : (
-        <span class="reading__arrow reading__arrow--off" aria-hidden="true">‹</span>
-      )}
-      <span class="reading__count">page {positionInIssue} / {pageCount}</span>
-      {nextHref ? (
-        <a class="reading__arrow" href={nextHref} rel="next" aria-label="Page suivante">›</a>
-      ) : (
-        <span class="reading__arrow reading__arrow--off" aria-hidden="true">›</span>
-      )}
+      <PageNav
+        positionInIssue={positionInIssue}
+        pageCount={pageCount}
+        prevHref={prevHref}
+        nextHref={nextHref}
+      />
       <span class="reading__spacer"></span>
       <span class="reading__provenance" title={`sha256:${prov.sha256}`}>
         <span class="reading__prov-issue">{issueId}</span>
@@ -149,12 +153,16 @@ const shaShort = prov.sha256.slice(0, 12);
   }
 
   .reading__chrome {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 12px 16px;
+    padding: 11px 16px;
     border-bottom: 1px solid var(--rule);
     background: var(--paper);
+    box-shadow: 0 6px 14px -12px rgba(23, 21, 15, 0.55);
     font-family: var(--mono);
     font-size: 11px;
     color: var(--faint);
@@ -175,19 +183,6 @@ const shaShort = prov.sha256.slice(0, 12);
     flex: 1;
   }
 
-  .reading__pill {
-    border: 1px solid var(--rule);
-    padding: 3px 8px;
-    border-radius: 2px;
-    color: var(--slate);
-  }
-
-  .reading__pill--on {
-    background: var(--slate);
-    color: #fff;
-    border-color: var(--slate);
-  }
-
   .reading__body {
     display: grid;
     grid-template-columns: 1.25fr 0.95fr;
@@ -204,33 +199,13 @@ const shaShort = prov.sha256.slice(0, 12);
   .reading__pagenav {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
     padding: 10px 16px;
     border-top: 1px solid var(--rule);
     background: var(--paper);
     font-family: var(--mono);
     font-size: 11px;
     color: var(--faint);
-  }
-
-  .reading__arrow {
-    width: 24px;
-    height: 24px;
-    display: grid;
-    place-items: center;
-    border: 1px solid var(--rule);
-    color: var(--slate);
-    text-decoration: none;
-  }
-
-  .reading__arrow:hover {
-    border-color: var(--oxide);
-    color: var(--oxide);
-  }
-
-  .reading__arrow--off {
-    color: var(--rule);
-    cursor: default;
   }
 
   .reading__provenance {
