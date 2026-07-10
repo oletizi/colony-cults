@@ -37,16 +37,17 @@ With `CORPUS_ARCHIVE_PATH` unset, the same `npm run site:build` builds entirely 
 
 The build needs only **public-domain text + metadata** — page images are resolved to Gallica/CDN URLs and fetched client-side, never bundled. So the corpus is exported to a committed snapshot the build reads instead of the private archive:
 
-- `site/data/<sourceId>.json` — the serializable corpus for one source (text, provenance, and image **handles**: `folioId`, `ark`, `objectStoreKey`), deterministic (sorted) key order. Public-domain, so it is **committed** to the repo (not git-ignored).
+- `site/data/<sourceId>.json` — the serializable corpus for one source (text, provenance, and image **handles**: `folioId`, `ark`, `objectStoreKey`), deterministic (sorted) key order. Public-domain, so it is **committed** to the repo (not git-ignored). Folios are enumerated from the archive's `fNNN.yml` sidecars (not the `.jpg` binaries — the archive keeps only metadata; images live in B2/Gallica).
 
-Regenerate it whenever the corpus changes, then commit the result:
+### Reproducible regeneration (mechanically pinned)
 
-```bash
-CORPUS_ARCHIVE_PATH=/path/to/colony-cults-archive npm run site:snapshot
-git add site/data/*.json && git commit -m "corpus-browser: refresh snapshot"
-```
+The snapshot is **not** a hand-run step against an arbitrary clone — it is a deterministic build target keyed to a pinned archive commit:
 
-A build with no `CORPUS_ARCHIVE_PATH` reads these files; image URLs are re-resolved at build time by the active provider, so swapping `CORPUS_IMAGE_PROVIDER` needs no archive. This closes **OQ-3 / OQ-4** for the public deploy: the build's access to corpus data is the committed public-domain snapshot — no credentials, no archive access, no build-time secrets.
+- **`site/data/archive-source.json`** pins the archive repo + the exact commit the committed snapshot was generated from.
+- **`npm run snapshot`** regenerates `site/data/*.json` from that pin: it sets up a *clean, sparse (text-only), detached* archive worktree at the pinned ref and runs the generator against it. Same pin → byte-identical snapshot. (Needs archive access + a local archive clone; `ARCHIVE_REPO` / `ARCHIVE_WORKTREE` override the defaults.)
+- **`npm run snapshot:check`** regenerates into a temp dir and diffs against the committed data, failing on any drift — the reproducibility proof and staleness guard (run it in CI given archive access).
+
+To refresh the corpus: bump the `ref` in `site/data/archive-source.json`, run `npm run snapshot`, verify `npm run snapshot:check`, and commit the changed data. A build with no `CORPUS_ARCHIVE_PATH` reads these files; image URLs are re-resolved at build time by the active provider, so swapping `CORPUS_IMAGE_PROVIDER` needs no archive. This closes **OQ-3 / OQ-4** for the public deploy: the build's access to corpus data is the committed public-domain snapshot — no credentials, no archive access, no build-time secrets.
 
 ## Image-source provider
 
