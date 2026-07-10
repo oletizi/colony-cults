@@ -29,3 +29,7 @@
 {"id":"T024","tierLabel":"powerful","model":"opus","commitRange":"77c5a2a","reviewClean":true,"note":"standalone ProvenanceRail (6 fields) via /frontend-design; fixed old 4-field inline that leaked issueId"}
 {"id":"T025","tierLabel":"powerful","model":"opus","commitRange":"77c5a2a","reviewClean":true,"note":"visual-system audit across 4 surfaces; fixed one oxide misuse; noisy-OCR framing intact"}
 {"id":"T026","tierLabel":"balanced","model":"opus","commitRange":"77c5a2a","reviewClean":true,"note":"embedded Playfair Display (SIL OFL) as ~27KB data-URI woff2; no external font host (CSP-safe)"}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"6b0fff3","reviewClean":true,"note":"b2-cdn provider (cdnBase/objectStoreKey -> full-image); makeProvider wired"}
+{"id":"T028","tierLabel":"balanced","model":"sonnet","commitRange":"6b0fff3","reviewClean":true,"note":"b2-cdn tests + swap parity (SC-005); 46 tests green"}
+{"id":"T029","tierLabel":"fast","model":"sonnet","commitRange":"6b0fff3","reviewClean":true,"note":"provider swap verified both build variants; quickstart Scenario 4 updated"}
+{"id":"T030","tierLabel":"balanced","model":"sonnet","commitRange":"1004fa9","reviewClean":true,"note":"deliberate public-export seam; refuses without --confirm; site/public-export; OQ-4 deferred honestly"}
