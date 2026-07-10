@@ -12,3 +12,4 @@
 {"id":"T009","tierLabel":"fast","model":"haiku","commitRange":"pending","reviewClean":true,"note":"wired validateSourceGroups into validate() aggregator + 2 tests"}
 {"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"migrateSourceToGroup impl (idempotent; Source has no repo-record field so record-drop is at SSOT/T015); T012 green 3/3"}
 {"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"regenerate tolerance: derive+sources.csv already tolerant; FIXED generateAcquisitionTrackerCsv emitting spurious source-group row (filter kind!=source-group); 5 tests"}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"note":"PB-P004.yml -> source-group (repositoryRecords dropped); regenerated views (sources.csv type=source-group, tracker row removed); bib validate clean; deterministic re-run no diff; scoped, no churn"}
