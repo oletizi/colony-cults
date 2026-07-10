@@ -13,6 +13,7 @@
 import { loadCorpus } from '@/browser/load/corpus';
 import { resolveConfig } from '@/browser/config';
 import BaseLayout from '@site/layouts/BaseLayout.astro';
+import SearchPanel from '@site/components/SearchPanel.astro';
 
 const sourceHref = (sourceId: string): string => `/sources/${sourceId}/`;
 
@@ -55,6 +56,8 @@ const sourceNoun = entries.length === 1 ? 'source' : 'sources';
         reading — so the source can be examined without being believed.
       </p>
     </header>
+
+    <SearchPanel />
 
     <section class="holdings" aria-label="Holdings">
       <p class="holdings__label">Holdings<span class="cover__sep">·</span>{entries.length} {sourceNoun}</p>

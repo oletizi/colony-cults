@@ -16,7 +16,7 @@ const hasText = text.length > 0;
 ---
 
 <section class="translation" aria-label="Translation into English">
-  <p class="translation__label">
+  <p class="translation__label" data-pagefind-ignore>
     <span class="translation__lede-mark">Reading</span>
     Translation&nbsp;· English
   </p>
@@ -25,7 +25,7 @@ const hasText = text.length > 0;
   ) : (
     <p class="translation__empty">No English translation is available for this page.</p>
   )}
-  <p class="translation__stamp">machine-assisted · not human-reviewed</p>
+  <p class="translation__stamp" data-pagefind-ignore>machine-assisted · not human-reviewed</p>
 </section>
 
 <style>

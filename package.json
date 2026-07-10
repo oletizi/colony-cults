@@ -9,7 +9,7 @@
   "scripts": {
     "browser:test": "vitest run tests/unit/browser tests/integration/browser",
     "gallica": "tsx src/index.ts",
-    "site:build": "astro build --root site",
+    "site:build": "astro build --root site && pagefind --site site/dist",
     "site:preview": "astro preview --root site",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

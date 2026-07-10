@@ -50,6 +50,10 @@ const {
 
 const pageLabel = `p.${positionInIssue}`;
 const facsimileLabel = `${sourceTitle}, ${issueDate}, ${pageLabel} — scanned page ${page.folioId}`;
+// The catalogue line used as the Pagefind result title (US3 / T022): matches the
+// document <title> exactly. Passed via a data-attribute (not the `title:literal`
+// meta form) so a colon in the source title cannot corrupt the meta value.
+const searchTitle = `${sourceTitle} · ${issueDate} · ${pageLabel}`;
 const prov = page.provenance;
 const shaShort = prov.sha256.slice(0, 12);
 ---
@@ -88,7 +92,12 @@ const shaShort = prov.sha256.slice(0, 12);
       <div class="reading__facsimile">
         <FacsimileViewer image={page.image} label={facsimileLabel} />
       </div>
-      <div class="reading__text">
+      <div
+        class="reading__text"
+        data-pagefind-body
+        data-pagefind-meta="title[data-title]"
+        data-title={searchTitle}
+      >
         <TranslationPane english={page.english} />
         <SourcePane
           ocrFrench={page.ocrFrench}

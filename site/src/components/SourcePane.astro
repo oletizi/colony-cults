@@ -25,7 +25,7 @@ const hasCondition = condition.length > 0;
 ---
 
 <section class="source" aria-label="Texte source en français">
-  <p class="source__label">Texte source&nbsp;· français&nbsp;· replié</p>
+  <p class="source__label" data-pagefind-ignore>Texte source&nbsp;· français&nbsp;· replié</p>
 
   {hasCondition ? (
     <p class="source__condition" role="note">
@@ -36,7 +36,7 @@ const hasCondition = condition.length > 0;
 
   {hasCorrected ? (
     <details class="source__panel">
-      <summary class="source__summary">
+      <summary class="source__summary" data-pagefind-ignore>
         <span class="source__marker" aria-hidden="true">▸</span>
         <span class="source__name">Lecture corrigée</span>
         <span class="source__hint">déplier</span>
@@ -46,7 +46,7 @@ const hasCondition = condition.length > 0;
   ) : null}
 
   <details class="source__panel source__panel--raw">
-    <summary class="source__summary">
+    <summary class="source__summary" data-pagefind-ignore>
       <span class="source__marker" aria-hidden="true">▸</span>
       <span class="source__name">OCR brut</span>
       <span class="source__hint">transcription automatique&nbsp;· déplier</span>

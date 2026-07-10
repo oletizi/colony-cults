@@ -1,0 +1,385 @@
+---
+/**
+ * T023 -- the corpus finding aid ("Concordance"). A client-side search surface
+ * for the LANDING page, styled to the Prospectus / Dossier identity: an
+ * apparatus panel (white catalogue card, cool mono/grotesque voices) whose one
+ * bold mark is the oxide <mark> on a matched term -- the archive's hand pointing
+ * at the word in the propaganda. Oxide stays reserved for that critical mark.
+ *
+ * The index itself is Pagefind-over-HTML, produced AFTER `astro build` (see the
+ * `site:build` script + `data-pagefind-body` in ReadingView). This surface
+ * drives the Pagefind JS API from the same-origin bundle at
+ * `/pagefind/pagefind.js` (CSP-safe, no external host, no server). Every result
+ * links to the page's reading-view route and shows the catalogue line
+ * (`title · date · p.N`) plus a matched excerpt. No fallback data: if the index
+ * is missing (e.g. an un-built dev server) the status line says so plainly.
+ *
+ * The script is `is:inline` -- it must run native dynamic `import()` against a
+ * path that only exists post-build, so it is deliberately not bundled by Astro.
+ */
+---
+
+<section class="finder" id="finder" aria-label="Search the corpus">
+  <p class="finder__eyebrow">Concordance<span class="finder__sep">·</span>search every page</p>
+
+  <form class="finder__form" role="search" autocomplete="off">
+    <label class="finder__field">
+      <span class="finder__field-mark" aria-hidden="true">⌕</span>
+      <input
+        class="finder__input"
+        type="search"
+        name="q"
+        enterkeyhint="search"
+        spellcheck="false"
+        aria-label="Search the French and English text of every collected page"
+        placeholder="A word in French or English — colonie, Port-Breton…"
+      />
+    </label>
+  </form>
+
+  <p class="finder__status" role="status" aria-live="polite">
+    Searches the French words and the English reading of every collected page.
+  </p>
+
+  <ul class="finder__results" aria-label="Search results"></ul>
+</section>
+
+<script is:inline>
+  (function () {
+    var root = document.getElementById('finder');
+    if (!root) return;
+
+    var form = root.querySelector('.finder__form');
+    var input = root.querySelector('.finder__input');
+    var status = root.querySelector('.finder__status');
+    var list = root.querySelector('.finder__results');
+    var idleText = status.textContent;
+
+    var pagefind = null;
+    var loading = null;
+    var seq = 0;
+    var timer = 0;
+
+    function loadPagefind() {
+      if (pagefind) return Promise.resolve(pagefind);
+      if (loading) return loading;
+      // Native dynamic import of the same-origin post-build bundle.
+      loading = import('/pagefind/pagefind.js')
+        .then(function (mod) {
+          return Promise.resolve(mod.init()).then(function () {
+            pagefind = mod;
+            return mod;
+          });
+        })
+        .catch(function (err) {
+          loading = null;
+          throw err;
+        });
+      return loading;
+    }
+
+    function setStatus(text, state) {
+      status.textContent = text;
+      if (state) {
+        status.setAttribute('data-state', state);
+      } else {
+        status.removeAttribute('data-state');
+      }
+    }
+
+    function render(items) {
+      list.replaceChildren();
+      for (var i = 0; i < items.length; i++) {
+        var data = items[i];
+
+        var li = document.createElement('li');
+        li.className = 'finder__item';
+
+        var link = document.createElement('a');
+        link.className = 'finder__hit';
+        link.href = data.url;
+
+        var head = document.createElement('div');
+        head.className = 'finder__hit-head';
+
+        var title = document.createElement('span');
+        title.className = 'finder__hit-title';
+        title.textContent = data.meta && data.meta.title ? data.meta.title : data.url;
+
+        var go = document.createElement('span');
+        go.className = 'finder__hit-go';
+        go.textContent = 'Read ›';
+
+        head.appendChild(title);
+        head.appendChild(go);
+
+        var excerpt = document.createElement('p');
+        excerpt.className = 'finder__hit-excerpt';
+        // Pagefind escapes result content and injects only <mark> spans, so this
+        // is the documented, safe way to render its highlighted excerpt.
+        excerpt.innerHTML = data.excerpt;
+
+        link.appendChild(head);
+        link.appendChild(excerpt);
+        li.appendChild(link);
+        list.appendChild(li);
+      }
+    }
+
+    function run(query) {
+      var current = ++seq;
+      var q = query.trim();
+
+      if (q.length === 0) {
+        list.replaceChildren();
+        setStatus(idleText, null);
+        return;
+      }
+
+      setStatus('Searching…', 'busy');
+
+      loadPagefind()
+        .then(function (mod) {
+          return mod.search(q);
+        })
+        .then(function (search) {
+          if (current !== seq) return null; // a newer keystroke superseded this
+          return Promise.all(
+            search.results.slice(0, 8).map(function (r) {
+              return r.data();
+            })
+          ).then(function (items) {
+            return { total: search.results.length, items: items };
+          });
+        })
+        .then(function (payload) {
+          if (payload === null || current !== seq) return;
+          if (payload.items.length === 0) {
+            list.replaceChildren();
+            setStatus('No page carries “' + q + '”.', 'empty');
+            return;
+          }
+          var total = payload.total;
+          var shown = payload.items.length;
+          var noun = total === 1 ? 'page' : 'pages';
+          var tail = shown < total ? ' · showing first ' + shown : '';
+          setStatus(total + ' ' + noun + tail, 'found');
+          render(payload.items);
+        })
+        .catch(function () {
+          if (current !== seq) return;
+          list.replaceChildren();
+          setStatus('Search index unavailable — build the site to generate it.', 'error');
+        });
+    }
+
+    input.addEventListener('input', function (event) {
+      var value = event.target.value;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(function () {
+        run(value);
+      }, 180);
+    });
+
+    input.addEventListener(
+      'focus',
+      function () {
+        loadPagefind().catch(function () {
+          /* surfaced on the first real query via run() */
+        });
+      },
+      { once: true }
+    );
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      window.clearTimeout(timer);
+      run(input.value);
+    });
+  })();
+</script>
+
+<style is:global>
+  /* Namespaced-global (not scoped) so the JS-created result nodes inherit these
+     rules -- Astro's scoped-style hashing only reaches template markup. */
+  .finder {
+    margin: 0 0 44px;
+    padding: 22px 26px 24px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    box-shadow: 0 1px 0 var(--rule), 0 18px 38px -32px rgba(23, 21, 15, 0.4);
+  }
+
+  .finder__eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--oxide);
+    margin: 0 0 16px;
+  }
+
+  .finder__sep {
+    color: var(--rule);
+    margin: 0 7px;
+  }
+
+  .finder__form {
+    margin: 0;
+  }
+
+  .finder__field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 2px;
+    border-bottom: 1.5px solid var(--rule);
+    transition: border-color 120ms ease;
+  }
+
+  .finder__field:focus-within {
+    border-bottom-color: var(--oxide);
+  }
+
+  .finder__field-mark {
+    font-family: var(--mono);
+    font-size: 17px;
+    line-height: 1;
+    color: var(--oxide);
+  }
+
+  .finder__input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    font-family: var(--mono);
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    padding: 4px 0;
+  }
+
+  .finder__input:focus {
+    outline: none; /* the field's oxide underline carries focus visibly */
+  }
+
+  .finder__input::placeholder {
+    color: var(--faint);
+  }
+
+  .finder__input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .finder__status {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+    margin: 15px 0 0;
+  }
+
+  .finder__status[data-state='found'] {
+    color: var(--slate);
+  }
+
+  .finder__status[data-state='empty'] {
+    color: var(--slate);
+  }
+
+  .finder__status[data-state='error'] {
+    color: var(--oxide);
+  }
+
+  .finder__results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .finder__results:empty {
+    display: none;
+  }
+
+  .finder__results:not(:empty) {
+    margin-top: 14px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .finder__item + .finder__item .finder__hit {
+    border-top: 1px solid var(--rule);
+  }
+
+  .finder__hit {
+    display: grid;
+    gap: 7px;
+    padding: 16px 2px 15px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .finder__hit:hover {
+    background: var(--vellum);
+  }
+
+  .finder__hit-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .finder__hit-title {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  .finder__hit:hover .finder__hit-title {
+    color: var(--oxide);
+  }
+
+  .finder__hit-go {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+    white-space: nowrap;
+  }
+
+  .finder__hit:hover .finder__hit-go {
+    color: var(--oxide);
+  }
+
+  .finder__hit-excerpt {
+    font-family: var(--grote);
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--slate);
+    margin: 0;
+  }
+
+  /* The signature: a matched term is the archive's oxide mark on the source --
+     not a yellow highlighter, but a red editorial hand underscoring the word. */
+  .finder mark {
+    background: transparent;
+    color: var(--oxide);
+    font-weight: 600;
+    box-shadow: inset 0 -0.32em 0 rgba(154, 51, 36, 0.14);
+  }
+
+  @media (max-width: 520px) {
+    .finder {
+      padding: 20px 18px 20px;
+    }
+
+    .finder__hit-head {
+      flex-wrap: wrap;
+    }
+  }
+</style>
