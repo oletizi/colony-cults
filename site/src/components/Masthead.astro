@@ -1,0 +1,83 @@
+---
+/**
+ * The shared masthead line -- the persistent "CORPUS · <tail>" eyebrow that caps
+ * every page (landing, source overview, reading view). Previously each page
+ * hand-rolled this line and only the source overview linked home; this component
+ * removes that drift and gives the site ONE global home affordance.
+ *
+ * The CORPUS wordmark is that affordance: on every page a real <a href="/"> back
+ * to the top of the archive (the landing), carrying a persistent hairline
+ * underline that ignites to oxide on hover/focus so it reads as clickable at
+ * rest -- the archive's own oxide hand, kept for critical marks. The trailing
+ * context (· archival dossier / · PB-P001 / · <sourceId>) names where the reader
+ * is and is inert. On the landing home IS the current page, so the wordmark
+ * keeps the link (a logo always returns home) but is marked aria-current="page"
+ * and drops the active underline to signal "you are here."
+ *
+ * `gap` is the bottom space (px) under the line, letting each header keep its
+ * own vertical rhythm while sharing one masthead.
+ */
+interface Props {
+  /** The context tail after the wordmark (e.g. a sourceId, "archival dossier"). */
+  tail: string;
+  /** True on the landing, where "home" is the current page. */
+  current?: boolean;
+  /** Bottom gap under the line, in px (preserves each header's rhythm). */
+  gap?: number;
+}
+const { tail, current = false, gap = 14 } = Astro.props;
+---
+
+<p class="masthead" style={`--masthead-gap:${gap}px`}>
+  <a
+    class:list={['masthead__home', current ? 'masthead__home--current' : 'masthead__home--link']}
+    href="/"
+    aria-label="Corpus — return to the top of the archive"
+    aria-current={current ? 'page' : undefined}
+  >Corpus</a>
+  <span class="masthead__sep" aria-hidden="true">·</span>
+  <span class="masthead__tail">{tail}</span>
+</p>
+
+<style>
+  .masthead {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--oxide);
+    margin: 0 0 var(--masthead-gap, 14px);
+  }
+
+  .masthead__home {
+    color: var(--oxide);
+    text-decoration: none;
+  }
+
+  /* Clickable at rest: a hairline underneath the wordmark, in the quiet rule
+     tone, that becomes the archive's oxide on hover/focus. */
+  .masthead__home--link {
+    border-bottom: 1px solid var(--rule);
+    transition: border-color 120ms ease;
+  }
+
+  .masthead__home--link:hover,
+  .masthead__home--link:focus-visible {
+    border-bottom-color: var(--oxide);
+  }
+
+  /* On the landing the wordmark is where you already are: still a link home, but
+     without the active underline so it reads as the current place. */
+  .masthead__home--current {
+    border-bottom: 1px solid transparent;
+  }
+
+  .masthead__sep {
+    color: var(--rule);
+    margin: 0 7px;
+  }
+
+  .masthead__tail {
+    color: var(--oxide);
+  }
+</style>
