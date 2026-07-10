@@ -6,10 +6,20 @@
  * the REAL archive — no fabricated corpus content, fail-loud on missing data.
  */
 
-import { cpSync, existsSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
-import { readdir } from 'node:fs/promises';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+
+/**
+ * Archive-layout coordinates of the canonical PB-P001 fixture issue. The
+ * loader resolves a source's newspapers directory as
+ * `<archiveRoot>/archive/cases/<case>/newspapers/<slug>/<issueDir>/`, so a
+ * copy that `loadCorpus` can be pointed at must reproduce that nesting (not a
+ * bare issue directory).
+ */
+const CASE = 'port-breton';
+const NEWSPAPER_SLUG = 'la-nouvelle-france';
+const ISSUE_DIR_NAME = '1879-08-15_bpt6k56068358';
 
 /**
  * The archive clone root, derived from CORPUS_ARCHIVE_PATH.
@@ -53,40 +63,90 @@ export function hasFixture(): boolean {
 type Mutation = 'drop-translation' | 'drop-provenance-field' | 'skew-page-count';
 
 /**
- * Copies the real fixture issue dir into a fresh OS temp dir, applies the
- * specified mutation to the copy, and returns the temp dir path.
+ * Builds a fresh, self-contained archive root in an OS temp dir that mirrors
+ * the real archive layout for the single canonical PB-P001 fixture issue:
  *
- * Mutations:
- *  - `drop-translation`: deletes `translation/p003.en.txt` to simulate a
- *    missing translation file (corpus-loader must detect and throw).
- *  - `drop-provenance-field`: removes the `object_store:` field from `f003.yml`
- *    to simulate incomplete provenance metadata.
- *  - `skew-page-count`: deletes `f003.jpg` to create an image/page-count
- *    mismatch (corpus-loader must detect and throw).
+ *   <root>/archive/cases/port-breton/newspapers/la-nouvelle-france/<issueDir>/
+ *
+ * The real fixture issue directory is copied verbatim into that nested path,
+ * so `loadCorpus({ archivePath: root, sources: ['PB-P001'], ... })` resolves
+ * the source's newspapers directory and enumerates exactly one issue.
  *
  * @throws if hasFixture() is false (archive not available).
- * @returns absolute path to the temp directory containing the corrupted copy.
+ * @returns `{ root, issueDir }` -- the archive root to hand to `loadCorpus`
+ *   and the absolute path of the copied issue directory (for mutation).
  */
-export function makeCorruptedCopy(mutation: Mutation): string {
+function buildArchiveRoot(): { root: string; issueDir: string } {
   if (!hasFixture()) {
     throw new Error(
-      'Cannot create corrupted copy: fixture is not available. ' +
+      'Cannot build fixture archive: fixture is not available. ' +
       'Set CORPUS_ARCHIVE_PATH to a valid archive clone root.'
     );
   }
 
-  const tempBase = path.join(os.tmpdir(), 'corpus-browser-fixture-');
-  const tempDir = mkdtempSync(tempBase);
+  const root = mkdtempSync(path.join(os.tmpdir(), 'corpus-browser-fixture-'));
+  const issueDir = path.join(
+    root,
+    'archive',
+    'cases',
+    CASE,
+    'newspapers',
+    NEWSPAPER_SLUG,
+    ISSUE_DIR_NAME
+  );
 
   try {
-    // Copy the entire fixture issue dir into temp.
-    cpSync(FIXTURE_ISSUE_DIR, tempDir, { recursive: true });
+    mkdirSync(issueDir, { recursive: true });
+    cpSync(FIXTURE_ISSUE_DIR, issueDir, { recursive: true });
+    return { root, issueDir };
+  } catch (error) {
+    if (existsSync(root)) {
+      rmSync(root, { recursive: true, force: true });
+    }
+    throw error;
+  }
+}
 
-    // Apply the requested mutation.
+/**
+ * Builds a clean (unmutated) single-issue archive root for the happy-path
+ * test. The returned path is a valid `loadCorpus` `archivePath`.
+ *
+ * @throws if hasFixture() is false (archive not available).
+ * @returns absolute path to the temp archive root.
+ */
+export function makeCleanArchive(): string {
+  return buildArchiveRoot().root;
+}
+
+/**
+ * Builds a single-issue archive root (see {@link makeCleanArchive}) and then
+ * applies the specified mutation to the copied issue, returning the archive
+ * root so `loadCorpus` can be pointed at the corrupted copy.
+ *
+ * Mutations:
+ *  - `drop-translation`: deletes `translation/p003.en.txt` to simulate a
+ *    missing required translation layer (corpus-loader must detect and throw,
+ *    naming the page).
+ *  - `drop-provenance-field`: removes the `sha256:` line from the page's
+ *    translation provenance sidecar (`translation/p003.fr.txt.yml`) -- the
+ *    sidecar the loader assembles `ProvenanceRecord` from. (The previous
+ *    mutation stripped `object_store:` from `f003.yml`, but the loader does
+ *    not validate that field for the `source-iiif` provider, so it did not
+ *    trigger a throw. See T009 note.)
+ *  - `skew-page-count`: deletes `f003.jpg` to create an image/OCR-count
+ *    mismatch (corpus-loader must detect and throw, naming the issue).
+ *
+ * @throws if hasFixture() is false (archive not available).
+ * @returns absolute path to the temp archive root containing the corrupted copy.
+ */
+export function makeCorruptedCopy(mutation: Mutation): string {
+  const { root, issueDir } = buildArchiveRoot();
+
+  try {
     switch (mutation) {
       case 'drop-translation': {
-        // Delete p003.en.txt to simulate missing translation.
-        const translationFile = path.join(tempDir, 'translation', 'p003.en.txt');
+        // Delete p003.en.txt to simulate a missing required translation.
+        const translationFile = path.join(issueDir, 'translation', 'p003.en.txt');
         if (existsSync(translationFile)) {
           rmSync(translationFile);
         }
@@ -94,21 +154,19 @@ export function makeCorruptedCopy(mutation: Mutation): string {
       }
 
       case 'drop-provenance-field': {
-        // Remove the `object_store:` field from f003.yml.
-        const provenanceFile = path.join(tempDir, 'f003.yml');
-        if (existsSync(provenanceFile)) {
-          let content = readFileSync(provenanceFile, 'utf-8');
-          // Remove the object_store block (starts with 'object_store:' and
-          // ends at the next field or EOF). Handle both null and multi-line values.
-          content = content.replace(/^object_store:.*?(?=^\w+:|$)/ms, '');
-          writeFileSync(provenanceFile, content, 'utf-8');
+        // Remove the `sha256:` line from the translation provenance sidecar
+        // the loader validates.
+        const sidecar = path.join(issueDir, 'translation', 'p003.fr.txt.yml');
+        if (existsSync(sidecar)) {
+          const content = readFileSync(sidecar, 'utf-8');
+          writeFileSync(sidecar, content.replace(/^sha256:.*\r?\n/m, ''), 'utf-8');
         }
         break;
       }
 
       case 'skew-page-count': {
-        // Delete f003.jpg to create image/page-count mismatch.
-        const imageFile = path.join(tempDir, 'f003.jpg');
+        // Delete f003.jpg to create an image/OCR-count mismatch.
+        const imageFile = path.join(issueDir, 'f003.jpg');
         if (existsSync(imageFile)) {
           rmSync(imageFile);
         }
@@ -121,11 +179,10 @@ export function makeCorruptedCopy(mutation: Mutation): string {
       }
     }
 
-    return tempDir;
+    return root;
   } catch (error) {
-    // Clean up on error.
-    if (existsSync(tempDir)) {
-      rmSync(tempDir, { recursive: true, force: true });
+    if (existsSync(root)) {
+      rmSync(root, { recursive: true, force: true });
     }
     throw error;
   }
