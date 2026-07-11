@@ -20,6 +20,32 @@ export const DEGENERATE_MIN_RATIO = 0.25;
 export const MAX_TRANSFORM_ATTEMPTS = 3;
 
 /**
+ * A source's "translatable" character mass: the total length of its maximal
+ * runs of >=3 letters (Unicode `\p{L}`). This is the denominator the
+ * degeneracy threshold is measured against, INSTEAD of the raw length.
+ *
+ * The document corpus includes illustration/plate pages (engravings,
+ * autographs, portraits) whose OCR is mostly scattered single- and
+ * double-character noise plus a short real caption. Their raw length is large
+ * but their translatable content is tiny, so a faithful short caption
+ * translation would otherwise be wrongly flagged as truncated. Counting only
+ * >=3-letter runs excludes the noise: for a dense text page this tracks the
+ * raw length closely (the truncation guard is unchanged there), while for a
+ * plate page it collapses to the caption's size so a faithful transform passes.
+ */
+export function translatableLength(text: string): number {
+  const runs = text.match(/\p{L}{3,}/gu);
+  if (runs === null) {
+    return 0;
+  }
+  let total = 0;
+  for (const run of runs) {
+    total += run.length;
+  }
+  return total;
+}
+
+/**
  * Run one faithful text transformation via the injected {@link TranslationEngine},
  * retrying when the engine returns a degenerate (implausibly short) result,
  * and failing loud if every attempt is degenerate.
@@ -48,13 +74,15 @@ export async function runFaithfulTransformation(
 ): Promise<string> {
   const minRatio = opts.minRatio ?? DEGENERATE_MIN_RATIO;
   const maxAttempts = opts.maxAttempts ?? MAX_TRANSFORM_ATTEMPTS;
-  const sourceLength = sourceText.trim().length;
+  // Measure the threshold against the source's translatable content, not its
+  // raw length, so OCR-noise-heavy illustration/plate pages do not inflate it.
+  const sourceLength = translatableLength(sourceText);
   const threshold = Math.floor(sourceLength * minRatio);
 
   let lastLength = -1;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const output = await engine.run(instruction, sourceText, model, systemPrompt);
-    lastLength = output.trim().length;
+    lastLength = translatableLength(output);
     if (lastLength >= threshold) {
       return output;
     }
@@ -62,8 +90,9 @@ export async function runFaithfulTransformation(
 
   throw new Error(
     `transformation engine returned a degenerate/truncated result after ` +
-      `${maxAttempts} attempts: the last output was ${lastLength} characters ` +
-      `for a ${sourceLength}-character source (expected at least ${threshold}). ` +
+      `${maxAttempts} attempts: the last output had ${lastLength} translatable ` +
+      `characters for a ${sourceLength}-translatable-character source ` +
+      `(expected at least ${threshold}). ` +
       `No fallback or partial result is substituted.`,
   );
 }

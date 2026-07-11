@@ -6,6 +6,7 @@ export type Command =
   | 'fetch-issue'
   | 'fetch-source'
   | 'ocr'
+  | 'restore-images'
   | 'translate'
   | 'translate-source';
 
@@ -14,6 +15,7 @@ const COMMANDS: readonly Command[] = [
   'fetch-issue',
   'fetch-source',
   'ocr',
+  'restore-images',
   'translate',
   'translate-source',
 ];
@@ -53,6 +55,7 @@ const REQUIRED_POSITIONAL_NAME: Record<Command, string> = {
   'fetch-issue': 'issueArk',
   'fetch-source': 'periodicalArk',
   ocr: 'issueArk',
+  'restore-images': 'issueArk',
   translate: 'issueArk',
   'translate-source': 'sourceId',
 };

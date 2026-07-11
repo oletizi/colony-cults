@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { TranslationEngine } from '@/engine/types';
 import {
   runFaithfulTransformation,
+  translatableLength,
   DEGENERATE_MIN_RATIO,
   MAX_TRANSFORM_ATTEMPTS,
 } from '@/translate/transform';
@@ -114,6 +115,49 @@ describe('runFaithfulTransformation', () => {
 
     expect(out).toBe(shortOutput);
     expect(calls).toHaveLength(1);
+  });
+
+  it('accepts a short caption for an OCR-noise-heavy plate page (translatable, not raw, length)', async () => {
+    // A real illustration/plate page (e.g. an engraved autograph): its OCR is
+    // ~190 raw chars, but almost all of it is scattered single-/double-char
+    // noise -- only the caption is real words. A faithful transform is the
+    // short caption. Under a RAW-length threshold (190*0.25=47) this 28-char
+    // output would be wrongly rejected as truncated; under the translatable-
+    // length threshold it passes.
+    // ~160 chars of pure OCR noise (no >=3-letter run) + a 4-word caption.
+    const noise = '. '.repeat(80);
+    const plateSource = `${noise}Breton Autographe notaire Chambaud`;
+    const caption = 'Autograph of the notary Chambaud';
+    // Guard the premise: raw length WOULD reject (raw >> caption/ratio), but
+    // the translatable-length threshold accepts the faithful caption.
+    expect(plateSource.length).toBeGreaterThan(caption.length / DEGENERATE_MIN_RATIO);
+    expect(translatableLength(caption)).toBeGreaterThanOrEqual(
+      Math.floor(translatableLength(plateSource) * DEGENERATE_MIN_RATIO),
+    );
+
+    const { claude, calls } = fakeClaudeCli([caption]);
+    const out = await runFaithfulTransformation(
+      claude,
+      'instruction',
+      plateSource,
+      undefined,
+      'system',
+    );
+
+    expect(out).toBe(caption);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('still catches a truncated fragment of a genuine dense text page', async () => {
+    // A dense page (all real words) truncated to a fragment is STILL caught --
+    // the fix must not weaken real truncation detection.
+    const denseSource = ('mot '.repeat(400)).trim(); // ~1600 translatable chars
+    const fragment = 'Chapitre premier.'; // a tiny real fragment
+    const { claude } = fakeClaudeCli([fragment]);
+
+    await expect(
+      runFaithfulTransformation(claude, 'instruction', denseSource, undefined, 'system'),
+    ).rejects.toThrow(/degenerate\/truncated/i);
   });
 
   it('honors an overridden minRatio/maxAttempts', async () => {

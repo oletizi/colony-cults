@@ -324,6 +324,36 @@ export function findIssueDir(
 }
 
 /**
+ * Resolve an already-fetched source's on-disk directory for a per-document
+ * command (`ocr`, `restore-images`), branching on the registered `kind`:
+ *  - `monograph`: the one flat {@link monographDir} (the `issueArk` names the
+ *    single document but is not needed to locate it); throws if it is not
+ *    fetched yet.
+ *  - `periodical`: {@link findIssueDir} for the dated issue matching `issueArk`.
+ *
+ * Fails loud (no fallback) for an unregistered source or an unfetched target.
+ * This is the reverse-lookup counterpart shared by commands that operate on an
+ * existing document regardless of its layout.
+ */
+export function resolveFetchedDir(
+  sourceId: string,
+  issueArk: string,
+  archiveRoot: string,
+): string {
+  if (sourceLayout(sourceId).kind === 'monograph') {
+    const dir = monographDir(sourceId, archiveRoot);
+    if (!existsSync(dir)) {
+      throw new Error(
+        `resolveFetchedDir: no fetched document found for monograph source ` +
+          `"${sourceId}" (missing ${dir}) -- run fetch-source first`,
+      );
+    }
+    return dir;
+  }
+  return findIssueDir(sourceId, issueArk, archiveRoot);
+}
+
+/**
  * Resolve a path to the real absolute path of its nearest EXISTING ancestor,
  * with the not-yet-created trailing segments re-appended. This makes the guard
  * robust to symlinked roots (e.g. macOS `/var` -> `/private/var`) and to paths
