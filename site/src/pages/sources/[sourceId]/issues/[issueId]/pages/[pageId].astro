@@ -12,7 +12,7 @@
 import type { GetStaticPaths } from 'astro';
 import { loadCorpus } from '@/browser/load/corpus';
 import { resolveConfig } from '@/browser/config';
-import type { PageView } from '@/browser/model';
+import type { PageView, SourceKind } from '@/browser/model';
 import BaseLayout from '@site/layouts/BaseLayout.astro';
 import ReadingView from '@site/components/ReadingView.astro';
 
@@ -46,6 +46,7 @@ export const getStaticPaths = (() => {
           props: {
             sourceId: source.sourceId,
             sourceTitle: source.title,
+            kind: source.kind,
             issueId: issue.issueId,
             issueDate: issue.date,
             page,
@@ -65,6 +66,7 @@ export const getStaticPaths = (() => {
 interface Props {
   sourceId: string;
   sourceTitle: string;
+  kind: SourceKind;
   issueId: string;
   issueDate: string;
   page: PageView;
@@ -77,14 +79,24 @@ interface Props {
 }
 
 const props = Astro.props;
-const { sourceTitle, issueDate, positionInIssue } = props;
-const docTitle = `${sourceTitle} · ${issueDate} · p.${positionInIssue}`;
+const { sourceTitle, kind, issueDate, positionInIssue, pageCount } = props;
+// A book page reads by its place in the volume (p. N / M); a periodical page
+// reads by its issue date. Frame the document title the same way.
+const docTitle =
+  kind === 'monograph'
+    ? `${sourceTitle} · p. ${positionInIssue} / ${pageCount}`
+    : `${sourceTitle} · ${issueDate} · p.${positionInIssue}`;
+const docDesc =
+  kind === 'monograph'
+    ? `Reading view for ${sourceTitle}, page ${positionInIssue} of ${pageCount}.`
+    : `Reading view for ${sourceTitle}, ${issueDate}, page ${positionInIssue}.`;
 ---
 
-<BaseLayout title={docTitle} description={`Reading view for ${sourceTitle}, ${issueDate}, page ${positionInIssue}.`}>
+<BaseLayout title={docTitle} description={docDesc}>
   <ReadingView
     sourceId={props.sourceId}
     sourceTitle={props.sourceTitle}
+    kind={props.kind}
     issueDate={props.issueDate}
     page={props.page}
     positionInIssue={props.positionInIssue}

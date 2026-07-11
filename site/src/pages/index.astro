@@ -26,13 +26,19 @@ const entries = corpus.sources.map((source) => {
   const lastYear = years[years.length - 1];
   const yearRange =
     firstYear === undefined ? '' : firstYear === lastYear ? firstYear : `${firstYear}–${lastYear}`;
+  // A monograph is one bound volume: its extent is its page count, not a run of
+  // issues. Sum the pages so a book reads by its length, a periodical by its run.
+  const pageCount = source.issues.reduce((total, issue) => total + issue.pageCount, 0);
   return {
     sourceId: source.sourceId,
     title: source.title,
-    kindLabel: source.kind.charAt(0).toUpperCase() + source.kind.slice(1),
+    kind: source.kind,
+    // Name the object as a reader recognises it: a book, not a "monograph".
+    kindLabel: source.kind === 'monograph' ? 'Book' : 'Periodical',
     ark: source.ark,
     rights: source.rights,
     issueCount: source.issues.length,
+    pageCount,
     yearRange,
     href: sourceHref(source.sourceId),
   };
@@ -72,8 +78,17 @@ const sourceNoun = entries.length === 1 ? 'source' : 'sources';
               </div>
               <p class="entry__apparatus">
                 {entry.kindLabel}
-                <span class="cover__sep">·</span>
-                {entry.issueCount} {entry.issueCount === 1 ? 'issue' : 'issues'} catalogued
+                {entry.kind === 'monograph' ? (
+                  <>
+                    <span class="cover__sep">·</span>
+                    {entry.pageCount} {entry.pageCount === 1 ? 'page' : 'pages'}
+                  </>
+                ) : (
+                  <>
+                    <span class="cover__sep">·</span>
+                    {entry.issueCount} {entry.issueCount === 1 ? 'issue' : 'issues'} catalogued
+                  </>
+                )}
                 {entry.yearRange ? <><span class="cover__sep">·</span>{entry.yearRange}</> : null}
               </p>
               <p class="entry__rail">
