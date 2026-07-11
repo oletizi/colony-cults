@@ -48,6 +48,9 @@ Options:
   --force         Re-translate artifacts that already exist
   --model <name>  Model to pin (recorded in provenance)
   --engine <name> Translation engine to use (claude|codex; default: claude, or translate.config.json)
+  --checkpoint    Commit + push the archive as pages complete (monograph: every
+                  --checkpoint-every pages, plus a final flush)
+  --checkpoint-every <N>  Page cadence for --checkpoint on a monograph (default 1)
 `;
 
 function wantsHelp(argv: string[]): boolean {

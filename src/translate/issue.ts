@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resolveFetchedDir } from '@/archive/location';
+import type { PageStored } from '@/cli/archive-checkpoint';
 import { readProvenance, type ProvenanceFields } from '@/archive/provenance';
 import { isAssetRecorded, storeAsset } from '@/archive/store';
 import type { TranslationEngine } from '@/engine/types';
@@ -79,6 +80,16 @@ export interface TranslateIssueCtx {
    * `false` (the normal, executing path) when omitted.
    */
   dryRun?: boolean;
+  /**
+   * Fired once per page AFTER its artifacts are on disk -- for the written,
+   * blank, AND skip branches, so a resumed run still advances the checkpoint
+   * cadence. Mirrors the acquisition pipeline's `FetchDeps.onPageStored`
+   * (`@/cli/archive-checkpoint`): the translate core stays git-free and only
+   * knows the hook TYPE; the CLI wires the real per-N-pages commit+push via
+   * `buildMonographPageCheckpointHook` only under `--checkpoint`. Omitted (the
+   * default) means no checkpointing, so tests/dry-runs never touch git.
+   */
+  onPageStored?: (stored: PageStored) => Promise<void>;
 }
 
 /** UTF-8 text -> bytes, for {@link storeAsset} (which re-derives the checksum). */
@@ -317,6 +328,19 @@ export async function translateIssue(
   let workDone = false;
   let pageError: Error | undefined;
 
+  // Checkpoint hook (no-op unless the CLI wired `--checkpoint`): fired after a
+  // page's artifacts are on disk so the commit stages a consistent snapshot.
+  const firePageStored = async (page: number, skipped: boolean): Promise<void> => {
+    await ctx.onPageStored?.({
+      sourceId: ctx.sourceId,
+      ark: issueArk,
+      dir,
+      page,
+      pageCount: pagesTotal,
+      skipped,
+    });
+  };
+
   for (let i = 1; i <= pagesTotal; i += 1) {
     const frPath = pageArtifactPath(dir, i, 'fr');
     const enPath = pageArtifactPath(dir, i, 'en');
@@ -324,6 +348,7 @@ export async function translateIssue(
     if (!needsWork[i - 1]) {
       ctx.log(`  skip  page ${i}/${pagesTotal} (already translated)`);
       pagesDone += 1;
+      await firePageStored(i, true);
       continue;
     }
 
@@ -339,6 +364,7 @@ export async function translateIssue(
       workDone = true;
       pagesDone += 1;
       ctx.log(`  blank page ${i}/${pagesTotal} (no translatable content)`);
+      await firePageStored(i, false);
       continue;
     }
 
@@ -351,6 +377,7 @@ export async function translateIssue(
       workDone = true;
       pagesDone += 1;
       ctx.log(`  ok    page ${i}/${pagesTotal}`);
+      await firePageStored(i, false);
     } catch (error) {
       // A page pipeline error stops THIS issue without throwing, so
       // translateSource can record the outcome and continue (FR-015/017).

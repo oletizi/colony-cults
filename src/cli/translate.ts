@@ -1,7 +1,12 @@
 import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
-import { resolveArchiveRoot } from '@/archive/location';
+import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
+import {
+  commitAndPushIssueCheckpoint,
+  buildMonographPageCheckpointHook,
+  type CommitCheckpointFn,
+} from '@/cli/archive-checkpoint';
 import { sourceKind } from '@/bibliography/load';
 import { loadEngineConfig, resolveEngine, resolveModel } from '@/engine/config';
 import { createEngine } from '@/engine/factory';
@@ -44,6 +49,14 @@ export interface TranslateCliDeps {
    * (`runTranslate`, the single-issue command, does not use this).
    */
   delay: () => Promise<void>;
+  /**
+   * Git checkpoint adapter (`--checkpoint`), reusing the acquisition pipeline's
+   * {@link commitAndPushIssueCheckpoint}. `undefined` (the default when
+   * `--checkpoint` is absent) means NO checkpointing, so tests/dry-runs never
+   * touch git. When present, a monograph run commits+pushes every
+   * `--checkpoint-every N` pages (default 1) plus a final end-of-document flush.
+   */
+  checkpoint?: CommitCheckpointFn;
 }
 
 /**
@@ -93,6 +106,11 @@ export async function buildTranslateCliDeps(
     engine,
     model,
     delay: () => new Promise((resolve) => setTimeout(resolve, PACE_MS)),
+    // `--checkpoint` (operator's design): commit AND push per cadence + a
+    // final flush, reusing the acquisition pipeline's git adapter. Absent ->
+    // undefined, so a normal run never touches git. This is the ONLY place the
+    // translate bin constructs the git adapter.
+    checkpoint: args.flags.checkpoint ? commitAndPushIssueCheckpoint : undefined,
   };
 }
 
@@ -123,6 +141,19 @@ export async function runTranslate(
   const sourceId = requireOption(args.options.sourceId, 'source-id', 'translate');
   const dryRun = args.flags.dryRun;
 
+  // Per-page checkpoint cadence (`--checkpoint` [+ `--checkpoint-every N`]),
+  // reusing the acquisition pipeline's monograph page-cadence hook. Never wired
+  // on a dry-run (which writes nothing). A fresh hook per invocation (its
+  // counters are run-scoped).
+  const onPageStored =
+    d.checkpoint !== undefined && !dryRun
+      ? buildMonographPageCheckpointHook(
+          d.archiveRoot,
+          args.options.checkpointEvery ?? 1,
+          d.checkpoint,
+        )
+      : undefined;
+
   const ctx: TranslateIssueCtx = {
     engine: d.engine,
     sourceId,
@@ -133,9 +164,36 @@ export async function runTranslate(
     log: d.log,
     preflight: d.preflight,
     dryRun,
+    onPageStored,
   };
 
   const result = await translateIssue(issueArk, ctx);
+
+  // Final flush (mirrors the fetch pipeline's per-issue `onIssueComplete`):
+  // commit+push whatever the last page-cadence checkpoint did not yet cover --
+  // the trailing pages AND the assembled whole-document artifacts
+  // (issue.fr.txt/issue.en.txt). Idempotent: a clean no-op if nothing new is
+  // staged. Skipped when nothing was written (refused rights gate).
+  if (
+    d.checkpoint !== undefined &&
+    !dryRun &&
+    result.outcome !== 'refused' &&
+    result.pagesDone > 0
+  ) {
+    const dir = resolveFetchedDir(sourceId, issueArk, d.archiveRoot);
+    await d.checkpoint(
+      d.archiveRoot,
+      {
+        sourceId,
+        ark: issueArk,
+        dir,
+        pageCount: result.pagesTotal,
+        written: result.pagesDone,
+        skipped: 0,
+      },
+      { push: true },
+    );
+  }
 
   if (dryRun) {
     d.log(

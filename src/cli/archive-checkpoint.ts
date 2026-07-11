@@ -205,3 +205,76 @@ export async function commitAndPushIssueCheckpoint(
 
   await git(['push'], archiveRoot, 'pushing');
 }
+
+/**
+ * Shape of {@link commitAndPushIssueCheckpoint}, injected into {@link
+ * buildMonographPageCheckpointHook} so the page-cadence logic itself can be
+ * unit tested with a fake commit function -- no real git required.
+ */
+export type CommitCheckpointFn = (
+  archiveRoot: string,
+  checkpoint: IssueCheckpoint,
+  opts: { push: boolean },
+) => Promise<void>;
+
+/**
+ * Build a STATEFUL per-page checkpoint hook for a MONOGRAPH-shaped document
+ * (`--checkpoint` + `--checkpoint-every <N>`): commits+pushes (via `commit`)
+ * every `checkpointEvery` pages, closing over running written/skipped counters
+ * so each checkpoint's commit message reflects only the pages stored since the
+ * LAST checkpoint (or document start).
+ *
+ * This state is scoped to ONE closure instance -- callers must build a fresh
+ * hook per run (never share one across documents/runs). Shared by BOTH the
+ * fetch pipeline (`defaultFetchDeps`) and the translate pipeline
+ * (`runTranslate`), which each build one per invocation.
+ *
+ * A periodical issue never uses this -- it stays bounded by the existing
+ * per-issue checkpoint hook; only a monograph document (unbounded page count)
+ * needs page-level cadence.
+ */
+export function buildMonographPageCheckpointHook(
+  archiveRoot: string,
+  checkpointEvery: number,
+  commit: CommitCheckpointFn,
+): (stored: PageStored) => Promise<void> {
+  if (!Number.isInteger(checkpointEvery) || checkpointEvery < 1) {
+    throw new Error(
+      `buildMonographPageCheckpointHook: checkpointEvery must be a positive ` +
+        `integer (got ${checkpointEvery})`,
+    );
+  }
+
+  let pagesSinceCheckpoint = 0;
+  let writtenSinceCheckpoint = 0;
+  let skippedSinceCheckpoint = 0;
+
+  return async (stored: PageStored): Promise<void> => {
+    if (stored.skipped) {
+      skippedSinceCheckpoint += 1;
+    } else {
+      writtenSinceCheckpoint += 1;
+    }
+    pagesSinceCheckpoint += 1;
+
+    if (pagesSinceCheckpoint < checkpointEvery) {
+      return;
+    }
+
+    const checkpoint: IssueCheckpoint = {
+      sourceId: stored.sourceId,
+      ark: stored.ark,
+      dir: stored.dir,
+      pageCount: stored.pageCount,
+      written: writtenSinceCheckpoint,
+      skipped: skippedSinceCheckpoint,
+      page: stored.page,
+    };
+
+    pagesSinceCheckpoint = 0;
+    writtenSinceCheckpoint = 0;
+    skippedSinceCheckpoint = 0;
+
+    await commit(archiveRoot, checkpoint, { push: true });
+  };
+}
