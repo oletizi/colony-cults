@@ -23,7 +23,7 @@ Conventions: `[P]` = parallelizable (different files, no incomplete deps). Tests
 
 ## Phase 2: Foundational (blocking prerequisites — MUST complete before user stories)
 
-- [ ] T002 [P] [tier:balanced] Add `EVIDENCE_CLASS_VALUES` and `CITED_KIND_VALUES` closed-extensible vocabularies plus `isEvidenceClass` / `isCitedKind` predicates in `src/bibliography/vocab.ts` (mirroring the shipped `RIGHTS_VALUES` / `isAllowed` style).
+- [ ] T002 [P] [tier:balanced] Add `EVIDENCE_CLASS_VALUES` and `CITED_KIND_VALUES` closed-extensible vocabularies plus `isEvidenceClass` / `isCitedKind` predicates in `src/bibliography/vocab.ts` (mirroring the shipped `RIGHTS_VALUES` / `isAllowed` style). Also add a guard unit test asserting `SOURCE_LIFECYCLE_STATUS_VALUES` is unchanged by this feature (FR-004, negative requirement).
 - [ ] T003 [P] [tier:balanced] Extend the `Source` type with optional `evidenceClass` and `references?: Reference[]` (new `Reference` type: `citedAs`, `citedKind?`, `basis?`, `resolvedTo?`, `notes?`) in `src/model/source.ts`.
 - [ ] T004 [tier:balanced] Add the `SearchLogEntry` type and an append-only loader for `bibliography/search-log.yml` in `src/bibliography/search-log.ts` (fail loud on malformed/missing-required-field entries).
 - [ ] T005 [tier:powerful] Wire the new authored fields through the loader — `Source.evidenceClass`/`references[]` and source-group `knownMemberCount`/`suspected[]` — in `src/bibliography/load-fields.ts` and `src/bibliography/load.ts`, preserving existing load behavior (fields optional/additive).
