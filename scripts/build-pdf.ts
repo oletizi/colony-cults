@@ -1,21 +1,24 @@
 /**
  * scripts/build-pdf.ts
  *
- * The `pdf:build` CLI (T022, spec 007, contracts/cli.md): render corpus items
- * to facing-page facsimile PDFs. Sibling to `site:snapshot` /
+ * The `pdf:build` CLI (T022/T025, spec 007, contracts/cli.md): render corpus
+ * items to facing-page facsimile PDFs. Sibling to `site:snapshot` /
  * `site:export-public` in `package.json`.
  *
- *   npm run pdf:build -- <sourceId>/<issueId> [--provider b2|iiif] [--out <dir>]
- *
- * SCOPE (this task, US1): builds exactly ONE item selected as
- * `<sourceId>/<issueId>` (or `<sourceId>/<sourceId>` for a monograph). A bare
- * `<sourceId>` (all issues) and `--all` (whole corpus) are the batch build owned
- * by US2 (task T025) and are NOT yet implemented -- they fail loud naming T025
- * rather than silently no-op'ing.
+ *   npm run pdf:build -- <sourceId>/<issueId>   # one item (US1)
+ *   npm run pdf:build -- <sourceId>             # every issue of a source (US2)
+ *   npm run pdf:build -- --all                  # the whole committed snapshot (US2)
  *
  * Guarantees (contracts/cli.md):
+ *  - G-1 one PDF per item: `buildItem` writes exactly one; `buildSource`/
+ *    `buildAll` (src/pdf/render/batch.ts) do so once per enumerated item.
  *  - G-2 selector precision: an unknown source/issue fails loud naming the id.
  *  - G-3 internal-first: writes only under `--out`; no publish/upload step.
+ *  - G-4 fail-loud batch: a batch build is attributable + record-and-continue
+ *    -- a per-item (or per-source, for --all) failure is caught, recorded
+ *    with its id + reason, and does NOT abort its siblings; the run prints a
+ *    "built N, failed M" summary listing every failure and exits non-zero if
+ *    M > 0. A batch is never silently "OK" when something failed.
  *  - G-6 Typst prerequisite: a missing `typst` binary fails loud (before any
  *    image work) naming the missing dependency.
  */
@@ -25,6 +28,7 @@ import path from 'node:path';
 import { execCommand } from '@/ocr/exec';
 import { resolveRepoRoot } from '@/browser/load/repo-root';
 import { buildItem } from '@/pdf/render/build';
+import { buildAll, buildSource, type BuildSourceResult } from '@/pdf/render/batch';
 import type { PdfImageProviderKind } from '@/pdf/config';
 
 /** Parsed CLI invocation. */
@@ -78,6 +82,13 @@ function parseArgs(argv: string[]): CliArgs {
     }
   }
 
+  if (all && selector !== undefined) {
+    throw new Error(
+      `pdf:build: --all builds the whole corpus and cannot be combined with a selector ` +
+        `(got ${JSON.stringify(selector)}).`,
+    );
+  }
+
   return { selector, all, provider, out };
 }
 
@@ -97,31 +108,78 @@ async function assertTypstAvailable(): Promise<void> {
   }
 }
 
+/**
+ * Prints the G-4 attributable batch summary ("built N, failed M" plus every
+ * failure's item id + reason) and sets a non-zero exit code if ANY item (or
+ * whole source, for --all) failed -- a batch is never silently "OK" when
+ * something failed.
+ */
+function reportBatch(results: BuildSourceResult[], repoRoot: string): void {
+  let builtTotal = 0;
+  const failureLines: string[] = [];
+
+  for (const result of results) {
+    for (const item of result.built) {
+      builtTotal += 1;
+      const rel = path.relative(repoRoot, item.outPath);
+      process.stdout.write(
+        `  OK   ${result.sourceId}/${item.itemId} -> ${rel.startsWith('..') ? item.outPath : rel}\n`,
+      );
+    }
+    for (const failure of result.failed) {
+      failureLines.push(`  FAIL ${result.sourceId}/${failure.itemId}: ${failure.error}`);
+    }
+  }
+
+  process.stdout.write(`\nbuilt ${builtTotal}, failed ${failureLines.length}\n`);
+
+  if (failureLines.length > 0) {
+    process.stderr.write(`\nFailures (${failureLines.length}):\n${failureLines.join('\n')}\n`);
+    // G-4: a batch with any failure is never silently "OK".
+    process.exitCode = 1;
+  }
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
 
+  // G-6: fail loud on a missing Typst binary before any image work, for
+  // every selector shape (single item, whole source, or --all).
+  await assertTypstAvailable();
+
+  const repoRoot = resolveRepoRoot();
+  const outLabel = args.out ?? 'build/pdf (config default)';
+  const providerLabel = args.provider ?? '(config default)';
+
   if (args.all) {
-    throw new Error(
-      'pdf:build: --all (whole-corpus batch build) is not yet implemented -- it is US2, task ' +
-        'T025. Build a single item as "<sourceId>/<issueId>" for now.',
+    process.stdout.write(
+      `pdf:build -- all committed snapshot sources\n` +
+        `  provider: ${providerLabel}\n` +
+        `  out root: ${outLabel}\n\n`,
     );
+    const results = await buildAll({ provider: args.provider, outDir: args.out });
+    reportBatch(results, repoRoot);
+    return;
   }
 
   if (args.selector === undefined) {
     throw new Error(
-      'pdf:build: no selector given. Pass "<sourceId>/<issueId>" to build one item ' +
-        '(e.g. PB-P001/1879-07-15_bpt6k5603637g). Bare "<sourceId>" (all issues) and --all are ' +
-        'the batch build (US2, task T025) and are not yet implemented.',
+      'pdf:build: no selector given. Pass "<sourceId>" (every issue of a source), ' +
+        '"<sourceId>/<issueId>" (a single item), or --all (the whole committed snapshot).',
     );
   }
 
   const slashIndex = args.selector.indexOf('/');
   if (slashIndex === -1) {
-    throw new Error(
-      `pdf:build: selector ${JSON.stringify(args.selector)} names a whole source (all issues), ` +
-        'which is the batch build owned by US2 (task T025) and is not yet implemented. Select a ' +
-        'single item as "<sourceId>/<issueId>".',
+    const sourceId = args.selector;
+    process.stdout.write(
+      `pdf:build -- source ${sourceId} (all issues)\n` +
+        `  provider: ${providerLabel}\n` +
+        `  out root: ${outLabel}\n\n`,
     );
+    const result = await buildSource(sourceId, { provider: args.provider, outDir: args.out });
+    reportBatch([result], repoRoot);
+    return;
   }
 
   const sourceId = args.selector.slice(0, slashIndex);
@@ -133,14 +191,9 @@ async function main(): Promise<void> {
     );
   }
 
-  // G-6: fail loud on a missing Typst binary before any image work.
-  await assertTypstAvailable();
-
-  const repoRoot = resolveRepoRoot();
-  const outLabel = args.out ?? 'build/pdf (config default)';
   process.stdout.write(
     `pdf:build -- item ${sourceId}/${itemId}\n` +
-      `  provider: ${args.provider ?? '(config default)'}\n` +
+      `  provider: ${providerLabel}\n` +
       `  out root: ${outLabel}\n\n`,
   );
 
