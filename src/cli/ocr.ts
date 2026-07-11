@@ -1,6 +1,8 @@
+import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
+import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
 import { assertOcrToolchain } from '@/ocr/preflight';
 import { ocrIssue, defaultOcrCommandRunner } from '@/ocr/run';
 import type { OcrCommandRunner } from '@/ocr/types';
@@ -71,6 +73,12 @@ export async function runOcr(
     throw new Error('ocr: missing required argument <issueArk>');
   }
   const sourceId = requireOption(args.options.sourceId, 'source-id', 'ocr');
+  // Source-group members are not in the static layout registry -- derive+register
+  // their layout (same slug `bib acquire` fetched into) before locating the dir.
+  ensureMemberLayoutRegistered(
+    sourceId,
+    path.join(process.cwd(), 'bibliography', 'sources'),
+  );
   const dir = resolveFetchedDir(sourceId, issueArk, deps.archiveRoot);
 
   if (args.flags.dryRun) {
