@@ -121,6 +121,19 @@ available) and **never committed**. Promoted to a first-class feature invariant:
 derived documents are not written into the repo, so no future agent mistakes one
 for SSOT.
 
+- **Regenerability invariant:** every derived view MUST be completely regenerable
+  from committed source data (the source YAMLs + `search-log.yml`). This is the
+  load-bearing guarantee — because any view can be reproduced at any commit, no
+  snapshot ever needs to be *stored* to be *preserved*.
+- **Preservation without committing.** A snapshot that must accompany a paper,
+  release, or milestone is produced as a **release/publication artifact** —
+  frozen, external to the source tree, tied to the generating commit/tag — never
+  committed into the repo as source. To reproduce the coverage that shipped with
+  release `vX`, regenerate at tag `vX`. The in-repo prohibition therefore stays
+  **absolute, not "by default"**: regenerability makes committing snapshots
+  unnecessary, and "by default" would reopen exactly the SSOT-confusion this rule
+  exists to prevent.
+
 **D2 — SSOT map (each fact authored once):**
 
 | Fact | Authored on | Committed |
@@ -129,7 +142,7 @@ for SSOT.
 | Resolution of a citation | same reference (`resolvedTo` edge) | yes |
 | Suspected (inferred) gap | campaign source-group (`suspected[]`) | yes |
 | Genre / evidence class | `Source.evidenceClass` | yes |
-| Known-count + explicit unknown | source-group (`expectedMembers`) | yes |
+| Believed total extent + explicit unknown | source-group (`knownMemberCount`) | yes |
 | Search event (repo × campaign × date) | `bibliography/search-log.yml` | yes |
 | Unresolved-references register | *derived* from `references[]` + `suspected[]` | **no — stdout** |
 | Coverage report | *derived* from all of the above | **no — stdout** |
@@ -141,36 +154,66 @@ for SSOT.
 stays disciplined; adding a class is a one-line edit.
 
 **D4 — `Source.references[]` (roadmap b/e).** Each entry: `citedAs` (text),
-`citedKind?` (e.g. `journal`, `book`), `resolvedTo?` (a `sourceId`, set once the
-cited work is identified), `notes?`. A reference **without** `resolvedTo` is the
+`citedKind?` (e.g. `journal`, `book`), `basis?` (**how** the work was cited —
+`explicit-citation`, `catalog-mention`, `advertisement`, `footnote`,
+`recollection`, … — since citation strength varies enormously and must survive
+for later readers), `resolvedTo?` (a `sourceId`, set once the cited work is
+identified), `notes?`. A reference **without** `resolvedTo` is the
 `referenced-but-unidentified` population; the `resolvedTo` edge is the provenance
 trail for "how this source was found." No change to `SOURCE_LIFECYCLE_STATUS`.
 
-**D5 — source-group `suspected[]` + `expectedMembers` (roadmap b/c).**
-`suspected[]` entries (`description`, `evidenceClass?`, `notes?`) are the
-*inferred* pre-discovery population. `expectedMembers?: number | 'unknown'`
-records the known-count; `'unknown'` is first-class and **distinct from
-incomplete**. Both are valid only on `kind: source-group`.
+**D5 — source-group `suspected[]` + `knownMemberCount` (roadmap b/c).**
+`suspected[]` entries (`description`, `evidenceClass?`, `basis` — **why** the gap
+is inferred, e.g. `publication-pattern`, `trial-testimony`, `indirect-mention`,
+so the reason is not lost — and `notes?`) are the *inferred* pre-discovery
+population. **Boundary with D4:** a gap whose basis is a *direct citation by an
+acquired source* belongs in that source's `references[]`
+(referenced-but-unidentified), **not** `suspected[]`; `suspected[]` is reserved
+for genuinely inferred gaps (pattern/testimony/indirect), preserving the
+cited-vs-inferred split.
+
+`knownMemberCount?: number | 'unknown'` records the campaign's **believed total
+extent** — the number of members believed to exist for this campaign (the
+denominator), *authored*, and deliberately **distinct from the derived count of
+actual members** (else it would be redundant). `'unknown'` is first-class and
+distinct from both `incomplete` and `0`: `unknown` = "we don't know how many
+exist"; `0` = "we believe none exist"; `incomplete` is a *derived* comparison
+(`knownMemberCount` > actual). Both fields valid only on `kind: source-group`.
+(Rename from `expectedMembers` — "expected" wrongly connotes statistical
+prediction; this is authored research knowledge.)
 
 **D6 — `bibliography/search-log.yml` (roadmap d).** New append-only,
-date-ordered, **structured YAML** file. Each entry: `date`, `repository`,
-`campaign` (source-group id), `scope`, `coverage`, `remainingQuestions[]`,
-`notes?`. Structured (not free markdown) so the report aggregates it into the
+date-ordered, **structured YAML** file. Each entry: `id` (a **stable flat-opaque
+identifier**, e.g. `SRCH-0001`, following the repo's flat-opaque-ID convention —
+*not* a date-encoded form, which double-encodes `date` and breaks on
+correction — so corrections, cross-references from `suspected[].basis`, and
+discussions have a durable anchor), `date`, `repository`, `campaign`
+(source-group id), `scope`, `coverage`, `remainingQuestions[]`, `notes?`.
+Structured (not free markdown) so the report aggregates it into the
 repository × campaign matrix. Authored primary data → committed.
 
 **D7 — `bib coverage` subaction (roadmap f).** New bib CLI subaction
 (alongside `show`, `validate`, `inventory`, …), `--json` for machine output.
-Derives and prints: per-campaign counts (members by lifecycle state;
-`expectedMembers` vs actual; gap as a number **or the literal `unknown`**);
-evidence-class distribution; the unresolved-references register (unresolved
-`references[]` + `suspected[]`, grouped by campaign); the repository × campaign
-search-history matrix (last-searched date, open questions). **Explicit unknowns
+Derives and prints:
+- **per-campaign counts** — members by lifecycle state; `knownMemberCount` vs
+  actual; gap as a number **or the literal `unknown`**;
+- **evidence-class distribution** across the corpus;
+- the **unresolved-references register** — unresolved `references[]` +
+  `suspected[]`, grouped by campaign;
+- the **repository × campaign** search-history matrix (last-searched date, open
+  questions), **plus a repository-axis rollup** treating each repository as a
+  research object (last-searched across *all* campaigns, aggregated open
+  questions) — a free second projection of the same search-log.
+
+**Counting is per work.** A Source held at multiple archives (multiple
+RepositoryRecords) counts **once** by lifecycle state; per-archive copy counts
+are reported separately and never inflate work-level totals. **Explicit unknowns
 throughout; no headline coverage %.**
 
 **D8 — Validation extensions.** Loader/validator gain: `evidenceClass` checked
 against `EVIDENCE_CLASS_VALUES`; `references[].resolvedTo` must resolve to an
-existing `sourceId`; `expectedMembers` / `suspected` valid only on
-`kind: source-group`.
+existing `sourceId`; `knownMemberCount` / `suspected` valid only on
+`kind: source-group`; `search-log.yml` entry `id`s must be unique.
 
 ## Open questions
 
@@ -209,5 +252,13 @@ existing `sourceId`; `expectedMembers` / `suspected` valid only on
 - **Design conversation:** operator-driven brainstorming (2026-07-11); the
   divergence concern drove the reframe from a stored register to derived views,
   and the search-log to a structured-YAML sibling file.
+- **Architect review round (2026-07-11):** adopted refinements — `basis` on
+  `references[]` (D4) and `suspected[]` (D5); stable flat-opaque search-log `id`
+  (D6); `expectedMembers` → `knownMemberCount` with pinned "believed total
+  extent" semantics (D5); repository-axis coverage rollup + per-work counting
+  (D7); the regenerability invariant (D1). **Declined** the "never committed →
+  never committed *by default*" relaxation: preservation is served by
+  release/publication artifacts + regenerability (D1), so the in-repo prohibition
+  stays absolute.
 - **Next step:** on operator approval (the `design-approved:` node marker),
   hand off to `/stack-control:define` to author the Spec Kit spec.
