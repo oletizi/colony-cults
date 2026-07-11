@@ -75,7 +75,7 @@ Static Astro website to browse the corpus (v1: PB-P001 La Nouvelle France): sour
 Source Group kind for research-defined collections that are discovered before acquired (resolves PB-P004 mis-model + backlog TASK-3). Extend Source.kind to periodical|monograph|source-group; a source-group has members (part_of edges), NOT repositoryRecords, and is never fetchable; fetcher/acquisition fails loud+informatively on a source-group keyed on kind. Add discovered/approved-for-acquisition to the status vocab. Reclassify PB-P004 (French legal corpus) as the first source-group with member children. Discover->Inventory->Verify->Promote->Acquire pipeline. Does NOT add repository-record to the kind enum (already a separate entity). From a third-party design guidance doc, with refinements.
 
 ## impl:feature/source-group-acquisition
-- status: planned
+- status: shipped
 - analyze-clean: yes
 - spec: specs/006-source-group-acquisition
 - design-approved: yes
