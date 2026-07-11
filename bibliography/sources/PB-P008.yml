@@ -1,0 +1,90 @@
+sourceId: PB-P008
+kind: monograph
+partOf: PB-P004
+status: approved-for-acquisition
+case: port-breton
+language: French
+creator: Las Cases, Emmanuel de (1854-1934). Auteur du texte
+titles:
+  - text: Cour de Paris. Chambre des appels de police correctionnelle. Affaire de Port-Breton, plaidoirie de Me de Las Cases pour M. le marquis de Rays
+    role: archive
+repositoryRecords:
+  - sourceArchive: Gallica / BnF
+    status: to-collect
+    originalUrl: https://gallica.bnf.fr/ark:/12148/bpt6k1914256x
+    retrievedAt: 2026-07-11T04:57:16.449Z
+    identifiers:
+      - type: ark
+        value: ark:/12148/bpt6k1914256x
+    rights:
+      ark: ark:/12148/bpt6k1914256x
+      status: public-domain
+      rawResponse: |
+        <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <results ResultsGenerationSearchTime="0:00:00.004" countResults="1" resultType="CVOAIRecordSearchService" searchTime="">
+        <visibility_rights>all</visibility_rights>
+        <notice>
+        <record>
+        <header>
+        <identifier>oai:bnf.fr:gallica/ark:/12148/bpt6k1914256x</identifier>
+        <datestamp>2025-09-19</datestamp>
+        <setSpec>gallica:theme:0:00</setSpec>
+        <setSpec>gallica:typedoc:monographies</setSpec>
+        </header>
+        <metadata>
+        <oai_dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+        <dc:identifier>https://gallica.bnf.fr/ark:/12148/bpt6k1914256x</dc:identifier>
+        <dc:identifier>NUMM-1914256</dc:identifier>
+        <dc:title>Cour de Paris. Chambre des appels de police correctionnelle. Affaire de Port-Breton, plaidoirie de Me de Las Cases pour M. le marquis de Rays</dc:title>
+        <dc:creator>Las Cases, Emmanuel de (1854-1934). Auteur du texte</dc:creator>
+        <dc:contributor>France. Cour d'appel (Paris). Chambre des appels de police correctionnelle. Éditeur scientifique</dc:contributor>
+        <dc:publisher>impr. de V. Goupy et Jourdan (Paris)</dc:publisher>
+        <dc:date>1884</dc:date>
+        <dc:format>In-8° , 52 p.</dc:format>
+        <dc:language>fre</dc:language>
+        <dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb30745383z</dc:relation>
+        <dc:type xml:lang="eng">text</dc:type>
+        <dc:type xml:lang="fre">monographie imprimée</dc:type>
+        <dc:type xml:lang="eng">printed monograph</dc:type>
+        <dc:source>Bibliothèque nationale de France, département Droit, économie, politique, 8-FN-590</dc:source>
+        <dc:rights xml:lang="fre">domaine public</dc:rights>
+        <dc:rights xml:lang="eng">public domain</dc:rights>
+        <dc:format>Nombre total de vues :  60</dc:format>
+        <dc:description>Avec mode texte</dc:description>
+        </oai_dc:dc>
+        </metadata>
+        </record>
+        </notice>
+        <provenance>bnf.fr</provenance>
+        <sdewey>00</sdewey>
+        <dewey>0</dewey>
+        <source>Bibliothèque nationale de France, département Droit, économie, politique, 8-FN-590</source>
+        <typedoc>monographie</typedoc>
+        <nqamoyen>89.4</nqamoyen>
+        <mode_indexation>text</mode_indexation>
+        <title>Cour de Paris. Chambre des appels de police correctionnelle. Affaire de Port-Breton, plaidoirie de Me de Las Cases pour M. le marquis de Rays</title>
+        <date nbIssue="1">1884</date>
+        <first_indexation_date>15/06/2025</first_indexation_date>
+        <streamable>false</streamable>
+        <listBibVirt>
+        <label>gallica</label>
+        </listBibVirt>
+        </results>
+      dcRights:
+        - domaine public
+      raw: domaine public
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P008/ark-12148-bpt6k1914256x-2026-07-11T04:57:16.449Z.json
+      retrievedAt: 2026-07-11T04:57:16.449Z
+      endpoint: https://gallica.bnf.fr/services/OAIRecord?ark=bpt6k1914256x
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-11T04:57:56.739Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P008/ark-12148-bpt6k1914256x-2026-07-11T04:57:16.449Z.json
