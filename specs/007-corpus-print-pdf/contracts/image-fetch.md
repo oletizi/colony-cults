@@ -12,7 +12,7 @@ export interface ImageByteSource {
 export interface ImageRequest { folioId: string; ark: string | null; objectStoreKey: string; sha256: string; }
 export interface FetchedImage { bytesPath: string; sha256: string; width: number | null; height: number | null; }
 
-export function makeB2ImageSource(store: ObjectStore): ImageByteSource;      // @/archive S3ObjectStore.get(key)
+export function makeB2ImageSource(cdnBase: string, fetchFn: FetchFn): ImageByteSource; // public HTTP GET <cdnBase>/<objectStoreKey> (bucket is public — no S3 creds/signing)
 export function makeIiifImageSource(fetchFn: FetchFn): ImageByteSource;      // <ark>/<folio>/full/max/0/default.jpg
 ```
 
@@ -20,8 +20,9 @@ export function makeIiifImageSource(fetchFn: FetchFn): ImageByteSource;      // 
 
 - **G-1 (integrity)**: the returned `FetchedImage.sha256` equals the recorded `ImageRequest.sha256`;
   a mismatch throws naming the folio and both hashes (Principle III). No unverified bytes are embedded.
-- **G-2 (primary = B2 masters)**: `makeB2ImageSource` retrieves the master via `ObjectStore.get(objectStoreKey)`;
-  a null/empty key or a store miss throws naming the key (FR-008, FR-009).
+- **G-2 (primary = B2 masters)**: `makeB2ImageSource` retrieves the master over public HTTP from
+  `<cdnBase>/<objectStoreKey>` (the B2 bucket is public — no credentials/signing); a null/empty key or a
+  non-200 throws naming the key (FR-008, FR-009). The fetched bytes are sha256-verified against the master hash (G-1).
 - **G-3 (alternate = IIIF full-size)**: `makeIiifImageSource` requests the IIIF Image API **full-size**
   raster (`full/max`), not tiles; a missing ark or a non-200 response throws naming the folio.
 - **G-4 (no credential leak)**: credentials come only from `resolveObjectStoreConfig`; no secret is
