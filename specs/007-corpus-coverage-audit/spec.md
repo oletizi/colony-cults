@@ -22,6 +22,13 @@ trial-records campaign) is the validation case. It reuses the shipped model
 (source-groups *are* discovery campaigns; members derive from `partOf` edges) and adds no
 fetch/acquisition machinery.
 
+## Clarifications
+
+### Session 2026-07-11
+
+- Q: Should `citedKind` and `basis` be validated closed vocabularies or free-form? → A: `citedKind` is a closed-extensible validated vocabulary (like `evidenceClass`); `basis` (on both `references[]` and `suspected[]`) is free-form explanatory text (not validated), since it records *why* in prose.
+- Q: How should the unresolved-references register present references whose owning source has no campaign (no `partOf`)? → A: Under an explicit "no campaign" / ungrouped bucket, so no known gap is silently dropped.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Generate the coverage report (Priority: P1)
@@ -232,6 +239,10 @@ out-of-vocabulary value and confirm validation fails loud.
 - **FR-002**: The `Source` model MUST support an optional `references[]` list of citations
   mined from that source, each with `citedAs`, optional `citedKind`, optional `basis` (how
   the work was cited), optional `resolvedTo` (a `sourceId`), and optional `notes`.
+- **FR-002a**: `citedKind` MUST be validated against a **closed-but-extensible** vocabulary
+  (e.g. `journal`, `book`, `newspaper`, …); an out-of-vocabulary value MUST fail loud.
+  `basis` (on both `references[]` and `suspected[]`) is **free-form** explanatory text and is
+  NOT validated against a vocabulary (it records reasoning in prose).
 - **FR-003**: A `references[]` entry **without** `resolvedTo` MUST be treated as the
   *referenced-but-unidentified* population; a `resolvedTo` value MUST resolve to an existing
   `sourceId` or validation fails loud.
@@ -262,7 +273,9 @@ out-of-vocabulary value and confirm validation fails loud.
 - **FR-011**: The report MUST include a corpus-wide evidence-class distribution (sources
   without an `evidenceClass` counted as *unclassified*).
 - **FR-012**: The report MUST include the unresolved-references register — every unresolved
-  `references[]` entry plus every `suspected[]` entry — grouped by campaign.
+  `references[]` entry plus every `suspected[]` entry — grouped by campaign. References whose
+  owning source has no campaign (`partOf` absent) MUST appear under an explicit "no campaign"
+  / ungrouped bucket, never silently dropped.
 - **FR-013**: The report MUST include a repository × campaign search-history matrix
   (last-searched date, open questions) **and** a repository-axis rollup treating each
   repository as a research object (last-searched across all campaigns, aggregated open
@@ -312,8 +325,9 @@ out-of-vocabulary value and confirm validation fails loud.
   produce identical output, and a snapshot for any past commit can be reproduced by running
   at that commit.
 - **SC-005**: 100% of invalid authored inputs fail loud at validation — an out-of-vocabulary
-  `evidenceClass`, a dangling `resolvedTo`, a group-only field on a non-group source, and a
-  duplicate search-log `id` each produce a descriptive error naming the offending item.
+  `evidenceClass`, an out-of-vocabulary `citedKind`, a dangling `resolvedTo`, a group-only
+  field on a non-group source, and a duplicate search-log `id` each produce a descriptive
+  error naming the offending item.
 - **SC-006**: A work held at multiple archives is counted exactly once at work level in the
   report (validated on a fixture with two RepositoryRecords for one Source).
 - **SC-007**: The `PB-P004` trial-records campaign is used as the validation case end to end,
@@ -329,8 +343,9 @@ out-of-vocabulary value and confirm validation fails loud.
   `--json`) by hand; no query automation or scheduled generation is in scope.
 - Search-log entries are authored by hand into `search-log.yml`; whether a convenience writer
   command is added is deferred to a later scoping pass (see design record open questions).
-- Grouping of unresolved references is by campaign; whether to additionally surface a flat
-  global list for references tied to no campaign is deferred (design record open question).
+- Grouping of unresolved references is by campaign, with an explicit ungrouped "no campaign"
+  bucket for references on standalone sources (resolved in Clarifications 2026-07-11); a
+  separate flat global list is not required.
 - The report surface is a `bib` subaction; a top-level cross-tool verb is deferred unless a
   cross-tool consumer appears.
 - The pre-existing committed derived `sources.csv` (via `bib regenerate`) is out of scope;
