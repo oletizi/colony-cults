@@ -142,6 +142,44 @@ function firstUrlIdentifier(dc: Record<string, unknown>): string | undefined {
   return textValues(dc['dc:identifier']).find((value) => /^https?:\/\//.test(value));
 }
 
+/**
+ * Human-readable names {@link normalizeLanguage} maps a raw `dc:language`
+ * value onto, keyed by the raw value lowercased -- covering Gallica's ISO-3
+ * codes (`fre`/`fra`, `eng`) and the human-readable variants it also emits
+ * (`français`/`francais`, `english`/`anglais`). Deliberately matches the
+ * human-readable convention already used by `bibliography/sources/*.yml`
+ * (`language: French`, `language: English`), never an ISO code.
+ */
+const LANGUAGE_NAMES_BY_RAW: ReadonlyMap<string, string> = new Map([
+  ['fre', 'French'],
+  ['fra', 'French'],
+  ['français', 'French'],
+  ['francais', 'French'],
+  ['eng', 'English'],
+  ['english', 'English'],
+  ['anglais', 'English'],
+]);
+
+/**
+ * Map a raw `dc:language` value to the human-readable name convention
+ * `bibliography/sources/*.yml` uses (`French`, `English`, ...) -- never an
+ * ISO code. An unrecognized value is never dropped: it passes through
+ * capitalized reasonably (first letter upper, rest lower) rather than being
+ * silently discarded, per the project's no-fallback/no-fabrication stance --
+ * this is a display-casing transform of the archive's own value, not an
+ * invented one.
+ */
+export function normalizeLanguage(raw: string): string {
+  const trimmed = raw.trim();
+  const known = LANGUAGE_NAMES_BY_RAW.get(trimmed.toLowerCase());
+  if (known !== undefined) {
+    return known;
+  }
+  return trimmed.length === 0
+    ? trimmed
+    : `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1).toLowerCase()}`;
+}
+
 /** Map one navigated OAIRecord Dublin Core payload to {@link ArkMetadata}. */
 function toArkMetadata(
   dc: Record<string, unknown>,
@@ -176,6 +214,13 @@ function toArkMetadata(
   const originalUrl = firstUrlIdentifier(dc);
   if (originalUrl !== undefined) {
     metadata.originalUrl = originalUrl;
+  }
+  // Multiple dc:language values may be present (e.g. `fre` and `français`
+  // side by side) -- prefer the first, matching `firstTextValue`'s existing
+  // convention for every other repeated DC element here.
+  const languageRaw = firstTextValue(dc['dc:language']);
+  if (languageRaw !== undefined) {
+    metadata.language = normalizeLanguage(languageRaw);
   }
   return metadata;
 }

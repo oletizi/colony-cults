@@ -121,6 +121,34 @@ describe('runAcquire', () => {
     expect(args.flags.dryRun).toBe(true);
   });
 
+  it('forwards --checkpoint/--checkpoint-every to the fetcher when provided', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+
+    await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P100',
+      checkpoint: true,
+      checkpointEvery: 25,
+      fetch,
+    });
+
+    const [args] = vi.mocked(fetch).mock.calls[0];
+    expect(args.flags.checkpoint).toBe(true);
+    expect(args.options.checkpointEvery).toBe(25);
+  });
+
+  it('defaults checkpoint to false and checkpointEvery to undefined when omitted', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+
+    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch });
+
+    const [args] = vi.mocked(fetch).mock.calls[0];
+    expect(args.flags.checkpoint).toBe(false);
+    expect(args.options.checkpointEvery).toBeUndefined();
+  });
+
   it('infers the sole RepositoryRecord when no --archive is given', async () => {
     dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);

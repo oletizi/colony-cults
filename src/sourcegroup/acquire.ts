@@ -48,6 +48,21 @@ export interface AcquireInput {
   objectStore?: boolean;
   /** Forwarded to the fetcher as `--dry-run`. */
   dryRun?: boolean;
+  /**
+   * Forwarded to the fetcher as `--checkpoint`: opt into the shipped
+   * fetcher's incremental (per-page, for a monograph) git checkpointing
+   * instead of a single commit at the very end. Default false -- unchanged
+   * prior behavior -- so a plain `acquire` stays checkpoint-free.
+   */
+  checkpoint?: boolean;
+  /**
+   * Forwarded to the fetcher as `--checkpoint-every <N>`: page-checkpoint
+   * cadence for a monograph fetch (only meaningful together with {@link
+   * AcquireInput.checkpoint}). Absent -> the fetcher's own default (every
+   * page) applies; validated (positive integer) by the CLI layer
+   * (`@/cli/bib-sourcegroup`), not here.
+   */
+  checkpointEvery?: number;
   /** The injected shipped fetcher (see {@link FetchSourceFn}). REQUIRED -- no fallback fetch path exists. */
   fetch: FetchSourceFn;
 }
@@ -106,8 +121,11 @@ function assertWellFormed(input: AcquireInput): void {
  *    otherwise).
  *
  * On success, invokes the injected {@link FetchSourceFn} EXACTLY ONCE with
- * `fetch-source <ark> --source-id <id>` plus `--object-store`/`--dry-run`
- * passthrough (FR-014/FR-015) -- no new fetch code.
+ * `fetch-source <ark> --source-id <id>` plus `--object-store`/`--dry-run`/
+ * `--checkpoint`/`--checkpoint-every` passthrough (FR-014/FR-015) -- no new
+ * fetch code. `verify`/`reconcileRemote`/`force` stay hardcoded false (read-
+ * avoidance): an acquisition trusts the freshly resolved rights/ARK rather
+ * than re-verifying or re-fetching already-checksummed assets.
  */
 export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   assertWellFormed(input);
@@ -164,10 +182,11 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
       ocr: false,
       objectStore: input.objectStore ?? false,
       reconcileRemote: false,
-      checkpoint: false,
+      checkpoint: input.checkpoint ?? false,
     },
     options: {
       sourceId: input.sourceId,
+      checkpointEvery: input.checkpointEvery,
     },
   };
 

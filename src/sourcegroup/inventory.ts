@@ -50,6 +50,16 @@ export interface ArkMetadata {
   /** Work-level identifiers (ISBN/ISSN/OCLC), if known. */
   identifiers?: WorkIdentifier[];
   /**
+   * Primary language of the work, as a human-readable name (e.g. `French`,
+   * matching `bibliography/sources/*.yml`'s `language: French` convention --
+   * NOT an ISO code). Absent when the resolver's endpoint carries no
+   * language hint; `runInventory` then leaves `Source.language` undefined
+   * rather than fabricating one (the acquire-time `sourceDescriptor` guard,
+   * `@/bibliography/source-meta.ts`, is what fails loud on a still-missing
+   * language at fetch time).
+   */
+  language?: string;
+  /**
    * The holding archive's verbatim rights statement (evidence). Normalized
    * into `public-domain` | `other` by `runInventory`, not by the resolver.
    * Absent when the endpoint carries no rights statement at all.
@@ -265,6 +275,9 @@ export async function runInventory(input: RunInventoryInput): Promise<RunInvento
       partOf: groupId,
       status: 'discovered',
       creator: metadata.creator,
+      // Additive: set from the resolver's metadata when present, left
+      // undefined otherwise (never fabricated) -- see `ArkMetadata.language`.
+      language: metadata.language,
       identifiers: metadata.identifiers ?? [],
       // Additive/optional: copied from the group so the member is
       // self-describing for archive-layout derivation (FR-016-adjacent). Left

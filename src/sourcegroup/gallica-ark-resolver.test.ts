@@ -4,6 +4,7 @@ import {
   GALLICA_NORMALIZATION_VERSION,
   gallicaArkIdentifierResolver,
   gallicaArkMetadataResolver,
+  normalizeLanguage,
   resolveArkViaGallica,
   type GallicaOaiRecordSource,
 } from '@/sourcegroup/gallica-ark-resolver';
@@ -88,6 +89,7 @@ describe('resolveArkViaGallica', () => {
       titles: [{ text: 'La Vérité sur la colonie de Port-Breton et sur le Mis de Rays', role: 'archive' }],
       creator: 'Valamont, P. de',
       date: '1889',
+      language: 'French',
       rightsRaw: 'domaine public',
       originalUrl: 'https://gallica.bnf.fr/ark:/12148/bpt6k5785971m',
       rawResponse: ONE_RECORD_FIXTURE,
@@ -129,6 +131,30 @@ describe('resolveArkViaGallica', () => {
       resolveArkViaGallica('ark:/12148/bpt6k5785971m', { gallica }),
     ).rejects.toThrow();
   });
+
+  it('prefers the FIRST of multiple dc:language values, mapped to the human-readable name', async () => {
+    const multiLanguageFixture = ONE_RECORD_FIXTURE.replace(
+      '<dc:language>fre</dc:language>',
+      '<dc:language>fre</dc:language><dc:language>français</dc:language>',
+    );
+    const { gallica } = gallicaReturning(multiLanguageFixture);
+
+    const metadata = await resolveArkViaGallica('ark:/12148/bpt6k5785971m', { gallica });
+
+    expect(metadata?.language).toBe('French');
+  });
+
+  it('leaves language undefined (never fabricated) when dc:language is absent', async () => {
+    const noLanguageFixture = ONE_RECORD_FIXTURE.replace(
+      '<dc:language>fre</dc:language>',
+      '',
+    );
+    const { gallica } = gallicaReturning(noLanguageFixture);
+
+    const metadata = await resolveArkViaGallica('ark:/12148/bpt6k5785971m', { gallica });
+
+    expect(metadata?.language).toBeUndefined();
+  });
 });
 
 describe('gallicaArkMetadataResolver', () => {
@@ -142,6 +168,30 @@ describe('gallicaArkMetadataResolver', () => {
     expect(metadata?.titles[0]?.text).toBe(
       'La Vérité sur la colonie de Port-Breton et sur le Mis de Rays',
     );
+  });
+});
+
+describe('normalizeLanguage', () => {
+  it.each([
+    ['fre', 'French'],
+    ['fra', 'French'],
+    ['français', 'French'],
+    ['francais', 'French'],
+    ['eng', 'English'],
+    ['english', 'English'],
+    ['anglais', 'English'],
+  ])('maps %s -> %s', (raw, expected) => {
+    expect(normalizeLanguage(raw)).toBe(expected);
+  });
+
+  it('is case-insensitive on known codes', () => {
+    expect(normalizeLanguage('FRE')).toBe('French');
+    expect(normalizeLanguage('Français')).toBe('French');
+  });
+
+  it('passes an unrecognized value through capitalized rather than dropping it', () => {
+    expect(normalizeLanguage('ger')).toBe('Ger');
+    expect(normalizeLanguage('DEUTSCH')).toBe('Deutsch');
   });
 });
 

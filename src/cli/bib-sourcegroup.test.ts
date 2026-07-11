@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import type { Source } from '@/model/source';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import { serializeSource } from '@/bibliography/migrate-serialize';
-import { registerMemberArchiveLayout } from '@/cli/bib-sourcegroup';
+import { parseAcquireArgs, registerMemberArchiveLayout } from '@/cli/bib-sourcegroup';
 import { sourceLayout } from '@/archive/location';
 
 /**
@@ -15,6 +15,11 @@ import { sourceLayout } from '@/archive/location';
  * layout deep inside via the synchronous, sourceId-only `sourceLayout` --
  * this function must have already registered a derived layout for a
  * source-group member that was never hand-added to the static registry.
+ *
+ * Also covers `parseAcquireArgs` (the `--checkpoint`/`--checkpoint-every`
+ * forwarding gap-fix): asserted directly rather than through the full
+ * `runAcquireCli`, since that always injects the real, unmocked, network-
+ * backed `runFetchSource`.
  */
 
 function group(overrides: Partial<Source> = {}): Source {
@@ -150,5 +155,44 @@ describe('registerMemberArchiveLayout', () => {
 
     registerMemberArchiveLayout(dir, 'PB-P925');
     expect(() => registerMemberArchiveLayout(dir, 'PB-P925')).not.toThrow();
+  });
+});
+
+describe('parseAcquireArgs', () => {
+  it('defaults checkpoint to false and checkpointEvery to undefined when neither flag is given', () => {
+    const parsed = parseAcquireArgs(['PB-P100']);
+    expect(parsed.id).toBe('PB-P100');
+    expect(parsed.checkpoint).toBe(false);
+    expect(parsed.checkpointEvery).toBeUndefined();
+  });
+
+  it('parses --checkpoint and --checkpoint-every <N> into typed flags', () => {
+    const parsed = parseAcquireArgs(['PB-P100', '--checkpoint', '--checkpoint-every', '25']);
+    expect(parsed.checkpoint).toBe(true);
+    expect(parsed.checkpointEvery).toBe(25);
+  });
+
+  it('still forwards --archive/--object-store/--dry-run alongside --checkpoint', () => {
+    const parsed = parseAcquireArgs([
+      'PB-P100',
+      '--archive',
+      'Gallica / BnF',
+      '--object-store',
+      '--dry-run',
+      '--checkpoint',
+    ]);
+    expect(parsed.archive).toBe('Gallica / BnF');
+    expect(parsed.objectStore).toBe(true);
+    expect(parsed.dryRun).toBe(true);
+    expect(parsed.checkpoint).toBe(true);
+  });
+
+  it('fails loud when --checkpoint-every is not a positive integer', () => {
+    expect(() => parseAcquireArgs(['PB-P100', '--checkpoint-every', '0'])).toThrow(
+      /checkpoint-every/i,
+    );
+    expect(() => parseAcquireArgs(['PB-P100', '--checkpoint-every', 'abc'])).toThrow(
+      /checkpoint-every/i,
+    );
   });
 });

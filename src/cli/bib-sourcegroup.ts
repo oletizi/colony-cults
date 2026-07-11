@@ -22,6 +22,7 @@ import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
 import { deriveSourceLayout, registerSourceLayout } from '@/archive/location';
 import { runFetchSource } from '@/cli/fetch';
+import { parseCheckpointEvery } from '@/cli/parse';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
 import {
@@ -336,31 +337,61 @@ export function registerMemberArchiveLayout(sourcesDir: string, id: string): voi
   registerSourceLayout(id, deriveSourceLayout(memberSource, groupCase));
 }
 
-/** `bib acquire <id> [--archive] [--object-store] [--dry-run]`. */
+/** Typed result of parsing `bib acquire`'s argv (see {@link parseAcquireArgs}). */
+export interface AcquireCliArgs {
+  id: string | undefined;
+  archive: string | undefined;
+  objectStore: boolean;
+  dryRun: boolean;
+  checkpoint: boolean;
+  checkpointEvery: number | undefined;
+}
+
+/**
+ * Parse `bib acquire <id> [--archive] [--object-store] [--dry-run]
+ * [--checkpoint] [--checkpoint-every <N>]`'s argv into typed flags.
+ *
+ * Exported (not just used internally by `runAcquireCli`) so this parsing is
+ * directly unit-testable without driving the real network-backed fetcher
+ * (`runAcquireCli` always injects the real, unmocked `runFetchSource`).
+ * `--checkpoint-every` is validated by the same `parseCheckpointEvery`
+ * (`@/cli/parse`) the shipped fetcher's own `--checkpoint-every` uses, so a
+ * malformed value fails identically here and there (fail loud, no
+ * fallback).
+ */
+export function parseAcquireArgs(rest: string[]): AcquireCliArgs {
+  const { values, positionals } = nodeParseArgs({
+    args: rest,
+    options: {
+      archive: { type: 'string' },
+      'object-store': { type: 'boolean', default: false },
+      'dry-run': { type: 'boolean', default: false },
+      checkpoint: { type: 'boolean', default: false },
+      'checkpoint-every': { type: 'string' },
+    },
+    allowPositionals: true,
+    strict: true,
+  });
+  return {
+    id: positionals[0],
+    archive: values.archive,
+    objectStore: Boolean(values['object-store']),
+    dryRun: Boolean(values['dry-run']),
+    checkpoint: Boolean(values.checkpoint),
+    checkpointEvery: parseCheckpointEvery(values['checkpoint-every']),
+  };
+}
+
+/** `bib acquire <id> [--archive] [--object-store] [--dry-run] [--checkpoint] [--checkpoint-every <N>]`. */
 export async function runAcquireCli(rest: string[]): Promise<number> {
-  let id: string | undefined;
-  let archive: string | undefined;
-  let objectStore = false;
-  let dryRun = false;
+  let parsed: AcquireCliArgs;
   try {
-    const { values, positionals } = nodeParseArgs({
-      args: rest,
-      options: {
-        archive: { type: 'string' },
-        'object-store': { type: 'boolean', default: false },
-        'dry-run': { type: 'boolean', default: false },
-      },
-      allowPositionals: true,
-      strict: true,
-    });
-    id = positionals[0];
-    archive = values.archive;
-    objectStore = Boolean(values['object-store']);
-    dryRun = Boolean(values['dry-run']);
+    parsed = parseAcquireArgs(rest);
   } catch (error) {
     console.error(`bib acquire: ${describeError(error)}`);
     return 2;
   }
+  const { id, archive, objectStore, dryRun, checkpoint, checkpointEvery } = parsed;
 
   if (id === undefined) {
     console.error('bib acquire: missing required argument <id>');
@@ -380,6 +411,8 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
       archive,
       objectStore,
       dryRun,
+      checkpoint,
+      checkpointEvery,
       // The shipped fetcher, injected unchanged (D-08): no new fetch code here.
       fetch: runFetchSource,
     });

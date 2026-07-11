@@ -54,6 +54,7 @@ function publicDomainMetadata(overrides: Partial<ArkMetadata> = {}): ArkMetadata
     retrievedAt: '2026-07-10T00:00:00.000Z',
     normalizationVersion: 1,
     archive: 'Gallica / BnF',
+    language: 'French',
     ...overrides,
   };
 }
@@ -91,6 +92,7 @@ describe('runInventory', () => {
     expect(result.source.status).toBe('discovered');
     expect(result.source.titles).toEqual([{ text: 'Le Petit Journal', role: 'canonical' }]);
     expect(result.source.creator).toBe('Jane Doe');
+    expect(result.source.language).toBe('French');
 
     expect(result.record.sourceId).toBe(result.sourceId);
     expect(result.record.sourceArchive).toBe('Gallica / BnF');
@@ -249,6 +251,21 @@ describe('runInventory', () => {
       await readFile(join(baseDir, first.record.metadataSnapshot?.path ?? ''), 'utf8'),
     ) as { raw: string };
     expect(firstSnapshot.raw).toBe('<record><title>Le Petit Journal</title></record>');
+  });
+
+  it('leaves source.language undefined (never fabricated) when the resolver supplies no language', async () => {
+    baseDir = await seedRepo({ 'PB-S001.yml': GROUP_YML });
+    const sourcesDir = join(baseDir, 'bibliography', 'sources');
+
+    const result = await runInventory({
+      ark: 'ark:/12148/bpt6k1234567',
+      groupId: 'PB-S001',
+      sourcesDir,
+      baseDir,
+      resolveArk: resolverFor(publicDomainMetadata({ language: undefined })),
+    });
+
+    expect(result.source.language).toBeUndefined();
   });
 
   it('fails loud when no --archive is given and the resolver supplies no archive hint', async () => {
