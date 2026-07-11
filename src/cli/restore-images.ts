@@ -1,6 +1,8 @@
+import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
+import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
 import {
   restoreIssueImages,
   type RestoreImagesResult,
@@ -58,6 +60,10 @@ export async function runRestoreImages(
     args.options.sourceId,
     'source-id',
     'restore-images',
+  );
+  ensureMemberLayoutRegistered(
+    sourceId,
+    path.join(process.cwd(), 'bibliography', 'sources'),
   );
   const dir = resolveFetchedDir(sourceId, issueArk, deps.archiveRoot);
 

@@ -2,6 +2,7 @@ import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
+import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
 import {
   commitAndPushIssueCheckpoint,
   buildMonographPageCheckpointHook,
@@ -139,6 +140,12 @@ export async function runTranslate(
     throw new Error('translate: missing required argument <issueArk>');
   }
   const sourceId = requireOption(args.options.sourceId, 'source-id', 'translate');
+  // Register a source-group member's derived archive layout so translateIssue's
+  // internal resolveFetchedDir can locate it (no-op for static sources).
+  ensureMemberLayoutRegistered(
+    sourceId,
+    path.join(process.cwd(), 'bibliography', 'sources'),
+  );
   const dryRun = args.flags.dryRun;
 
   // Per-page checkpoint cadence (`--checkpoint` [+ `--checkpoint-every N`]),
@@ -269,6 +276,9 @@ export async function runTranslateSource(
         `Translate its concrete member Sources instead.`,
     );
   }
+
+  // Register a member's derived archive layout so discovery/resolution resolve it.
+  ensureMemberLayoutRegistered(sourceId, sourcesDir);
 
   const dryRun = args.flags.dryRun;
 

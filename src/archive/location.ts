@@ -91,6 +91,19 @@ export function registerSourceLayout(sourceId: string, layout: SourceLayout): vo
 }
 
 /**
+ * True when a layout is already resolvable for `sourceId` -- the static
+ * {@link SOURCE_LAYOUTS} registry OR the runtime overlay -- i.e. the
+ * non-throwing predicate form of {@link sourceLayout}. Used by the member-layout
+ * bridge to skip re-deriving a source that is already known (so a static source
+ * is never re-registered under a divergent derived slug).
+ */
+export function isSourceLayoutRegistered(sourceId: string): boolean {
+  return (
+    SOURCE_LAYOUTS[sourceId] !== undefined || runtimeLayoutOverlay.has(sourceId)
+  );
+}
+
+/**
  * Resolve the archive layout (case / type / slug) for a source ID. Resolution
  * order: the static {@link SOURCE_LAYOUTS} registry FIRST (existing sources'
  * behavior is unchanged), then the runtime overlay (source-group members
