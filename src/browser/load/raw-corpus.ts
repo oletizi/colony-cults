@@ -23,12 +23,14 @@ import type {
   RawPage,
   RawSource,
   SkippedIssue,
+  SourceKind,
 } from '@/browser/model';
 import { loadSourceFile } from '@/bibliography/load';
 import type { LoadedSource } from '@/bibliography/load';
 import type { CopyIdentifier } from '@/model/repository-record';
 import { enumerateIssueDirs, resolveNewspapersDir } from '@/browser/load/issues';
 import type { IssueDir } from '@/browser/load/issues';
+import { resolveMonographUnit } from '@/browser/load/books';
 import { buildRawIssuePages, detectNotCollected } from '@/browser/load/pages';
 
 /** The holding-archive label whose record carries the source-level Gallica ark. */
@@ -85,18 +87,35 @@ function loadSource(
   const loaded = loadSourceFile(ssotPath);
   const { source } = loaded;
 
-  if (source.kind !== 'periodical') {
+  const title = canonicalTitle(loaded);
+
+  // Resolve the source -> unit-dirs step by SSOT kind. A periodical resolves
+  // to its many issue directories (via the census-derived newspapers dir); a
+  // monograph resolves to exactly ONE unit -- its book directory (scanned +
+  // matched by folio-sidecar id). Everything downstream (per-page load,
+  // rights) reuses unchanged. A `source-group` holds no assets of its own and
+  // is not a loadable corpus kind.
+  let kind: SourceKind;
+  let ark: string;
+  let issueDirs: IssueDir[];
+  if (source.kind === 'periodical') {
+    kind = 'periodical';
+    ark = sourceArk(loaded);
+    const newspapersDir = resolveNewspapersDir(archivePath, loaded);
+    issueDirs = enumerateIssueDirs(newspapersDir, sourceId);
+  } else if (source.kind === 'monograph') {
+    kind = 'monograph';
+    // The book's ark is the source ark (the minimal monograph SSOT carries no
+    // ark identifier -- it is read from the matched folio sidecar instead).
+    const bookUnit = resolveMonographUnit(archivePath, loaded);
+    ark = bookUnit.ark;
+    issueDirs = [bookUnit];
+  } else {
     throw new Error(
-      `loadCorpus(${sourceId}): source kind "${source.kind}" is not supported in v1 ` +
-        '(only "periodical").'
+      `loadCorpus(${sourceId}): source kind "${source.kind}" is not a loadable corpus kind ` +
+        '(expected "periodical" or "monograph").'
     );
   }
-
-  const title = canonicalTitle(loaded);
-  const ark = sourceArk(loaded);
-
-  const newspapersDir = resolveNewspapersDir(archivePath, loaded);
-  const issueDirs = enumerateIssueDirs(newspapersDir, sourceId);
 
   const issues: RawIssue[] = [];
   const skipped: SkippedIssue[] = [];
@@ -122,7 +141,7 @@ function loadSource(
     source: {
       sourceId,
       title,
-      kind: 'periodical',
+      kind,
       ark,
       rights,
       issues,

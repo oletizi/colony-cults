@@ -49,7 +49,7 @@ export function resolveConfig(env: NodeJS.ProcessEnv = process.env): LoadConfig 
   const snapshotDir = snapshotDirRaw ? snapshotDirRaw : DEFAULT_SNAPSHOT_DIR;
 
   const sourcesRaw = env.CORPUS_SOURCES?.trim();
-  const sources = sourcesRaw ? sourcesRaw.split(',').map((s) => s.trim()) : ['PB-P001'];
+  const sources = sourcesRaw ? sourcesRaw.split(',').map((s) => s.trim()) : ['PB-P001', 'PB-P002'];
 
   const providerKind = env.CORPUS_IMAGE_PROVIDER?.trim() ?? 'source-iiif';
 

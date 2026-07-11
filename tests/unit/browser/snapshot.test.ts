@@ -178,6 +178,33 @@ describe('snapshot reader fail-loud (no archive needed)', () => {
   it('parseCorpusSnapshot rejects a non-object root', () => {
     expect(() => parseCorpusSnapshot([], 'x.json')).toThrow(/expected an object/);
   });
+
+  it('parseCorpusSnapshot accepts and preserves a monograph kind', () => {
+    const snap = {
+      sources: [
+        {
+          sourceId: 'PB-P002',
+          title: 'A book',
+          kind: 'monograph',
+          ark: 'ark:/12148/x',
+          rights: 'public-domain',
+          issues: [],
+        },
+      ],
+      skipped: [],
+    };
+    expect(parseCorpusSnapshot(snap, 'x.json').sources[0].kind).toBe('monograph');
+  });
+
+  it('parseCorpusSnapshot rejects an unknown source kind', () => {
+    const snap = {
+      sources: [
+        { sourceId: 'X', title: 'X', kind: 'pamphlet', ark: 'a', rights: 'r', issues: [] },
+      ],
+      skipped: [],
+    };
+    expect(() => parseCorpusSnapshot(snap, 'x.json')).toThrow(/unsupported source kind/);
+  });
 });
 
 describe('loadCorpus archive-vs-snapshot precedence', () => {

@@ -12,7 +12,7 @@
  * substitutes nothing. The full monospace provenance-rail signature and the
  * embedded display face are US4 -- this is the structural reading view.
  */
-import type { PageView } from '@/browser/model';
+import type { PageView, SourceKind } from '@/browser/model';
 import FacsimileViewer from './FacsimileViewer.astro';
 import SourcePane from './SourcePane.astro';
 import TranslationPane from './TranslationPane.astro';
@@ -23,6 +23,8 @@ import Masthead from './Masthead.astro';
 interface Props {
   sourceId: string;
   sourceTitle: string;
+  /** Whether this source is a periodical (issue-framed) or a monograph (book-framed). */
+  kind: SourceKind;
   issueDate: string;
   page: PageView;
   /** 1-based position of this page within its issue. */
@@ -38,6 +40,7 @@ interface Props {
 const {
   sourceId,
   sourceTitle,
+  kind,
   issueDate,
   page,
   positionInIssue,
@@ -48,34 +51,54 @@ const {
   issueFirstPageHref,
 } = Astro.props;
 
+const isBook = kind === 'monograph';
 const pageLabel = `p.${positionInIssue}`;
-const facsimileLabel = `${sourceTitle}, ${issueDate}, ${pageLabel} — scanned page ${page.folioId}`;
+// A book page is placed within the whole volume ("p. N / 32"); a periodical page
+// is placed within its dated issue. Frame every label the same way.
+const contextLabel = isBook ? `p. ${positionInIssue} / ${pageCount}` : `${issueDate} · ${pageLabel}`;
+const facsimileLabel = isBook
+  ? `${sourceTitle}, p. ${positionInIssue} / ${pageCount} — scanned page ${page.folioId}`
+  : `${sourceTitle}, ${issueDate}, ${pageLabel} — scanned page ${page.folioId}`;
 // The catalogue line used as the Pagefind result title (US3 / T022): matches the
 // document <title> exactly. Passed via a data-attribute (not the `title:literal`
 // meta form) so a colon in the source title cannot corrupt the meta value.
-const searchTitle = `${sourceTitle} · ${issueDate} · ${pageLabel}`;
+const searchTitle = isBook
+  ? `${sourceTitle} · p. ${positionInIssue} / ${pageCount}`
+  : `${sourceTitle} · ${issueDate} · ${pageLabel}`;
+const pagenavLabel = isBook ? 'Navigation dans le livre' : 'Navigation dans le numéro';
+const provenanceLabel = isBook
+  ? `Provenance — p. ${positionInIssue} / ${pageCount}`
+  : `Provenance — ${issueDate}, ${pageLabel}`;
 ---
 
-<article class="reading" aria-label={`Reading view — ${sourceTitle}, ${issueDate}, ${pageLabel}`}>
+<article class="reading" aria-label={`Reading view — ${sourceTitle}, ${contextLabel}`}>
   <header class="reading__masthead">
     <Masthead tail={sourceId} gap={10} />
     <h1 class="reading__title">{sourceTitle}</h1>
-    <p class="reading__issue">{issueDate}&nbsp;· {pageLabel}</p>
+    <p class="reading__issue">{contextLabel}</p>
   </header>
 
   <div class="reading__frame">
     <div class="reading__chrome">
-      <span class="reading__crumb">
-        <a class="reading__crumb-link" href={sourceHref}><b>{sourceId}</b></a>
-        <span class="reading__sep">›</span>
-        {issueFirstPageHref ? (
-          <a class="reading__crumb-link" href={issueFirstPageHref}>{issueDate}</a>
-        ) : (
-          issueDate
-        )}
-        <span class="reading__sep">›</span>
-        <b>{pageLabel}</b>
-      </span>
+      {isBook ? (
+        <span class="reading__crumb">
+          <a class="reading__crumb-link" href={sourceHref}><b>{sourceTitle}</b></a>
+          <span class="reading__sep">›</span>
+          <b>p. {positionInIssue} / {pageCount}</b>
+        </span>
+      ) : (
+        <span class="reading__crumb">
+          <a class="reading__crumb-link" href={sourceHref}><b>{sourceId}</b></a>
+          <span class="reading__sep">›</span>
+          {issueFirstPageHref ? (
+            <a class="reading__crumb-link" href={issueFirstPageHref}>{issueDate}</a>
+          ) : (
+            issueDate
+          )}
+          <span class="reading__sep">›</span>
+          <b>{pageLabel}</b>
+        </span>
+      )}
       <span class="reading__spacer"></span>
       <PageNav
         positionInIssue={positionInIssue}
@@ -105,7 +128,7 @@ const searchTitle = `${sourceTitle} · ${issueDate} · ${pageLabel}`;
       </div>
     </div>
 
-    <nav class="reading__pagenav" aria-label="Navigation dans le numéro">
+    <nav class="reading__pagenav" aria-label={pagenavLabel}>
       <PageNav
         positionInIssue={positionInIssue}
         pageCount={pageCount}
@@ -116,7 +139,7 @@ const searchTitle = `${sourceTitle} · ${issueDate} · ${pageLabel}`;
       <span class="reading__foot-mark">Provenance below</span>
     </nav>
 
-    <ProvenanceRail provenance={page.provenance} label={`Provenance — ${issueDate}, ${pageLabel}`} />
+    <ProvenanceRail provenance={page.provenance} label={provenanceLabel} />
   </div>
 </article>
 
