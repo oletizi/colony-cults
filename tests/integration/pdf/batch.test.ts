@@ -78,6 +78,8 @@ function makePage(issueId: string, pageId: string, overrides: Partial<RawPage> =
       overrides.objectStoreKey === undefined
         ? `object_store/${issueId}/${pageId}.jpg`
         : overrides.objectStoreKey,
+    // Image-master hash (folio sidecar sha256); required by the Edition builder.
+    imageSha256: 'imageSha256' in overrides ? overrides.imageSha256 : `imgsha-${issueId}-${pageId}`,
     ocrFrench: overrides.ocrFrench ?? `french ocr ${pageId}`,
     correctedFrench: overrides.correctedFrench ?? null,
     english: overrides.english ?? `english translation ${pageId}`,

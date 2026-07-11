@@ -28,6 +28,10 @@ function makePage(overrides: Partial<RawPage> = {}): RawPage {
     ark: overrides.ark ?? 'ark:/12148/bpt6k56068358',
     objectStoreKey:
       overrides.objectStoreKey === undefined ? `object_store/${pageId}.jpg` : overrides.objectStoreKey,
+    // The image-master hash (folio sidecar sha256) -- deliberately DISTINCT
+    // from provenance.sha256 (the translation-text hash) so tests prove the
+    // image checksum flows from imageSha256, not the text provenance.
+    imageSha256: 'imageSha256' in overrides ? overrides.imageSha256 : `imgsha-${pageId}`,
     ocrFrench: overrides.ocrFrench ?? `french ocr ${pageId}`,
     correctedFrench: overrides.correctedFrench ?? null,
     english: overrides.english ?? `english translation ${pageId}`,
@@ -163,11 +167,31 @@ describe('makeEditionBuilder', () => {
     expect(build).toThrow(/p001/);
   });
 
+  it('G-3: null imageSha256 throws naming the page (image-master checksum required)', () => {
+    const snapshot = makeSnapshot({
+      pages: [makePage({ pageId: 'p001', imageSha256: null })],
+    });
+    const build = () => makeBuilderWith(snapshot).build(SOURCE_ID, ISSUE_ID);
+    expect(build).toThrow(/imageSha256/);
+    expect(build).toThrow(/p001/);
+  });
+
+  it('G-3: absent imageSha256 (predating the field) throws naming the page', () => {
+    const snapshot = makeSnapshot({
+      pages: [makePage({ pageId: 'p001', imageSha256: undefined })],
+    });
+    const build = () => makeBuilderWith(snapshot).build(SOURCE_ID, ISSUE_ID);
+    expect(build).toThrow(/imageSha256/);
+    expect(build).toThrow(/p001/);
+  });
+
   it('image asset carries fetch inputs with empty bytesPath staging marker (b2 -> b2-cdn)', () => {
     const edition = makeBuilderWith(makeSnapshot()).build(SOURCE_ID, ISSUE_ID);
     const asset = edition.pages[0].image;
     expect(asset.objectStoreKey).toBe('object_store/p001.jpg');
-    expect(asset.sha256).toBe('sha-p001');
+    // The image checksum is the folio-sidecar image-master hash (imageSha256),
+    // NOT the translation-text provenance.sha256 ('sha-p001').
+    expect(asset.sha256).toBe('imgsha-p001');
     expect(asset.provider).toBe('b2-cdn');
     expect(asset.width).toBeNull();
     expect(asset.height).toBeNull();
@@ -221,8 +245,8 @@ describe('makeEditionBuilder', () => {
     expect(edition.colophon.archiveRef).toBe(PIN_REF);
     expect(edition.colophon.snapshotSourceId).toBe(SOURCE_ID);
     expect(edition.colophon.images).toEqual([
-      { folioId: 'f001', objectStoreKey: 'object_store/p001.jpg', sha256: 'sha-p001' },
-      { folioId: 'f002', objectStoreKey: 'object_store/p002.jpg', sha256: 'sha-p002' },
+      { folioId: 'f001', objectStoreKey: 'object_store/p001.jpg', sha256: 'imgsha-p001' },
+      { folioId: 'f002', objectStoreKey: 'object_store/p002.jpg', sha256: 'imgsha-p002' },
     ]);
     expect(edition.colophon.translation).toEqual(MACHINE_ASSIST);
     expect(edition.colophon.framing.length).toBeGreaterThan(0);

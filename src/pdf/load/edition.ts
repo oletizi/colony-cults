@@ -84,6 +84,28 @@ function requireNonEmpty(value: string, label: string, context: string): string 
   return value;
 }
 
+/**
+ * Resolve a page's IMAGE-MASTER sha256 -- the folio sidecar's top-level
+ * `sha256` (`RawPage.imageSha256`), which is the checksum of the actual B2
+ * image master. This is the value the `b2-cdn` fetch verifies the downloaded
+ * bytes against; it is DISTINCT from the translation-text
+ * `provenance.sha256`. Fail loud (naming the page) when it is absent/empty --
+ * image integrity is required, so a page without an image-master checksum
+ * cannot be embedded (G-3, Principle III).
+ */
+export function requireImageSha256(page: RawPage, context: string): string {
+  const sha = page.imageSha256;
+  if (sha === undefined || sha === null || sha.trim().length === 0) {
+    throw new Error(
+      `${context}: imageSha256 is ${sha === undefined || sha === null ? 'absent' : 'empty'} -- ` +
+        'the image-master checksum (the folio sidecar `fNNN.yml` top-level `sha256`) is required ' +
+        'to verify the fetched print-resolution master; there is no fallback to the ' +
+        'translation-text hash (G-3, Principle III).',
+    );
+  }
+  return sha;
+}
+
 /** Resolve the RawSource for `sourceId` from the snapshot, or throw. */
 function selectSource(snapshot: CorpusSnapshot, sourceId: string): RawSource {
   const source = snapshot.sources.find((candidate) => candidate.sourceId === sourceId);
@@ -156,10 +178,10 @@ function toEditionPage(
     );
   }
 
-  const sha256 = page.provenance.sha256;
-  if (sha256.trim().length === 0) {
-    throw new Error(`${pageContext}: provenance.sha256 is empty -- an image checksum is required (G-3).`);
-  }
+  // The image checksum is the folio sidecar's image-master sha256, NOT the
+  // translation-text `provenance.sha256`; the `b2-cdn` fetch verifies the
+  // downloaded master bytes against exactly this value.
+  const sha256 = requireImageSha256(page, pageContext);
 
   const image: ImageAsset = {
     objectStoreKey,
@@ -230,7 +252,10 @@ export function makeEditionBuilder(deps: EditionBuilderDeps): EditionBuilder {
         folioId: page.folioId,
         // Non-null here: toEditionPage already threw on a null/empty key above.
         objectStoreKey: page.objectStoreKey ?? '',
-        sha256: page.provenance.sha256,
+        // The colophon records the IMAGE-MASTER checksum (folio sidecar sha256),
+        // matching the embedded image + the b2 fetch's verification target --
+        // NOT the translation-text provenance hash.
+        sha256: requireImageSha256(page, `${context}/page ${page.pageId}`),
         machineAssist: toMachineAssist(page),
       }));
 

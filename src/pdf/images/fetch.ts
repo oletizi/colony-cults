@@ -44,7 +44,7 @@ export interface ImageRequest {
   ark: string | null;
   /** Archive `object_store` key for the B2 master, or `''`/effectively-absent if never mirrored. */
   objectStoreKey: string;
-  /** The B2 master's recorded sha256 (`RawPage.provenance.sha256`) -- see the asymmetry note above. */
+  /** The B2 master's recorded sha256 (`RawPage.imageSha256`, the folio sidecar's image-master hash) -- see the asymmetry note above. */
   sha256: string;
 }
 

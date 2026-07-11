@@ -95,7 +95,13 @@ export interface EditionPage {
 export interface ImageAsset {
   /** B2 key; must be non-null. Source: snapshot `RawPage.objectStoreKey`. */
   objectStoreKey: string;
-  /** Expected checksum. Source: snapshot `RawPage.provenance.sha256`. */
+  /**
+   * Expected checksum of the print-resolution image master -- the folio
+   * sidecar (`fNNN.yml`) top-level `sha256`. Source: snapshot
+   * `RawPage.imageSha256`. This is the IMAGE-master hash that matches the B2
+   * object, NOT the translation-text `provenance.sha256`; the `b2-cdn` fetch
+   * verifies the downloaded bytes against exactly this value.
+   */
   sha256: string;
   /** Local path to the fetched, verified image (build temp dir). Source: B2/IIIF at build. */
   bytesPath: string;
@@ -137,7 +143,11 @@ export interface ColophonImage {
   folioId: string;
   /** B2 key. Source: snapshot `RawPage.objectStoreKey`. */
   objectStoreKey: string;
-  /** Content checksum. Source: snapshot `RawPage.provenance.sha256`. */
+  /**
+   * Content checksum of the image master -- the folio sidecar's top-level
+   * `sha256`. Source: snapshot `RawPage.imageSha256` (NOT the translation-text
+   * `provenance.sha256`).
+   */
   sha256: string;
 }
 

@@ -118,7 +118,7 @@ function parseProvenance(value: unknown, where: string): ProvenanceRecord {
 
 function parseRawPage(value: unknown, where: string): RawPage {
   const record = requireRecord(value, where);
-  return {
+  const base: RawPage = {
     pageId: requireString(record, 'pageId', where),
     folioId: requireString(record, 'folioId', where),
     ark: requireString(record, 'ark', where),
@@ -129,6 +129,13 @@ function parseRawPage(value: unknown, where: string): RawPage {
     ocrCondition: requireStringOrNull(record, 'ocrCondition', where),
     provenance: parseProvenance(record.provenance, `${where}.provenance`),
   };
+  // Additive optional field (the image-master sha256): only attach the key when
+  // present, so snapshots predating the extension round-trip unchanged. Present
+  // -> string|null (validated); absent -> omitted.
+  if (record.imageSha256 === undefined) {
+    return base;
+  }
+  return { ...base, imageSha256: requireStringOrNull(record, 'imageSha256', where) };
 }
 
 function parseRawIssue(value: unknown, where: string): RawIssue {

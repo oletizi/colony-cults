@@ -93,15 +93,41 @@ describe('integration: real PB-P001 issue -> Edition -> TypstInput', () => {
   });
 
   it('every page carries real, non-empty OCR/translation text + a real image key/checksum', () => {
-    for (const page of edition.pages) {
+    // Re-read the raw snapshot so we can prove the image checksum is the folio
+    // sidecar's IMAGE-master sha256 (RawPage.imageSha256), NOT the
+    // translation-text provenance.sha256.
+    const rawSource = makeCorpusSnapshotReader(config.snapshotDir)
+      .read(SOURCE_ID)
+      .sources.find((s) => s.sourceId === SOURCE_ID);
+    if (rawSource === undefined) {
+      throw new Error('test: snapshot has no PB-P001 source');
+    }
+    const rawIssue = rawSource.issues.find((i) => i.issueId === issueId);
+    if (rawIssue === undefined) {
+      throw new Error(`test: snapshot has no issue ${issueId}`);
+    }
+
+    edition.pages.forEach((page, index) => {
+      const rawPage = rawIssue.pages[index];
+      expect(rawPage).toBeDefined();
+      if (rawPage === undefined) {
+        throw new Error(`test: raw page ${index} missing`);
+      }
+
       expect(page.ocrFrench.trim().length).toBeGreaterThan(0);
       expect(page.english.trim().length).toBeGreaterThan(0);
       expect(page.image.objectStoreKey.trim().length).toBeGreaterThan(0);
       expect(page.image.sha256.trim().length).toBeGreaterThan(0);
+
+      // The embedded-image checksum is the folio sidecar's image-master hash,
+      // and it is DISTINCT from the translation-text provenance hash.
+      expect(page.image.sha256).toBe(rawPage.imageSha256);
+      expect(page.image.sha256).not.toBe(rawPage.provenance.sha256);
+
       // Bytes are not fetched by the builder (documented pipeline-stage
       // marker) -- assert the marker, not a fetched path.
       expect(page.image.bytesPath).toBe('');
-    }
+    });
   });
 
   it('title page carries real, non-empty title + rights', () => {

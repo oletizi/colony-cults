@@ -29,6 +29,7 @@ import {
   makeArchivePinReader,
   makeCorpusSnapshotReader,
   makeEditionBuilder,
+  requireImageSha256,
   type CorpusSnapshotReader,
 } from '@/pdf/load/edition';
 import { makeSourceMetaReader } from '@/pdf/load/source-meta';
@@ -190,7 +191,12 @@ async function stageImages(
       folioId: page.folioId,
       ark: page.ark,
       objectStoreKey: page.objectStoreKey ?? '',
-      sha256: page.provenance.sha256,
+      // The B2 master's checksum is the folio sidecar's image-master sha256
+      // (`RawPage.imageSha256`), NOT the translation-text `provenance.sha256`.
+      // The `b2-cdn` source verifies the fetched master bytes against exactly
+      // this; the `iiif` alternate ignores it (it fetches a derivative). Fail
+      // loud (naming the folio) when it is absent -- image integrity is required.
+      sha256: requireImageSha256(page, `buildItem/stageImages folio ${page.folioId}`),
     });
     copyFileSync(fetched.bytesPath, path.join(imageDir, versoName(page.folioId)));
   }

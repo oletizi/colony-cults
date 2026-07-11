@@ -222,6 +222,19 @@ export interface RawPage {
   ark: string;
   /** The archive `object_store` key for this page's image, or `null` when absent (used by `b2-cdn`). */
   objectStoreKey: string | null;
+  /**
+   * The IMAGE-MASTER sha256 -- the top-level `sha256:` of the folio sidecar
+   * (`fNNN.yml`), which is the checksum of the actual page-image master stored
+   * in B2 (`object_store.key`). This is DISTINCT from
+   * {@link ProvenanceRecord.sha256}, which is the translation/OCR TEXT
+   * artifact's hash. Consumers that verify fetched image bytes (the PDF
+   * `b2-cdn` fetch) MUST use THIS field, not the text hash.
+   *
+   * OPTIONAL + additive: `null` when the folio sidecar carries no top-level
+   * `sha256`, and absent entirely on snapshots committed before this field was
+   * introduced (so those older snapshots still parse).
+   */
+  imageSha256?: string | null;
   /** Raw French OCR for this page (a form-feed segment of `issue.txt`); may be noisy. */
   ocrFrench: string;
   /** Corrected French (`translation/pNNN.fr.txt`) when present. */

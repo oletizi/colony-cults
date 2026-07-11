@@ -34,6 +34,10 @@ describe('assembleColophon', () => {
     retrieved: '2026-01-15',
   };
 
+  // NOTE: `sha256` here is the IMAGE-master checksum (folio sidecar `sha256`),
+  // which the Edition builder now feeds from `RawPage.imageSha256` -- NOT the
+  // translation-text `provenance.sha256`. assembleColophon itself is agnostic:
+  // it records whatever image checksum the builder supplies.
   function makePage(overrides: Partial<ColophonPageInput> = {}): ColophonPageInput {
     const pageId = overrides.pageId ?? 'p001';
     const machineAssist =
