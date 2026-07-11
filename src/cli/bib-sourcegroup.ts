@@ -20,6 +20,7 @@ import { parseArgs as nodeParseArgs } from 'node:util';
 
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
+import { deriveSourceLayout, registerSourceLayout } from '@/archive/location';
 import { runFetchSource } from '@/cli/fetch';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
@@ -298,6 +299,43 @@ export async function runExcludeMemberCli(rest: string[]): Promise<number> {
   }
 }
 
+/**
+ * Auto-register `id`'s archive layout (`@/archive/location`'s runtime
+ * overlay) BEFORE `bib acquire` drives the shipped fetcher -- the fetcher
+ * resolves a layout deep inside via the synchronous, sourceId-only
+ * `sourceLayout(sourceId)`, which throws for a source-group member (created
+ * by `bib inventory`) that was never hand-added to the static registry. Loads
+ * the member Source (and, when it has one, its owning group, for the
+ * fallback `case`) via the shipped `loadAllSources` -- fails loud if either
+ * cannot be resolved, since a layout cannot be derived from nothing.
+ *
+ * Exported (not just used internally by `runAcquireCli`) so this wiring is
+ * directly unit-testable without standing up the full CLI (real repo root,
+ * real network-backed fetcher).
+ */
+export function registerMemberArchiveLayout(sourcesDir: string, id: string): void {
+  const loaded = loadAllSources(sourcesDir);
+  const memberEntry = loaded.find((entry) => entry.source.sourceId === id);
+  if (memberEntry === undefined) {
+    throw new Error(`bib acquire: unknown sourceId "${id}" -- cannot resolve its archive layout`);
+  }
+  const memberSource = memberEntry.source;
+
+  let groupCase: string | undefined;
+  if (memberSource.partOf !== undefined) {
+    const groupEntry = loaded.find((entry) => entry.source.sourceId === memberSource.partOf);
+    if (groupEntry === undefined) {
+      throw new Error(
+        `bib acquire: member "${id}"'s group "${memberSource.partOf}" does not resolve to an ` +
+          `existing Source -- cannot derive its archive layout's fallback case`,
+      );
+    }
+    groupCase = groupEntry.source.case;
+  }
+
+  registerSourceLayout(id, deriveSourceLayout(memberSource, groupCase));
+}
+
 /** `bib acquire <id> [--archive] [--object-store] [--dry-run]`. */
 export async function runAcquireCli(rest: string[]): Promise<number> {
   let id: string | undefined;
@@ -330,9 +368,14 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
   }
 
   const repoRoot = resolveRepoRoot();
+  const sourcesDir = sourcesDirOf(repoRoot);
   try {
+    // Auto-register this member's archive layout BEFORE the fetcher (below)
+    // resolves it -- see `registerMemberArchiveLayout`'s doc comment.
+    registerMemberArchiveLayout(sourcesDir, id);
+
     const result = await runAcquire({
-      sourcesDir: sourcesDirOf(repoRoot),
+      sourcesDir,
       sourceId: id,
       archive,
       objectStore,

@@ -1,4 +1,5 @@
 import { loadAllSources } from '@/bibliography/load';
+import type { LoadedSource } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import { serializeSource } from '@/bibliography/migrate-serialize';
@@ -142,9 +143,11 @@ function normalizeRightsStatus(rightsRaw: string | undefined): RightsStatus {
 /**
  * Fail loud unless `groupId` resolves to an existing `kind: source-group`
  * Source in `sourcesDir` (FR-005). Runs BEFORE any allocation/write so a
- * failure here creates nothing.
+ * failure here creates nothing. Returns the resolved group so its `case`
+ * (§ archive layout, FR-016-adjacent) can be copied onto the new member --
+ * see `runInventory`'s use of `group.source.case` below.
  */
-function assertSourceGroup(sourcesDir: string, groupId: string): void {
+function resolveSourceGroup(sourcesDir: string, groupId: string): LoadedSource {
   let loaded: ReturnType<typeof loadAllSources>;
   try {
     loaded = loadAllSources(sourcesDir);
@@ -166,6 +169,7 @@ function assertSourceGroup(sourcesDir: string, groupId: string): void {
         `not "source-group" -- a member may only be inventoried into an actual source-group`,
     );
   }
+  return group;
 }
 
 /**
@@ -185,8 +189,11 @@ export async function runInventory(input: RunInventoryInput): Promise<RunInvento
   const kind = input.kind ?? 'monograph';
 
   // FR-005: validate the group BEFORE any allocation/write -- a failure here
-  // must create nothing.
-  assertSourceGroup(sourcesDir, groupId);
+  // must create nothing. The resolved group is also the source of the new
+  // member's `case` (below) -- a member is self-describing for archive-layout
+  // derivation (see `@/archive/location`'s `deriveSourceLayout`) without
+  // requiring a second lookup at acquire time.
+  const group = resolveSourceGroup(sourcesDir, groupId);
 
   // FR-002: resolve the ark's metadata via the injected resolver. A `null`
   // result (unresolvable ark) fails loud without writing anything; a thrown
@@ -259,6 +266,10 @@ export async function runInventory(input: RunInventoryInput): Promise<RunInvento
       status: 'discovered',
       creator: metadata.creator,
       identifiers: metadata.identifiers ?? [],
+      // Additive/optional: copied from the group so the member is
+      // self-describing for archive-layout derivation (FR-016-adjacent). Left
+      // undefined -- not defaulted -- when the group itself has no `case`.
+      case: group.source.case,
     };
 
     capturedSource = source;

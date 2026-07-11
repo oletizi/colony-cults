@@ -1,0 +1,154 @@
+import { describe, it, expect, afterEach } from 'vitest';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import type { Source } from '@/model/source';
+import type { AuthoredRepositoryRecord } from '@/bibliography/model';
+import { serializeSource } from '@/bibliography/migrate-serialize';
+import { registerMemberArchiveLayout } from '@/cli/bib-sourcegroup';
+import { sourceLayout } from '@/archive/location';
+
+/**
+ * Tests for `registerMemberArchiveLayout` (the gap-fix wiring): before `bib
+ * acquire` drives the shipped fetcher -- which resolves a source's archive
+ * layout deep inside via the synchronous, sourceId-only `sourceLayout` --
+ * this function must have already registered a derived layout for a
+ * source-group member that was never hand-added to the static registry.
+ */
+
+function group(overrides: Partial<Source> = {}): Source {
+  return {
+    sourceId: 'PB-S900',
+    titles: [{ text: 'A Source Group', role: 'canonical' }],
+    kind: 'source-group',
+    identifiers: [],
+    ...overrides,
+  };
+}
+
+function member(overrides: Partial<Source> = {}): Source {
+  return {
+    sourceId: 'PB-P900',
+    titles: [{ text: 'Le Petit Journal de Test', role: 'canonical' }],
+    kind: 'monograph',
+    partOf: 'PB-S900',
+    status: 'approved-for-acquisition',
+    identifiers: [],
+    ...overrides,
+  };
+}
+
+function record(overrides: Partial<AuthoredRepositoryRecord> = {}): AuthoredRepositoryRecord {
+  return {
+    sourceArchive: 'Gallica / BnF',
+    status: 'to-collect',
+    identifiers: [{ type: 'ark', value: 'ark:/12148/bpt6k0000001' }],
+    ...overrides,
+  };
+}
+
+async function seedSourcesDir(
+  entries: { source: Source; records?: AuthoredRepositoryRecord[] }[],
+): Promise<string> {
+  const dir = await mkdtemp(join(tmpdir(), 'bib-sourcegroup-'));
+  for (const entry of entries) {
+    await writeFile(
+      join(dir, `${entry.source.sourceId}.yml`),
+      serializeSource({ source: entry.source, records: entry.records ?? [] }),
+      'utf-8',
+    );
+  }
+  return dir;
+}
+
+describe('registerMemberArchiveLayout', () => {
+  let dir: string;
+
+  afterEach(async () => {
+    if (dir) {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('registers a runtime layout for a new member, resolvable by sourceLayout, using the group\'s case', async () => {
+    dir = await seedSourcesDir([
+      { source: group({ sourceId: 'PB-S901', case: 'port-breton' }) },
+      { source: member({ sourceId: 'PB-P920', partOf: 'PB-S901' }), records: [record()] },
+    ]);
+
+    registerMemberArchiveLayout(dir, 'PB-P920');
+
+    const layout = sourceLayout('PB-P920');
+    expect(layout.case).toBe('port-breton');
+    expect(layout.type).toBe('books');
+    expect(layout.kind).toBe('monograph');
+    expect(layout.slug).toBe('le-petit-journal-de-test');
+  });
+
+  it('prefers the member\'s own case over the group\'s when both are present', async () => {
+    dir = await seedSourcesDir([
+      { source: group({ sourceId: 'PB-S902', case: 'port-breton' }) },
+      {
+        source: member({ sourceId: 'PB-P921', partOf: 'PB-S902', case: 'a-different-case' }),
+        records: [record()],
+      },
+    ]);
+
+    registerMemberArchiveLayout(dir, 'PB-P921');
+
+    expect(sourceLayout('PB-P921').case).toBe('a-different-case');
+  });
+
+  it('registers a periodical member under "newspapers"', async () => {
+    dir = await seedSourcesDir([
+      { source: group({ sourceId: 'PB-S903', case: 'port-breton' }) },
+      {
+        source: member({ sourceId: 'PB-P922', partOf: 'PB-S903', kind: 'periodical' }),
+        records: [record()],
+      },
+    ]);
+
+    registerMemberArchiveLayout(dir, 'PB-P922');
+
+    const layout = sourceLayout('PB-P922');
+    expect(layout.type).toBe('newspapers');
+    expect(layout.kind).toBe('periodical');
+  });
+
+  it('fails loud when the sourceId does not resolve to any Source', async () => {
+    dir = await seedSourcesDir([{ source: group({ sourceId: 'PB-S904', case: 'port-breton' }) }]);
+
+    expect(() => registerMemberArchiveLayout(dir, 'PB-P999')).toThrow(/unknown sourceId/i);
+  });
+
+  it('fails loud when the member\'s partOf group does not resolve to any Source', async () => {
+    dir = await seedSourcesDir([
+      { source: member({ sourceId: 'PB-P923', partOf: 'PB-S999' }), records: [record()] },
+    ]);
+
+    expect(() => registerMemberArchiveLayout(dir, 'PB-P923')).toThrow(/PB-S999/);
+  });
+
+  it('fails loud when neither the member nor its group carries a case', async () => {
+    dir = await seedSourcesDir([
+      { source: group({ sourceId: 'PB-S905', case: undefined }) },
+      {
+        source: member({ sourceId: 'PB-P924', partOf: 'PB-S905', case: undefined }),
+        records: [record()],
+      },
+    ]);
+
+    expect(() => registerMemberArchiveLayout(dir, 'PB-P924')).toThrow(/case/i);
+  });
+
+  it('is idempotent across repeated invocations (e.g. a retried acquire) for the same member', async () => {
+    dir = await seedSourcesDir([
+      { source: group({ sourceId: 'PB-S906', case: 'port-breton' }) },
+      { source: member({ sourceId: 'PB-P925', partOf: 'PB-S906' }), records: [record()] },
+    ]);
+
+    registerMemberArchiveLayout(dir, 'PB-P925');
+    expect(() => registerMemberArchiveLayout(dir, 'PB-P925')).not.toThrow();
+  });
+});

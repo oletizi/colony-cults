@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { assertValidArk } from '@/gallica/ark';
+import type { Source } from '@/model/source';
 
 /** Fixed sibling directory name of the private archive (FR-006). */
 const ARCHIVE_DIR_NAME = 'colony-cults-archive';
@@ -55,18 +56,124 @@ const SOURCE_LAYOUTS: Readonly<Record<string, SourceLayout>> = {
 };
 
 /**
- * Resolve the archive layout (case / type / slug) for a source ID, failing
- * loud for an unregistered source -- the layout is authoritative metadata, not
- * a default. Shared by {@link issueDir} and the provenance layer.
+ * Runtime overlay of source -> archive layout, ADDITIVE to (never replacing)
+ * the static {@link SOURCE_LAYOUTS} registry above. Exists so a source-group
+ * member -- created at runtime by the acquisition pipeline (`bib inventory`),
+ * never hand-added to the static registry -- can still resolve a layout when
+ * `bib acquire` drives it through the shipped fetcher (which calls
+ * {@link sourceLayout} deep inside, synchronously, sourceId-only). See
+ * {@link registerSourceLayout} / {@link deriveSourceLayout}.
  */
-export function sourceLayout(sourceId: string): SourceLayout {
-  const layout = SOURCE_LAYOUTS[sourceId];
-  if (layout === undefined) {
+const runtimeLayoutOverlay = new Map<string, SourceLayout>();
+
+/** Structural equality for two {@link SourceLayout} values. */
+function layoutsEqual(a: SourceLayout, b: SourceLayout): boolean {
+  return a.case === b.case && a.type === b.type && a.slug === b.slug && a.kind === b.kind;
+}
+
+/**
+ * Register (or idempotently re-register) a source's archive layout in the
+ * runtime overlay -- NEVER the static registry, which stays hand-authored and
+ * unchanged. Re-registering the SAME sourceId with an EQUAL layout is a no-op
+ * (idempotent, so a retried `bib acquire` invocation does not fail); a
+ * CONFLICTING re-registration (same id, different layout) throws -- fail
+ * loud, since a source's archive location must never silently move under it.
+ */
+export function registerSourceLayout(sourceId: string, layout: SourceLayout): void {
+  const existing = runtimeLayoutOverlay.get(sourceId);
+  if (existing !== undefined && !layoutsEqual(existing, layout)) {
     throw new Error(
-      `sourceLayout: no archive layout registered for source "${sourceId}"`,
+      `registerSourceLayout: source "${sourceId}" is already registered with a different ` +
+        `layout (existing: ${JSON.stringify(existing)}, attempted: ${JSON.stringify(layout)})`,
     );
   }
-  return layout;
+  runtimeLayoutOverlay.set(sourceId, layout);
+}
+
+/**
+ * Resolve the archive layout (case / type / slug) for a source ID. Resolution
+ * order: the static {@link SOURCE_LAYOUTS} registry FIRST (existing sources'
+ * behavior is unchanged), then the runtime overlay (source-group members
+ * registered via {@link registerSourceLayout}), else throws -- the layout is
+ * authoritative metadata, not a default. Shared by {@link issueDir} and the
+ * provenance layer.
+ */
+export function sourceLayout(sourceId: string): SourceLayout {
+  const staticLayout = SOURCE_LAYOUTS[sourceId];
+  if (staticLayout !== undefined) {
+    return staticLayout;
+  }
+  const overlayLayout = runtimeLayoutOverlay.get(sourceId);
+  if (overlayLayout !== undefined) {
+    return overlayLayout;
+  }
+  throw new Error(
+    `sourceLayout: no archive layout registered for source "${sourceId}"`,
+  );
+}
+
+/** Maximum length of a derived slug (see {@link deriveSourceLayout}). */
+const MAX_DERIVED_SLUG_LENGTH = 80;
+
+/**
+ * Slugify free text into a lowercase, hyphen-separated archive slug: lowercase,
+ * any run of non-alphanumeric characters collapsed to a single `-`, leading/
+ * trailing hyphens trimmed, and capped to {@link MAX_DERIVED_SLUG_LENGTH}
+ * characters (trimmed again after the cap, so it never ends mid-hyphen).
+ */
+function slugify(text: string): string {
+  const slug = text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug.slice(0, MAX_DERIVED_SLUG_LENGTH).replace(/-+$/g, '');
+}
+
+/**
+ * Derive a source-group member's slug from its titles: prefers the `canonical`
+ * title, falling back to the first title of any role; falls back to the
+ * lowercased `sourceId` when the source has no titles at all (or its titles
+ * slugify to an empty string, e.g. a title that is pure punctuation).
+ */
+function deriveSlug(source: Source): string {
+  const canonical = source.titles.find((title) => title.role === 'canonical');
+  const chosenTitle = canonical ?? source.titles[0];
+  const fromTitle = chosenTitle !== undefined ? slugify(chosenTitle.text) : '';
+  return fromTitle.length > 0 ? fromTitle : slugify(source.sourceId);
+}
+
+/**
+ * Derive a {@link SourceLayout} for a source-group member from its own data
+ * (FR-016-adjacent) -- used to auto-register a runtime layout (via
+ * {@link registerSourceLayout}) for a member that was never hand-added to the
+ * static {@link SOURCE_LAYOUTS} registry. A member is always `monograph` or
+ * `periodical`, never `source-group` (enforced by `Source.kind` elsewhere;
+ * this function does not re-validate that).
+ *
+ * - `case`: `source.case` if present, else `fallbackCase` (e.g. the owning
+ *   group's `case`). Throws (fail loud) if NEITHER is available -- a layout
+ *   with no case cannot be placed in the archive's `cases/<case>/` tree.
+ * - `type`: `newspapers` for a `periodical` source, `books` otherwise.
+ * - `slug`: derived from the source's canonical (or first) title, lowercased
+ *   with non-alphanumeric runs collapsed to `-`; falls back to the lowercased
+ *   `sourceId` when the source has no usable title (see {@link deriveSlug}).
+ * - `kind`: `periodical` for a periodical source, `monograph` otherwise.
+ */
+export function deriveSourceLayout(source: Source, fallbackCase?: string): SourceLayout {
+  const resolvedCase = source.case ?? fallbackCase;
+  if (resolvedCase === undefined || resolvedCase.trim().length === 0) {
+    throw new Error(
+      `deriveSourceLayout: source "${source.sourceId}" has no "case" and no fallback case was ` +
+        `given -- an archive layout cannot be derived without one`,
+    );
+  }
+  const isPeriodical = source.kind === 'periodical';
+  return {
+    case: resolvedCase,
+    type: isPeriodical ? 'newspapers' : 'books',
+    slug: deriveSlug(source),
+    kind: isPeriodical ? 'periodical' : 'monograph',
+  };
 }
 
 /** Minimal issue shape needed to name its directory. */
