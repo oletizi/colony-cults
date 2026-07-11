@@ -35,6 +35,19 @@ export interface CompileRequest {
   imageDir: string;
   /** Destination path for the rendered PDF. */
   outPath: string;
+  /**
+   * The Typst project root (`--root`). Typst sandboxes every `json()`/`image()`
+   * read to this directory and treats absolute `sys.inputs` paths as
+   * root-relative, so the root MUST contain the template, the input JSON, and
+   * the image directory. Set to the repo root by the build orchestrator.
+   */
+  root: string;
+  /**
+   * Directory of vendored fonts (`--font-path`). Typst resolves the template's
+   * OFL faces from here (with system fonts ignored so the render is
+   * reproducible regardless of the host's installed fonts).
+   */
+  fontPath: string;
 }
 
 /** One `typst compile` invocation's result. */
@@ -61,6 +74,13 @@ function compileArgs(req: CompileRequest): string[] {
     'compile',
     req.templatePath,
     req.outPath,
+    // Sandbox root: the template + input JSON + images all resolve under it.
+    '--root',
+    req.root,
+    // Vendored OFL faces; system fonts ignored so the render is reproducible.
+    '--font-path',
+    req.fontPath,
+    '--ignore-system-fonts',
     '--input',
     `data=${req.inputPath}`,
     '--input',

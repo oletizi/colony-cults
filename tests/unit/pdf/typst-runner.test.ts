@@ -33,10 +33,12 @@ const request = {
   inputPath: '/tmp/build-xyz/typst-input.json',
   imageDir: '/tmp/build-xyz/images',
   outPath: '/repo/build/pdf/PB-P001/PB-P001-1879-08-15.pdf',
+  root: '/repo',
+  fontPath: '/repo/pdf/template/fonts',
 };
 
 describe('makeTypstRunner (G-5 request shape)', () => {
-  it('shells "typst compile <template> <out> --input data=<inputPath> --input images=<imageDir>"', async () => {
+  it('shells "typst compile <template> <out> --root <root> --font-path <fontPath> --ignore-system-fonts --input data=<inputPath> --input images=<imageDir>"', async () => {
     const { runner, calls } = fakeExecRunner({ stdout: '', stderr: '', exitCode: 0 });
     const result = await makeTypstRunner(runner).compile(request);
 
@@ -46,12 +48,30 @@ describe('makeTypstRunner (G-5 request shape)', () => {
       'compile',
       request.templatePath,
       request.outPath,
+      '--root',
+      request.root,
+      '--font-path',
+      request.fontPath,
+      '--ignore-system-fonts',
       '--input',
       `data=${request.inputPath}`,
       '--input',
       `images=${request.imageDir}`,
     ]);
     expect(result).toEqual({ outPath: request.outPath });
+  });
+
+  it('sandboxes reads to --root and resolves fonts from --font-path', async () => {
+    const { runner, calls } = fakeExecRunner({ stdout: '', stderr: '', exitCode: 0 });
+    await makeTypstRunner(runner).compile(request);
+
+    const args = calls[0].args;
+    const rootIndex = args.indexOf('--root');
+    const fontIndex = args.indexOf('--font-path');
+    expect(rootIndex).toBeGreaterThanOrEqual(0);
+    expect(args[rootIndex + 1]).toBe(request.root);
+    expect(fontIndex).toBeGreaterThanOrEqual(0);
+    expect(args[fontIndex + 1]).toBe(request.fontPath);
   });
 
   it('never reimplements layout -- resolves to exactly the requested outPath', async () => {
