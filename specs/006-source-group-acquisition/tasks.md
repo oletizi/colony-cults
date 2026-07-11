@@ -168,3 +168,36 @@ Single-project CLI: new module `src/sourcegroup/`, dispatch in `src/cli/bibliogr
 - `[tier:powerful]`: T004, T005, T006, T011, T016, T017, T024, T025, T037 (spike, verification semantics, atomic allocation, promote rerun+record, model amendment, end-to-end run).
 - `[tier:balanced]`: ordinary stage commands, tests, serialization.
 - `[tier:fast]`: dispatch wiring, fixtures, help/doc edits, typecheck sweep.
+
+## Post-acquisition hardening (found during the T037 live run, 2026-07-11)
+
+The T037 live acquisition of the first PB-P004 member (`PB-P007`, the Rays judgment
+stenography extract `ark:/12148/bpt6k5785971m`, 174 pages → B2) exposed **five real
+integration gaps that every unit test missed because the tests inject fakes**. All fixed +
+committed on `feature/source-group-acquisition` (this is the concrete evidence that
+governance-green ≠ actually-works):
+
+- [x] H1 [tier:powerful] **Resolver targeted the wrong BnF system.** Inventory's ARK
+  resolver used the BnF *catalogue* SRU (`cb` bibliographic arks); it returns null for
+  Gallica *document* arks (`bpt6k`). Fixed: `gallica-ark-resolver.ts` resolves via
+  `GallicaHttpClient.oaiRecord`; `discover` stays on the catalogue SRU.
+- [x] H2 [tier:balanced] **New members had no archive layout.** `sourceLayout` is a static
+  per-source registry; a new member threw. Fixed: inventory inherits the group's `case`;
+  `deriveSourceLayout` + a runtime `registerSourceLayout` overlay; acquire registers it.
+- [x] H3 [tier:balanced] **Members lacked `language`**, which the fetcher's `sourceDescriptor`
+  requires. Fixed: resolver extracts `dc:language`, `normalizeLanguage` (`fre→French`),
+  inventory sets `Source.language`.
+- [x] H4 [tier:fast] **Mangled derived slug** (accents → hyphens, mid-word truncation).
+  Fixed: NFD accent transliteration + word-boundary truncation.
+- [x] H5 [tier:balanced] **No incremental checkpoint** on the monograph acquire (end-only
+  commit; a killed long fetch lost everything uncommitted). Fixed: `bib acquire` forwards
+  `--checkpoint --checkpoint-every <N>` to the shipped monograph page-checkpoint hook.
+
+**T037 status:** the pipeline is proven end-to-end live (PB-P007 acquired: 174 pages/45 MB
+to B2 + provenance committed to `feature/source-group-acquisition-assets`). The remaining
+Rays corpus records (indictment, proceedings, sentencing, appeal, government report) are a
+continuation of the same operator-acceptance run.
+
+**Open bookkeeping (H6, minor):** acquire does not reconcile the tool-repo RepositoryRecord
+status (`to-collect` → `collected`/`archived`) after a successful fetch — the SSOT status is
+derived from archive provenance via `bib regenerate`, which acquire does not auto-run.
