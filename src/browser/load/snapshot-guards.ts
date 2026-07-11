@@ -124,10 +124,10 @@ function parseRawIssue(value: unknown, where: string): RawIssue {
 function parseRawSource(value: unknown, where: string): RawSource {
   const record = requireRecord(value, where);
   const kind = requireString(record, 'kind', where);
-  if (kind !== 'periodical') {
+  if (kind !== 'periodical' && kind !== 'monograph') {
     throw new Error(
       `snapshot: unsupported source kind ${JSON.stringify(kind)} at ${where} ` +
-        '(only "periodical" is supported in v1).'
+        '(expected "periodical" or "monograph").'
     );
   }
   const issues = requireArray(record.issues, `${where}.issues`).map((issue, i) =>
@@ -136,7 +136,7 @@ function parseRawSource(value: unknown, where: string): RawSource {
   return {
     sourceId: requireString(record, 'sourceId', where),
     title: requireString(record, 'title', where),
-    kind: 'periodical',
+    kind,
     ark: requireString(record, 'ark', where),
     rights: requireString(record, 'rights', where),
     issues,

@@ -81,12 +81,12 @@ const sourceNoun = entries.length === 1 ? 'source' : 'sources';
                 {entry.kind === 'monograph' ? (
                   <>
                     <span class="cover__sep">·</span>
-                    {entry.pageCount} {entry.pageCount === 1 ? 'page' : 'pages'}
+                    {`${entry.pageCount} ${entry.pageCount === 1 ? 'page' : 'pages'}`}
                   </>
                 ) : (
                   <>
                     <span class="cover__sep">·</span>
-                    {entry.issueCount} {entry.issueCount === 1 ? 'issue' : 'issues'} catalogued
+                    {`${entry.issueCount} ${entry.issueCount === 1 ? 'issue' : 'issues'} catalogued`}
                   </>
                 )}
                 {entry.yearRange ? <><span class="cover__sep">·</span>{entry.yearRange}</> : null}
