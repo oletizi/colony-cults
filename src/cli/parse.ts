@@ -28,8 +28,13 @@ function isCommand(value: string): value is Command {
  * every page) is a use-site decision, not something invented here. Any
  * other non-positive-integer value throws a descriptive Error (no silent
  * fallback to a default).
+ *
+ * Exported so other CLI entry points that forward `--checkpoint`/
+ * `--checkpoint-every` to the shipped fetcher (e.g. `bib acquire`, see
+ * `@/cli/bib-sourcegroup`) validate it identically instead of duplicating
+ * the rule.
  */
-function parseCheckpointEvery(raw: string | undefined): number | undefined {
+export function parseCheckpointEvery(raw: string | undefined): number | undefined {
   if (raw === undefined) {
     return undefined;
   }

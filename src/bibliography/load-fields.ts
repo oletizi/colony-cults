@@ -5,12 +5,18 @@ import {
   fail,
   optionalString,
   requireArray,
+  requireNumber,
   requireObject,
   requireString,
 } from '@/bibliography/load-primitives';
 import type { CopyLevelIdentifierType, WorkLevelIdentifierType } from '@/model/identifiers';
 import { classifyIdentifier } from '@/model/identifiers';
-import type { CopyIdentifier } from '@/model/repository-record';
+import type {
+  CopyIdentifier,
+  MetadataSnapshotRef,
+  VerificationCheckResult,
+  VerificationVerdict,
+} from '@/model/repository-record';
 import type { Rights } from '@/model/rights';
 import type { Title, WorkIdentifier } from '@/model/source';
 
@@ -36,10 +42,21 @@ const RECORD_KEYS = new Set([
   'identifiers',
   'rights',
   'census',
+  'metadataSnapshot',
+  'verification',
 ]);
 const TITLE_KEYS = new Set(['text', 'role', 'language']);
 const IDENTIFIER_KEYS = new Set(['type', 'value']);
-const RIGHTS_KEYS = new Set(['ark', 'status', 'rawResponse', 'dcRights']);
+const RIGHTS_KEYS = new Set(['ark', 'status', 'rawResponse', 'dcRights', 'raw']);
+const METADATA_SNAPSHOT_KEYS = new Set(['path', 'retrievedAt', 'endpoint', 'normalizationVersion']);
+const VERIFICATION_KEYS = new Set(['result', 'verifiedAt', 'checks', 'snapshotRef']);
+const VERIFICATION_CHECKS_KEYS = new Set([
+  'identifierResolved',
+  'rights',
+  'requiredMetadata',
+  'hardDuplicate',
+  'possibleDuplicate',
+]);
 
 function isTitleRole(value: string): value is Title['role'] {
   return (
@@ -52,6 +69,16 @@ function isTitleRole(value: string): value is Title['role'] {
 
 function isRightsStatus(value: string): value is Rights['status'] {
   return value === 'public-domain' || value === 'other';
+}
+
+function isVerificationCheckResult(value: string): value is VerificationCheckResult {
+  return value === 'passed' || value === 'failed';
+}
+
+function isPossibleDuplicateResult(
+  value: string,
+): value is VerificationVerdict['checks']['possibleDuplicate'] {
+  return value === 'passed' || value === 'review-required';
 }
 
 function isWorkLevelType(value: string): value is WorkLevelIdentifierType {
@@ -154,7 +181,107 @@ export function validateRights(value: unknown, filePath: string, where: string):
   const dcRights = dcRightsArr.map((v, i) =>
     requireString(v, filePath, `${where}.dcRights[${i}]`),
   );
-  return { ark, status: statusRaw, rawResponse, dcRights };
+  // Additive optional field (D-07): the archive's verbatim rights statement.
+  const raw = optionalString(obj.raw, filePath, `${where}.raw`);
+  return raw === undefined
+    ? { ark, status: statusRaw, rawResponse, dcRights }
+    : { ark, status: statusRaw, rawResponse, dcRights, raw };
+}
+
+/**
+ * Parse an authored `metadataSnapshot` reference (additive optional field,
+ * D-07) -- the immutable raw-response snapshot a record's normalized fields
+ * were derived from.
+ */
+export function validateMetadataSnapshot(
+  value: unknown,
+  filePath: string,
+  where: string,
+): MetadataSnapshotRef {
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, METADATA_SNAPSHOT_KEYS, filePath, where);
+  const snapshotPath = requireString(obj.path, filePath, `${where}.path`);
+  const retrievedAt = requireString(obj.retrievedAt, filePath, `${where}.retrievedAt`);
+  const endpoint = requireString(obj.endpoint, filePath, `${where}.endpoint`);
+  const normalizationVersion = requireNumber(
+    obj.normalizationVersion,
+    filePath,
+    `${where}.normalizationVersion`,
+  );
+  return { path: snapshotPath, retrievedAt, endpoint, normalizationVersion };
+}
+
+function validateVerificationChecks(
+  value: unknown,
+  filePath: string,
+  where: string,
+): VerificationVerdict['checks'] {
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, VERIFICATION_CHECKS_KEYS, filePath, where);
+
+  const identifierResolvedRaw = requireString(
+    obj.identifierResolved,
+    filePath,
+    `${where}.identifierResolved`,
+  );
+  if (!isVerificationCheckResult(identifierResolvedRaw)) {
+    fail(filePath, `${where}.identifierResolved must be "passed" or "failed"`);
+  }
+  const rightsRaw = requireString(obj.rights, filePath, `${where}.rights`);
+  if (!isVerificationCheckResult(rightsRaw)) {
+    fail(filePath, `${where}.rights must be "passed" or "failed"`);
+  }
+  const requiredMetadataRaw = requireString(
+    obj.requiredMetadata,
+    filePath,
+    `${where}.requiredMetadata`,
+  );
+  if (!isVerificationCheckResult(requiredMetadataRaw)) {
+    fail(filePath, `${where}.requiredMetadata must be "passed" or "failed"`);
+  }
+  const hardDuplicateRaw = requireString(obj.hardDuplicate, filePath, `${where}.hardDuplicate`);
+  if (!isVerificationCheckResult(hardDuplicateRaw)) {
+    fail(filePath, `${where}.hardDuplicate must be "passed" or "failed"`);
+  }
+  const possibleDuplicateRaw = requireString(
+    obj.possibleDuplicate,
+    filePath,
+    `${where}.possibleDuplicate`,
+  );
+  if (!isPossibleDuplicateResult(possibleDuplicateRaw)) {
+    fail(filePath, `${where}.possibleDuplicate must be "passed" or "review-required"`);
+  }
+
+  return {
+    identifierResolved: identifierResolvedRaw,
+    rights: rightsRaw,
+    requiredMetadata: requiredMetadataRaw,
+    hardDuplicate: hardDuplicateRaw,
+    possibleDuplicate: possibleDuplicateRaw,
+  };
+}
+
+/**
+ * Parse an authored `verification` verdict (additive optional field, D-03)
+ * -- the recorded outcome of `promote`'s rerun verification. `promote` only
+ * ever records a passing verdict, so `result` is validated as the literal
+ * `"passed"`.
+ */
+export function validateVerification(
+  value: unknown,
+  filePath: string,
+  where: string,
+): VerificationVerdict {
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, VERIFICATION_KEYS, filePath, where);
+  const resultRaw = requireString(obj.result, filePath, `${where}.result`);
+  if (resultRaw !== 'passed') {
+    fail(filePath, `${where}.result "${resultRaw}" must be "passed"`);
+  }
+  const verifiedAt = requireString(obj.verifiedAt, filePath, `${where}.verifiedAt`);
+  const checks = validateVerificationChecks(obj.checks, filePath, `${where}.checks`);
+  const snapshotRef = requireString(obj.snapshotRef, filePath, `${where}.snapshotRef`);
+  return { result: resultRaw, verifiedAt, checks, snapshotRef };
 }
 
 /** {@link validateRecord}'s result: the authored record plus any identifier leaks found on it. */
@@ -199,6 +326,16 @@ export function validateRecord(value: unknown, filePath: string, index: number):
   const rights =
     obj.rights === undefined ? undefined : validateRights(obj.rights, filePath, `${where}.rights`);
 
+  const metadataSnapshot =
+    obj.metadataSnapshot === undefined
+      ? undefined
+      : validateMetadataSnapshot(obj.metadataSnapshot, filePath, `${where}.metadataSnapshot`);
+
+  const verification =
+    obj.verification === undefined
+      ? undefined
+      : validateVerification(obj.verification, filePath, `${where}.verification`);
+
   const record: AuthoredRepositoryRecord = {
     sourceArchive,
     status,
@@ -208,6 +345,8 @@ export function validateRecord(value: unknown, filePath: string, index: number):
     identifiers: obj.identifiers === undefined ? undefined : identifiers,
     rights,
     census,
+    metadataSnapshot,
+    verification,
   };
 
   return { record, identifierLeaks };

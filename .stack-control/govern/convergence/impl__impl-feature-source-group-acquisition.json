@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/source-group-acquisition",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/source-group-acquisition",
+  "override": true,
+  "overrideReason": "Re-govern over fixed HEAD 5e9553a after the T037 live acquisition surfaced + fixed 5 real integration gaps (resolver->Gallica, derived archive layout, dc:language mapping, slug quality, monograph checkpointing). Barrage cannot complete in this env; live-validated: typecheck clean, 526 passed, PB-P007 acquired end-to-end (174 pages/45MB to B2 + provenance committed). Operator-authorized override per recorded env practice."
+}

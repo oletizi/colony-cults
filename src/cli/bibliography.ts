@@ -1,8 +1,16 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseArgs as nodeParseArgs } from 'node:util';
 
+import {
+  resolveRepoRoot,
+  runAcquireCli,
+  runDiscoverCli,
+  runExcludeMemberCli,
+  runInventoryCli,
+  runPromoteCli,
+  runVerifyMemberCli,
+} from '@/cli/bib-sourcegroup';
 import { deriveModel, gatherCensusForAll, gatherProvenance } from '@/bibliography/derive';
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
@@ -18,8 +26,8 @@ import type { RepositoryRecord } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 
 /** Subactions the `bib` verb group recognizes (contracts/cli.md). */
-type Subaction = 'migrate' | 'show' | 'validate' | 'regenerate';
-const SUBACTIONS: readonly Subaction[] = ['migrate', 'show', 'validate', 'regenerate'];
+type Subaction = 'migrate' | 'show' | 'validate' | 'regenerate' | 'inventory' | 'verify-member' | 'promote' | 'exclude-member' | 'acquire' | 'discover';
+const SUBACTIONS: readonly Subaction[] = ['migrate', 'show', 'validate', 'regenerate', 'inventory', 'verify-member', 'promote', 'exclude-member', 'acquire', 'discover'];
 
 function isSubaction(value: string): value is Subaction {
   return (SUBACTIONS as readonly string[]).includes(value);
@@ -32,17 +40,6 @@ interface BibArgs {
   archiveRoot?: string;
   /** `bib regenerate --check`: write nothing, report drift only. */
   check: boolean;
-}
-
-/**
- * Resolve the repo root from THIS module's location -- `src/cli/` is two
- * levels below the repo root -- so `bib` behaves the same regardless of the
- * caller's `process.cwd()`, matching how `src/index.ts` resolves
- * `package.json` relative to its own module URL.
- */
-function resolveRepoRoot(): string {
-  const here = fileURLToPath(import.meta.url);
-  return path.resolve(path.dirname(here), '..', '..');
 }
 
 /** Parse a subaction's `rest` argv into positionals + the shared flags. Throws (fail loud) on an unknown flag. */
@@ -410,5 +407,17 @@ export async function runBibliography(argv: string[]): Promise<number> {
       return runValidate(rest);
     case 'regenerate':
       return runRegenerate(rest);
+    case 'inventory':
+      return runInventoryCli(rest);
+    case 'verify-member':
+      return runVerifyMemberCli(rest);
+    case 'promote':
+      return runPromoteCli(rest);
+    case 'exclude-member':
+      return runExcludeMemberCli(rest);
+    case 'acquire':
+      return runAcquireCli(rest);
+    case 'discover':
+      return runDiscoverCli(rest);
   }
 }
