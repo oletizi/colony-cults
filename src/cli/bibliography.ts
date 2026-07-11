@@ -178,10 +178,47 @@ function formatRecord(record: RepositoryRecord): string[] {
   return lines;
 }
 
-/** Print `bib show`'s human (non-JSON) table for one source + its records. */
-function printShow(source: Source, records: RepositoryRecord[]): void {
+/** A source's canonical (else first) title text, for a compact member listing. */
+export function sourceTitle(source: Source): string {
+  const canonical = source.titles.find((t) => t.role === 'canonical') ?? source.titles[0];
+  return canonical?.text ?? '(untitled)';
+}
+
+/**
+ * Derive a source-group's members from the `partOf` edges (a group holds no
+ * member list; FR-006), sorted by id for a stable listing. Returns `[]` for a
+ * non-group id or a group with no members.
+ */
+export function deriveGroupMembers(
+  sources: readonly Source[],
+  groupId: string,
+): Source[] {
+  return sources
+    .filter((s) => s.partOf === groupId)
+    .sort((a, b) => a.sourceId.localeCompare(b.sourceId));
+}
+
+/**
+ * Render a source-group's derived members as human-readable lines. Membership
+ * is the members' `partOf` edge (a group holds no member list; FR-006), so the
+ * list is DERIVED rather than stored on the group.
+ */
+export function formatMembers(members: readonly Source[]): string[] {
+  const lines = [`Members (${members.length}):`];
+  for (const m of members) {
+    lines.push(`- ${m.sourceId}  [${m.status ?? 'no-status'}]  ${sourceTitle(m)}`);
+  }
+  return lines;
+}
+
+/** Print `bib show`'s human (non-JSON) table for one source + its records (+ members for a group). */
+function printShow(source: Source, records: RepositoryRecord[], members: readonly Source[]): void {
   console.log(formatSource(source).join('\n'));
   console.log('');
+  if (source.kind === 'source-group') {
+    console.log(formatMembers(members).join('\n'));
+    console.log('');
+  }
   console.log(`Repository Records (${records.length}):`);
   for (const record of records) {
     console.log(formatRecord(record).join('\n'));
@@ -208,6 +245,7 @@ async function runShow(rest: string[]): Promise<number> {
 
   let source: Source | undefined;
   let records: RepositoryRecord[];
+  let members: Source[] = [];
   try {
     const loaded = loadAllSources(sourcesDir);
     const archiveRoot = resolveArchiveRoot(repoRoot, args.archiveRoot);
@@ -219,6 +257,11 @@ async function runShow(rest: string[]): Promise<number> {
     const model = deriveModel(loaded, provenanceBySource, censusByKey);
     source = model.sources.find((s) => s.sourceId === sourceId);
     records = model.repositoryRecords.filter((r) => r.sourceId === sourceId);
+    // A source-group's members are DERIVED from the `partOf` edges (the group
+    // holds no member list; FR-006), sorted by id for a stable listing.
+    if (source?.kind === 'source-group') {
+      members = deriveGroupMembers(model.sources, sourceId);
+    }
   } catch (error) {
     console.error(`bib show: ${describeError(error)}`);
     return 2;
@@ -230,9 +273,23 @@ async function runShow(rest: string[]): Promise<number> {
   }
 
   if (args.json) {
-    console.log(JSON.stringify({ source, repositoryRecords: records }, null, 2));
+    const memberView = members.map((m) => ({
+      sourceId: m.sourceId,
+      title: sourceTitle(m),
+      status: m.status ?? null,
+      kind: m.kind,
+    }));
+    console.log(
+      JSON.stringify(
+        source.kind === 'source-group'
+          ? { source, members: memberView, repositoryRecords: records }
+          : { source, repositoryRecords: records },
+        null,
+        2,
+      ),
+    );
   } else {
-    printShow(source, records);
+    printShow(source, records, members);
   }
   return 0;
 }
