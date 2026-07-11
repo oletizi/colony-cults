@@ -162,7 +162,7 @@ function stableStringify(value: unknown, depth: number): string {
     return stringifyArray(value, depth);
   }
   if (typeof value === 'object') {
-    return stringifyObject(value as Record<string, unknown>, depth);
+    return stringifyObject(value, depth);
   }
   // `undefined`, function, symbol -- not expected in a TypstInput; drop to
   // null so the output stays valid JSON and the defect is visible on read.
@@ -178,16 +178,16 @@ function stringifyArray(value: unknown[], depth: number): string {
   return `[\n${items.join(',\n')}\n${INDENT.repeat(depth)}]`;
 }
 
-function stringifyObject(value: Record<string, unknown>, depth: number): string {
-  const keys = Object.keys(value)
-    .filter((key) => value[key] !== undefined)
-    .sort();
-  if (keys.length === 0) {
+function stringifyObject(value: object, depth: number): string {
+  const entries = Object.entries(value)
+    .filter(([, v]) => v !== undefined)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  if (entries.length === 0) {
     return '{}';
   }
   const pad = INDENT.repeat(depth + 1);
-  const entries = keys.map(
-    (key) => `${pad}${JSON.stringify(key)}: ${stableStringify(value[key], depth + 1)}`
+  const lines = entries.map(
+    ([key, v]) => `${pad}${JSON.stringify(key)}: ${stableStringify(v, depth + 1)}`
   );
-  return `{\n${entries.join(',\n')}\n${INDENT.repeat(depth)}}`;
+  return `{\n${lines.join(',\n')}\n${INDENT.repeat(depth)}}`;
 }
