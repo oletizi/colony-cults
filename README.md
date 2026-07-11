@@ -289,6 +289,49 @@ fails loud, writing nothing — consistent with the project's copyright policy
 (documented in `AGENTS.md`). `--dry-run` reports the rights status instead of
 refusing hard, allowing a preview of intended work before requiring a full run.
 
+## Corpus Print PDF
+
+Generates print-native PDF facsimile editions from the committed corpus snapshot. Each PDF is a facing-page spread: verso contains the original facsimile scan, recto contains that page's French OCR (left column) and English translation (right column), with a provenance title page and colophon. This tool is internal-first — it publishes nothing, only writes locally.
+
+### Prerequisites
+
+- **Typst CLI** (`typst --version`) — a documented build dependency, not an npm package. See https://github.com/typst/typst to install.
+- The committed snapshot present: `site/data/*.json.gz` (per-source files) and the pin sidecar `site/data/archive-source.json`.
+- Image byte source (one of):
+  - **B2 object store** (default): `COLONY_S3_BUCKET`, `COLONY_S3_ENDPOINT`, `COLONY_S3_REGION` environment variables set, and `~/.config/backblaze/b2-credentials.txt` present.
+  - **Public IIIF** (alternative): pass `--provider iiif` to fetch full-size scans from the public Gallica IIIF endpoint instead.
+
+### Usage
+
+Run via `npm run pdf:build -- <selector> [--provider b2|iiif] [--out <dir>]`.
+
+**Selectors** (mutually exclusive):
+
+- `<sourceId>/<issueId>` — single bibliographic item (e.g. `PB-P001/1879-08-15_bpt6k56068358`).
+- `<sourceId>` — every issue of a source (e.g. `PB-P001` → 78 issue PDFs; `PB-P008` → 1 PDF).
+- `--all` — the whole committed v1 corpus (all sources and issues).
+
+**Flags**:
+
+- `--provider b2|iiif` (optional, default `b2`): image byte source. `b2` fetches from private archive masters; `iiif` fetches from public Gallica.
+- `--out <dir>` (optional, default `build/pdf`): output root. PDFs land at `<out>/<sourceId>/<itemId>.pdf`.
+
+**Examples**:
+
+```bash
+npm run pdf:build -- PB-P001/1879-08-15_bpt6k56068358 --provider iiif
+npm run pdf:build -- PB-P001
+npm run pdf:build -- --all --out /tmp/corpus-pdfs
+```
+
+### B2 read-cost note
+
+Each build fetches page images at generation time. Using `--provider b2` incurs one Backblaze B2 Class-B read per embedded image. For bulk builds across many issues, this cost is material; mitigation via CDN caching or local image cache is tracked separately (outside v1 scope).
+
+### Validation
+
+See `specs/007-corpus-print-pdf/quickstart.md` for the end-to-end walkthrough and fail-loud checks.
+
 ## Legal and citation note
 
 This repository is intended to hold metadata, notes, citations, research leads, and links to lawful sources. Public-domain material may be linked or quoted within normal scholarly practice. Copyrighted works should be cited and summarized, not redistributed.
