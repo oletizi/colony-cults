@@ -20,7 +20,8 @@ edit this file directly, then run `stackctl roadmap order` to revalidate the
 graph (it fails loud on a cycle / dangling ref / duplicate id).
 
 ## impl:feature/gallica-fetcher
-- status: shipped
+- status: closed
+- validated: yes
 - analyze-clean: yes
 - spec: specs/001-gallica-fetcher
 - design-approved: yes
@@ -35,6 +36,7 @@ Reusable TypeScript/tsx tool to fetch Gallica public-domain sources via document
 - design: docs/superpowers/specs/2026-07-08-source-translation-design.md
 - depends-on: impl:feature/gallica-fetcher
 Mechanism to translate captured public-domain French sources (OCR text from the gallica-fetcher archive) to English for the research archive: machine-assisted translation retaining the original-language citation, labelled machine-assisted, with engine + date provenance, per AGENTS.md translation policy. First input: La Nouvelle France issue.txt OCR (PB-P001, public domain -> full translation committable).
+
 ## impl:feature/archive-object-store
 - status: closed
 - validated: yes
@@ -55,7 +57,8 @@ Move the archive's binary image masters from git to Backblaze B2 (S3-compatible;
 Two-level (really multi-level) canonical source metadata model: Source (intellectual work; stable internal ID PB-###; work-level identifiers ISBN/ISSN/OCLC; titles as data) separate from Repository Record (one source-archive's copy: Gallica/SLQ/IA/HathiTrust; copy-level identifiers ARK/IIIF-manifest/scan-DOI; provenance). Sits ABOVE the per-asset provenance the archive-object-store feature already emits; for serials adds Repository->Issue->Asset. Consolidates the 5 existing overlapping metadata representations into one SSOT. From a third-party design brief, with refinements. Depends-on archive-object-store (edge to add once that merges to main). Scope: sources only.
 
 ## impl:feature/corpus-browser
-- status: shipped
+- status: closed
+- validated: yes
 - closes: TASK-9, TASK-10, TASK-11
 - analyze-clean: yes
 - spec: specs/005-corpus-browser
@@ -75,7 +78,8 @@ Static Astro website to browse the corpus (v1: PB-P001 La Nouvelle France): sour
 Source Group kind for research-defined collections that are discovered before acquired (resolves PB-P004 mis-model + backlog TASK-3). Extend Source.kind to periodical|monograph|source-group; a source-group has members (part_of edges), NOT repositoryRecords, and is never fetchable; fetcher/acquisition fails loud+informatively on a source-group keyed on kind. Add discovered/approved-for-acquisition to the status vocab. Reclassify PB-P004 (French legal corpus) as the first source-group with member children. Discover->Inventory->Verify->Promote->Acquire pipeline. Does NOT add repository-record to the kind enum (already a separate entity). From a third-party design guidance doc, with refinements.
 
 ## impl:feature/source-group-acquisition
-- status: shipped
+- status: closed
+- validated: yes
 - analyze-clean: yes
 - spec: specs/006-source-group-acquisition
 - design-approved: yes

@@ -1,5 +1,5 @@
 ---
-id: TASK-8
+id: TASK-12
 title: cdn-read-caching
 status: To Do
 assignee: []
@@ -8,7 +8,7 @@ labels:
   - agent-found
   - 'type:gap'
 dependencies: []
-ordinal: 8000
+ordinal: 12000
 ---
 
 ## Description
