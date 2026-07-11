@@ -66,7 +66,7 @@ reproducibly, so the same input always yields the same editions and each build i
 but it depends on US1 (a correct single item) being solid first. Reproducibility from a pinned
 snapshot is what makes the output a citable research artifact rather than a one-off.
 
-**Independent Test**: Run a batch build over the v1 corpus (PB-P001's 78 issues + the PB-P008–011
+**Independent Test**: Run a batch build over the v1 corpus (PB-P001's 73 snapshot issues + the PB-P008–011
 monographs) against a pinned snapshot commit and confirm one PDF is produced per bibliographic
 item, and that re-running against the same pin yields content-identical PDFs.
 
@@ -156,9 +156,10 @@ item, and that re-running against the same pin yields content-identical PDFs.
   frontend-design skill before any template markup/styling is authored (project Constitution XI).
 - **FR-014**: Any font embedded in a distributable PDF MUST be licensed for embedding and
   redistribution.
-- **FR-015**: v1 corpus coverage MUST include PB-P001 *La Nouvelle France* (78 issues) and the Port
-  Breton monographs PB-P008–PB-P011, with the data layer generalized so any source in the snapshot
-  can be built without item-specific code.
+- **FR-015**: v1 corpus coverage MUST include PB-P001 *La Nouvelle France* (73 issues carried in the
+  snapshot, of the ~78-issue run; 5 are excluded at snapshot generation for missing OCR/translation
+  layers) and the Port Breton monographs PB-P008–PB-P011, with the data layer generalized so any
+  source in the snapshot can be built without item-specific code.
 - **FR-016**: Each build MUST record enough provenance (in the colophon and/or build output) that a
   reader or auditor can reproduce it: the exact pinned snapshot commit and every embedded image
   identified by checksum.
@@ -183,7 +184,7 @@ item, and that re-running against the same pin yields content-identical PDFs.
 
 ### Measurable Outcomes
 
-- **SC-001**: Every item in the v1 corpus (PB-P001's 78 issues + PB-P008–011) produces a valid,
+- **SC-001**: Every buildable item in the v1 corpus (PB-P001's 73 snapshot issues + PB-P008–011) produces a valid,
   openable PDF containing every one of that item's source pages, with zero missing pages.
 - **SC-002**: 100% of images embedded in any PDF are traceable from that PDF's colophon (each by
   object-store key + sha256), and the colophon names the exact snapshot commit — so any build is
