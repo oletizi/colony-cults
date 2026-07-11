@@ -19,7 +19,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
-import type { ProvenanceRecord } from '@/browser/model';
+import type { MachineAssistLabel, ProvenanceRecord } from '@/browser/model';
 
 /** One page's translation text + provenance, as loaded from `translation/`. */
 export interface PageTranslation {
@@ -62,7 +62,14 @@ export function loadPageTranslation(
   const sidecarPath = resolveSidecarPath(translationDir, pageId);
   const provenance = loadProvenance(sidecarPath, pageId, sourceDate);
 
-  return { correctedFrench, english, provenance };
+  // The machine-assist label describes the ENGLISH translation, so it is read
+  // from the EN sidecar specifically (not the fr-preferred provenance sidecar).
+  // Absent/label-less EN sidecar -> no label (honest absence, not fabricated).
+  const machineAssist = loadMachineAssist(translationDir, pageId);
+  const provenanceWithLabel: ProvenanceRecord =
+    machineAssist === null ? provenance : { ...provenance, machineAssist };
+
+  return { correctedFrench, english, provenance: provenanceWithLabel };
 }
 
 function readRequiredText(filePath: string, missingMessage: string): string {
@@ -118,6 +125,41 @@ function loadProvenance(sidecarPath: string, pageId: string, sourceDate: string)
     page: pageId,
     sha256,
   };
+}
+
+/**
+ * Reads the machine-assisted-translation label (`engine` / `model` /
+ * `retrieved`) from the page's EN sidecar (`translation/<pageId>.en.txt.yml`).
+ *
+ * Additive + honest-absence: returns `null` (no label) when the EN sidecar is
+ * absent, does not parse to a mapping, or lacks `engine`/`retrieved` -- it does
+ * NOT throw and does NOT fabricate values. `model` is optional (string|null).
+ */
+function loadMachineAssist(translationDir: string, pageId: string): MachineAssistLabel | null {
+  const enSidecarPath = path.join(translationDir, `${pageId}.en.txt.yml`);
+  if (!existsSync(enSidecarPath)) {
+    return null;
+  }
+
+  const parsed: unknown = parse(readFileSync(enSidecarPath, 'utf-8'));
+  if (!isRecord(parsed)) {
+    return null;
+  }
+
+  const engine = optionalStringField(parsed, 'engine');
+  const retrieved = optionalStringField(parsed, 'retrieved');
+  if (engine === null || retrieved === null) {
+    // Without both engine and retrieved there is no honest label to carry.
+    return null;
+  }
+
+  return { engine, model: optionalStringField(parsed, 'model'), retrieved };
+}
+
+/** A non-empty string field, or `null` when the field is absent/blank/non-string. */
+function optionalStringField(record: Record<string, unknown>, field: string): string | null {
+  const value = record[field];
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

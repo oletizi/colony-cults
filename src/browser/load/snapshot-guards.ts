@@ -8,6 +8,7 @@
 
 import type {
   CorpusSnapshot,
+  MachineAssistLabel,
   ProvenanceRecord,
   RawIssue,
   RawPage,
@@ -81,9 +82,27 @@ function describe(value: unknown): string {
   return typeof value;
 }
 
-function parseProvenance(value: unknown, where: string): ProvenanceRecord {
+/**
+ * Parses the OPTIONAL machine-assist label. Absent (`undefined`) or explicit
+ * `null` -> `null` (no label). Present -> a well-typed {@link MachineAssistLabel}
+ * (`engine` + `retrieved` required strings, `model` string|null), else throws.
+ * This is additive: snapshots predating the extension simply lack the field.
+ */
+function parseMachineAssist(value: unknown, where: string): MachineAssistLabel | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
   const record = requireRecord(value, where);
   return {
+    engine: requireString(record, 'engine', where),
+    model: requireStringOrNull(record, 'model', where),
+    retrieved: requireString(record, 'retrieved', where),
+  };
+}
+
+function parseProvenance(value: unknown, where: string): ProvenanceRecord {
+  const record = requireRecord(value, where);
+  const base: ProvenanceRecord = {
     sourceId: requireString(record, 'sourceId', where),
     ark: requireString(record, 'ark', where),
     date: requireString(record, 'date', where),
@@ -91,6 +110,10 @@ function parseProvenance(value: unknown, where: string): ProvenanceRecord {
     page: requireString(record, 'page', where),
     sha256: requireString(record, 'sha256', where),
   };
+  // Additive optional field: only attach the key when a real label is present,
+  // so provenance without a label re-serializes/round-trips unchanged.
+  const machineAssist = parseMachineAssist(record.machineAssist, `${where}.machineAssist`);
+  return machineAssist === null ? base : { ...base, machineAssist };
 }
 
 function parseRawPage(value: unknown, where: string): RawPage {
