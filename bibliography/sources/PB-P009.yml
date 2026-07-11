@@ -1,0 +1,92 @@
+sourceId: PB-P009
+kind: monograph
+partOf: PB-P004
+status: approved-for-acquisition
+case: port-breton
+language: French
+creator: Du Breil de Rays, Charles (1832-1893). Auteur du texte
+titles:
+  - text: "La Nouvelle France : colonie libre de Port-Breton... : clôture de la première série de souscription / [signé : Ch. du Breil, marquis de Rays]"
+    role: archive
+repositoryRecords:
+  - sourceArchive: Gallica / BnF
+    status: to-collect
+    originalUrl: https://gallica.bnf.fr/ark:/12148/bpt6k5806269g
+    retrievedAt: 2026-07-11T04:57:17.971Z
+    identifiers:
+      - type: ark
+        value: ark:/12148/bpt6k5806269g
+    rights:
+      ark: ark:/12148/bpt6k5806269g
+      status: public-domain
+      rawResponse: |
+        <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <results ResultsGenerationSearchTime="0:00:00.214" countResults="1" resultType="CVOAIRecordSearchService" searchTime="">
+        <visibility_rights>all</visibility_rights>
+        <notice>
+        <record>
+        <header>
+        <identifier>oai:bnf.fr:gallica/ark:/12148/bpt6k5806269g</identifier>
+        <datestamp>2019-06-22</datestamp>
+        <setSpec>gallica:theme:0:01</setSpec>
+        <setSpec>gallica:typedoc:monographies</setSpec>
+        </header>
+        <metadata>
+        <oai_dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+        <dc:identifier>https://gallica.bnf.fr/ark:/12148/bpt6k5806269g</dc:identifier>
+        <dc:title>La Nouvelle France : colonie libre de Port-Breton... : clôture de la première série de souscription / [signé : Ch. du Breil, marquis de Rays]</dc:title>
+        <dc:creator>Du Breil de Rays, Charles (1832-1893). Auteur du texte</dc:creator>
+        <dc:publisher> (Paris)</dc:publisher>
+        <dc:date>1879</dc:date>
+        <dc:subject xml:lang="fre">Port-Breton, Affaire de (1877-1884)</dc:subject>
+        <dc:subject xml:lang="fre">Colonies françaises -- Océanie -- 1870-1914</dc:subject>
+        <dc:subject xml:lang="fre">Nouvelle-Irlande (Papouasie-Nouvelle-Guinée ; île) -- 1870-1914</dc:subject>
+        <dc:format>2 p. ; in-4</dc:format>
+        <dc:language>fre</dc:language>
+        <dc:language>français</dc:language>
+        <dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb341398750</dc:relation>
+        <dc:type xml:lang="eng">text</dc:type>
+        <dc:type xml:lang="fre">monographie imprimée</dc:type>
+        <dc:type xml:lang="eng">monographie imprimée</dc:type>
+        <dc:source>Bibliothèque nationale de France, département Philosophie, histoire, sciences de l'homme, 4-LK13-76</dc:source>
+        <dc:rights xml:lang="fre">domaine public</dc:rights>
+        <dc:rights xml:lang="eng">public domain</dc:rights>
+        <dc:format>Nombre total de vues :  5</dc:format>
+        <dc:description>Avec mode texte</dc:description>
+        </oai_dc:dc>
+        </metadata>
+        </record>
+        </notice>
+        <provenance>bnf.fr</provenance>
+        <sdewey>01</sdewey>
+        <dewey>0</dewey>
+        <source>Bibliothèque nationale de France, département Philosophie, histoire, sciences de l'homme, 4-LK13-76</source>
+        <typedoc>monographie</typedoc>
+        <nqamoyen>96.81</nqamoyen>
+        <mode_indexation>text</mode_indexation>
+        <title>La Nouvelle France : colonie libre de Port-Breton... : clôture de la première série de souscription / [signé : Ch. du Breil, marquis de Rays]</title>
+        <date nbIssue="1">1879</date>
+        <first_indexation_date>08/02/2010</first_indexation_date>
+        <streamable>false</streamable>
+        <listBibVirt>
+        <label>gallica</label>
+        </listBibVirt>
+        </results>
+      dcRights:
+        - domaine public
+      raw: domaine public
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P009/ark-12148-bpt6k5806269g-2026-07-11T04:57:17.971Z.json
+      retrievedAt: 2026-07-11T04:57:17.971Z
+      endpoint: https://gallica.bnf.fr/services/OAIRecord?ark=bpt6k5806269g
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-11T04:57:57.687Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P009/ark-12148-bpt6k5806269g-2026-07-11T04:57:17.971Z.json

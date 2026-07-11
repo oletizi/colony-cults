@@ -1,0 +1,95 @@
+sourceId: PB-P011
+kind: monograph
+partOf: PB-P004
+status: approved-for-acquisition
+case: port-breton
+language: French
+creator: Du Breil de Rays, Charles (1832-1893). Auteur du texte
+titles:
+  - text: "La colonie libre de Port-Breton : Nouvelle France en Océanie : [conférence faite par le marquis de Rays au salon des œuvres de Marseille] : [et compte rendu de cette conférence par la Gazette du Midi]"
+    role: archive
+repositoryRecords:
+  - sourceArchive: Gallica / BnF
+    status: to-collect
+    originalUrl: https://gallica.bnf.fr/ark:/12148/bpt6k58040250
+    retrievedAt: 2026-07-11T04:57:22.011Z
+    identifiers:
+      - type: ark
+        value: ark:/12148/bpt6k58040250
+    rights:
+      ark: ark:/12148/bpt6k58040250
+      status: public-domain
+      rawResponse: |
+        <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <results ResultsGenerationSearchTime="0:00:00.011" countResults="1" resultType="CVOAIRecordSearchService" searchTime="">
+        <visibility_rights>all</visibility_rights>
+        <notice>
+        <record>
+        <header>
+        <identifier>oai:bnf.fr:gallica/ark:/12148/bpt6k58040250</identifier>
+        <datestamp>2022-11-25</datestamp>
+        <setSpec>gallica:corpus:PACA1</setSpec>
+        <setSpec>gallica:theme:9:944</setSpec>
+        <setSpec>gallica:typedoc:monographies</setSpec>
+        </header>
+        <metadata>
+        <oai_dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+        <dc:identifier>https://gallica.bnf.fr/ark:/12148/bpt6k58040250</dc:identifier>
+        <dc:title>La colonie libre de Port-Breton : Nouvelle France en Océanie : [conférence faite par le marquis de Rays au salon des œuvres de Marseille] : [et compte rendu de cette conférence par la Gazette du Midi]</dc:title>
+        <dc:creator>Du Breil de Rays, Charles (1832-1893). Auteur du texte</dc:creator>
+        <dc:publisher>Typographie et lithographie Marius Olive (Marseille)</dc:publisher>
+        <dc:date>1879</dc:date>
+        <dc:subject xml:lang="fre">Du Breil de Rays, Charles (1832-1893)</dc:subject>
+        <dc:subject xml:lang="fre">Port-Breton, Affaire de (1877-1884)</dc:subject>
+        <dc:subject xml:lang="fre">Colonisation -- Nouvelle-Irlande (Papouasie-Nouvelle-Guinée ; île) -- 1870-1914</dc:subject>
+        <dc:subject xml:lang="fre">Colonies françaises -- Océanie -- 1870-1914</dc:subject>
+        <dc:subject xml:lang="fre">Nouvelle-Irlande (Papouasie-Nouvelle-Guinée ; île) -- 1870-1914</dc:subject>
+        <dc:format>1 pièce (20 p.) ; in-8°</dc:format>
+        <dc:language>fre</dc:language>
+        <dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb32048782h</dc:relation>
+        <dc:type xml:lang="eng">text</dc:type>
+        <dc:type xml:lang="fre">monographie imprimée</dc:type>
+        <dc:type xml:lang="eng">printed monograph</dc:type>
+        <dc:source>Bibliothèque nationale de France, département Philosophie, histoire, sciences de l'homme, 8-LK13-77</dc:source>
+        <dc:rights xml:lang="fre">domaine public</dc:rights>
+        <dc:rights xml:lang="eng">public domain</dc:rights>
+        <dc:description>Appartient à l’ensemble documentaire : PACA1</dc:description>
+        <dc:format>Nombre total de vues :  36</dc:format>
+        <dc:description>Avec mode texte</dc:description>
+        </oai_dc:dc>
+        </metadata>
+        </record>
+        </notice>
+        <provenance>bnf.fr</provenance>
+        <sdewey>944</sdewey>
+        <dewey>9</dewey>
+        <source>Bibliothèque nationale de France, département Philosophie, histoire, sciences de l'homme, 8-LK13-77</source>
+        <typedoc>monographie</typedoc>
+        <nqamoyen>97.75</nqamoyen>
+        <mode_indexation>text</mode_indexation>
+        <title>La colonie libre de Port-Breton : Nouvelle France en Océanie : [conférence faite par le marquis de Rays au salon des œuvres de Marseille] : [et compte rendu de cette conférence par la Gazette du Midi]</title>
+        <date nbIssue="1">1879</date>
+        <first_indexation_date>01/02/2010</first_indexation_date>
+        <streamable>false</streamable>
+        <listBibVirt>
+        <label>gallica</label>
+        </listBibVirt>
+        </results>
+      dcRights:
+        - domaine public
+      raw: domaine public
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P011/ark-12148-bpt6k58040250-2026-07-11T04:57:22.011Z.json
+      retrievedAt: 2026-07-11T04:57:22.011Z
+      endpoint: https://gallica.bnf.fr/services/OAIRecord?ark=bpt6k58040250
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-11T04:57:59.591Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P011/ark-12148-bpt6k58040250-2026-07-11T04:57:22.011Z.json
