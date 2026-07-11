@@ -12,6 +12,13 @@
 
 **Roadmap item**: `impl:feature/corpus-print-pdf`
 
+## Clarifications
+
+### Session 2026-07-11
+
+- Q: Is the public-domain public export (User Story 3) part of the v1 deliverable, or deferred? → A: Deferred to a later feature. v1 builds facsimile-edition PDFs for internal/research use only and publishes nothing; public distribution (with its own hosting / subset / licensing decisions) becomes its own later feature.
+- Q: When an item has only issue-level English (no per-page EN), how should the facing recto behave? → A: Page-adjacency is the goal — the recto must let a reader read the translation adjacent to that page's facsimile. Issue-level translation text does not serve page adjacency and is not used as a page-level fallback; per-page translation is what the edition needs, making "issue-level only" a `source-translation` coordination point rather than a rendering behavior.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Print-quality facsimile edition of one corpus item (Priority: P1)
@@ -25,7 +32,7 @@ unmistakable.
 
 **Why this priority**: This is the whole point of the feature — turning an on-screen corpus item
 into a citable, archival, offline document. A single correct item PDF is the minimum viable
-product; everything else (batch, public export) scales or narrows it.
+product; the batch build (US2) then scales it across the corpus.
 
 **Independent Test**: Build one item (e.g. a single *La Nouvelle France* issue) and confirm the
 resulting PDF opens, shows every source page as a verso facsimile with its facing FR/EN recto,
@@ -75,35 +82,22 @@ item, and that re-running against the same pin yields content-identical PDFs.
 
 ---
 
-### User Story 3 - Deliberate public-domain export for distribution (Priority: P3)
+### Out of Scope for v1 (deferred)
 
-A public visitor should be able to receive a distributable edition, but only of material that is
-lawfully redistributable. The operator produces a public export that is a deliberate public-domain
-subset of the corpus, distinct from the internal-first full build that reads the private archive.
-
-**Why this priority**: Public distribution is valuable but must not leak restricted material; it is
-a deliberate, narrower export layered on top of the internal build, so it follows the core build.
-
-**Independent Test**: Run the public export and confirm the produced set contains only
-public-domain items/pages, with restricted material excluded, and that each exported PDF still
-carries its provenance colophon.
-
-**Acceptance Scenarios**:
-
-1. **Given** a corpus containing both public-domain and restricted items, **When** the operator
-   runs the public export, **Then** only public-domain items/pages are included and restricted
-   material is excluded.
-2. **Given** the internal-first default, **When** no export is requested, **Then** the tool reads
-   the private archive locally and produces internal editions without publishing anything.
-
----
+- **Public distribution of the PDFs.** v1 is internal-first and publishes nothing. A deliberate
+  public-domain export (rights filter + publish path, with its own hosting / subset / licensing
+  decisions) is a separate later feature, not part of this spec (Clarification 2026-07-11).
+- **Bound-volume option** (per-source concatenation into one document) — deferred, not foreclosed;
+  v1 is per-item.
 
 ### Edge Cases
 
-- **Translation alignment mismatch**: an item has only issue-level EN translation while the recto
-  wants per-page EN. The recto shows per-page FR OCR with the issue-level EN flowed or
-  approximately aligned; per-page EN is used when available. The label always states the
-  translation granularity so the reader is not misled about alignment.
+- **Missing per-page translation**: the facing recto needs the facing page's own translation to
+  achieve page-adjacent reading. Where a page has no per-page English translation (e.g. only
+  issue-level EN exists upstream), the build surfaces the gap explicitly — it does NOT substitute
+  issue-level or placeholder text to fill the recto. Whether the gap is a hard abort or an explicit
+  "translation pending" marker on the recto is settled in planning; either way the reader is never
+  shown non-corresponding translation text as if it matched the page.
 - **Missing or unreadable page scan**: build aborts loudly naming the item and page (no placeholder,
   no skip).
 - **Image provider unavailable**: when the primary provider (object-store masters) cannot serve an
@@ -148,13 +142,15 @@ carries its provenance colophon.
   substitute mock/placeholder data or silently skip content.
 - **FR-010**: System MUST expose a build command (a CLI/npm verb) sibling to the existing site
   build/snapshot verbs, able to build a single item and to build the corpus in batch.
-- **FR-011**: System MUST accommodate both per-page and issue-level English translation: when
-  per-page EN exists it is used per page; when only issue-level EN exists the recto shows per-page
-  FR OCR with the issue-level EN flowed/approximately aligned, and the translation granularity is
-  labeled.
-- **FR-012**: System MUST default to internal-first operation (reading the private archive locally
-  and publishing nothing); public distribution MUST be a deliberate public-domain subset export
-  that excludes restricted material.
+- **FR-011**: The facing recto MUST present the English translation that corresponds to the facing
+  facsimile page, positioned adjacent to that page's scan, so a reader reads a page's translation
+  beside that page. Per-page translation is what the edition renders; issue-level-only translation
+  does NOT satisfy page adjacency and MUST NOT be used as a page-level fallback. Where a page's
+  per-page translation is unavailable, the build MUST surface the gap explicitly (per FR-009) rather
+  than substitute non-corresponding text.
+- **FR-012**: System MUST operate internal-first: it reads the private archive locally and publishes
+  nothing. Public distribution of the generated PDFs is out of scope for v1 (a later feature); the
+  build MUST NOT publish or expose editions externally.
 - **FR-013**: The print edition's visual and typographic design MUST follow the Prospectus/Dossier
   identity (print-adapted, reusing its design tokens) and MUST be produced through the
   frontend-design skill before any template markup/styling is authored (project Constitution XI).
@@ -172,17 +168,16 @@ carries its provenance colophon.
 - **Corpus Item**: the bibliographic unit that becomes one PDF — a newspaper issue or a monograph;
   carries source metadata (title, creator, date, rights, stable identifier) and an ordered set of
   pages.
-- **Page**: a single leaf of an item; carries a facsimile scan reference, French OCR text, and
-  (per-page or inherited issue-level) English translation.
+- **Page**: a single leaf of an item; carries a facsimile scan reference, French OCR text, and the
+  per-page English translation that the recto renders beside it.
 - **Page Image**: the print-resolution scan for a page; identified by an object-store key and a
   sha256 checksum, retrievable from a primary (object-store) or alternate (IIIF) provider.
-- **Translation Unit**: the English translation attached at page or issue granularity, labeled with
-  its machine-assist engine and date and its alignment granularity.
+- **Translation Unit**: the per-page English translation for a page, labeled with its machine-assist
+  engine and date. (Issue-level translation, where that is all that exists upstream, is a
+  `source-translation` coordination gap — not a page-level render input.)
 - **Snapshot Pin**: the specific archive commit the build reads from — the reproducibility anchor.
 - **PDF Edition**: the output artifact for one item — front matter (title page), the facing-page
   body, and the colophon.
-- **Public Export Set**: the deliberate public-domain subset of editions cleared for public
-  distribution.
 
 ## Success Criteria *(mandatory)*
 
@@ -201,8 +196,9 @@ carries its provenance colophon.
 - **SC-005**: Any missing or inconsistent source datum aborts the affected build with a message
   naming the absent datum — zero silent skips or placeholder substitutions across a full corpus
   build.
-- **SC-006**: The public export contains only public-domain items/pages — zero restricted items or
-  pages leak into a public distribution set.
+- **SC-006**: On every text page, the translation shown on the recto corresponds to the facing
+  facsimile page — zero rectos display non-corresponding (e.g. issue-level dumped) translation text
+  as if it matched the page.
 
 ## Assumptions
 
@@ -214,27 +210,29 @@ carries its provenance colophon.
 - **Snapshot is the single source of truth**: the corpus-browser normalized snapshot already exists,
   is pinnable to an archive commit, and provides the source→issue→page structure with FR OCR, EN
   translation, and image handles. The PDF generator consumes it and does not re-derive the corpus.
-- **Translation output shape**: the in-flight source-translation work may emit per-page or
-  issue-level EN; the spec accommodates both (FR-011). Where only issue-level EN exists, alignment
-  is approximate and labeled.
+- **Per-page translation is the edition's input**: the facing-page edition needs per-page English
+  translation to place a page's translation beside that page (FR-011). This is a coordination point
+  with the in-flight `source-translation` work: its output must be resolvable at page granularity
+  for an item to be buildable. Items for which only issue-level EN exists cannot yet deliver
+  page-adjacent reading and surface that gap (they are not silently filled with issue-level text).
 - **Image resolution vs file size**: page images are fetched at print resolution; the exact
   resolution and whether a sized derivative or full-size image is used is a planning-time tuning
   decision balancing fidelity against distributable file size.
-- **Bound-volume option out of scope for v1**: per-source concatenation into a single bound volume
-  is deferred (not foreclosed); v1 is per-item.
 - **B2 read cost accepted for v1**: fetching masters at generation incurs an object-store Class-B
   read cost per build; read-cost mitigation (CDN read-caching per TASK-12, or a local image cache)
   is a separate optimization, not a precondition of v1.
 - **Public-vs-private repository boundary**: the private archive holds mirrorable scans; the public
-  repository never holds restricted reproductions. The public export honors this boundary
-  (Constitution IV).
+  repository never holds restricted reproductions. v1 reads the private archive locally and
+  publishes nothing, so it stays inside this boundary (Constitution IV); the deferred public-export
+  feature is where public distribution decisions are made.
 
 ## Dependencies
 
 - **Consumes (closed)**: `corpus-browser` (normalized snapshot + pinned-snapshot model),
   `canonical-source-metadata` (source metadata for front matter), `archive-object-store` (B2 image
   handles/keys + checksums).
-- **Consumes (in-flight)**: `source-translation` (English translation output; per-page or
-  issue-level shape).
+- **Consumes (in-flight)**: `source-translation` (English translation output). The facing-page
+  edition requires this resolvable at **page** granularity (FR-011); issue-level-only output is a
+  coordination gap that blocks page-adjacent reading for the affected item.
 - **Related backlog**: `TASK-12` (CDN read-caching) — a read-cost optimization that this feature's
   bulk builds motivate but do not require.
