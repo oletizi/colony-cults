@@ -18,6 +18,7 @@
     "snapshot:check": "bash scripts/snapshot-check.sh",
     "site:preview": "astro preview --root site",
     "pdf:build": "tsx scripts/build-pdf.ts",
+    "pdf:render-sample": "tsx scripts/render-sample-pdf.ts",
     "pdf:test": "vitest run tests/unit/pdf tests/integration/pdf",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
