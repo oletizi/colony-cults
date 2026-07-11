@@ -116,17 +116,28 @@ export function sourceLayout(sourceId: string): SourceLayout {
 const MAX_DERIVED_SLUG_LENGTH = 80;
 
 /**
- * Slugify free text into a lowercase, hyphen-separated archive slug: lowercase,
+ * Slugify free text into a lowercase, hyphen-separated archive slug: accents
+ * transliterated to ASCII (`é` -> `e`) via Unicode NFD decomposition, lowercased,
  * any run of non-alphanumeric characters collapsed to a single `-`, leading/
  * trailing hyphens trimmed, and capped to {@link MAX_DERIVED_SLUG_LENGTH}
- * characters (trimmed again after the cap, so it never ends mid-hyphen).
+ * characters at a WORD boundary (never cutting mid-word or ending mid-hyphen).
  */
 function slugify(text: string): string {
   const slug = text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // strip combining diacritics: e-acute -> e
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-  return slug.slice(0, MAX_DERIVED_SLUG_LENGTH).replace(/-+$/g, '');
+  if (slug.length <= MAX_DERIVED_SLUG_LENGTH) {
+    return slug;
+  }
+  // Truncate at the last word boundary within the cap so the slug never ends
+  // mid-word (a bare `slice` can chop "sténographie" to "st-no").
+  const capped = slug.slice(0, MAX_DERIVED_SLUG_LENGTH);
+  const lastHyphen = capped.lastIndexOf('-');
+  const trimmed = lastHyphen > 0 ? capped.slice(0, lastHyphen) : capped;
+  return trimmed.replace(/-+$/g, '');
 }
 
 /**
