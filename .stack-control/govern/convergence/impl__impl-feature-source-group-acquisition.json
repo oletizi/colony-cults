@@ -17,5 +17,5 @@
   "outcome": "override-eligible",
   "anchorRoot": "/Users/orion/work/colony-cults-work/source-group-acquisition",
   "override": true,
-  "overrideReason": "Cross-model audit-barrage cannot complete in this environment (known infra limitation). Live validation performed instead: npm run typecheck clean, full vitest suite 489 passed / 2 skipped, all 39 tasks TDD with per-task review + ledger, clone-detection finding (authored->record widening) resolved via shared helper. Operator-authorized override per recorded env practice (validate-live + govern --override). T037 (live PB-P004 acquisition) held as operator-acceptance."
+  "overrideReason": "Re-govern over fixed HEAD 5e9553a after the T037 live acquisition surfaced + fixed 5 real integration gaps (resolver->Gallica, derived archive layout, dc:language mapping, slug quality, monograph checkpointing). Barrage cannot complete in this env; live-validated: typecheck clean, 526 passed, PB-P007 acquired end-to-end (174 pages/45MB to B2 + provenance committed). Operator-authorized override per recorded env practice."
 }
