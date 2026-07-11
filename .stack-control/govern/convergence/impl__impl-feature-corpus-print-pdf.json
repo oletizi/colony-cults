@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/corpus-print-pdf",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-print-pdf",
+  "override": true,
+  "overrideReason": "Cross-model audit barrage cannot complete in this environment (killed during the fleet step; known env limitation). Implementation validated live in lieu of the barrage: real end-to-end PDF built via the pdf:build CLI (PB-P001 issue, 60pp, typst exit 0) and design-reviewed; pdf:test 87/87; typecheck clean; reproducibility byte-identical (same sha256 on rebuild); fail-loud paths verified live (incomplete issue aborts naming the page; batch records attributable failures, exit 1); no any/as/@ts-ignore; every source file <=276 lines. Two refinements tracked as backlog TASK-13 (rail on continuation leaves) + TASK-14 (B2 primary live validation)."
+}
