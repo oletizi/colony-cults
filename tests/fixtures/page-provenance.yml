@@ -1,0 +1,21 @@
+id: "PB-P001"
+title: "Le Journal de Port-Breton, 15 Janvier 1875"
+type: "page-image"
+case: "port-breton"
+language: "French"
+source_archive: "Gallica / BnF"
+catalog_url: "https://gallica.bnf.fr/ark:/12148/bpt6k123456"
+original_url: "https://gallica.bnf.fr/iiif/ark:/12148/bpt6k123456/f001.jpg"
+rights_status: "public-domain"
+retrieved: "2025-07-08T10:30:00Z"
+local_path: "archive/cases/port-breton/PB-P001/f001.jpg"
+sha256: "3e4c3f7a9b1d2e8f6a5c9d2e1f8a7b3c"
+size: 2245452
+format: "image/jpeg"
+ocr_status: "searchable"
+object_store: null
+notes: null
+rights_raw: |2
+  <oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/">
+    <dc:rights>Public Domain</dc:rights>
+  </oai_dc:dc>

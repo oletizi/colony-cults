@@ -1,0 +1,430 @@
+---
+/**
+ * T017 / T019b -- the SOURCE OVERVIEW route (one per source). `getStaticPaths`
+ * loads the corpus and enumerates every source, emitting `{ sourceId }` with
+ * the source's issue ledger (date-ordered) as props. Each issue row links into
+ * the reading view at that issue's FIRST page -- the deep-linkable entry point
+ * the reading-view route (`.../pages/[pageId].astro`) also emits.
+ *
+ * The dossier's contents page: the source speaks its title in the warm Didone
+ * voice; the apparatus (counts, dates, ids, the issue ledger) is the cool
+ * monospace voice. Not-collected issues are surfaced as a quiet archival
+ * footnote (honours "no silent caps") -- never fabricated.
+ *
+ * Fail-loud by construction: `loadCorpus` throws on any incomplete/corrupt
+ * page, and an issue that resolved to zero pages throws here rather than
+ * emitting a ledger row that links nowhere.
+ */
+import type { GetStaticPaths } from 'astro';
+import { loadCorpus } from '@/browser/load/corpus';
+import { resolveConfig } from '@/browser/config';
+import BaseLayout from '@site/layouts/BaseLayout.astro';
+import Masthead from '@site/components/Masthead.astro';
+
+export const getStaticPaths = (() => {
+  // Defined inside getStaticPaths: Astro evaluates this export in isolation, so
+  // module-scope helpers are not in scope here.
+  const pageHref = (sourceId: string, issueId: string, pageId: string): string =>
+    `/sources/${sourceId}/issues/${issueId}/pages/${pageId}/`;
+
+  const { corpus, skipped } = loadCorpus(resolveConfig());
+
+  return corpus.sources.map((source) => {
+    const issues = source.issues.map((issue) => {
+      const firstPage = issue.pages[0];
+      if (firstPage === undefined) {
+        // A loaded issue always carries pages (loadCorpus skips/throws
+        // otherwise); guard so we never emit a row that links to no page.
+        throw new Error(
+          `source overview(${source.sourceId}): issue ${issue.issueId} has no pages ` +
+            '-- cannot link the ledger row to a reading-view route.'
+        );
+      }
+      return {
+        issueId: issue.issueId,
+        date: issue.date,
+        sequence: issue.sequence,
+        pageCount: issue.pageCount,
+        firstPageHref: pageHref(source.sourceId, issue.issueId, firstPage.pageId),
+      };
+    });
+
+    const skippedCount = skipped.filter((s) => s.sourceId === source.sourceId).length;
+
+    // A monograph is one bound volume: its extent is its page count, and it
+    // opens straight to page 1 rather than presenting a run of issues to pick
+    // from. Carry the book's length and its page-1 entry point for the book front.
+    const bookPageCount = source.issues.reduce((total, issue) => total + issue.pageCount, 0);
+    const firstIssue = source.issues[0];
+    const bookFirstPage = firstIssue?.pages[0];
+    const bookHref =
+      firstIssue && bookFirstPage
+        ? pageHref(source.sourceId, firstIssue.issueId, bookFirstPage.pageId)
+        : null;
+
+    return {
+      params: { sourceId: source.sourceId },
+      props: {
+        sourceId: source.sourceId,
+        title: source.title,
+        kind: source.kind,
+        ark: source.ark,
+        rights: source.rights,
+        issues,
+        skippedCount,
+        bookPageCount,
+        bookHref,
+      },
+    };
+  });
+}) satisfies GetStaticPaths;
+
+interface IssueRow {
+  issueId: string;
+  date: string;
+  sequence: number;
+  pageCount: number;
+  firstPageHref: string;
+}
+
+interface Props {
+  sourceId: string;
+  title: string;
+  kind: string;
+  ark: string;
+  rights: string;
+  issues: IssueRow[];
+  skippedCount: number;
+  bookPageCount: number;
+  bookHref: string | null;
+}
+
+const { sourceId, title, kind, ark, rights, issues, skippedCount, bookPageCount, bookHref } =
+  Astro.props;
+
+const isBook = kind === 'monograph';
+const issueCount = issues.length;
+const issueNoun = issueCount === 1 ? 'issue' : 'issues';
+
+const years = issues.map((i) => i.date.slice(0, 4));
+const firstYear = years[0];
+const lastYear = years[years.length - 1];
+const yearRange =
+  firstYear === undefined ? '' : firstYear === lastYear ? firstYear : `${firstYear}–${lastYear}`;
+
+const skippedNoun = skippedCount === 1 ? 'issue' : 'issues';
+const pageNoun = bookPageCount === 1 ? 'page' : 'pages';
+const docTitle = `${title} · ${sourceId}`;
+const docDesc = isBook
+  ? `${title} (${sourceId}) — a book of ${bookPageCount} ${pageNoun}${firstYear ? `, ${firstYear}` : ''}.`
+  : `Issue ledger for ${title} (${sourceId}) — ${issueCount} ${issueNoun}.`;
+---
+
+<BaseLayout title={docTitle} description={docDesc}>
+  <article class="ledger" aria-label={`Source overview — ${title}`}>
+    <header class="ledger__masthead">
+      <Masthead tail={sourceId} gap={12} />
+      <h1 class="ledger__title">{title}</h1>
+      <p class="ledger__sub">
+        {isBook ? (
+          <>
+            Book
+            <span class="ledger__sep">·</span>
+            {bookPageCount} {pageNoun}
+            {firstYear ? <><span class="ledger__sep">·</span>{firstYear}</> : null}
+          </>
+        ) : (
+          <>
+            Periodical
+            <span class="ledger__sep">·</span>
+            {issueCount} {issueNoun}
+            {yearRange ? <><span class="ledger__sep">·</span>{yearRange}</> : null}
+          </>
+        )}
+      </p>
+    </header>
+
+    {isBook ? (
+      <div class="ledger__frame">
+        <div class="ledger__chrome">
+          <span>Book<span class="ledger__sep">·</span>one bound volume</span>
+          <span class="ledger__spacer"></span>
+          <span>{bookPageCount} {pageNoun}</span>
+        </div>
+
+        {bookHref ? (
+          <div class="book">
+            <p class="book__extent">
+              {bookPageCount} {pageNoun}{firstYear ? <>, {firstYear}</> : null}, read as scan,
+              French, and English at once.
+            </p>
+            <a class="book__open" href={bookHref}>
+              Read from page 1<span class="book__chev" aria-hidden="true">›</span>
+            </a>
+          </div>
+        ) : (
+          <p class="ledger__empty">This book's pages are not collected yet.</p>
+        )}
+
+        <div class="ledger__foot">
+          <span class="ledger__prov">{sourceId}<span class="ledger__sep">·</span>{ark}<span class="ledger__sep">·</span><span class="ledger__rights">{rights}</span></span>
+        </div>
+      </div>
+    ) : (
+      <div class="ledger__frame">
+        <div class="ledger__chrome">
+          <span>Issues<span class="ledger__sep">·</span>chronological</span>
+          <span class="ledger__spacer"></span>
+          <span>{issueCount} {issueNoun}</span>
+        </div>
+
+        {issues.length > 0 ? (
+          <ol class="ledger__list">
+            {issues.map((issue) => (
+              <li class="ledger__item">
+                <a class="issue" href={issue.firstPageHref}>
+                  <span class="issue__date">{issue.date}</span>
+                  <span class="issue__meta">{issue.pageCount} {issue.pageCount === 1 ? 'page' : 'pages'}</span>
+                  <span class="issue__go">Read<span class="issue__chev" aria-hidden="true">›</span></span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p class="ledger__empty">No issues are collected for this source yet.</p>
+        )}
+
+        <div class="ledger__foot">
+          <span class="ledger__prov">{sourceId}<span class="ledger__sep">·</span>{ark}<span class="ledger__sep">·</span><span class="ledger__rights">{rights}</span></span>
+          <span class="ledger__spacer"></span>
+          {skippedCount > 0 ? (
+            <span class="ledger__note" role="note">
+              {skippedCount} {skippedNoun} in this holding not yet collected
+            </span>
+          ) : null}
+        </div>
+      </div>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .ledger {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 28px 96px;
+  }
+
+  .ledger__masthead {
+    margin-bottom: 26px;
+  }
+
+  .ledger__title {
+    font-family: var(--didone);
+    font-weight: 400;
+    font-size: clamp(30px, 6vw, 54px);
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+    margin: 0 0 10px;
+  }
+
+  .ledger__sub {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    color: var(--faint);
+    margin: 0;
+  }
+
+  .ledger__sep {
+    color: var(--rule);
+    margin: 0 7px;
+  }
+
+  .ledger__frame {
+    border: 1px solid var(--rule);
+    background: #fff;
+    box-shadow: 0 1px 0 var(--rule), 0 22px 44px -30px rgba(23, 21, 15, 0.45);
+  }
+
+  .ledger__chrome {
+    display: flex;
+    align-items: center;
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  .ledger__spacer {
+    flex: 1;
+  }
+
+  .ledger__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .ledger__item + .ledger__item .issue {
+    border-top: 1px solid var(--rule);
+  }
+
+  .issue {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    padding: 15px 18px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .issue:hover {
+    background: var(--vellum);
+  }
+
+  .issue__date {
+    font-family: var(--mono);
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    min-width: 8.5em;
+  }
+
+  .issue__meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+  }
+
+  .issue__go {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--slate);
+    white-space: nowrap;
+  }
+
+  .issue__chev {
+    margin-left: 7px;
+    color: var(--rule);
+    font-size: 13px;
+  }
+
+  .issue:hover .issue__go {
+    color: var(--oxide);
+  }
+
+  .issue:hover .issue__chev {
+    color: var(--oxide);
+  }
+
+  .ledger__empty {
+    font-family: var(--grote);
+    font-size: 14px;
+    font-style: italic;
+    color: var(--faint);
+    padding: 22px 18px;
+    margin: 0;
+  }
+
+  /* The book front: a title-page block, not a ledger row. One bound volume has
+     no run to enumerate -- its whole affordance is to be opened, so the extent
+     line is quiet apparatus and the single act (read from page 1) is the loud
+     mark, stamped in the archive's oxide hand. */
+  .book {
+    padding: 40px 26px 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 26px;
+  }
+
+  .book__extent {
+    font-family: var(--grote);
+    font-size: clamp(15px, 2.4vw, 18px);
+    line-height: 1.55;
+    color: var(--slate);
+    margin: 0;
+    max-width: 48ch;
+  }
+
+  .book__open {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 14px 22px;
+    border: 1px solid var(--oxide);
+    background: var(--oxide);
+    color: var(--vellum);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+
+  .book__open:hover,
+  .book__open:focus-visible {
+    background: transparent;
+    color: var(--oxide);
+  }
+
+  .book__chev {
+    font-size: 14px;
+  }
+
+  .ledger__foot {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--rule);
+    background: var(--paper);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--faint);
+  }
+
+  .ledger__prov {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .ledger__rights {
+    color: var(--oxide);
+  }
+
+  .ledger__note {
+    color: var(--slate);
+  }
+
+  @media (max-width: 640px) {
+    .issue {
+      flex-wrap: wrap;
+      gap: 6px 14px;
+    }
+
+    .issue__date {
+      min-width: 0;
+      flex-basis: 100%;
+    }
+
+    .ledger__prov {
+      white-space: normal;
+      flex-basis: 100%;
+    }
+  }
+</style>

@@ -1,0 +1,129 @@
+---
+/**
+ * T024 -- the provenance rail: the reading view's signature, and the archive's
+ * hand on the propaganda. A monospace stamp block that renders EVERY field of a
+ * page's {@link ProvenanceRecord} -- source id, ARK, date, rights, page, sha256
+ * -- in the cool apparatus voice (FR-014). Reusable: it takes a ProvenanceRecord
+ * and nothing else, so any surface holding one renders the same stamp.
+ *
+ * Set as a <dl> (these are the identifying facts OF the page, keyed by field),
+ * so assistive tech reads it as the labelled record it is. Oxide stamp-red is
+ * reserved for the ONE critical mark here -- the rights determination; every
+ * other field stays in the quiet apparatus grey. The sha256 shows a truncated
+ * head (the full digest lives in `title` / the visually-hidden tail) so the
+ * 64-char hash never blows out the rail while staying fully present.
+ *
+ * Fail-loud upstream: the loader throws if any field is missing (SC-004), so
+ * this component never guards or substitutes -- every field is always present.
+ */
+import type { ProvenanceRecord } from '@/browser/model';
+
+interface Props {
+  provenance: ProvenanceRecord;
+  /** Optional accessible label for the rail region. */
+  label?: string;
+}
+const { provenance, label = 'Provenance' } = Astro.props;
+const { sourceId, ark, date, rights, page, sha256 } = provenance;
+const shaHead = sha256.slice(0, 12);
+const shaTail = sha256.slice(12);
+---
+
+<dl class="prov" aria-label={label}>
+  <div class="prov__field">
+    <dt class="prov__key">Source</dt>
+    <dd class="prov__val">{sourceId}</dd>
+  </div>
+  <div class="prov__field prov__field--ark">
+    <dt class="prov__key">ARK</dt>
+    <dd class="prov__val">{ark}</dd>
+  </div>
+  <div class="prov__field">
+    <dt class="prov__key">Date</dt>
+    <dd class="prov__val">{date}</dd>
+  </div>
+  <div class="prov__field">
+    <dt class="prov__key">Rights</dt>
+    <dd class="prov__val prov__val--rights">{rights}</dd>
+  </div>
+  <div class="prov__field">
+    <dt class="prov__key">Page</dt>
+    <dd class="prov__val">{page}</dd>
+  </div>
+  <div class="prov__field prov__field--sha">
+    <dt class="prov__key">SHA-256</dt>
+    <dd class="prov__val" title={`sha256:${sha256}`}>
+      {shaHead}<span class="prov__sha-tail">{shaTail}</span><span class="prov__sha-ell" aria-hidden="true">…</span>
+    </dd>
+  </div>
+</dl>
+
+<style>
+  .prov {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    margin: 0;
+    background: var(--rule);
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+  }
+
+  .prov__field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 11px 16px 12px;
+    background: var(--paper);
+    min-width: 0;
+  }
+
+  .prov__key {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0;
+  }
+
+  .prov__val {
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* The single critical mark of the rail: the rights determination, stamped in
+     oxide -- the archive's judgement on the source's status. */
+  .prov__val--rights {
+    color: var(--oxide);
+  }
+
+  /* The ARK is the widest field; let it span two columns when the grid is wide
+     enough to keep it off its own cramped line. */
+  .prov__field--ark {
+    grid-column: span 2;
+  }
+
+  /* Keep the full sha256 in the DOM for copy/select + assistive tech, but show
+     only the head glyphs -- the tail is folded to a hair-width so the rail never
+     runs long. Not `display:none`: that would drop it from selection entirely. */
+  .prov__sha-tail {
+    display: inline-block;
+    width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    vertical-align: bottom;
+  }
+
+  @media (max-width: 640px) {
+    .prov {
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+
+    .prov__field--ark {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

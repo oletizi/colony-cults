@@ -120,4 +120,9 @@ describe('parse', () => {
       /ocr: missing required argument <issueArk>/,
     );
   });
+
+  it('parses --engine into options', () => {
+    const a = parse(['translate', 'ark', '--engine', 'codex']);
+    expect(a.options.engine).toBe('codex');
+  });
 });

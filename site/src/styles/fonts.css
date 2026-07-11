@@ -1,0 +1,21 @@
+/*
+ * The Didone display voice, embedded (US4 / T026).
+ *
+ * Playfair Display (SIL Open Font License 1.1, Claus Eggers Soerensen), a
+ * libre Didone/transitional display face -- the warm, high-contrast voice the
+ * source titles wear. Pinned to wght=400 (the only weight the display voice
+ * sets) and subset at dev time to Latin + French punctuation, then shipped as a same-origin woff2 asset (site/public/fonts/,
+ * served from /fonts/... -- so the deploy host makes NO external font request
+ * under font-src 'self'; degrades to the system Didone stack if this face fails to load).
+ *
+ * Generated -- do not hand-edit the payload. Regenerate via the T026 pipeline
+ * (fontTools instancer + subset, flavor=woff2). Subset woff2 ~= 27 KiB, served same-origin (not inlined, to keep the CSS small).
+ */
+
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/playfair-display-400.woff2') format('woff2');
+}
