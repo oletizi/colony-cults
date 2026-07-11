@@ -89,6 +89,8 @@ Reusable Discover->Inventory->Technical-verify->Research-approve(Promote)->Acqui
 
 ## impl:feature/corpus-coverage-audit
 - status: in-flight
+- analyze-clean: yes
+- spec: specs/007-corpus-coverage-audit
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-11-corpus-coverage-audit-design.md
 - depends-on: impl:feature/canonical-source-metadata
