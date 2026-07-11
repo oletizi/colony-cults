@@ -38,6 +38,14 @@ export interface ArkMetadata {
   titles: Title[];
   /** Author/editor, if known. */
   creator?: string;
+  /**
+   * Publication date as reported by the archive, kept VERBATIM (no format
+   * normalization -- an archive-supplied date may be a bare year, e.g.
+   * `1889`, rather than `YYYY-MM-DD`). Captured for provenance; not yet
+   * consumed by `runInventory` itself (a `Source` carries no date field --
+   * see `@/sourcegroup/verify-member`'s `candidateDate`).
+   */
+  date?: string;
   /** Work-level identifiers (ISBN/ISSN/OCLC), if known. */
   identifiers?: WorkIdentifier[];
   /**

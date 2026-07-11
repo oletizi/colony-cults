@@ -237,7 +237,7 @@ describe('production code has no PB-P004 literal special-casing (T038 grep check
     'promote.ts',
     'id-alloc.ts',
     'record-select.ts',
-    'ark-resolver.ts',
+    'gallica-ark-resolver.ts',
     'snapshot.ts',
     'acquire.ts',
     'exclude-member.ts',

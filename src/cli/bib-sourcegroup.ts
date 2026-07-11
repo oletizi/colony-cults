@@ -21,11 +21,12 @@ import { parseArgs as nodeParseArgs } from 'node:util';
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
 import { runFetchSource } from '@/cli/fetch';
+import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
 import {
-  bnfArkIdentifierResolver,
-  bnfArkMetadataResolver,
-} from '@/sourcegroup/ark-resolver';
+  gallicaArkIdentifierResolver,
+  gallicaArkMetadataResolver,
+} from '@/sourcegroup/gallica-ark-resolver';
 import { runAcquire } from '@/sourcegroup/acquire';
 import { BnfSruDiscoveryMechanism } from '@/sourcegroup/discovery/bnf-sru';
 import { DiscoveryDispatcher } from '@/sourcegroup/discovery/discovery';
@@ -114,7 +115,10 @@ export async function runInventoryCli(rest: string[]): Promise<number> {
 
   const repoRoot = resolveRepoRoot();
   const sourcesDir = sourcesDirOf(repoRoot);
-  const resolveArk = bnfArkMetadataResolver(new HttpClient());
+  // GALLICA (not the BnF general-catalogue SRU): the acquisition targets are
+  // Gallica digital documents (`bpt6k` arks), which the catalogue SRU does
+  // not index -- see @/sourcegroup/gallica-ark-resolver.
+  const resolveArk = gallicaArkMetadataResolver(new GallicaHttpClient(new HttpClient()));
 
   try {
     if (dryRun) {
@@ -192,7 +196,7 @@ export async function runVerifyMemberCli(rest: string[]): Promise<number> {
     json,
     sourcesDir: sourcesDirOf(repoRoot),
     loadMembers: loadAllSources,
-    resolveArk: bnfArkIdentifierResolver(new HttpClient()),
+    resolveArk: gallicaArkIdentifierResolver(new GallicaHttpClient(new HttpClient())),
   });
   // A verdict (pass or fail) is data -> exit 0; a tooling error -> non-zero.
   return result.exitCode;
@@ -235,7 +239,7 @@ export async function runPromoteCli(rest: string[]): Promise<number> {
       sourceId: id,
       archive,
       group,
-      resolveArk: bnfArkIdentifierResolver(new HttpClient()),
+      resolveArk: gallicaArkIdentifierResolver(new GallicaHttpClient(new HttpClient())),
       existingMembers,
       verifiedAt: new Date().toISOString(),
     });
