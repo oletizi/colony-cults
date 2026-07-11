@@ -85,7 +85,7 @@ function enumerateRoutes(corpus: CorpusView): EnumeratedRoutes {
 }
 
 function configFor(archivePath: string): LoadConfig {
-  return { archivePath, sources: ['PB-P001'], provider: { kind: 'source-iiif' } };
+  return { archivePath, snapshotDir: 'site/data', sources: ['PB-P001'], provider: { kind: 'source-iiif' } };
 }
 
 describe('route enumeration (integration, PB-P001)', () => {

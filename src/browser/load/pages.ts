@@ -1,24 +1,34 @@
 /**
- * Builds the ordered {@link PageView}s of one issue and enforces the
+ * Builds the ordered {@link RawPage}s of one issue and enforces the
  * page-count coherence guarantee (corpus-loader G-1): the image count, the
  * OCR form-feed segment count, and the translation-pair count MUST all agree,
  * else the build throws naming the source + issue. Per-page loading itself
  * fails loud (missing English / provenance -> throw naming the page: G-2/G-3),
  * and no placeholder is ever substituted (G-4).
+ *
+ * This module carries each page's image HANDLES (`folioId`, `ark`,
+ * `objectStoreKey`) but does NOT resolve the {@link ImageDescriptor} -- that is
+ * a separate step (`resolveImages`, `src/browser/load/resolve-images.ts`) so
+ * the archive read and the snapshot read converge on one image-resolution path.
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
-import type { ImageDescriptor, PageView } from '@/browser/model';
-import type { ImageSourceProvider } from '@/browser/providers/provider';
+import type { RawPage } from '@/browser/model';
 import { splitIssueOcr } from '@/browser/load/ocr-pages';
 import { loadPageTranslation } from '@/browser/load/translation';
 import type { IssueDir } from '@/browser/load/issues';
 
-/** `fNNN.jpg` page-image file. */
-const IMAGE_PATTERN = /^f(\d+)\.jpg$/;
+/**
+ * `fNNN.yml` page-image SIDECAR (one per folio, carrying the object_store key).
+ * Folios are enumerated from the sidecars, NOT the `fNNN.jpg` binaries: the
+ * build never reads image bytes (images are resolved to Gallica/CDN URLs and
+ * fetched client-side), and the archive drops the JPEGs (they live in B2). The
+ * `.yml` sidecar survives that removal and holds everything enumeration needs.
+ */
+const IMAGE_PATTERN = /^f(\d+)\.yml$/;
 
 /** `pNNN.en.txt` required-translation file. */
 const EN_TRANSLATION_PATTERN = /^p(\d+)\.en\.txt$/;
@@ -31,7 +41,7 @@ const EN_TRANSLATION_PATTERN = /^p(\d+)\.en\.txt$/;
  *  - no `issue.txt` (the OCR layer was never collected),
  *  - no `translation/` directory or one with zero `pNNN.en.txt` files (the
  *    English translation layer was never collected), or
- *  - zero `fNNN.jpg` page images (the image layer was never collected).
+ *  - zero `fNNN.yml` image sidecars (the image layer was never catalogued).
  *
  * A PRESENT-but-PARTIAL layer (e.g. 7 of 8 translation pairs, a single page's
  * English missing, an image/OCR skew) is NOT detected here -- that is a
@@ -47,7 +57,7 @@ export function detectNotCollected(issueDir: string): string | null {
     missing.push('issue.txt (OCR layer)');
   }
   if (listFolios(issueDir).length === 0) {
-    missing.push('page images (fNNN.jpg)');
+    missing.push('image sidecars (fNNN.yml)');
   }
   if (countEnglishTranslations(issueDir) === 0) {
     missing.push('translation/ English layer (pNNN.en.txt)');
@@ -60,21 +70,21 @@ export function detectNotCollected(issueDir: string): string | null {
 }
 
 /**
- * Builds every {@link PageView} of `issue`, in page-number order, resolving
- * each image through `provider`.
+ * Builds every {@link RawPage} of `issue`, in page-number order. Carries each
+ * page's image handles (`folioId`, `ark`, `objectStoreKey`) but does not
+ * resolve the image -- that is `resolveImages`' job.
  *
  * @throws Error naming source + issue when the image / OCR / translation
  *   counts disagree (G-1).
  * @throws Error naming source / issue / page when a page's English text or
  *   provenance is missing (G-2/G-3, via {@link loadPageTranslation}).
  */
-export function buildIssuePages(
+export function buildRawIssuePages(
   sourceId: string,
-  issue: IssueDir,
-  provider: ImageSourceProvider
-): PageView[] {
+  issue: IssueDir
+): RawPage[] {
   const folios = listFolios(issue.dir);
-  const imageCount = folios.length;
+  const sidecarCount = folios.length;
 
   const issueTextPath = path.join(issue.dir, 'issue.txt');
   if (!existsSync(issueTextPath)) {
@@ -85,19 +95,19 @@ export function buildIssuePages(
   const ocrSegments = splitIssueOcr(readFileSync(issueTextPath, 'utf-8'));
   const ocrCount = ocrSegments.length;
 
-  if (imageCount !== ocrCount) {
+  if (sidecarCount !== ocrCount) {
     throw new Error(
       `loadCorpus(${sourceId} / ${issue.issueId}): page-count mismatch (corpus-loader G-1) -- ` +
-        `${imageCount} page image(s) vs ${ocrCount} OCR segment(s). ` +
-        'The image count and OCR form-feed segment count must be equal.'
+        `${sidecarCount} image sidecar(s) vs ${ocrCount} OCR segment(s). ` +
+        'The image-sidecar count and OCR form-feed segment count must be equal.'
     );
   }
 
   const translationCount = countEnglishTranslations(issue.dir);
-  const pageCount = imageCount;
+  const pageCount = sidecarCount;
 
-  const pages: PageView[] = folios.map((folio, index) =>
-    buildPage(sourceId, issue, provider, folio, ocrSegments[index])
+  const pages: RawPage[] = folios.map((folio, index) =>
+    buildRawPage(sourceId, issue, folio, ocrSegments[index])
   );
 
   if (translationCount !== pageCount) {
@@ -118,7 +128,7 @@ interface Folio {
   num: number;
 }
 
-/** Lists `fNNN.jpg` folios in the issue directory, ordered by page number. */
+/** Lists folios (from `fNNN.yml` sidecars) in the issue directory, ordered by page number. */
 function listFolios(issueDir: string): Folio[] {
   const folios: Folio[] = [];
   for (const name of readdirSync(issueDir)) {
@@ -126,7 +136,7 @@ function listFolios(issueDir: string): Folio[] {
     if (match === null) {
       continue;
     }
-    folios.push({ folioId: path.basename(name, '.jpg'), num: Number.parseInt(match[1], 10) });
+    folios.push({ folioId: path.basename(name, '.yml'), num: Number.parseInt(match[1], 10) });
   }
   folios.sort((a, b) => a.num - b.num);
   return folios;
@@ -142,26 +152,21 @@ function countEnglishTranslations(issueDir: string): number {
 }
 
 /**
- * Builds a single {@link PageView} for `folio`, pairing its OCR segment with
- * the translation + provenance sidecar and resolving its image.
+ * Builds a single {@link RawPage} for `folio`, pairing its OCR segment with
+ * the translation + provenance sidecar and reading its image handles (the
+ * image itself is resolved later by `resolveImages`).
  */
-function buildPage(
+function buildRawPage(
   sourceId: string,
   issue: IssueDir,
-  provider: ImageSourceProvider,
   folio: Folio,
   ocr: { ocrFrench: string; ocrCondition: string | null }
-): PageView {
+): RawPage {
   const pageId = `p${String(folio.num).padStart(3, '0')}`;
 
   const translation = loadPageTranslation(issue.dir, pageId, issue.date);
 
   const objectStoreKey = readObjectStoreKey(issue.dir, folio.folioId);
-  const image: ImageDescriptor = provider.resolve({
-    ark: issue.ark,
-    folioId: folio.folioId,
-    objectStoreKey,
-  });
 
   // The page's provenance ark is the ISSUE ark; assert the sidecar agrees so
   // a cross-wired sidecar cannot slip a mismatched handle into the rail.
@@ -176,12 +181,13 @@ function buildPage(
   return {
     pageId,
     folioId: folio.folioId,
-    image,
+    ark: issue.ark,
+    objectStoreKey,
     ocrFrench: ocr.ocrFrench,
     correctedFrench: translation.correctedFrench,
     english: translation.english,
-    provenance: translation.provenance,
     ocrCondition: ocr.ocrCondition,
+    provenance: translation.provenance,
   };
 }
 

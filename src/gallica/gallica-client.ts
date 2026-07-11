@@ -165,6 +165,20 @@ export function issueLandingUrl(issueArk: string): string {
 }
 
 /**
+ * The documented `services/OAIRecord` URL for an ark, e.g.
+ * `https://gallica.bnf.fr/services/OAIRecord?ark=bpt6k5603637g`. Exported (like
+ * {@link iiifImageUrl}/{@link issueLandingUrl}) so a caller that fetches the
+ * OAIRecord through {@link OaiRecordClient.oaiRecord} and separately needs to
+ * record the exact endpoint it came from (e.g. the source-group ark resolver's
+ * `ArkMetadata.endpoint`) builds the identical URL, without duplicating the
+ * ark-normalization logic.
+ */
+export function oaiRecordUrl(issueArk: string): string {
+  const root = issueRoot(issueArk);
+  return `${BASE}/services/OAIRecord?ark=${root}`;
+}
+
+/**
  * Extract the `dc:rights` values from a parsed OAIRecord document.
  *
  * Navigation: `results > notice > record > metadata > oai_dc:dc > dc:rights`.
@@ -317,8 +331,7 @@ export class GallicaHttpClient
   }
 
   async oaiRecord(issueArk: string): Promise<string> {
-    const root = issueRoot(issueArk);
-    const url = `${BASE}/services/OAIRecord?ark=${root}`;
+    const url = oaiRecordUrl(issueArk);
     const xml = await this.http.getText(url);
     if (xml.trim().length === 0) {
       throw new Error(`OAIRecord: empty response body from ${url}`);
@@ -327,8 +340,7 @@ export class GallicaHttpClient
   }
 
   async oaiRights(issueArk: string): Promise<OaiRecordRights> {
-    const root = issueRoot(issueArk);
-    const url = `${BASE}/services/OAIRecord?ark=${root}`;
+    const url = oaiRecordUrl(issueArk);
     const rawResponse = await this.oaiRecord(issueArk);
     const doc = this.parse(rawResponse, url);
     return { rawResponse, dcRights: extractDcRights(doc, url) };
@@ -357,8 +369,7 @@ export class GallicaHttpClient
   }
 
   async issueDate(issueArk: string): Promise<string> {
-    const root = issueRoot(issueArk);
-    const url = `${BASE}/services/OAIRecord?ark=${root}`;
+    const url = oaiRecordUrl(issueArk);
     const rawResponse = await this.oaiRecord(issueArk);
     const doc = this.parse(rawResponse, url);
     return extractDcDate(doc, url);

@@ -35,6 +35,13 @@ export function requireString(value: unknown, filePath: string, where: string): 
   return value;
 }
 
+export function requireNumber(value: unknown, filePath: string, where: string): number {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    fail(filePath, `${where} must be a number`);
+  }
+  return value;
+}
+
 export function optionalString(
   value: unknown,
   filePath: string,

@@ -13,6 +13,9 @@
     "translate": "tsx src/translate-index.ts",
     "site:build": "astro build --root site && pagefind --site site/dist",
     "site:export-public": "tsx scripts/export-public.ts",
+    "site:snapshot": "tsx scripts/build-snapshot.ts",
+    "snapshot": "bash scripts/regen-snapshot.sh",
+    "snapshot:check": "bash scripts/snapshot-check.sh",
     "site:preview": "astro preview --root site",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

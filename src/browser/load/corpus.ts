@@ -1,10 +1,21 @@
 /**
- * The corpus loader (corpus-loader contract). Reads the local archive clone +
- * bibliography SSOT and returns the normalized {@link CorpusView} the Astro
- * site renders. Pure and fail-loud: any missing or inconsistent corpus datum
- * throws (naming source / issue / page) rather than substituting a placeholder
- * (G-1..G-4); it reads only the local clone + public handles (G-5); and it is
- * deterministic given the same clone + config (G-6).
+ * The corpus loader (corpus-loader contract). Produces the normalized
+ * {@link CorpusView} the Astro site renders, from EITHER a fresh read of the
+ * local archive clone OR the committed public-domain snapshot under
+ * `site/data/` -- whichever is available, decided by an explicit precedence
+ * (below) with NO silent fallback.
+ *
+ * The read splits into two stages that both converge on `resolveImages`:
+ *
+ *   1. RAW read -> {@link CorpusSnapshot} (text + metadata + image handles):
+ *      `readRawCorpus` (archive) or `readSnapshotCorpus` (committed snapshot).
+ *   2. `resolveImages(raw, provider)` -> {@link LoadResult}: resolves every
+ *      page's image URL through the active provider.
+ *
+ * Fail-loud: any missing or inconsistent corpus datum throws (naming source /
+ * issue / page) rather than substituting a placeholder (G-1..G-4); it reads
+ * only the local clone / committed snapshot + public handles (G-5); and it is
+ * deterministic given the same input + config (G-6).
  *
  * See specs/005-corpus-browser/contracts/corpus-loader.md and
  * specs/005-corpus-browser/data-model.md.
@@ -12,230 +23,68 @@
 
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import type { LoadConfig } from '@/browser/config';
-import type {
-  CorpusView,
-  IssueView,
-  LoadResult,
-  PageView,
-  SkippedIssue,
-  SourceView,
-} from '@/browser/model';
-import { loadSourceFile } from '@/bibliography/load';
-import type { LoadedSource } from '@/bibliography/load';
-import type { CopyIdentifier } from '@/model/repository-record';
-import { makeProvider } from '@/browser/providers/provider';
-import type { ImageSourceProvider } from '@/browser/providers/provider';
-import { enumerateIssueDirs, resolveNewspapersDir } from '@/browser/load/issues';
-import type { IssueDir } from '@/browser/load/issues';
-import { buildIssuePages, detectNotCollected } from '@/browser/load/pages';
-
-/** The holding-archive label whose record carries the source-level Gallica ark. */
-const GALLICA_ARCHIVE_LABEL = 'Gallica / BnF';
+import type { CorpusSnapshot, LoadResult } from '@/browser/model';
+import { resolveRepoRoot } from '@/browser/load/repo-root';
+import { readRawCorpus } from '@/browser/load/raw-corpus';
+import { readSnapshotCorpus, snapshotAvailable } from '@/browser/load/snapshot';
+import { resolveImages } from '@/browser/load/resolve-images';
 
 /**
- * Loads and normalizes the corpus described by `config`.
+ * Loads and normalizes the corpus described by `config`, then resolves every
+ * page image through the active provider.
  *
- * Renders every COMPLETE issue and REPORTS (never silently drops) the ones it
- * skips (TASK-9). Each scanned issue directory is classified into exactly one
- * of three buckets:
+ * Archive-vs-snapshot precedence (explicit; NO silent fallback):
  *
- *  - complete -> loaded fully into the {@link CorpusView};
- *  - not-collected / incomplete (a WHOLE required layer entirely absent) ->
- *    SKIPPED, recorded as a {@link SkippedIssue}, and reported via
- *    `console.warn` (no silent caps);
- *  - collected-but-corrupt (a PRESENT layer internally inconsistent) -> still
- *    THROWS, naming source / issue / page.
+ *  1. if `config.archivePath` is set AND exists -> read the archive (fresh);
+ *  2. else if a committed snapshot exists for every source under the snapshot
+ *     dir -> read the snapshot;
+ *  3. else THROW, naming BOTH the missing archive (CORPUS_ARCHIVE_PATH) and the
+ *     missing snapshot path.
  *
- * @throws Error on any collected-but-corrupt issue or unresolvable source --
- *   never returns partial or placeholder page data.
+ * @throws Error on any collected-but-corrupt issue or unresolvable source, or
+ *   when neither an archive nor a snapshot is available.
  */
 export function loadCorpus(config: LoadConfig): LoadResult {
   if (config.sources.length === 0) {
     throw new Error('loadCorpus: config.sources is empty -- at least one source id is required.');
   }
 
+  const raw = readRaw(config);
+  return resolveImages(raw, config.provider);
+}
+
+/** Applies the archive-vs-snapshot precedence and returns the raw corpus. */
+function readRaw(config: LoadConfig): CorpusSnapshot {
   const repoRoot = resolveRepoRoot();
-  const provider = makeProvider(config.provider);
+  const snapshotDir = path.isAbsolute(config.snapshotDir)
+    ? config.snapshotDir
+    : path.join(repoRoot, config.snapshotDir);
 
-  const skipped: SkippedIssue[] = [];
-
-  // Source order follows config order (deterministic input -> deterministic
-  // output: corpus-loader G-6).
-  const sources = config.sources.map((sourceId) => {
-    const loaded = loadSource(config.archivePath, repoRoot, sourceId, provider);
-    skipped.push(...loaded.skipped);
-    return loaded.view;
-  });
-
-  return { corpus: { sources }, skipped };
-}
-
-/**
- * Resolves the repo root -- the nearest ancestor directory that contains
- * `bibliography/sources/`.
- *
- * Anchored on this module's own location and walked upward (rather than a fixed
- * offset) so it is correct whether the module runs from source (`src/browser/
- * load/corpus.ts`, e.g. under vitest/tsx) or from a bundle that a build tool
- * emitted deeper inside the repo (e.g. Astro's `site/dist/...` server output,
- * whose ancestors still include the repo root). Fail-loud: throws if no such
- * ancestor exists rather than returning a wrong path.
- */
-function resolveRepoRoot(): string {
-  let dir = path.dirname(fileURLToPath(import.meta.url));
-  for (;;) {
-    if (existsSync(path.join(dir, 'bibliography', 'sources'))) {
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      throw new Error(
-        'loadCorpus: could not locate the repo root -- no ancestor of ' +
-          `${JSON.stringify(path.dirname(fileURLToPath(import.meta.url)))} contains ` +
-          'a "bibliography/sources" directory.'
-      );
-    }
-    dir = parent;
-  }
-}
-
-/** A loaded source's normalized view plus the issues skipped while loading it. */
-interface LoadedSourceResult {
-  view: SourceView;
-  skipped: SkippedIssue[];
-}
-
-function loadSource(
-  archivePath: string,
-  repoRoot: string,
-  sourceId: string,
-  provider: ImageSourceProvider
-): LoadedSourceResult {
-  const ssotPath = path.join(repoRoot, 'bibliography', 'sources', `${sourceId}.yml`);
-  const loaded = loadSourceFile(ssotPath);
-  const { source } = loaded;
-
-  if (source.kind !== 'periodical') {
-    throw new Error(
-      `loadCorpus(${sourceId}): source kind "${source.kind}" is not supported in v1 ` +
-        '(only "periodical").'
-    );
+  const archivePath = config.archivePath;
+  if (archivePath !== undefined && archivePath.length > 0 && existsSync(archivePath)) {
+    return readRawCorpus(archivePath, config.sources, repoRoot);
   }
 
-  const title = canonicalTitle(loaded);
-  const ark = sourceArk(loaded);
-
-  const newspapersDir = resolveNewspapersDir(archivePath, loaded);
-  const issueDirs = enumerateIssueDirs(newspapersDir, sourceId);
-
-  const issues: IssueView[] = [];
-  const skipped: SkippedIssue[] = [];
-
-  for (const issueDir of issueDirs) {
-    // Pre-check the whole-layer-absent conditions BEFORE the per-page load
-    // (which throws on any present-but-partial layer). A not-collected issue
-    // is skipped and reported; only a collected-but-corrupt one throws.
-    const reason = detectNotCollected(issueDir.dir);
-    if (reason !== null) {
-      // eslint-disable-next-line no-console -- deliberate build-visible skip report (no silent caps).
-      console.warn(`loadCorpus(${sourceId}): SKIP issue ${issueDir.issueId} -- ${reason}`);
-      skipped.push({ issueId: issueDir.issueId, sourceId, reason });
-      continue;
-    }
-    // sequence numbers are contiguous over the LOADED (complete) issues.
-    issues.push(buildIssue(sourceId, issueDir, issues.length, provider));
+  if (snapshotAvailable(snapshotDir, config.sources)) {
+    return readSnapshotCorpus(snapshotDir, config.sources);
   }
 
-  const rights = deriveRights(sourceId, issues);
-
-  return {
-    view: {
-      sourceId,
-      title,
-      kind: 'periodical',
-      ark,
-      rights,
-      issues,
-    },
-    skipped,
-  };
-}
-
-function buildIssue(
-  sourceId: string,
-  issueDir: IssueDir,
-  index: number,
-  provider: ImageSourceProvider
-): IssueView {
-  const pages = buildIssuePages(sourceId, issueDir, provider);
-  return {
-    issueId: issueDir.issueId,
-    date: issueDir.date,
-    sequence: index + 1,
-    pages,
-    pageCount: pages.length,
-  };
-}
-
-/** The canonical title (SSOT `titles[role=canonical]`, else the first title). */
-function canonicalTitle(loaded: LoadedSource): string {
-  const { source } = loaded;
-  const canonical = source.titles.find((t) => t.role === 'canonical') ?? source.titles[0];
-  if (canonical === undefined || canonical.text.trim().length === 0) {
-    throw new Error(`loadCorpus(${source.sourceId}): source has no usable title.`);
-  }
-  return canonical.text;
-}
-
-/** The source-level archival identifier (the Gallica record's `ark` copy identifier). */
-function sourceArk(loaded: LoadedSource): string {
-  const { source, records } = loaded;
-  const gallicaRecord = records.find((r) => r.sourceArchive === GALLICA_ARCHIVE_LABEL);
-  if (gallicaRecord === undefined) {
-    throw new Error(
-      `loadCorpus(${source.sourceId}): no "${GALLICA_ARCHIVE_LABEL}" repository record -- ` +
-        'cannot resolve the source ark.'
-    );
-  }
-
-  const arkIdentifier = (gallicaRecord.identifiers ?? []).find(
-    (id: CopyIdentifier) => id.type === 'ark'
+  throw new Error(
+    'loadCorpus: no corpus source available -- neither an archive clone nor a committed ' +
+      'snapshot could be read.\n' +
+      `  - CORPUS_ARCHIVE_PATH: ${describeArchivePath(archivePath)}\n` +
+      `  - snapshot dir: ${snapshotDir} (expected one <sourceId>.json per source: ` +
+      `${config.sources.join(', ')})\n` +
+      'Set CORPUS_ARCHIVE_PATH to a readable archive clone, or generate + commit the snapshot ' +
+      'with "npm run site:snapshot" (see site/README.md).'
   );
-  const ark = arkIdentifier?.value.trim();
-  if (!ark) {
-    throw new Error(
-      `loadCorpus(${source.sourceId}): "${GALLICA_ARCHIVE_LABEL}" record has no ark identifier ` +
-        '(required for the source-iiif provider).'
-    );
-  }
-  return ark;
 }
 
-/**
- * Derives the source-level rights from its pages' provenance (the sidecar
- * `rights_status`), requiring every page to agree -- there is no default
- * (G-4). Throws if the source has no pages or the rights are inconsistent.
- */
-function deriveRights(sourceId: string, issues: IssueView[]): string {
-  const pages: PageView[] = issues.flatMap((issue) => issue.pages);
-  if (pages.length === 0) {
-    throw new Error(
-      `loadCorpus(${sourceId}): source resolved to zero pages -- cannot determine rights.`
-    );
+function describeArchivePath(archivePath: string | undefined): string {
+  if (archivePath === undefined || archivePath.length === 0) {
+    return 'unset';
   }
-
-  const rights = pages[0].provenance.rights;
-  for (const page of pages) {
-    if (page.provenance.rights !== rights) {
-      throw new Error(
-        `loadCorpus(${sourceId}): inconsistent rights across pages -- ` +
-          `${JSON.stringify(rights)} vs ${JSON.stringify(page.provenance.rights)} ` +
-          `(page ${page.pageId}).`
-      );
-    }
-  }
-  return rights;
+  return `${archivePath} (does not exist)`;
 }

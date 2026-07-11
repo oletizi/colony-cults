@@ -2,6 +2,7 @@ import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { AuthoredRepositoryRecord, CanonicalModel, IdentifierLeak } from '@/bibliography/model';
+import { authoredToRepositoryRecord } from '@/bibliography/authored-record';
 import type { LoadedSource } from '@/bibliography/load';
 import type { ObjectStoreLocation } from '@/archive/provenance';
 import type { AssetProvenance } from '@/bibliography/provenance-read';
@@ -218,22 +219,15 @@ function mergeRecord(
     // Authored acquisition fields win; the derived manifest (if any) attaches.
     // An authored-only key (derivedEntries undefined, e.g. PB-P001's restored
     // SLQ copy) survives here with no manifest -- it is not dropped.
-    const record: RepositoryRecord = { sourceId, sourceArchive, status: authored.status };
-    if (authored.catalogUrl !== undefined) {
-      record.catalogUrl = authored.catalogUrl;
-    }
-    if (authored.originalUrl !== undefined) {
-      record.originalUrl = authored.originalUrl;
-    }
-    if (authored.retrievedAt !== undefined) {
-      record.retrievedAt = authored.retrievedAt;
-    }
-    if (authored.identifiers !== undefined) {
-      record.identifiers = authored.identifiers;
-    }
-    if (authored.rights !== undefined) {
-      record.rights = authored.rights;
-    }
+    //
+    // `authoredToRepositoryRecord` (the shared widening helper, also used by
+    // `promote`/`verify-member`) additionally carries `metadataSnapshot`/
+    // `verification` when present -- this derive layer has never surfaced
+    // those SSOT-only evidentiary fields on the derived CanonicalModel, so
+    // they are stripped back off here (via destructuring) to keep this
+    // roll-up's output unchanged.
+    const { metadataSnapshot: _metadataSnapshot, verification: _verification, ...record } =
+      authoredToRepositoryRecord(sourceId, authored);
     if (manifest !== undefined) {
       record.manifest = manifest;
     }

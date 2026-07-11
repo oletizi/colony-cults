@@ -40,6 +40,28 @@ function orderedRecord(record: AuthoredRepositoryRecord): Record<string, unknown
   if (record.census !== undefined) {
     out.census = record.census;
   }
+  if (record.metadataSnapshot !== undefined) {
+    out.metadataSnapshot = {
+      path: record.metadataSnapshot.path,
+      retrievedAt: record.metadataSnapshot.retrievedAt,
+      endpoint: record.metadataSnapshot.endpoint,
+      normalizationVersion: record.metadataSnapshot.normalizationVersion,
+    };
+  }
+  if (record.verification !== undefined) {
+    out.verification = {
+      result: record.verification.result,
+      verifiedAt: record.verification.verifiedAt,
+      checks: {
+        identifierResolved: record.verification.checks.identifierResolved,
+        rights: record.verification.checks.rights,
+        requiredMetadata: record.verification.checks.requiredMetadata,
+        hardDuplicate: record.verification.checks.hardDuplicate,
+        possibleDuplicate: record.verification.checks.possibleDuplicate,
+      },
+      snapshotRef: record.verification.snapshotRef,
+    };
+  }
   return out;
 }
 

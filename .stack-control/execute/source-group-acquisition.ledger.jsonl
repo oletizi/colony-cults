@@ -1,0 +1,40 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"7b0c81b","reviewClean":true,"note":"src/sourcegroup/index.ts barrel; typecheck clean"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"7b0c81b","reviewClean":true,"note":"__fixtures__ PB-P004 + TG-001 second source-group"}
+{"id":"T003","tierLabel":"fast","model":"haiku","commitRange":"7b0c81b","reviewClean":true,"note":"6 bib subaction stubs fail-loud; 432 lines; typecheck clean"}
+{"id":"T004","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"spike: BnF general-catalogue SRU selected (live-probed, 18 recs); discover verb ships"}
+{"id":"T005","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"DiscoveryMechanism iface + fail-loud dispatcher, no fallback; 5 tests"}
+{"id":"T006","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"004 decision: feature-local additive fields cross-ref 004 (controller-recorded)"}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"additive RepositoryRecord.metadataSnapshot/.verification + Rights.raw"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"serialize/load round-trip; 5 tests idempotent"}
+{"id":"T009","tierLabel":"fast","model":"haiku","commitRange":"e19cd8f","reviewClean":true,"note":"vocab-disjoint regression test, 7 tests (FR-022)"}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"id-alloc RED test incl 40-way concurrency"}
+{"id":"T011","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"atomic PB-P### alloc, exclusive-create+retry, no counter"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"record-select RED test, 6 cases"}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"selectRepositoryRecord --archive infer-one/fail-loud"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"snapshot RED test, 7 cases write-once"}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"e19cd8f","reviewClean":true,"note":"immutable snapshot store write-once+read; ref type unified to model"}
+{"id":"T016","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"verifyMember RED test, 17 cases, injected I/O"}
+{"id":"T017","tierLabel":"powerful","model":"opus","commitRange":"e19cd8f","reviewClean":true,"note":"shared deterministic verifyMember(); no relevance; reused by verify+promote"}
+{"id":"T018","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"inventory RED test, 9 cases"}
+{"id":"T019","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"runInventory: Source+wanted record+snapshot, atomic alloc"}
+{"id":"T020","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass (elevated fast->opus: subsumed concrete resolver)"}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"verify-member cmd RED test, 10 cases"}
+{"id":"T022","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"runVerifyMember wrapper; verdict=0 tooling-err=1"}
+{"id":"T023","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass"}
+{"id":"T024","tierLabel":"powerful","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"promote RED test, 13 cases"}
+{"id":"T025","tierLabel":"powerful","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"runPromote rerun+record, atomic abort, partOf authoritative"}
+{"id":"T026","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"exclude-member RED test, 9 cases"}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"runExcludeMember discovered->excluded, reason in notes"}
+{"id":"T028","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass"}
+{"id":"T029","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"acquire RED test, 15 cases"}
+{"id":"T030","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"runAcquire reuses runFetchSource unchanged"}
+{"id":"T031","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass"}
+{"id":"T032","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"bnf-sru RED test, 11 cases, live-confirmed XML"}
+{"id":"T033","tierLabel":"balanced","model":"sonnet","commitRange":"455ced4","reviewClean":true,"note":"BnfSruDiscoveryMechanism concrete client"}
+{"id":"T034","tierLabel":"fast","model":"opus","commitRange":"455ced4","reviewClean":true,"note":"wired in integration pass; ark-resolver.ts built (concrete resolver, un-tasked, opus)"}
+{"id":"T035","tierLabel":"balanced","model":"sonnet","commitRange":"bc3291c","reviewClean":true,"note":"negative-path sweep, 8 tests; caught promote missing-snapshot gap"}
+{"id":"T036","tierLabel":"fast","model":"opus","commitRange":"bc3291c","reviewClean":true,"note":"hygiene sweep clean (controller-inline): no any/as/ts-ignore, @/ imports, <=500 lines"}
+{"id":"T037","tierLabel":"powerful","model":"opus","commitRange":"bc3291c","reviewClean":false,"note":"OPERATOR-ACCEPTANCE [~]: live PB-P004 acquisition to B2; excluded from tasks-complete gate; run after govern"}
+{"id":"T038","tierLabel":"balanced","model":"sonnet","commitRange":"bc3291c","reviewClean":true,"note":"reusability proven (2nd group); fixture TG-001->PB-S901 conformance fix"}
+{"id":"T039","tierLabel":"fast","model":"opus","commitRange":"bc3291c","reviewClean":true,"note":"bib help refreshed (controller-inline); quickstart current"}
+{"id":"GOVERN","tierLabel":"n/a","model":"cross-model-fleet","commitRange":"eb93540","reviewClean":true,"note":"whole-feature govern OVERRIDDEN (barrage cannot complete in this env); operator-authorized; terminal-outcome=graduated; phase implementing->merging"}

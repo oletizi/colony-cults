@@ -1,15 +1,29 @@
-import { existsSync } from 'fs';
 import { resolve } from 'path';
 import type { ImageProviderConfig } from '@/browser/model';
+
+/** Default snapshot directory (relative to the repo root) when unset. */
+const DEFAULT_SNAPSHOT_DIR = 'site/data';
 
 /**
  * The configuration required to load and build the corpus.
  *
  * All values are sourced from environment variables; no defaults are baked
- * in. The operator is responsible for setting the environment.
+ * in except the snapshot directory. The operator is responsible for setting
+ * the environment.
  */
 export interface LoadConfig {
-  archivePath: string;
+  /**
+   * Absolute path to the private archive clone, when set. OPTIONAL: a build
+   * without the archive (e.g. Netlify) reads the committed snapshot instead.
+   * `loadCorpus` decides the archive-vs-snapshot precedence.
+   */
+  archivePath?: string;
+  /**
+   * Where the committed public-domain snapshot lives (one `<sourceId>.json`
+   * per source). Absolute, or relative to the repo root. Defaults to
+   * `site/data`.
+   */
+  snapshotDir: string;
   sources: string[];
   provider: ImageProviderConfig;
 }
@@ -17,34 +31,25 @@ export interface LoadConfig {
 /**
  * Resolves the LoadConfig from environment variables.
  *
- * Throws a descriptive error if required env vars are missing or invalid.
- * No fallbacks, no silent defaults except where explicitly documented.
+ * Does NOT throw merely because CORPUS_ARCHIVE_PATH is unset: a build may run
+ * from the committed snapshot instead (the archive-vs-snapshot decision, and
+ * the "neither available" throw, live in `loadCorpus`). Still fail-loud on a
+ * genuinely invalid provider config.
  *
  * @param env - Environment variables (defaults to process.env)
  * @returns LoadConfig ready for corpus loading
- * @throws Error if CORPUS_ARCHIVE_PATH is missing, invalid, or path doesn't exist
  * @throws Error if CORPUS_IMAGE_PROVIDER is set to an unknown value
  * @throws Error if CORPUS_IMAGE_PROVIDER is 'b2-cdn' but CORPUS_CDN_BASE is missing
  */
 export function resolveConfig(env: NodeJS.ProcessEnv = process.env): LoadConfig {
-  const archivePath = env.CORPUS_ARCHIVE_PATH?.trim();
-  if (!archivePath) {
-    throw new Error(
-      'CORPUS_ARCHIVE_PATH environment variable is required but not set. ' +
-      'Set it to the local path of your archive clone (e.g. /Users/orion/work/colony-cults-archive).'
-    );
-  }
+  const archivePathRaw = env.CORPUS_ARCHIVE_PATH?.trim();
+  const archivePath = archivePathRaw ? resolve(archivePathRaw) : undefined;
 
-  const resolvedPath = resolve(archivePath);
-  if (!existsSync(resolvedPath)) {
-    throw new Error(
-      `CORPUS_ARCHIVE_PATH points to a path that does not exist: ${resolvedPath}. ` +
-      'Verify the path is correct and the directory is accessible.'
-    );
-  }
+  const snapshotDirRaw = env.CORPUS_SNAPSHOT_DIR?.trim();
+  const snapshotDir = snapshotDirRaw ? snapshotDirRaw : DEFAULT_SNAPSHOT_DIR;
 
   const sourcesRaw = env.CORPUS_SOURCES?.trim();
-  const sources = sourcesRaw ? sourcesRaw.split(',').map((s) => s.trim()) : ['PB-P001'];
+  const sources = sourcesRaw ? sourcesRaw.split(',').map((s) => s.trim()) : ['PB-P001', 'PB-P002'];
 
   const providerKind = env.CORPUS_IMAGE_PROVIDER?.trim() ?? 'source-iiif';
 
@@ -69,7 +74,8 @@ export function resolveConfig(env: NodeJS.ProcessEnv = process.env): LoadConfig 
   }
 
   return {
-    archivePath: resolvedPath,
+    archivePath,
+    snapshotDir,
     sources,
     provider,
   };

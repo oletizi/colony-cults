@@ -51,12 +51,13 @@ export interface LoadResult {
 }
 
 /**
- * A source's kind. `'periodical'` is the only value produced in v1; the
- * union is intentionally left open to widen with `'monograph' |
- * 'source-group'` later (OQ-7 deferred) without a breaking change to
- * `SourceView.kind`'s declared type.
+ * A source's kind, as reflected in the loaded view. A `'periodical'` resolves
+ * to many issue directories under `newspapers/<slug>`; a `'monograph'` (a
+ * book) resolves to exactly ONE unit -- its book directory under `books/` --
+ * rendered as a single {@link IssueView}. `'source-group'` is not a loadable
+ * corpus kind (it holds no assets of its own) and is not part of this union.
  */
-export type SourceKind = 'periodical';
+export type SourceKind = 'periodical' | 'monograph';
 
 /**
  * One bibliographic source (e.g. a periodical) and its issues.
@@ -69,7 +70,7 @@ export interface SourceView {
   sourceId: string;
   /** Canonical title (SSOT `titles[role=canonical]`). */
   title: string;
-  /** SSOT `kind`; v1 always produces `'periodical'`. */
+  /** SSOT `kind` (`'periodical'` or `'monograph'`). */
   kind: SourceKind;
   /** Archival identifier (SSOT repository record / page sidecars); used by the `source-iiif` provider. */
   ark: string;
@@ -173,6 +174,80 @@ export interface ProvenanceRecord {
   page: string;
   /** Content hash from the sidecar. */
   sha256: string;
+}
+
+/**
+ * The SERIALIZABLE, image-UNRESOLVED corpus form: the raw text + metadata read
+ * from the archive (or a committed snapshot), carrying each page's image
+ * HANDLES (`folioId`, `ark`, `objectStoreKey`) but NOT a resolved
+ * {@link ImageDescriptor}. `resolveImages(raw, provider)` (see
+ * `src/browser/load/resolve-images.ts`) turns a {@link CorpusSnapshot} into the
+ * rendered {@link CorpusView}. This is the shape written to `site/data/<sourceId>.json`
+ * so the Astro build can run WITHOUT the private archive (see
+ * `scripts/build-snapshot.ts`).
+ */
+export interface RawPage {
+  /** Stable page identifier within the issue (e.g. `p001`). */
+  pageId: string;
+  /** The image/view id (`f001`). */
+  folioId: string;
+  /** The image-resolution ark (the ISSUE ark); handed to the provider as `PageInput.ark`. */
+  ark: string;
+  /** The archive `object_store` key for this page's image, or `null` when absent (used by `b2-cdn`). */
+  objectStoreKey: string | null;
+  /** Raw French OCR for this page (a form-feed segment of `issue.txt`); may be noisy. */
+  ocrFrench: string;
+  /** Corrected French (`translation/pNNN.fr.txt`) when present. */
+  correctedFrench: string | null;
+  /** English translation (`translation/pNNN.en.txt`). */
+  english: string;
+  /** A surfaced OCR-condition note when detected, else `null`. */
+  ocrCondition: string | null;
+  /** The provenance-rail facts. */
+  provenance: ProvenanceRecord;
+}
+
+/** The image-unresolved form of {@link IssueView}. */
+export interface RawIssue {
+  /** Stable slug (e.g. `1879-08-15_bpt6k56068358`). */
+  issueId: string;
+  /** ISO date (`1879-08-15`). */
+  date: string;
+  /** Order within the source (1-based, over the LOADED/complete issues). */
+  sequence: number;
+  /** Ordered by page number. */
+  pages: RawPage[];
+}
+
+/** The image-unresolved form of {@link SourceView}. */
+export interface RawSource {
+  /** Canonical id, e.g. `PB-P001`. */
+  sourceId: string;
+  /** Canonical title. */
+  title: string;
+  /** SSOT `kind` (`'periodical'` or `'monograph'`). */
+  kind: SourceKind;
+  /** Source-level archival identifier. */
+  ark: string;
+  /** Rights determination, e.g. `public-domain`. */
+  rights: string;
+  /** Ordered by date. */
+  issues: RawIssue[];
+}
+
+/**
+ * The serializable, image-unresolved corpus: the exact shape read from the
+ * archive (`readRawCorpus`) and persisted as the committed public-domain
+ * snapshot (`site/data/<sourceId>.json`). {@link resolveImages} converts it to
+ * a {@link LoadResult}.
+ */
+export interface CorpusSnapshot {
+  /** One per source in this snapshot. */
+  sources: RawSource[];
+  /** Issues skipped (not-collected/incomplete) while reading. */
+  skipped: SkippedIssue[];
+  /** Optional provenance of how this snapshot was generated (advisory; not rendered). */
+  generatedFrom?: { sourceIds: string[]; note: string };
 }
 
 /**

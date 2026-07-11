@@ -134,3 +134,4 @@ workflow(graduate): impl:feature/archive-object-store merging -> validating
 workflow(graduate): impl:feature/canonical-source-metadata merging -> validating
 workflow(graduate): impl:feature/source-groups merging -> validating
 workflow(graduate): impl:feature/corpus-browser merging -> validating
+workflow(graduate): impl:feature/source-group-acquisition merging -> validating
