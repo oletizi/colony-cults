@@ -108,6 +108,17 @@ describe('validatePublicationRightsBasis', () => {
     expect(findings[0].detail).toContain('PB-P001');
   });
 
+  it('reports missing-required for a whitespace-only rightsBasis (AUDIT-BARRAGE-codex-01)', () => {
+    const source = makeSource({ publications: [makePublication({ rightsBasis: '   ' })] });
+    const model = makeModel({ sources: [source] });
+
+    const findings = validatePublicationRightsBasis(model);
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0].kind).toBe('missing-required');
+    expect(findings[0].detail).toContain('rightsBasis');
+  });
+
   it('reports no finding when rightsBasis is present and non-empty', () => {
     const source = makeSource({ publications: [makePublication()] });
     const model = makeModel({ sources: [source] });

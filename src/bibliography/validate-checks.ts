@@ -408,7 +408,10 @@ export function validatePublicationRightsBasis(model: CanonicalModel): Validatio
   const findings: ValidationFinding[] = [];
   for (const source of model.sources) {
     for (const publication of source.publications ?? []) {
-      if (publication.rightsBasis !== undefined && publication.rightsBasis !== '') {
+      // Trim before the emptiness check: a whitespace-only rightsBasis is
+      // provenance-empty and must fail, matching the publish rights-gate which
+      // also trims (AUDIT-BARRAGE-codex-01).
+      if (publication.rightsBasis !== undefined && publication.rightsBasis.trim() !== '') {
         continue;
       }
       findings.push({

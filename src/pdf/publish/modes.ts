@@ -78,10 +78,15 @@ async function publishIssue(
     const key = versionedKey(variant, sourceId, issue.issueId, snapshotShort);
     const url = cdnUrl(cdnBase, key);
 
-    const { uploaded } = await uploadArtifact(opts.store, key, bytes, sha256);
+    // Read the build metadata BEFORE the side-effecting upload: if the issue's
+    // `input.json` is missing/malformed, fail this issue with NO upload rather
+    // than leaving an orphaned, unrecorded artifact in the store (the upload
+    // then read ordering would upload bytes that a later read-failure never
+    // records).
     const { pages, machineAssist } = readIssueBuildInfo(
       inputJsonPathFor(issue.pdfPath, issue.issueId),
     );
+    const { uploaded } = await uploadArtifact(opts.store, key, bytes, sha256);
 
     return {
       upload: { issueId: issue.issueId, key, url, sha256, pages },
