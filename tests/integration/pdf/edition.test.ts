@@ -151,7 +151,7 @@ describe('integration: real PB-P001 issue -> Edition -> TypstInput', () => {
 
   describe('toTypstInput + serializeTypstInput over the real Edition', () => {
     it('produces one facing-page spread per source page, in order, with verso image + recto text', () => {
-      const typstInput = toTypstInput(edition);
+      const typstInput = toTypstInput(edition, true);
 
       expect(typstInput.itemId).toBe(edition.itemId);
       expect(typstInput.kind).toBe(edition.kind);
@@ -180,15 +180,15 @@ describe('integration: real PB-P001 issue -> Edition -> TypstInput', () => {
     });
 
     it('carries title-page + colophon provenance verbatim onto the TypstInput', () => {
-      const typstInput = toTypstInput(edition);
+      const typstInput = toTypstInput(edition, true);
       expect(typstInput.titlePage).toEqual(edition.titlePage);
       expect(typstInput.colophon).toEqual(edition.colophon);
     });
 
     it('serializes deterministically: two serializations of the same input are byte-identical', () => {
-      const typstInput = toTypstInput(edition);
+      const typstInput = toTypstInput(edition, true);
       const first = serializeTypstInput(typstInput);
-      const second = serializeTypstInput(toTypstInput(edition));
+      const second = serializeTypstInput(toTypstInput(edition, true));
 
       expect(first).toBe(second);
       expect(first.length).toBeGreaterThan(0);

@@ -158,7 +158,8 @@ async function main(): Promise<void> {
   const imagesDir = path.join(workDir, 'images');
   mkdirSync(imagesDir, { recursive: true });
   const dataPath = path.join(workDir, 'edition.json');
-  writeFileSync(dataPath, serializeTypstInput(toTypstInput(edition)));
+  // The sample renderer builds the default parallel FR|EN study recto.
+  writeFileSync(dataPath, serializeTypstInput(toTypstInput(edition, true)));
 
   // 3. Fetch each page image from Gallica IIIF into <folioId>.jpg.
   process.stdout.write(`Fetching ${issue.pages.length} page images from Gallica IIIF...\n`);

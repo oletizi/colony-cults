@@ -53,6 +53,13 @@ export interface BuildItemOptions {
   provider?: PdfImageProviderKind;
   /** Output root dir; overrides the resolved config (`PdfConfig.outDir`, default `build/pdf`). */
   outDir?: string;
+  /**
+   * Recto render mode; overrides the resolved config (`PdfConfig.showFrench`).
+   * `true` renders the two-column parallel FR|EN recto; `false` the
+   * English-only recto (DESIGN.md § "Variant: English-only recto"). The CLI
+   * `--no-french` flag sets this to `false` (CLI overrides env).
+   */
+  showFrench?: boolean;
   /** Environment used to resolve config + the B2 CDN base; defaults to `process.env`. */
   env?: NodeJS.ProcessEnv;
   /** Injected HTTP GET (tests supply an in-memory fake); defaults to the global `fetch`. */
@@ -219,6 +226,7 @@ export async function buildItem(
   const config = resolvePdfConfig(env);
   const repoRoot = resolveRepoRoot();
   const provider = opts.provider ?? config.imageProvider;
+  const showFrench = opts.showFrench ?? config.showFrench;
 
   // 1. Assemble the pure Edition from committed snapshot + SSOT + pin.
   const snapshotReader = opts.snapshotReader ?? makeCorpusSnapshotReader(config.snapshotDir);
@@ -252,7 +260,7 @@ export async function buildItem(
 
   // 3. Serialize the Typst input JSON under the build dir.
   const inputPath = path.join(buildDir, `${itemId}.input.json`);
-  writeFileSync(inputPath, serializeTypstInput(toTypstInput(edition)));
+  writeFileSync(inputPath, serializeTypstInput(toTypstInput(edition, showFrench)));
 
   // 4. Compile the facing-page template to a real PDF. The template reads its
   //    `data`/`images` via `sys.inputs`, and Typst treats those path strings as

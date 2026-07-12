@@ -114,3 +114,62 @@
 
   provenance-rail(pg, prov)
 }
+
+// ---- RECTO (right) = English-only (the reading edition) --------------------
+//
+// DESIGN.md § "Variant: English-only recto": when French is off, the recto
+// gives the translation room. Structurally identical to the parallel recto —
+// running head, TWO columns spanning the full text measure, the inter-column
+// hairline, and the oxblood rail — but the two columns are the SAME English
+// text flowing newspaper-style (fill the left column, continue into the right),
+// under ONE spanning `TRANSLATION · EN` label. The FR column + its label are
+// dropped; nothing is added back. Same EN face/size (IBM Plex Sans 9/13pt) so
+// the per-column measure stays comfortable (~38–42 chars).
+#let english-recto(pg, source-short, issue-date, prov) = {
+  // Running head — identical to the parallel recto.
+  block(width: 100%)[
+    #text(font: face-en, size: 7pt, weight: 500, fill: apparatus-ink, tracking: 0.5pt)[
+      #smallcaps(source-short) · #issue-date · #pg.folioId
+    ]
+    #v(3pt)
+    #hairline()
+  ]
+  v(12pt)
+
+  // ONE spanning label (the FR label is dropped; the machine-assisted EN mark
+  // MUST remain — the scan is still authoritative, the recto still apparatus).
+  label-caps("Translation · EN (Machine-assisted)", tick: true)
+  v(6pt)
+
+  // Two columns of the SAME English, newspaper flow, across the full recto
+  // measure (the width the FR|EN pair used together). `layout` + `measure`
+  // recover the natural single-column height so the inter-column hairline spans
+  // the rendered column height (~half the natural height) — matching the
+  // parallel grid's text-height vline rather than dangling to the page foot.
+  layout(size => {
+    let gutter = 22pt
+    let col-w = (size.width - gutter) / 2
+    let body = {
+      set par(justify: false, leading: 0.68em)
+      text(font: face-en, size: 9pt, fill: apparatus-ink)[#pg.recto.english]
+    }
+    let natural = measure(box(width: col-w, body)).height
+    let rule-h = calc.min(natural / 2, size.height)
+    block(width: 100%, breakable: true)[
+      #place(top + center, rect(width: 0.4pt, height: rule-h, fill: rule-col))
+      #columns(2, gutter: gutter, body)
+    ]
+  })
+
+  // OCR-condition apparatus note, only when present (null renders nothing).
+  if pg.recto.ocrCondition != none {
+    v(10pt)
+    hairline(length: 30%, stroke-width: 0.4pt)
+    v(4pt)
+    text(font: face-mono, size: 6.5pt, fill: faint)[
+      OCR condition · #pg.recto.ocrCondition
+    ]
+  }
+
+  provenance-rail(pg, prov)
+}

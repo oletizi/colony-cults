@@ -18,7 +18,7 @@
 // scripts/render-sample-pdf.ts for the exact invocation.
 
 #import "theme.typ": *
-#import "spread.typ": facsimile-verso, parallel-recto
+#import "spread.typ": facsimile-verso, parallel-recto, english-recto
 #import "frontmatter.typ": title-page, colophon-page
 
 // ---- Inputs ----------------------------------------------------------------
@@ -58,14 +58,22 @@
 // Each spread is a verso facsimile facing its recto text. `pagebreak(to:
 // "even")` forces every verso onto a left-hand leaf so it always faces its
 // recto, regardless of how far the previous recto's columns ran.
+// The recto branches on the per-build `showFrench` toggle (DESIGN.md § "Variant:
+// English-only recto"): the two-column parallel FR|EN study recto when true, the
+// two-column English-only reading recto when false. Everything else — verso,
+// running head, folio markers, rail, front/back matter — is identical.
 #for pg in doc.pages {
   pagebreak(to: "even", weak: true)
   facsimile-verso(pg, source-short, images-dir)
   pagebreak(weak: true)
-  parallel-recto(pg, source-short, doc.titlePage.date, prov-of(pg.folioId))
+  if doc.showFrench {
+    parallel-recto(pg, source-short, doc.titlePage.date, prov-of(pg.folioId))
+  } else {
+    english-recto(pg, source-short, doc.titlePage.date, prov-of(pg.folioId))
+  }
 }
 
 // ---- Colophon --------------------------------------------------------------
 
 #pagebreak(weak: true)
-#colophon-page(doc.colophon)
+#colophon-page(doc.colophon, doc.showFrench)

@@ -34,6 +34,14 @@ export interface TypstInput {
   pages: TypstPage[];
   /** Colophon provenance, carried verbatim (G-3, FR-005). */
   colophon: ColophonMeta;
+  /**
+   * Recto render mode (DESIGN.md § "Variant: English-only recto"). `true`
+   * renders the two-column parallel FR|EN *study* recto; `false` renders the
+   * two-column English-only *reading* recto (EN flows column-to-column, the FR
+   * label dropped). A RENDER toggle only -- `recto.ocrFrench` is still carried
+   * on every page (harmless when unused); the template branches on this flag.
+   */
+  showFrench: boolean;
 }
 
 /**
@@ -91,9 +99,12 @@ export interface TypstRecto {
  * pages -- a facing-page edition with zero spreads cannot be rendered, and
  * this module does not silently emit an empty document.
  *
+ * @param edition the built edition view model.
+ * @param showFrench recto render mode (DESIGN.md § "Variant: English-only
+ *   recto"): `true` -> two-column parallel FR|EN; `false` -> English-only.
  * @throws Error if `edition.pages` is empty
  */
-export function toTypstInput(edition: Edition): TypstInput {
+export function toTypstInput(edition: Edition, showFrench: boolean): TypstInput {
   if (edition.pages.length === 0) {
     throw new Error(
       `toTypstInput: Edition ${JSON.stringify(edition.itemId)} has zero pages -- a facing-page ` +
@@ -124,6 +135,7 @@ export function toTypstInput(edition: Edition): TypstInput {
     titlePage: edition.titlePage,
     pages,
     colophon: edition.colophon,
+    showFrench,
   };
 }
 

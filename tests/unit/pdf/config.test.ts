@@ -81,6 +81,33 @@ describe('resolvePdfConfig', () => {
 
     expect(config.snapshotDir).toBe('site/custom');
   });
+
+  it('defaults showFrench to true (the parallel FR|EN study recto) when unset', () => {
+    expect(resolvePdfConfig({}).showFrench).toBe(true);
+  });
+
+  it('resolves PDF_SHOW_FRENCH="false" to showFrench=false (English-only recto)', () => {
+    expect(resolvePdfConfig({ PDF_SHOW_FRENCH: 'false' }).showFrench).toBe(false);
+  });
+
+  it('resolves PDF_SHOW_FRENCH="0" to showFrench=false', () => {
+    expect(resolvePdfConfig({ PDF_SHOW_FRENCH: '0' }).showFrench).toBe(false);
+  });
+
+  it('resolves PDF_SHOW_FRENCH="true"/"1" to showFrench=true', () => {
+    expect(resolvePdfConfig({ PDF_SHOW_FRENCH: 'true' }).showFrench).toBe(true);
+    expect(resolvePdfConfig({ PDF_SHOW_FRENCH: '1' }).showFrench).toBe(true);
+  });
+
+  it('is case-insensitive and whitespace-tolerant for PDF_SHOW_FRENCH', () => {
+    expect(resolvePdfConfig({ PDF_SHOW_FRENCH: '  FALSE  ' }).showFrench).toBe(false);
+  });
+
+  it('throws a descriptive error for an invalid PDF_SHOW_FRENCH', () => {
+    expect(() => resolvePdfConfig({ PDF_SHOW_FRENCH: 'oui' })).toThrow(
+      /Unknown PDF_SHOW_FRENCH value: "oui"[\s\S]*Expected one of: "true"\/"1"[\s\S]*"false"\/"0"/
+    );
+  });
 });
 
 describe('resolveArchiveRef', () => {

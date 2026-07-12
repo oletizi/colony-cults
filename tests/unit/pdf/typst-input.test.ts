@@ -64,7 +64,7 @@ function makeEdition(bytesPathPrefix: string): Edition {
 describe('toTypstInput (G-1 facing structure, G-2 machine-derived labels)', () => {
   it('presents each source page as a verso image + recto {ocrFrench, english}, in page order', () => {
     const edition = makeEdition('/tmp/build-abc');
-    const input = toTypstInput(edition);
+    const input = toTypstInput(edition, true);
 
     expect(input.pages).toHaveLength(2);
 
@@ -84,7 +84,7 @@ describe('toTypstInput (G-1 facing structure, G-2 machine-derived labels)', () =
   });
 
   it('never splits a page verso/recto across non-facing entries (one TypstPage per source page)', () => {
-    const input = toTypstInput(makeEdition('/tmp/build-abc'));
+    const input = toTypstInput(makeEdition('/tmp/build-abc'), true);
     for (const page of input.pages) {
       expect(page.verso).toBeDefined();
       expect(page.recto).toBeDefined();
@@ -92,7 +92,7 @@ describe('toTypstInput (G-1 facing structure, G-2 machine-derived labels)', () =
   });
 
   it('carries the machine-derived translation label on every recto (G-2, SC-003)', () => {
-    const input = toTypstInput(makeEdition('/tmp/build-abc'));
+    const input = toTypstInput(makeEdition('/tmp/build-abc'), true);
     for (const page of input.pages) {
       expect(page.recto.machineAssist).toEqual(colophon.translation);
     }
@@ -101,33 +101,63 @@ describe('toTypstInput (G-1 facing structure, G-2 machine-derived labels)', () =
   it('throws when the Edition has zero pages', () => {
     const edition = makeEdition('/tmp/build-abc');
     edition.pages = [];
-    expect(() => toTypstInput(edition)).toThrow(/zero pages/);
+    expect(() => toTypstInput(edition, true)).toThrow(/zero pages/);
   });
 });
 
 describe('toTypstInput (G-3 title-page + colophon provenance carried verbatim)', () => {
   it('carries titlePage verbatim', () => {
-    const input = toTypstInput(makeEdition('/tmp/build-abc'));
+    const input = toTypstInput(makeEdition('/tmp/build-abc'), true);
     expect(input.titlePage).toEqual(titlePage);
   });
 
   it('carries colophon verbatim', () => {
-    const input = toTypstInput(makeEdition('/tmp/build-abc'));
+    const input = toTypstInput(makeEdition('/tmp/build-abc'), true);
     expect(input.colophon).toEqual(colophon);
   });
 
   it('carries itemId and kind verbatim', () => {
-    const input = toTypstInput(makeEdition('/tmp/build-abc'));
+    const input = toTypstInput(makeEdition('/tmp/build-abc'), true);
     expect(input.itemId).toBe('PB-P001-1879-08-15');
     expect(input.kind).toBe('issue');
+  });
+});
+
+describe('toTypstInput (showFrench recto toggle, DESIGN.md § English-only recto)', () => {
+  it('carries showFrench=true (parallel FR|EN study recto) verbatim', () => {
+    const input = toTypstInput(makeEdition('/tmp/build-abc'), true);
+    expect(input.showFrench).toBe(true);
+  });
+
+  it('carries showFrench=false (English-only reading recto) verbatim', () => {
+    const input = toTypstInput(makeEdition('/tmp/build-abc'), false);
+    expect(input.showFrench).toBe(false);
+  });
+
+  it('keeps recto.ocrFrench on every page regardless of mode (render toggle only)', () => {
+    // English-only is a RENDER toggle -- the FR text is still carried in the
+    // data (harmless when unused); the template branches on showFrench.
+    const input = toTypstInput(makeEdition('/tmp/build-abc'), false);
+    for (const page of input.pages) {
+      expect(page.recto.ocrFrench.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('serializes showFrench stably (present in the sorted-key output)', () => {
+    const on = serializeTypstInput(toTypstInput(makeEdition('/tmp/build-abc'), true));
+    const off = serializeTypstInput(toTypstInput(makeEdition('/tmp/build-abc'), false));
+    expect(on).toContain('"showFrench": true');
+    expect(off).toContain('"showFrench": false');
+    // Byte-stable across repeated calls at the same mode.
+    expect(serializeTypstInput(toTypstInput(makeEdition('/tmp/build-abc'), false))).toBe(off);
   });
 });
 
 describe('serializeTypstInput (G-4 stable serialization)', () => {
   it('is byte-identical across two calls on the same Edition', () => {
     const edition = makeEdition('/tmp/build-abc');
-    const first = serializeTypstInput(toTypstInput(edition));
-    const second = serializeTypstInput(toTypstInput(edition));
+    const first = serializeTypstInput(toTypstInput(edition, true));
+    const second = serializeTypstInput(toTypstInput(edition, true));
     expect(first).toBe(second);
   });
 
@@ -136,21 +166,28 @@ describe('serializeTypstInput (G-4 stable serialization)', () => {
     // bytesPath differs (mkdtemp gives a fresh directory each run) but every
     // other field is identical -- the serialized TypstInput must not leak
     // that volatility (a precondition for reproducible PDFs, SC-004).
-    const runA = serializeTypstInput(toTypstInput(makeEdition('/tmp/build-run-a-xyz123')));
-    const runB = serializeTypstInput(toTypstInput(makeEdition('/tmp/build-run-b-qrs789')));
+    const runA = serializeTypstInput(toTypstInput(makeEdition('/tmp/build-run-a-xyz123'), true));
+    const runB = serializeTypstInput(toTypstInput(makeEdition('/tmp/build-run-b-qrs789'), true));
     expect(runA).toBe(runB);
   });
 
   it('emits sorted object keys regardless of source key insertion order', () => {
     const edition = makeEdition('/tmp/build-abc');
-    const json = serializeTypstInput(toTypstInput(edition));
+    const json = serializeTypstInput(toTypstInput(edition, true));
     const parsed = JSON.parse(json);
-    expect(Object.keys(parsed)).toEqual(['colophon', 'itemId', 'kind', 'pages', 'titlePage']);
+    expect(Object.keys(parsed)).toEqual([
+      'colophon',
+      'itemId',
+      'kind',
+      'pages',
+      'showFrench',
+      'titlePage',
+    ]);
   });
 
   it('round-trips through JSON.parse to a value equal to the mapped TypstInput', () => {
     const edition = makeEdition('/tmp/build-abc');
-    const input = toTypstInput(edition);
+    const input = toTypstInput(edition, true);
     const json = serializeTypstInput(input);
     expect(JSON.parse(json)).toEqual(input);
   });

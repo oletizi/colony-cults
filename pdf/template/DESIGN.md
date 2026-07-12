@@ -89,6 +89,41 @@ short>`. Seduction above the line, sober evidence below it.
 critical-framing statement (the `EVIDENCE_FRAMING` string) set in EB Garamond — the one place the
 editorial voice speaks in prose — closing the volume. A small `oxblood` bracketed mark anchors it.
 
+## Variant: English-only recto (config toggle)
+
+A per-build toggle (default: French **on**, the two-column parallel edition above). When French is
+**off**, the operator wants more English adjacent to the facing scan. This is the *reading edition* to
+the parallel edition's *study edition* — same identity, same tokens, same faces, same verso, same
+running head, same oxblood provenance rail. Only the recto text block changes.
+
+**Why this also fixes overflow.** The two-column EN column is only ~half the recto (a cramped ~40-char
+measure), which is the main reason dense pages overflow across many continuation leaves. A single
+English column roughly doubles the measure → far more text per page → the translation stays adjacent
+to its scan.
+
+**English-only recto composition:**
+
+- **English in TWO columns** (newspaper flow: fill the left column, continue into the right), IBM Plex
+  Sans **9 / 13pt** ragged-right — the SAME face/size/measure as the parallel mode's EN column, so a
+  comfortable ~38–42-char measure per column. A single wide column is too wide to read; two columns keep
+  the measure right AND fit ~2× the English per page vs the old single half-width EN column — that is the
+  density gain that keeps the translation adjacent to its scan.
+- **The two English columns span the full recto text measure** (the width the FR|EN pair used together).
+  Text flows column-to-column across the leaf, then onto the next recto — like the newspaper it
+  reproduces.
+- **Label:** drop `TRANSCRIPTION · FR (OCR)`. Keep ONE `TRANSLATION · EN (MACHINE-ASSISTED)` header with
+  its small `oxblood` tick, spanning above the two columns — the machine-derived marking MUST remain (the
+  scan is still authoritative; the recto is still apparatus, not source).
+- **Keep the thin inter-column `rule` hairline** between the two English columns — the recto stays
+  structurally identical to the parallel mode (two columns + hairline + running head + rail); only the
+  content (EN|EN flow instead of FR|EN) and the single header change. This is what makes the two modes
+  read as one system.
+- **Unchanged:** verso facsimile, running head, folio markers, the provenance rail, the title page, the
+  colophon. Both modes are visibly one system — the study edition holds source beside translation; the
+  reading edition gives the translation room. The colophon should still state which mode built it (a
+  one-line `Plex Mono` note, e.g. `edition: english-only` / `edition: parallel FR|EN`) so the artifact
+  is self-describing.
+
 ## Reproducibility notes for the implementer
 
 - Vendor the four OFL font files under `pdf/template/fonts/` and compile with a pinned `--font-path`

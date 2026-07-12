@@ -64,7 +64,7 @@
     .flatten()
 }
 
-#let colophon-page(col) = {
+#let colophon-page(col, show-french) = {
   text(font: face-display, size: 18pt, fill: source-ink)[Colophon]
   v(5pt)
   line(length: 34%, stroke: 0.9pt + oxblood)
@@ -84,6 +84,9 @@
       if col.translation.model != none [ · #col.translation.model]
       [ · #col.translation.retrieved]
     },
+    // Which recto mode built this artifact — self-describing (DESIGN.md).
+    text(fill: faint)[edition],
+    [#if show-french { "parallel FR|EN" } else { "english-only" }],
   )
 
   v(16pt)

@@ -9,6 +9,15 @@
  *   npm run pdf:build -- <sourceId>             # every issue of a source (US2)
  *   npm run pdf:build -- --all                  # the whole committed snapshot (US2)
  *
+ * Flags:
+ *   --provider b2|iiif   image provider (default: config PDF_IMAGE_PROVIDER, else b2)
+ *   --out <dir>          output root (default: config PDF_OUT_DIR, else build/pdf)
+ *   --no-french          render the English-only *reading* recto (two English
+ *                        columns, FR label dropped) instead of the default
+ *                        two-column parallel FR|EN *study* recto. Overrides the
+ *                        PDF_SHOW_FRENCH env toggle for this build. See
+ *                        pdf/template/DESIGN.md § "Variant: English-only recto".
+ *
  * Guarantees (contracts/cli.md):
  *  - G-1 one PDF per item: `buildItem` writes exactly one; `buildSource`/
  *    `buildAll` (src/pdf/render/batch.ts) do so once per enumerated item.
@@ -41,6 +50,12 @@ interface CliArgs {
   provider: PdfImageProviderKind | undefined;
   /** `--out` dir, or `undefined` (fall back to config default `build/pdf`). */
   out: string | undefined;
+  /**
+   * `--no-french` flag: when set, forces the English-only recto
+   * (`showFrench=false`), overriding the `PDF_SHOW_FRENCH` env toggle. When
+   * unset, `showFrench` is left to config/env (default: parallel FR|EN).
+   */
+  noFrench: boolean;
 }
 
 /** Parse `process.argv.slice(2)`. Fails loud on an unknown flag or bad value. */
@@ -49,11 +64,14 @@ function parseArgs(argv: string[]): CliArgs {
   let all = false;
   let provider: PdfImageProviderKind | undefined;
   let out: string | undefined;
+  let noFrench = false;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--all') {
       all = true;
+    } else if (arg === '--no-french') {
+      noFrench = true;
     } else if (arg === '--provider') {
       const value = argv[i + 1];
       i += 1;
@@ -89,7 +107,7 @@ function parseArgs(argv: string[]): CliArgs {
     );
   }
 
-  return { selector, all, provider, out };
+  return { selector, all, provider, out, noFrench };
 }
 
 /**
@@ -150,14 +168,19 @@ async function main(): Promise<void> {
   const repoRoot = resolveRepoRoot();
   const outLabel = args.out ?? 'build/pdf (config default)';
   const providerLabel = args.provider ?? '(config default)';
+  // `--no-french` forces the English-only recto (CLI overrides the
+  // PDF_SHOW_FRENCH env toggle); left unset, config/env decides.
+  const showFrench = args.noFrench ? false : undefined;
+  const editionLabel = args.noFrench ? 'english-only (--no-french)' : '(config default)';
 
   if (args.all) {
     process.stdout.write(
       `pdf:build -- all committed snapshot sources\n` +
         `  provider: ${providerLabel}\n` +
+        `  edition:  ${editionLabel}\n` +
         `  out root: ${outLabel}\n\n`,
     );
-    const results = await buildAll({ provider: args.provider, outDir: args.out });
+    const results = await buildAll({ provider: args.provider, outDir: args.out, showFrench });
     reportBatch(results, repoRoot);
     return;
   }
@@ -175,9 +198,14 @@ async function main(): Promise<void> {
     process.stdout.write(
       `pdf:build -- source ${sourceId} (all issues)\n` +
         `  provider: ${providerLabel}\n` +
+        `  edition:  ${editionLabel}\n` +
         `  out root: ${outLabel}\n\n`,
     );
-    const result = await buildSource(sourceId, { provider: args.provider, outDir: args.out });
+    const result = await buildSource(sourceId, {
+      provider: args.provider,
+      outDir: args.out,
+      showFrench,
+    });
     reportBatch([result], repoRoot);
     return;
   }
@@ -194,12 +222,14 @@ async function main(): Promise<void> {
   process.stdout.write(
     `pdf:build -- item ${sourceId}/${itemId}\n` +
       `  provider: ${providerLabel}\n` +
+      `  edition:  ${editionLabel}\n` +
       `  out root: ${outLabel}\n\n`,
   );
 
   const { outPath } = await buildItem(sourceId, itemId, {
     provider: args.provider,
     outDir: args.out,
+    showFrench,
   });
 
   const rel = path.relative(repoRoot, outPath);

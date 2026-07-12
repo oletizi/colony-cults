@@ -53,6 +53,15 @@ export interface PdfConfig {
   snapshotDir: string;
   /** Absolute path to the pin sidecar (`<snapshotDir>/archive-source.json`). */
   pinFile: string;
+  /**
+   * Whether the recto renders the French OCR beside the English translation.
+   * `true` (default) is the two-column parallel *study* edition; `false` is
+   * the single-column English-only *reading* edition (DESIGN.md § "Variant:
+   * English-only recto"). A RENDER toggle only -- the edition builder still
+   * requires per-page english + ocrFrench in either mode. Sourced from
+   * `PDF_SHOW_FRENCH` (`"false"`/`"0"` -> false; unset/`"true"`/`"1"` -> true).
+   */
+  showFrench: boolean;
 }
 
 /**
@@ -83,7 +92,32 @@ export function resolvePdfConfig(env: NodeJS.ProcessEnv = process.env): PdfConfi
     : path.join(resolveRepoRoot(), snapshotDir);
   const pinFile = path.join(snapshotDirAbs, PIN_FILE_NAME);
 
-  return { outDir, imageProvider, snapshotDir, pinFile };
+  const showFrench = resolveShowFrench(env.PDF_SHOW_FRENCH?.trim());
+
+  return { outDir, imageProvider, snapshotDir, pinFile, showFrench };
+}
+
+/**
+ * Resolves the `showFrench` recto toggle from the raw `PDF_SHOW_FRENCH` value.
+ * Default (unset/empty) is `true` (the two-column parallel edition). `"false"`
+ * / `"0"` select the English-only recto; `"true"` / `"1"` are the explicit
+ * default. Any other value fails loud (no silent coercion -- Principle III).
+ */
+function resolveShowFrench(raw: string | undefined): boolean {
+  if (raw === undefined || raw.length === 0) {
+    return true;
+  }
+  const normalized = raw.toLowerCase();
+  if (normalized === 'true' || normalized === '1') {
+    return true;
+  }
+  if (normalized === 'false' || normalized === '0') {
+    return false;
+  }
+  throw new Error(
+    `Unknown PDF_SHOW_FRENCH value: "${raw}". ` +
+      'Expected one of: "true"/"1" (default) or "false"/"0".'
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
