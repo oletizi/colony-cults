@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/corpus-coverage-audit",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-coverage-audit",
+  "override": true,
+  "overrideReason": "barrage ran healthy 3-model fleet (claude/codex/sonnet) across 5 chunks but was killed pre-convergence due to env duration limit (operator standing note); code live-validated: 761 tests pass, tsc clean, bib coverage and bib validate driven end-to-end on the real corpus"
+}
