@@ -83,8 +83,17 @@ export function resolveConfig(env: NodeJS.ProcessEnv = process.env): LoadConfig 
   };
 }
 
-/** Default b2-cdn reading width (px) when CORPUS_CDN_IMAGE_WIDTH is unset. */
-const DEFAULT_CDN_IMAGE_WIDTH = 2400;
+/**
+ * Default b2-cdn reading width (px) when CORPUS_CDN_IMAGE_WIDTH is unset.
+ *
+ * 2000 chosen from measured CDN behavior: the heavy ~2 MB newspaper masters
+ * (~3000-3900px) roughly halve (to ~0.9-1.2 MB) while staying legible, and
+ * every smaller page in the corpus (down to ~14 KB monographs) is served at or
+ * below its master size -- at this width cf.image scale-down never re-encodes a
+ * page LARGER than its master (a smaller width like 1200 can inflate the tiny
+ * scans; 2400 inflated a mid-size page). Tune via CORPUS_CDN_IMAGE_WIDTH.
+ */
+const DEFAULT_CDN_IMAGE_WIDTH = 2000;
 
 /**
  * Resolves the b2-cdn reading width from `CORPUS_CDN_IMAGE_WIDTH`:

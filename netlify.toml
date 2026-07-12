@@ -21,8 +21,11 @@
   CORPUS_IMAGE_PROVIDER = "b2-cdn"
   CORPUS_CDN_BASE = "https://colony-cults-cdn.oletizi.workers.dev"
   # Reading width (px): the b2-cdn provider appends `?w=` so the CDN Worker
-  # resizes the master (cf.image, scale-down) to a reading-size image instead of
-  # the full ~2 MiB master -- faster first paint, less bandwidth. The master is
-  # ~3149px wide, so 2400 keeps text crisp while cutting page weight ~4-5x. Set
-  # to "full" (or 0) to serve the untouched master; raise for sharper max zoom.
-  CORPUS_CDN_IMAGE_WIDTH = "2400"
+  # resizes the master (cf.image, scale-down) to a reading-size image -- faster
+  # first paint, less bandwidth. Measured against the live CDN: at 2000 the heavy
+  # ~2 MB newspaper masters roughly halve (~0.9-1.2 MB) while staying legible,
+  # and every smaller page (down to ~14 KB monographs) stays at/under its master
+  # size (scale-down never upscales; a smaller width can re-encode tiny scans
+  # LARGER). Set to "full" (or 0) for the untouched master; raise for sharper max
+  # zoom at more bandwidth.
+  CORPUS_CDN_IMAGE_WIDTH = "2000"
