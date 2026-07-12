@@ -11,6 +11,9 @@
   publish = "site/dist"
 
 [build.environment]
+  # Astro 7 requires Node >= 22.12.0; pin it so Netlify's default image Node
+  # (older) does not fail the build. Keep in sync with .nvmrc.
+  NODE_VERSION = "22"
   # Resolve page images straight from Gallica's public IIIF service (no CDN /
   # object-store mirror required for a public deploy).
   CORPUS_IMAGE_PROVIDER = "source-iiif"
