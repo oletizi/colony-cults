@@ -60,5 +60,5 @@ export function makeProvider(config: ImageProviderConfig): ImageSourceProvider {
     );
   }
 
-  return makeB2CdnProvider(config.cdnBase);
+  return makeB2CdnProvider(config.cdnBase, config.imageWidth);
 }

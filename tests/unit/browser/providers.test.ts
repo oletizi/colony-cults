@@ -109,6 +109,36 @@ describe('makeProvider', () => {
       expect(descriptor.url).toBe('https://cdn.example/pb/archive/f001.jpg');
     });
 
+    it('appends ?w=<imageWidth> when a positive reading width is configured', () => {
+      const provider = makeProvider({
+        kind: 'b2-cdn',
+        cdnBase: 'https://cdn.example',
+        imageWidth: 2400,
+      });
+      const descriptor = provider.resolve({
+        ark: null,
+        folioId: 'f001',
+        objectStoreKey: 'archive/f001.jpg',
+      });
+
+      expect(descriptor.kind).toBe('full-image');
+      expect(descriptor.url).toBe('https://cdn.example/archive/f001.jpg?w=2400');
+    });
+
+    it('omits the ?w= query when imageWidth is absent or non-positive', () => {
+      const page: PageInput = { ark: null, folioId: 'f001', objectStoreKey: 'archive/f001.jpg' };
+
+      const noWidth = makeProvider({ kind: 'b2-cdn', cdnBase: 'https://cdn.example' }).resolve(page);
+      const zeroWidth = makeProvider({
+        kind: 'b2-cdn',
+        cdnBase: 'https://cdn.example',
+        imageWidth: 0,
+      }).resolve(page);
+
+      expect(noWidth.url).toBe('https://cdn.example/archive/f001.jpg');
+      expect(zeroWidth.url).toBe('https://cdn.example/archive/f001.jpg');
+    });
+
     it('throws, naming the folio, when objectStoreKey is null', () => {
       const provider = makeProvider({ kind: 'b2-cdn', cdnBase: 'https://cdn.example' });
       const page: PageInput = { ark: null, folioId: 'f009', objectStoreKey: null };
