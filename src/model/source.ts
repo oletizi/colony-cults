@@ -64,6 +64,27 @@ export interface Source {
    * that the work cites nothing.
    */
   references?: Reference[];
+  /**
+   * The believed TOTAL extent of this source-group -- the denominator the
+   * coverage report measures actual members (derived from `partOf` edges)
+   * against. Valid ONLY on `kind: 'source-group'`; authoring it on any other
+   * kind is an error (enforced by a later validation task, not the loader).
+   * Distinct from the *derived* actual count: this is the hand-authored belief
+   * about how many members SHOULD exist. The literal string `'unknown'` is
+   * first-class and deliberately distinct from an incomplete group and from a
+   * count of `0` -- `unknown != incomplete != 0`. Absent means the extent has
+   * not been asserted (treated as `'unknown'` by the report).
+   */
+  knownMemberCount?: number | 'unknown';
+  /**
+   * Inferred, uncited pre-discovery gaps in this source-group -- works
+   * suspected to exist from publication pattern, testimony, or indirect
+   * mention, but NOT via a direct citation by an acquired source. Group-only
+   * (valid on `kind: 'source-group'`). The boundary with {@link Reference}: a
+   * gap whose basis IS a direct citation belongs in the citing Source's
+   * `references[]` (the referenced-but-unidentified population), not here.
+   */
+  suspected?: SuspectedGap[];
   /** Free-text notes. */
   notes?: string;
 }
@@ -116,6 +137,30 @@ export interface Reference {
    * Source was located BECAUSE the citing work pointed to it.
    */
   resolvedTo?: string;
+  /** Free-text notes. */
+  notes?: string;
+}
+
+/**
+ * One inferred, uncited gap in a source-group (element of
+ * {@link Source.suspected}). A `SuspectedGap` records a work believed to exist
+ * that has NOT yet been discovered and is NOT backed by a direct citation --
+ * inferred instead from a publication pattern, testimony, or an indirect
+ * mention. The boundary with {@link Reference}: a gap whose `basis` IS a direct
+ * citation by an acquired source belongs in that source's `references[]` (the
+ * referenced-but-unidentified population), not here.
+ */
+export interface SuspectedGap {
+  /** What is suspected to exist (e.g. `"appeal-court records for the trial"`). */
+  description: string;
+  /**
+   * FREE-FORM prose explaining WHY the gap is inferred, e.g. `"trial testimony
+   * references an appeal not yet located"`. Deliberately NOT validated against
+   * any vocabulary -- unlike `evidenceClass`, this is open explanatory text.
+   */
+  basis: string;
+  /** The evidence class the suspected work is expected to be, if a class can be anticipated. */
+  evidenceClass?: EvidenceClass;
   /** Free-text notes. */
   notes?: string;
 }
