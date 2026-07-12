@@ -18,3 +18,6 @@
 {"id":"T019","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"warm.ts non-fatal CDN warm"}
 {"id":"T022","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"rights-gate refusal test (SC-003)"}
 {"id":"T023","tierLabel":"powerful","model":"opus","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"rights-gate.ts affirmative fail-closed"}
+{"id":"T020","tierLabel":"powerful","model":"opus","commitRange":"459b430..5e9736f","reviewClean":true,"note":"publish.ts orchestration (dry-run/confirm, record-and-continue)"}
+{"id":"T024","tierLabel":"balanced","model":"sonnet","commitRange":"459b430..5e9736f","reviewClean":true,"note":"rights gate wired first in publish.ts (with T020)"}
+{"id":"T025","tierLabel":"balanced","model":"sonnet","commitRange":"459b430..5e9736f","reviewClean":true,"note":"PB-P001 affirmative rights public-domain"}
