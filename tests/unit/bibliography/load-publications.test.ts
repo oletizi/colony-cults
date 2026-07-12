@@ -1,0 +1,115 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { loadSourceFile } from '@/bibliography/load';
+
+/**
+ * Loader coverage for the specs/008 edition-publishing SSOT fields `rights` and
+ * `publications[]` (T006): a valid source round-trips both onto `LoadedSource`,
+ * an unrecognized `rights.status` fails loud, a duplicate
+ * `(variant, snapshotShort)` fails loud, and a legacy source carrying neither
+ * field still loads unchanged (additive-only).
+ */
+
+const BASE = `sourceId: PB-P001
+kind: periodical
+titles:
+  - text: "La Nouvelle France"
+    role: canonical
+`;
+
+const RIGHTS_BLOCK = `rights:
+  status: public-domain
+  basis: "1881 imprint; French public domain"
+  determinedAt: "2026-07-12"
+`;
+
+function publicationsBlock(entries: string): string {
+  return `publications:\n${entries}`;
+}
+
+const ENGLISH_ONLY_PUB = `  - variant: english-only
+    publishedAt: "2026-07-12"
+    snapshot: "3b8b1fd6a0d7f76f3c5f9a2b3da94252bbb5dd10"
+    snapshotShort: "3b8b1fd6"
+    cdnBase: "https://colony-cults-cdn.oletizi.workers.dev"
+    keyScheme: versioned
+    rightsBasis: "1881 imprint; French public domain"
+    machineAssist:
+      engine: "claude"
+      retrieved: "2026-07-12"
+    manifest:
+      manifestPath: "bibliography/publications/PB-P001-english-only-3b8b1fd6.yml"
+      issueCount: 71
+`;
+
+let dir: string;
+
+beforeEach(() => {
+  dir = mkdtempSync(path.join(tmpdir(), 'bibliography-load-pub-test-'));
+});
+
+afterEach(() => {
+  rmSync(dir, { recursive: true, force: true });
+});
+
+function writeSource(contents: string): string {
+  const filePath = path.join(dir, 'PB-P001.yml');
+  writeFileSync(filePath, contents, 'utf-8');
+  return filePath;
+}
+
+describe('loadSourceFile rights + publications (specs/008)', () => {
+  it('round-trips a valid rights block + publications[] onto the LoadedSource', () => {
+    const filePath = writeSource(BASE + RIGHTS_BLOCK + publicationsBlock(ENGLISH_ONLY_PUB));
+    const { source } = loadSourceFile(filePath);
+
+    expect(source.rights).toEqual({
+      status: 'public-domain',
+      basis: '1881 imprint; French public domain',
+      determinedAt: '2026-07-12',
+    });
+
+    expect(source.publications).toHaveLength(1);
+    const [pub] = source.publications ?? [];
+    expect(pub).toEqual({
+      variant: 'english-only',
+      publishedAt: '2026-07-12',
+      snapshot: '3b8b1fd6a0d7f76f3c5f9a2b3da94252bbb5dd10',
+      snapshotShort: '3b8b1fd6',
+      cdnBase: 'https://colony-cults-cdn.oletizi.workers.dev',
+      keyScheme: 'versioned',
+      rightsBasis: '1881 imprint; French public domain',
+      machineAssist: { engine: 'claude', model: null, retrieved: '2026-07-12' },
+      manifest: {
+        manifestPath: 'bibliography/publications/PB-P001-english-only-3b8b1fd6.yml',
+        issueCount: 71,
+      },
+    });
+  });
+
+  it('throws on an unrecognized rights.status', () => {
+    const badRights = `rights:
+  status: all-rights-reserved
+  basis: "not a recognized status"
+`;
+    const filePath = writeSource(BASE + badRights);
+    expect(() => loadSourceFile(filePath)).toThrow(/all-rights-reserved/);
+  });
+
+  it('throws on a duplicate (variant, snapshotShort) within publications[]', () => {
+    const filePath = writeSource(
+      BASE + publicationsBlock(ENGLISH_ONLY_PUB + ENGLISH_ONLY_PUB),
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/duplicate publication/);
+  });
+
+  it('loads a legacy source with neither rights nor publications', () => {
+    const filePath = writeSource(BASE);
+    const { source } = loadSourceFile(filePath);
+    expect(source.rights).toBeUndefined();
+    expect(source.publications).toBeUndefined();
+  });
+});

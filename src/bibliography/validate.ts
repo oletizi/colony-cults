@@ -1,12 +1,15 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import type { CanonicalModel, IdentifierLeak } from '@/bibliography/model';
 import { buildViewRegistry, readViewIfExists } from '@/bibliography/regenerate';
 import {
   validateDuplicateCopies,
+  validateDuplicatePublications,
   validateMissingRequired,
   validateOrphanAssets,
   validateOrphanRecords,
+  validatePublicationRightsBasis,
   validateSingleChecksum,
   validateSourceGroups,
   validateVocab,
@@ -44,7 +47,9 @@ export type ValidationFindingKind =
   | 'group-only-field'
   | 'invalid-known-member-count'
   | 'search-log-campaign-not-found'
-  | 'search-log-campaign-not-a-group';
+  | 'search-log-campaign-not-a-group'
+  | 'duplicate-publication'
+  | 'publication-manifest-missing';
 
 /**
  * One `bib validate` finding. Findings are DATA, not errors -- `validate`
@@ -139,6 +144,44 @@ export function validateViewDrift(model: CanonicalModel, opts: ViewDriftOptions)
 }
 
 /**
+ * Every `Source.publications[].manifest.manifestPath` MUST resolve to an
+ * existing file, relative to `opts.repoRoot`
+ * (specs/008-edition-publishing/contracts/ssot-publications.md §
+ * Invariants: "Manifest file at manifestPath exists for every
+ * publications[] entry") -- a publication must not reference a manifest that
+ * was never written (or was deleted after the fact). Sibling to
+ * `validateViewDrift`, the only other FS-touching check in this module: uses
+ * `existsSync` directly (no read/parse of the manifest's contents -- that is
+ * a separate concern from this check), and is gated the same way -- callers
+ * without a `repoRoot` (model-only tests, other callers) never touch disk.
+ * Sources with no `publications[]` are skipped. Reports one
+ * `publication-manifest-missing` finding per missing manifest, naming the
+ * owning Source and the manifest's repo-relative path.
+ */
+export function validatePublicationManifests(model: CanonicalModel, opts: ViewDriftOptions): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
+  for (const source of model.sources) {
+    for (const publication of source.publications ?? []) {
+      const relativePath = publication.manifest.manifestPath;
+      const absPath = path.join(opts.repoRoot, relativePath);
+      if (existsSync(absPath)) {
+        continue;
+      }
+      findings.push({
+        kind: 'publication-manifest-missing',
+        sourceId: source.sourceId,
+        path: relativePath,
+        detail:
+          `Source "${source.sourceId}" publication (variant: ${publication.variant}, ` +
+          `snapshotShort: ${publication.snapshotShort}) references manifest "${relativePath}", ` +
+          `which does not exist`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
  * Options for {@link validate}. Both fields are optional and additive: omit
  * `repoRoot` to skip the disk-touching view-drift check (model-only callers /
  * tests are unaffected); supply `searchLog` (the loaded
@@ -175,12 +218,15 @@ export function validate(model: CanonicalModel, opts?: ValidateOptions): Validat
     ...validateSingleChecksum(model),
     ...validateSourceGroups(model),
     ...validateCoverageFields(model),
+    ...validateDuplicatePublications(model),
+    ...validatePublicationRightsBasis(model),
   ];
   if (opts?.searchLog !== undefined) {
     findings.push(...validateSearchLogCampaigns(model, opts.searchLog));
   }
   if (opts?.repoRoot !== undefined) {
     findings.push(...validateViewDrift(model, { repoRoot: opts.repoRoot }));
+    findings.push(...validatePublicationManifests(model, { repoRoot: opts.repoRoot }));
   }
   return findings;
 }

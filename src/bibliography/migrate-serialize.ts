@@ -1,6 +1,7 @@
 import { stringify } from 'yaml';
 
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
+import type { Publication } from '@/model/publication';
 import type { Source } from '@/model/source';
 
 /**
@@ -74,6 +75,46 @@ function byArchive(a: AuthoredRepositoryRecord, b: AuthoredRepositoryRecord): nu
 }
 
 /**
+ * Build one `publications[]` entry's on-disk object in a FIXED key order
+ * (matching contracts/ssot-publications.md § 2), omitting the absent optional
+ * `machineAssist` so the output is deterministic and no field is fabricated.
+ * Mirrors {@link orderedRecord}'s pattern for `repositoryRecords[]`.
+ */
+function orderedPublication(publication: Publication): Record<string, unknown> {
+  const out: Record<string, unknown> = {
+    variant: publication.variant,
+    publishedAt: publication.publishedAt,
+    snapshot: publication.snapshot,
+    snapshotShort: publication.snapshotShort,
+    cdnBase: publication.cdnBase,
+    keyScheme: publication.keyScheme,
+    rightsBasis: publication.rightsBasis,
+  };
+  if (publication.machineAssist !== undefined) {
+    out.machineAssist = publication.machineAssist;
+  }
+  out.manifest = {
+    manifestPath: publication.manifest.manifestPath,
+    issueCount: publication.manifest.issueCount,
+  };
+  return out;
+}
+
+/**
+ * Compare publications by `snapshotShort` then `variant` for a stable,
+ * deterministic on-disk order (mirrors {@link byArchive}).
+ */
+function byPublication(a: Publication, b: Publication): number {
+  if (a.snapshotShort !== b.snapshotShort) {
+    return a.snapshotShort < b.snapshotShort ? -1 : 1;
+  }
+  if (a.variant !== b.variant) {
+    return a.variant < b.variant ? -1 : 1;
+  }
+  return 0;
+}
+
+/**
  * Deterministically serialize a {@link MigratedSource} to the SSOT YAML shape.
  * Keys are emitted in a fixed order and absent optional fields are omitted, so
  * re-serializing identical input yields byte-identical output (idempotency).
@@ -89,9 +130,10 @@ export function serializeSource(migrated: MigratedSource): string {
     out.partOf = source.partOf;
   }
   // Field order: sourceId, kind, partOf, status, case, language, creator,
-  // titles, identifiers, notes, repositoryRecords -- status sits right after
-  // partOf since both describe the Source's place in the group/lifecycle
-  // model, ahead of the more descriptive/bibliographic fields.
+  // rights, titles, identifiers, notes, repositoryRecords, publications --
+  // status sits right after partOf since both describe the Source's place in
+  // the group/lifecycle model, ahead of the more descriptive/bibliographic
+  // fields; publications sits last, downstream of repositoryRecords.
   if (source.status !== undefined) {
     out.status = source.status;
   }
@@ -103,6 +145,19 @@ export function serializeSource(migrated: MigratedSource): string {
   }
   if (source.creator !== undefined) {
     out.creator = source.creator;
+  }
+  // rights sits right after the other descriptive/lifecycle fields (creator)
+  // and ahead of titles/identifiers -- it is a work-level determination like
+  // status/case/language/creator, not a bibliographic or repository field.
+  if (source.rights !== undefined) {
+    const rights: Record<string, unknown> = {
+      status: source.rights.status,
+      basis: source.rights.basis,
+    };
+    if (source.rights.determinedAt !== undefined) {
+      rights.determinedAt = source.rights.determinedAt;
+    }
+    out.rights = rights;
   }
   out.titles = source.titles.map((title) =>
     title.language !== undefined
@@ -118,6 +173,11 @@ export function serializeSource(migrated: MigratedSource): string {
   const records = [...migrated.records].sort(byArchive);
   if (records.length > 0) {
     out.repositoryRecords = records.map(orderedRecord);
+  }
+  // publications sits after repositoryRecords -- derivative editions WE
+  // published are downstream of the held copies they were built from.
+  if (source.publications !== undefined && source.publications.length > 0) {
+    out.publications = [...source.publications].sort(byPublication).map(orderedPublication);
   }
   return stringify(out, { lineWidth: 0 });
 }
