@@ -88,7 +88,7 @@ Source Group kind for research-defined collections that are discovered before ac
 Reusable Discover->Inventory->Technical-verify->Research-approve(Promote)->Acquire->Preserve pipeline for source-group members (agent-assisted discovery + judgment), proven end-to-end by acquiring PB-P004's Rays legal corpus. Builds inventory/verify-member/promote CLI commands over the shipped source-group model (member Source with partOf + lifecycle status discovered->approved-for-acquisition). Members get flat opaque IDs (next-free PB-P###, e.g. PB-P007); membership is the partOf edge only, never encoded in the id. verify-member is deterministic (resolve/rights/dedup/required-fields); promote records research judgment. RepositoryRecord created at inventory as wanted, ->to-collect at promote (separate acquisition vocab). Inventory preserves raw+normalized metadata. Acquire resolves the ark from the RepositoryRecord and reuses the shipped fetcher (--object-store to B2); no new fetch code in v1. Discovery search mechanism is a spike that selects ONE documented mechanism (BnF catalogue SRU lead) and fails loud when unavailable -- no runtime fallback. Resolves the PB-P004 blocked-assets gap that source-groups intentionally created. Newspaper coverage routes to PB-N### (current single-partOf modeling constraint, not an absolute rule). Revised 2026-07-10 after third-party review.
 
 ## impl:feature/corpus-coverage-audit
-- status: in-flight
+- status: shipped
 - analyze-clean: yes
 - spec: specs/007-corpus-coverage-audit
 - design-approved: yes
