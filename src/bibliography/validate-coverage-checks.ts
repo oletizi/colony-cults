@@ -1,6 +1,10 @@
 import type { CanonicalModel } from '@/bibliography/model';
+import type { SearchLogEntry } from '@/bibliography/search-log';
 import type { ValidationFinding } from '@/bibliography/validate';
 import type { Source } from '@/model/source';
+
+/** Where a search-log finding locates the offending entry. */
+const SEARCH_LOG_PATH = 'bibliography/search-log.yml';
 
 /**
  * Validation rules V3-V5 for the corpus-coverage-audit authored fields
@@ -118,9 +122,56 @@ export function validateKnownMemberCountShape(model: CanonicalModel): Validation
 }
 
 /**
+ * V8/V9: every `SearchLogEntry.campaign` MUST resolve to an existing Source
+ * that is a `kind: 'source-group'` (data-model). `campaign` is documented as a
+ * source-group `sourceId`, not an arbitrary label -- the search-history
+ * projection groups by it, so an unresolved or wrong-kind campaign would
+ * surface a phantom campaign in the repository x campaign matrix, mixing an
+ * unvalidated label into what must be a projection of the canonical
+ * bibliography. Like V3 (`resolvedTo`), this is a whole-corpus referential
+ * check -- the per-file search-log loader cannot see the Sources, so it lives
+ * here, as a finding rather than a load-time throw. Reports one
+ * `search-log-campaign-not-found` per dangling campaign and one
+ * `search-log-campaign-not-a-group` per campaign that resolves to a
+ * non-source-group Source, each naming the offending search-log entry.
+ */
+export function validateSearchLogCampaigns(
+  model: CanonicalModel,
+  searchLog: readonly SearchLogEntry[],
+): ValidationFinding[] {
+  const kindById = new Map(model.sources.map((source) => [source.sourceId, source.kind]));
+  const findings: ValidationFinding[] = [];
+  for (const entry of searchLog) {
+    const kind = kindById.get(entry.campaign);
+    if (kind === undefined) {
+      findings.push({
+        kind: 'search-log-campaign-not-found',
+        path: SEARCH_LOG_PATH,
+        detail:
+          `search-log entry "${entry.id}" campaign "${entry.campaign}" does not resolve to ` +
+          `any existing Source`,
+      });
+      continue;
+    }
+    if (kind !== 'source-group') {
+      findings.push({
+        kind: 'search-log-campaign-not-a-group',
+        path: SEARCH_LOG_PATH,
+        detail:
+          `search-log entry "${entry.id}" campaign "${entry.campaign}" resolves to a ${kind}, ` +
+          `not a source-group`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
  * Validate the corpus-coverage-audit authored fields (V3-V5, this module's
- * three checks) -- composed into `@/bibliography/validate`'s `validate()`
- * alongside the shipped US2/US4/US5 checks.
+ * three model-only checks) -- composed into `@/bibliography/validate`'s
+ * `validate()` alongside the shipped US2/US4/US5 checks. The search-log
+ * campaign check (V8/V9) is composed separately in `validate()` because it
+ * also needs the loaded search-log, not just the model.
  */
 export function validateCoverageFields(model: CanonicalModel): ValidationFinding[] {
   return [

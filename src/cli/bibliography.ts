@@ -341,7 +341,7 @@ async function runValidate(rest: string[]): Promise<number> {
   let findings: ValidationFinding[];
   try {
     const loaded = loadAllSources(sourcesDir);
-    loadSearchLogForValidate(repoRoot);
+    const searchLog = loadSearchLogForValidate(repoRoot);
     const archiveRoot = resolveArchiveRoot(repoRoot, args.archiveRoot);
     const provenanceBySource = await gatherProvenanceForAll(
       loaded.map((entry) => entry.source),
@@ -349,7 +349,7 @@ async function runValidate(rest: string[]): Promise<number> {
     );
     const censusByKey = gatherCensusForAll(loaded, repoRoot);
     const model = deriveModel(loaded, provenanceBySource, censusByKey);
-    findings = validate(model, { repoRoot });
+    findings = validate(model, { repoRoot, searchLog });
   } catch (error) {
     console.error(`bib validate: ${describeError(error)}`);
     return 2;

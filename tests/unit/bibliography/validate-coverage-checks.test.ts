@@ -6,7 +6,9 @@ import {
   validateGroupOnlyFields,
   validateKnownMemberCountShape,
   validateReferences,
+  validateSearchLogCampaigns,
 } from '@/bibliography/validate-coverage-checks';
+import type { SearchLogEntry } from '@/bibliography/search-log';
 import type { Source } from '@/model/source';
 
 /**
@@ -243,5 +245,61 @@ describe('coverage checks composed into validate() aggregator', () => {
           f.kind === 'invalid-known-member-count',
       ),
     ).toEqual([]);
+  });
+});
+
+describe('validateSearchLogCampaigns (V8/V9: search-log campaign referential integrity)', () => {
+  function makeEntry(overrides: Partial<SearchLogEntry> = {}): SearchLogEntry {
+    return {
+      id: 'SRCH-0001',
+      date: '2026-07-03',
+      repository: 'Gallica',
+      campaign: 'PB-P004',
+      scope: 'trial records',
+      coverage: 'catalogue searched',
+      ...overrides,
+    };
+  }
+
+  it('reports no finding when campaign resolves to a source-group', () => {
+    const model = makeModel({ sources: [makeSourceGroup()] });
+    expect(validateSearchLogCampaigns(model, [makeEntry({ campaign: 'PB-P004' })])).toEqual([]);
+  });
+
+  it('reports search-log-campaign-not-found for a dangling campaign id', () => {
+    const model = makeModel({ sources: [makeSourceGroup()] });
+    const findings = validateSearchLogCampaigns(model, [
+      makeEntry({ id: 'SRCH-0009', campaign: 'PB-P404' }),
+    ]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.kind).toBe('search-log-campaign-not-found');
+    expect(findings[0]?.detail).toContain('SRCH-0009');
+    expect(findings[0]?.detail).toContain('PB-P404');
+  });
+
+  it('reports search-log-campaign-not-a-group when the campaign is a monograph', () => {
+    const model = makeModel({ sources: [makeSource({ sourceId: 'PB-P007', kind: 'monograph' })] });
+    const findings = validateSearchLogCampaigns(model, [makeEntry({ campaign: 'PB-P007' })]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.kind).toBe('search-log-campaign-not-a-group');
+    expect(findings[0]?.detail).toContain('monograph');
+  });
+
+  it('surfaces the campaign findings through validate() when searchLog is supplied', () => {
+    const model = makeModel({ sources: [makeSourceGroup()] });
+    const findings = validate(model, { searchLog: [makeEntry({ campaign: 'PB-P404' })] });
+    expect(findings.some((f) => f.kind === 'search-log-campaign-not-found')).toBe(true);
+  });
+
+  it('runs no campaign check when searchLog is omitted (backward compatible)', () => {
+    const model = makeModel({ sources: [makeSourceGroup()] });
+    const findings = validate(model);
+    expect(
+      findings.some(
+        (f) =>
+          f.kind === 'search-log-campaign-not-found' ||
+          f.kind === 'search-log-campaign-not-a-group',
+      ),
+    ).toBe(false);
   });
 });

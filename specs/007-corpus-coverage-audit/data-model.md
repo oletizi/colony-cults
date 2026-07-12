@@ -118,6 +118,14 @@ searchHistory: {
 }
 ```
 
+**Open-question closure semantics.** A matrix cell's `openQuestions` is the
+`remainingQuestions` of the LATEST entry for that (repository, campaign) — NOT a union
+across all history. Authoring convention: each search entry records the questions still open
+*as of* that search (carry forward the still-open ones, drop the resolved ones), so a question
+a later search omits is treated as closed. `byRepository.openQuestions` unions each campaign's
+*current* (latest) open questions for that repository — not raw history. This keeps
+`openQuestions` meaning "currently open" and coherent with `lastSearched`.
+
 ### `CampaignCoverage`
 
 ```
@@ -155,6 +163,14 @@ separate `copiesByArchive` view and never feed work-level totals.
 | V5 | `knownMemberCount` is a non-negative integer or the literal `'unknown'` | fail loud |
 | V6 | `search-log.yml` entry `id`s are unique | fail loud, name duplicate id |
 | V7 | `search-log.yml` entry has required fields (`id/date/repository/campaign/scope/coverage`) | fail loud, name entry |
+| V8 | `search-log.yml` entry `campaign` resolves to an existing `sourceId` | `bib validate` finding `search-log-campaign-not-found`, name entry + campaign |
+| V9 | `search-log.yml` entry `campaign` resolves to a `kind: 'source-group'` | `bib validate` finding `search-log-campaign-not-a-group`, name entry + campaign |
+| V10 | `search-log.yml` entry `date` is a well-formed ISO `YYYY-MM-DD` real calendar date | fail loud at load, name entry + value |
+
+V8/V9 are whole-corpus referential checks (like V3) — they run in `bib validate` with the
+loaded model + search-log, not at the per-file load boundary. V10 is a fail-loud load check:
+the search-history projection determines `lastSearched` by lexicographic ISO comparison, so a
+malformed date must never reach it.
 
 `basis` is intentionally excluded from validation (free-form prose).
 

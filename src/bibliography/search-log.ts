@@ -103,6 +103,38 @@ function requireEntryString(
   return value;
 }
 
+const ISO_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Require `date` to be a well-formed ISO `YYYY-MM-DD` AND a real calendar date
+ * (V10). Fail-loud at load rather than as a `bib validate` finding: the
+ * search-history projection (`@/bibliography/coverage/coverage-history`)
+ * determines `lastSearched` by comparing these strings lexicographically,
+ * which is only correct for zero-padded ISO dates -- a malformed date (e.g.
+ * `2026-7-1`, `2026-02-30`, `yesterday`) would silently corrupt the "last
+ * searched" ordering, so it must never reach a projection. Rejects a bad
+ * format (regex) and an impossible calendar date (round-trip through UTC).
+ */
+function requireIsoDate(obj: Record<string, unknown>, filePath: string, label: string): string {
+  const raw = requireEntryString(obj, 'date', filePath, label);
+  const match = ISO_DATE_RE.exec(raw);
+  if (match === null) {
+    fail(filePath, `${label} date "${raw}" is not ISO YYYY-MM-DD (V10)`);
+  }
+  const [, yearStr, monthStr, dayStr] = match;
+  if (yearStr === undefined || monthStr === undefined || dayStr === undefined) {
+    fail(filePath, `${label} date "${raw}" is not ISO YYYY-MM-DD (V10)`);
+  }
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const day = Number(dayStr);
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  if (utc.getUTCFullYear() !== year || utc.getUTCMonth() !== month - 1 || utc.getUTCDate() !== day) {
+    fail(filePath, `${label} date "${raw}" is not a real calendar date (V10)`);
+  }
+  return raw;
+}
+
 function validateRemainingQuestions(
   value: unknown,
   filePath: string,
@@ -145,7 +177,7 @@ function validateEntry(value: unknown, filePath: string, index: number): SearchL
   }
 
   const id = requireEntryString(value, 'id', filePath, label);
-  const date = requireEntryString(value, 'date', filePath, label);
+  const date = requireIsoDate(value, filePath, label);
   const repository = requireEntryString(value, 'repository', filePath, label);
   const campaign = requireEntryString(value, 'campaign', filePath, label);
   const scope = requireEntryString(value, 'scope', filePath, label);

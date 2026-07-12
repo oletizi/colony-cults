@@ -145,3 +145,45 @@ describe('loadSearchLog', () => {
     expect(() => loadSearchLog(filePath)).toThrow(/bogusField/);
   });
 });
+
+describe('loadSearchLog date validation (V10)', () => {
+  function entryWithDate(date: string): string {
+    return `
+- id: SRCH-0001
+  date: ${date}
+  repository: Gallica
+  campaign: PB-P004
+  scope: "trial records"
+  coverage: "catalogue searched"
+`;
+  }
+
+  it('rejects a non-zero-padded date (2026-7-1) as not ISO YYYY-MM-DD', () => {
+    const filePath = writeSearchLog('search-log.yml', entryWithDate('2026-7-1'));
+    expect(() => loadSearchLog(filePath)).toThrow(/not ISO YYYY-MM-DD/);
+  });
+
+  it('rejects a free-text date (yesterday)', () => {
+    const filePath = writeSearchLog('search-log.yml', entryWithDate('yesterday'));
+    expect(() => loadSearchLog(filePath)).toThrow(/not ISO YYYY-MM-DD/);
+  });
+
+  it('rejects an impossible calendar date (2026-02-30)', () => {
+    const filePath = writeSearchLog('search-log.yml', entryWithDate('2026-02-30'));
+    expect(() => loadSearchLog(filePath)).toThrow(/not a real calendar date/);
+  });
+
+  it('rejects Feb 29 in a non-leap year (2026-02-29)', () => {
+    const filePath = writeSearchLog('search-log.yml', entryWithDate('2026-02-29'));
+    expect(() => loadSearchLog(filePath)).toThrow(/not a real calendar date/);
+  });
+
+  it('accepts a valid leap-day (2024-02-29) and a normal ISO date', () => {
+    expect(loadSearchLog(writeSearchLog('a.yml', entryWithDate('2024-02-29')))[0]?.date).toBe(
+      '2024-02-29',
+    );
+    expect(loadSearchLog(writeSearchLog('b.yml', entryWithDate('2026-07-03')))[0]?.date).toBe(
+      '2026-07-03',
+    );
+  });
+});
