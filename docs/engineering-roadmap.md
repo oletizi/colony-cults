@@ -107,6 +107,7 @@ Scoped-down capture from a third-party "Corpus Coverage & Discovery Audit" propo
 
 ## impl:feature/edition-publishing
 - status: in-flight
+- analyze-clean: yes
 - spec: specs/008-edition-publishing
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-12-edition-publishing-design.md
