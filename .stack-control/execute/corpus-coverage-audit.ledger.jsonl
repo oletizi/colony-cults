@@ -26,3 +26,6 @@
 {"id":"T024","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
 {"id":"T026","tierLabel":"fast","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
 {"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T029","tierLabel":"fast","model":"controller","commitRange":"pending","reviewClean":true,"note":"no PB-P004 special-casing in coverage code; verified by grep"}
+{"id":"T030","tierLabel":"fast","model":"controller","commitRange":"pending","reviewClean":true,"note":"all new modules <=208 lines; tsc clean"}
+{"id":"T031","tierLabel":"balanced","model":"controller","commitRange":"pending","reviewClean":true,"note":"search-log.yml seed + bibliography/README.md"}
