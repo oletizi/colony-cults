@@ -1,3 +1,29 @@
+## 2026-07-12: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 5
+  - define(edition-publishing): clarify spec 008 — 4 decisions integrated
+  - define(edition-publishing): author spec 008 — governed publish pipeline + SSOT record
+  - roadmap(edition-publishing): designing -> in-flight, design-approved
+  - design(edition-publishing): design record (approved)
+  - design(edition-publishing): capture roadmap item + open designing phase
+- Files changed: 5
+- Backlog touched: (none)
+
 ## 2026-07-08: define source-translation spec; ratify constitution; clear dependabot alerts
 
 **Goal:** Pick up and complete the `define` operation for `impl:feature/source-translation`.
