@@ -111,6 +111,32 @@ export const CITED_KIND_VALUES = [
 export type CitedKind = (typeof CITED_KIND_VALUES)[number];
 
 /**
+ * `SourceRights.status` controlled vocabulary (specs/008-edition-publishing) --
+ * the affirmative, work-level publish-gate determination on a `Source`. MUST
+ * match the `SourceRightsStatus` string union in `@/model/publication` EXACTLY
+ * -- that union is the type-level SSOT this tuple mirrors at runtime; keep the
+ * two in lockstep by hand (there is no codegen).
+ *
+ * IMPORTANT: this is the CLOSED set of RECOGNIZED status values, not the
+ * publish-gate's affirmative-distributable subset. `isSourceRightsStatus`
+ * below answers "is this a known status?" -- it does NOT answer "does this
+ * clear the gate?". Today only `public-domain` is affirmative-distributable;
+ * `openly-licensed` and `gov-reusable` are recognized-but-non-blocking
+ * placeholders (extensible, not yet cleared for v1). The gate decision itself
+ * is T023's rights-gate logic, not this vocabulary module -- do not fold gate
+ * semantics into this predicate.
+ *
+ * See specs/008-edition-publishing/data-model.md § 1 SourceRights and
+ * specs/008-edition-publishing/contracts/ssot-publications.md § 1.
+ */
+export const SOURCE_RIGHTS_STATUS_VALUES = [
+  'public-domain',
+  'openly-licensed',
+  'gov-reusable',
+] as const;
+export type SourceRightsStatus = (typeof SOURCE_RIGHTS_STATUS_VALUES)[number];
+
+/**
  * Closed vocab field names, mapped to their allowed-value arrays. The
  * field-name-keyed `status` entry has always meant a `RepositoryRecord`'s
  * acquisition status (`validateVocab` in `@/bibliography/validate-checks`
@@ -189,6 +215,19 @@ export function isEvidenceClass(value: string): value is EvidenceClass {
  */
 export function isCitedKind(value: string): value is CitedKind {
   return includesValue(CITED_KIND_VALUES, value);
+}
+
+/**
+ * Membership test for the `SourceRightsStatus` vocabulary (specs/008):
+ * `isSourceRightsStatus('public-domain')` -> `true`;
+ * `isSourceRightsStatus('all-rights-reserved')` -> `false`. Answers ONLY
+ * "is this a recognized status?" -- it is NOT the publish-gate's
+ * affirmative-distributable check (that's T023's rights-gate). Use this
+ * wherever a `Source.rights.status` value is loaded/validated (see
+ * `@/bibliography/load`).
+ */
+export function isSourceRightsStatus(value: string): value is SourceRightsStatus {
+  return includesValue(SOURCE_RIGHTS_STATUS_VALUES, value);
 }
 
 /** One required-field entry in a required-field core spec (FR-019). */

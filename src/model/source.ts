@@ -1,5 +1,6 @@
 import type { CitedKind, EvidenceClass, SourceLifecycleStatus } from '@/bibliography/vocab';
 import type { WorkLevelIdentifierType } from '@/model/identifiers';
+import type { Publication, SourceRights } from '@/model/publication';
 
 /**
  * An archive-independent work. A `Source` describes the work itself; the
@@ -58,6 +59,13 @@ export interface Source {
    */
   evidenceClass?: EvidenceClass;
   /**
+   * The affirmative, work-level rights determination the publish gate reads
+   * (FR-002/FR-005). Only affirmative-distributable values (v1:
+   * `public-domain`) clear the gate; absence fails closed. See
+   * {@link SourceRights}.
+   */
+  rights?: SourceRights;
+  /**
    * Citations mined FROM this source -- works this Source cites, quotes, or
    * otherwise points to, whether or not that cited work has been identified
    * in the corpus. Absent/empty means no citations have been mined yet, not
@@ -87,6 +95,14 @@ export interface Source {
   suspected?: SuspectedGap[];
   /** Free-text notes. */
   notes?: string;
+  /**
+   * Published derivative editions of this Source (FR-005). Distinct from
+   * `repositoryRecords[]`: a `repositoryRecords[]` entry is another archive's
+   * held copy of the work, while a `publications[]` entry is a derivative
+   * edition WE published (built + rights-cleared + distributed by us). See
+   * {@link Publication}.
+   */
+  publications?: Publication[];
 }
 
 /**
