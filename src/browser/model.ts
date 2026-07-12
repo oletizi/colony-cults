@@ -153,7 +153,16 @@ export interface ImageDescriptor {
  */
 export type ImageProviderConfig =
   | { kind: 'source-iiif' }
-  | { kind: 'b2-cdn'; cdnBase: string };
+  | {
+      kind: 'b2-cdn';
+      cdnBase: string;
+      /**
+       * Optional reading width (px). When set, the descriptor url carries `?w=<n>`
+       * so the CDN Worker resizes the master (cf.image, scale-down) -- a smaller
+       * reading image instead of the full ~2 MB master. Omitted/0 => full master.
+       */
+      imageWidth?: number;
+    };
 
 /**
  * The identifying facts rendered in the monospace provenance rail (FR-014),

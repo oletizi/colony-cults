@@ -20,3 +20,9 @@
   # The b2-cdn provider builds `${CORPUS_CDN_BASE}/<object_store key>`.
   CORPUS_IMAGE_PROVIDER = "b2-cdn"
   CORPUS_CDN_BASE = "https://colony-cults-cdn.oletizi.workers.dev"
+  # Reading width (px): the b2-cdn provider appends `?w=` so the CDN Worker
+  # resizes the master (cf.image, scale-down) to a reading-size image instead of
+  # the full ~2 MiB master -- faster first paint, less bandwidth. The master is
+  # ~3149px wide, so 2400 keeps text crisp while cutting page weight ~4-5x. Set
+  # to "full" (or 0) to serve the untouched master; raise for sharper max zoom.
+  CORPUS_CDN_IMAGE_WIDTH = "2400"

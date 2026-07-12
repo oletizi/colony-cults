@@ -34,11 +34,25 @@
  *     to render. B2 sends no CORS header on the public bucket, so the Worker adds
  *     it. `*` is origin-independent, so it is safe to bake into the cached entry.
  *
+ * Image resizing (READING WIDTH):
+ *   - An optional `?w=<n>` query param resizes the master via Cloudflare Image
+ *     Resizing (`cf.image`, fit=scale-down) so the browser fetches a reading-size
+ *     image (hundreds of KiB) instead of the full ~2 MiB master. The corpus-browser
+ *     `b2-cdn` provider appends `?w=` (see src/browser/providers/b2-cdn.ts, driven
+ *     by CORPUS_CDN_IMAGE_WIDTH). `scale-down` never upscales, so a page already
+ *     narrower than `w` is returned untouched. An out-of-range/invalid `w` is
+ *     ignored (full master). Each distinct width is cached under its own key and
+ *     counts as one transform against the account's monthly quota.
+ *   - Requires "Image Resizing (transformations)" enabled for the zone/account
+ *     (works on the free `*.workers.dev` host). Without it, `cf.image` is ignored
+ *     and the master is served -- correct, just not smaller.
+ *
  * Config (wrangler `[vars]`):
  *   - B2_DOWNLOAD_BASE   e.g. https://f004.backblazeb2.com/file/colony-cults
  *   - EDGE_TTL_SECONDS   edge + browser cache lifetime for 2xx (string int)
+ *   - MAX_IMAGE_WIDTH    largest accepted `?w=` (string int; default 5000)
  */
-const CACHE_VERSION = '2';
+const CACHE_VERSION = '3';
 
 export default {
   async fetch(request, env, ctx) {
@@ -63,9 +77,24 @@ export default {
       return new Response('Not Found (no object key)', { status: 404 });
     }
 
-    // Our own edge-cache entry, namespaced by version. Only 2xx ever land here.
+    // Optional reading-width resize. A valid positive `?w=` within bounds is
+    // honored via cf.image (scale-down); anything else => full master.
+    const maxWidth = Number.parseInt(env.MAX_IMAGE_WIDTH ?? '5000', 10);
+    const rawWidth = url.searchParams.get('w');
+    let width = null;
+    if (rawWidth !== null && /^\d+$/.test(rawWidth)) {
+      const w = Number.parseInt(rawWidth, 10);
+      if (w > 0 && w <= maxWidth) {
+        width = w;
+      }
+    }
+
+    // Our own edge-cache entry, namespaced by version AND width so each reading
+    // size is cached independently (and the master, width=full, separately).
+    // Only 2xx ever land here.
     const cache = caches.default;
-    const cacheKey = new Request(`${url.origin}/__cdn/v${CACHE_VERSION}/${key}`);
+    const variant = width ? `w${width}` : 'full';
+    const cacheKey = new Request(`${url.origin}/__cdn/v${CACHE_VERSION}/${variant}/${key}`);
 
     const cached = await cache.match(cacheKey);
     if (cached) {
@@ -81,8 +110,14 @@ export default {
     // Miss: fetch B2 directly. `cacheEverything: false` keeps Cloudflare from
     // implicitly caching the subrequest (so errors are never cached); the
     // `?ccv=` version busts any stale entry left by an earlier code version.
+    // When a width is requested, `cf.image` resizes the master at the edge
+    // (scale-down: never upscale); billed as one transform per unique variant.
+    const originCf = { cacheEverything: false };
+    if (width) {
+      originCf.image = { width, fit: 'scale-down', quality: 85 };
+    }
     const origin = await fetch(`${base}/${key}?ccv=${CACHE_VERSION}`, {
-      cf: { cacheEverything: false },
+      cf: originCf,
     });
 
     if (!origin.ok) {
