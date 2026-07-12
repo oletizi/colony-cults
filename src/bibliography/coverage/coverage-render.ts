@@ -16,8 +16,10 @@ import type {
  * - INV-2: an unknown gap/denominator renders as the literal `unknown`, never
  *   a blank, `0`, or a percentage.
  *
- * The text form is a shell: later section tasks (T011/T016/T019/T025/T028)
- * flesh out the per-row detail, but the section headers are stable from here.
+ * Every section prints its per-row detail (per-campaign counts, evidence
+ * distribution, the register with its ungrouped bucket + suspected sub-listing,
+ * and the search-history matrix + repository rollup), and empty sections print
+ * `(none)` cleanly.
  */
 export function renderCoverage(report: CoverageReport, opts: { json: boolean }): string {
   return opts.json ? renderJson(report) : renderText(report);
@@ -75,26 +77,36 @@ function renderEvidenceClasses(
   );
 }
 
-function renderRegisterEntry(entry: RegisterEntry): string {
-  const label = entry.kind === 'reference' ? entry.citedAs ?? '' : entry.description ?? '';
-  const basis = entry.basis !== undefined ? ` (basis: ${entry.basis})` : '';
-  return `- ${label}${basis}`;
+/** A basis suffix, present only when the entry carries free-form basis prose. */
+function basisSuffix(entry: RegisterEntry): string {
+  return entry.basis !== undefined ? ` (basis: ${entry.basis})` : '';
 }
 
-function renderRegister(register: CoverageRegister, lines: string[]): void {
+/** An unresolved reference: what was cited, its basis, and the source that cites it. */
+function renderReferenceEntry(entry: RegisterEntry): string {
+  return `- ${entry.citedAs ?? ''}${basisSuffix(entry)}  [cited in ${entry.owner}]`;
+}
+
+/** A suspected gap: what is inferred to exist and (always) why. */
+function renderSuspectedEntry(entry: RegisterEntry): string {
+  return `- ${entry.description ?? ''}${basisSuffix(entry)}`;
+}
+
+/** References (only) grouped by campaign, then the ungrouped "[no campaign]" bucket. */
+function renderReferences(register: CoverageRegister, lines: string[]): void {
   lines.push('Unresolved references:');
 
-  lines.push('  by campaign:');
   if (register.byCampaign.length === 0) {
-    lines.push(`    ${NONE}`);
+    lines.push(`  ${NONE}`);
   } else {
     for (const bucket of register.byCampaign) {
-      lines.push(`    ${bucket.campaign}:`);
-      if (bucket.entries.length === 0) {
-        lines.push(`      ${NONE}`);
+      lines.push(`  ${bucket.campaign}:`);
+      const references = bucket.entries.filter((entry) => entry.kind === 'reference');
+      if (references.length === 0) {
+        lines.push(`    ${NONE}`);
       } else {
-        for (const entry of bucket.entries) {
-          lines.push(`      ${renderRegisterEntry(entry)}`);
+        for (const entry of references) {
+          lines.push(`    ${renderReferenceEntry(entry)}`);
         }
       }
     }
@@ -105,9 +117,36 @@ function renderRegister(register: CoverageRegister, lines: string[]): void {
     lines.push(`    ${NONE}`);
   } else {
     for (const entry of register.ungrouped) {
-      lines.push(`    ${renderRegisterEntry(entry)}`);
+      lines.push(`    ${renderReferenceEntry(entry)}`);
     }
   }
+}
+
+/** The suspected-gaps sub-listing, grouped by campaign (only campaigns that have any). */
+function renderSuspected(register: CoverageRegister, lines: string[]): void {
+  lines.push('  suspected:');
+  const withSuspected = register.byCampaign
+    .map((bucket) => ({
+      campaign: bucket.campaign,
+      entries: bucket.entries.filter((entry) => entry.kind === 'suspected'),
+    }))
+    .filter((bucket) => bucket.entries.length > 0);
+
+  if (withSuspected.length === 0) {
+    lines.push(`    ${NONE}`);
+    return;
+  }
+  for (const bucket of withSuspected) {
+    lines.push(`    ${bucket.campaign}:`);
+    for (const entry of bucket.entries) {
+      lines.push(`      ${renderSuspectedEntry(entry)}`);
+    }
+  }
+}
+
+function renderRegister(register: CoverageRegister, lines: string[]): void {
+  renderReferences(register, lines);
+  renderSuspected(register, lines);
 }
 
 function renderSearchHistory(history: CoverageSearchHistory, lines: string[]): void {

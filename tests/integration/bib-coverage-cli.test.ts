@@ -82,6 +82,31 @@ describe('bib coverage CLI', () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 
+  it('surfaces explicit unknown and never a headline percentage (INV-1/INV-2)', async () => {
+    const exitCode = await runCoverageCli([]);
+    expect(exitCode).toBe(0);
+    const printed = String(logSpy.mock.calls[0]?.[0]);
+    // The real corpus campaign (PB-P004) has no authored knownMemberCount -> unknown.
+    expect(printed).toContain('unknown');
+    expect(printed).toContain('gap: unknown');
+    // INV-1: no coverage percentage anywhere in the human-readable report.
+    expect(printed).not.toContain('%');
+  });
+
+  it('json carries the same section data with no percentage (INV-1/INV-5)', async () => {
+    const exitCode = await runCoverageCli(['--json']);
+    expect(exitCode).toBe(0);
+    const printed = String(logSpy.mock.calls[0]?.[0]);
+    expect(printed).not.toContain('%');
+    const parsed = JSON.parse(printed) as {
+      perCampaign: { campaign: string; actualMemberCount: number; gap: number | 'unknown' }[];
+    };
+    // Real corpus source-group PB-P004 has five members (per-work), extent unknown.
+    const pb004 = parsed.perCampaign.find((c) => c.campaign === 'PB-P004');
+    expect(pb004?.actualMemberCount).toBe(5);
+    expect(pb004?.gap).toBe('unknown');
+  });
+
   it('writes nothing to disk (INV-4: git status unchanged by the run)', async () => {
     const before = gitStatus();
     await runCoverageCli([]);

@@ -129,6 +129,50 @@ references:
     );
     expect(() => loadSourceFile(filePath)).toThrow(/unknown key "bogusRefField"/);
   });
+
+  // V1: `evidenceClass` MUST be in EVIDENCE_CLASS_VALUES -- enforced HERE, at
+  // load, via `optionalEvidenceClass`'s `isEvidenceClass` narrowing (a
+  // strongly-typed field cannot hold a non-member without a forbidden cast).
+  // No redundant `bib validate` finding is added for V1 -- see
+  // `@/bibliography/validate-coverage-checks`'s doc comment: it would be dead
+  // code, since a `CanonicalModel` carrying an out-of-vocab value can never
+  // exist (the load already threw).
+  it('throws at load, naming the value, for an out-of-vocabulary evidenceClass (V1)', () => {
+    const filePath = writeSource(
+      'PB-P007.yml',
+      `
+sourceId: PB-P007
+kind: monograph
+titles:
+  - text: "Whatever"
+    role: canonical
+evidenceClass: scroll
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/evidenceClass "scroll" is not in the EvidenceClass vocabulary/);
+  });
+
+  // V2: `references[].citedKind` MUST be in CITED_KIND_VALUES -- enforced
+  // HERE, at load, via `validateReference`'s `isCitedKind` narrowing. Same
+  // "no redundant validate-checks finding" reasoning as V1 above.
+  it('throws at load, naming the value, for an out-of-vocabulary references[].citedKind (V2)', () => {
+    const filePath = writeSource(
+      'PB-P007.yml',
+      `
+sourceId: PB-P007
+kind: monograph
+titles:
+  - text: "Whatever"
+    role: canonical
+references:
+  - citedAs: "Some Work"
+    citedKind: scroll
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(
+      /references\[0\]\.citedKind "scroll" is not in the CitedKind vocabulary/,
+    );
+  });
 });
 
 describe('loader: knownMemberCount + suspected[] (source-group)', () => {

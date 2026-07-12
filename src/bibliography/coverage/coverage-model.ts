@@ -1,6 +1,9 @@
 import type { LoadedSource } from '@/bibliography/load';
 import type { SearchLogEntry } from '@/bibliography/search-log';
+import { EVIDENCE_CLASS_VALUES } from '@/bibliography/vocab';
 import type { EvidenceClass, SourceLifecycleStatus } from '@/bibliography/vocab';
+import { buildRegister } from '@/bibliography/coverage/coverage-register';
+import { buildSearchHistory } from '@/bibliography/coverage/coverage-history';
 
 /**
  * The `CoverageReport` and its sub-structures are the DERIVED projection over
@@ -120,47 +123,78 @@ function isCampaign(loaded: LoadedSource): boolean {
 }
 
 /**
+ * One source-group's coverage roll-up (T010, FR-010/FR-014). Member works are
+ * the sources whose `partOf` points at this group -- counted PER WORK, never
+ * per RepositoryRecord: `actualMemberCount` is the number of member `Source`s,
+ * so a work held at N archives (N repository records) still contributes exactly
+ * 1 (INV-3). Lifecycle buckets are keyed by each member's own `status`, with
+ * `'unset'` collecting members that authored none, and are sorted by state name
+ * for determinism. `knownMemberCount` is the group's authored belief (or
+ * `'unknown'` when absent); `gap` is the difference when a number is known, else
+ * the literal `'unknown'` (never `0` -- INV-2).
+ */
+function buildCampaignCoverage(
+  group: LoadedSource,
+  sources: readonly LoadedSource[],
+): CampaignCoverage {
+  const campaign = group.source.sourceId;
+  const members = sources.filter((loaded) => loaded.source.partOf === campaign);
+
+  const counts = new Map<SourceLifecycleStatus | 'unset', number>();
+  for (const member of members) {
+    const state: SourceLifecycleStatus | 'unset' = member.source.status ?? 'unset';
+    counts.set(state, (counts.get(state) ?? 0) + 1);
+  }
+  const membersByLifecycleState = [...counts.entries()]
+    .map(([state, count]) => ({ state, count }))
+    .sort((a, b) => a.state.localeCompare(b.state));
+
+  const actualMemberCount = members.length;
+  const knownMemberCount = group.source.knownMemberCount ?? 'unknown';
+  const gap = typeof knownMemberCount === 'number' ? knownMemberCount - actualMemberCount : 'unknown';
+
+  return { campaign, membersByLifecycleState, actualMemberCount, knownMemberCount, gap };
+}
+
+/**
+ * Corpus-wide evidence-class distribution (T028, FR-011). Every `Source` is
+ * counted once, under its `evidenceClass` or the `'unclassified'` bucket when it
+ * has none. Only non-empty buckets are emitted, ordered by the canonical vocab
+ * order with `'unclassified'` last, so the output is deterministic.
+ */
+function buildEvidenceDistribution(
+  sources: readonly LoadedSource[],
+): { class: EvidenceClass | 'unclassified'; count: number }[] {
+  const counts = new Map<EvidenceClass | 'unclassified', number>();
+  for (const loaded of sources) {
+    const evidenceClass: EvidenceClass | 'unclassified' = loaded.source.evidenceClass ?? 'unclassified';
+    counts.set(evidenceClass, (counts.get(evidenceClass) ?? 0) + 1);
+  }
+  const order: (EvidenceClass | 'unclassified')[] = [...EVIDENCE_CLASS_VALUES, 'unclassified'];
+  return order
+    .filter((evidenceClass) => counts.has(evidenceClass))
+    .map((evidenceClass) => ({ class: evidenceClass, count: counts.get(evidenceClass) ?? 0 }));
+}
+
+/**
  * Build the {@link CoverageReport} projection from already-loaded data. PURE:
  * no file I/O, deterministic, and total (an empty corpus yields an all-empty
  * report, never a throw).
  *
- * SKELETON (T007): the top-level shape is wired -- one {@link CampaignCoverage}
- * per source-group, a per-campaign register bucket per campaign, and every
- * section present. All computed values are deterministic EMPTY/zero
- * placeholders; the real per-section logic lands in the tasks named below.
+ * Orchestrates the per-section builders -- per-campaign counts + evidence
+ * distribution here, the register in `@/bibliography/coverage/coverage-register`
+ * and the search history in `@/bibliography/coverage/coverage-history` -- into
+ * the fixed key order the `--json` renderer relies on for byte determinism.
  */
 export function buildCoverageReport(input: CoverageInput): CoverageReport {
   const campaigns = input.sources.filter(isCampaign);
 
-  // One CampaignCoverage per source-group. T010 fills the real counts.
-  const perCampaign: CampaignCoverage[] = campaigns.map((loaded) => ({
-    campaign: loaded.source.sourceId,
-    // T010: per-campaign lifecycle counts (per work, dedupe multi-archive).
-    membersByLifecycleState: [],
-    // T010: derived actual member count from partOf edges.
-    actualMemberCount: 0,
-    // T010: authored knownMemberCount (or 'unknown' when absent).
-    knownMemberCount: 'unknown',
-    // T010: knownMemberCount - actual, or the literal 'unknown'.
-    gap: 'unknown',
-  }));
-
-  // T028: corpus-wide evidence-class distribution (with 'unclassified').
-  const evidenceClassDistribution: { class: EvidenceClass | 'unclassified'; count: number }[] = [];
-
-  // T016/T019: unresolved references + suspected gaps, grouped by campaign,
-  // plus the ungrouped ("no campaign") bucket. Skeleton seeds one empty bucket
-  // per campaign so the render has a deterministic home per group.
-  const register: CoverageRegister = {
-    byCampaign: campaigns.map((loaded) => ({ campaign: loaded.source.sourceId, entries: [] })),
-    ungrouped: [],
-  };
-
-  // T025: repository x campaign matrix + repository-axis rollup.
-  const searchHistory: CoverageSearchHistory = {
-    matrix: [],
-    byRepository: [],
-  };
+  const perCampaign: CampaignCoverage[] = campaigns.map((group) =>
+    buildCampaignCoverage(group, input.sources),
+  );
+  const evidenceClassDistribution = buildEvidenceDistribution(input.sources);
+  const register: CoverageRegister = buildRegister(input.sources, campaigns);
+  const searchHistory: CoverageSearchHistory = buildSearchHistory(input.searchLog);
 
   return { perCampaign, evidenceClassDistribution, register, searchHistory };
 }

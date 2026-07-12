@@ -11,14 +11,20 @@ import {
   validateSourceGroups,
   validateVocab,
 } from '@/bibliography/validate-checks';
+import { validateCoverageFields } from '@/bibliography/validate-coverage-checks';
 
 /**
  * The kinds of finding `bib validate` can report -- the full union per
- * specs/004-canonical-source-metadata/contracts/validation.md. `'identifier-
- * leak'`/`'view-drift'` were implemented by US2/US4; the referential-
- * integrity, vocab, required-core, uniqueness, and manifest-shape kinds are
- * implemented in `@/bibliography/validate-checks` (US5 / T027) and composed
- * into `validate()` below.
+ * specs/004-canonical-source-metadata/contracts/validation.md and
+ * specs/007-corpus-coverage-audit/data-model.md § Validation rules.
+ * `'identifier-leak'`/`'view-drift'` were implemented by US2/US4; the
+ * referential-integrity, vocab, required-core, uniqueness, and
+ * manifest-shape kinds are implemented in `@/bibliography/validate-checks`
+ * (US5 / T027); `'dangling-resolved-to'` (V3), `'group-only-field'` (V4),
+ * and `'invalid-known-member-count'` (V5) are implemented in
+ * `@/bibliography/validate-coverage-checks` -- all composed into `validate()`
+ * below. V1/V2 (`evidenceClass`/`citedKind` vocab) are enforced at LOAD, not
+ * here -- see `validate-coverage-checks.ts`'s doc comment.
  */
 export type ValidationFindingKind =
   | 'orphan-asset'
@@ -32,7 +38,10 @@ export type ValidationFindingKind =
   | 'group-has-repository-records'
   | 'dangling-part-of'
   | 'part-of-not-a-group'
-  | 'group-is-member';
+  | 'group-is-member'
+  | 'dangling-resolved-to'
+  | 'group-only-field'
+  | 'invalid-known-member-count';
 
 /**
  * One `bib validate` finding. Findings are DATA, not errors -- `validate`
@@ -130,8 +139,9 @@ export function validateViewDrift(model: CanonicalModel, opts: ViewDriftOptions)
  * Run every implemented validation check over `model` and concatenate their
  * findings: identifier leaks (US2), referential integrity / vocab /
  * required-core / uniqueness / manifest-shape (US5, `@/bibliography/
- * validate-checks`), and -- when `opts` is supplied -- view drift (US4, the
- * one check that also touches disk; omitting `opts` leaves existing
+ * validate-checks`), the corpus-coverage-audit V3-V5 checks (`@/bibliography/
+ * validate-coverage-checks`), and -- when `opts` is supplied -- view drift
+ * (US4, the one check that also touches disk; omitting `opts` leaves existing
  * model-only callers/tests unaffected). Never throws on content findings
  * (throwing is reserved for malformed input upstream, in
  * `@/bibliography/load`).
@@ -146,6 +156,7 @@ export function validate(model: CanonicalModel, opts?: ViewDriftOptions): Valida
     ...validateDuplicateCopies(model),
     ...validateSingleChecksum(model),
     ...validateSourceGroups(model),
+    ...validateCoverageFields(model),
   ];
   if (opts !== undefined) {
     findings.push(...validateViewDrift(model, opts));

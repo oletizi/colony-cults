@@ -35,10 +35,10 @@ describe('T007 coverage skeleton: buildCoverageReport', () => {
     expect(report.perCampaign.map((c) => c.campaign)).toEqual(FIXTURE_CAMPAIGNS);
   });
 
-  it('shapes every section (present, deterministically empty in the skeleton)', () => {
+  it('shapes every section (top-level keys present, fixed order)', () => {
     const report: CoverageReport = buildCoverageReport(loadFixtureInput());
 
-    // Top-level section keys all present.
+    // Top-level section keys all present, in the fixed order the JSON render relies on.
     expect(Object.keys(report)).toEqual([
       'perCampaign',
       'evidenceClassDistribution',
@@ -46,23 +46,19 @@ describe('T007 coverage skeleton: buildCoverageReport', () => {
       'searchHistory',
     ]);
 
-    // Each CampaignCoverage carries the full shape with skeleton placeholders.
+    // Every CampaignCoverage carries the full field shape.
     for (const campaign of report.perCampaign) {
-      expect(campaign.membersByLifecycleState).toEqual([]);
-      expect(campaign.actualMemberCount).toBe(0);
-      expect(campaign.knownMemberCount).toBe('unknown');
-      expect(campaign.gap).toBe('unknown');
+      expect(Object.keys(campaign)).toEqual([
+        'campaign',
+        'membersByLifecycleState',
+        'actualMemberCount',
+        'knownMemberCount',
+        'gap',
+      ]);
     }
 
-    // Distribution + search history empty; register seeds one empty bucket per campaign.
-    expect(report.evidenceClassDistribution).toEqual([]);
-    expect(report.register.ungrouped).toEqual([]);
+    // The register seeds one bucket per campaign, in campaign order.
     expect(report.register.byCampaign.map((b) => b.campaign)).toEqual(FIXTURE_CAMPAIGNS);
-    for (const bucket of report.register.byCampaign) {
-      expect(bucket.entries).toEqual([]);
-    }
-    expect(report.searchHistory.matrix).toEqual([]);
-    expect(report.searchHistory.byRepository).toEqual([]);
   });
 
   it('is total over an empty corpus (no throw, all-empty report)', () => {

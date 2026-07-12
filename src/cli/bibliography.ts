@@ -20,6 +20,7 @@ import { buildViewRegistry, readViewIfExists } from '@/bibliography/regenerate';
 import type { ViewInstance } from '@/bibliography/regenerate';
 import { validate } from '@/bibliography/validate';
 import type { ValidationFinding } from '@/bibliography/validate';
+import { loadSearchLogForValidate } from '@/bibliography/validate-search-log';
 import { resolveArchiveRoot, sourceLayout } from '@/archive/location';
 import type { AssetProvenance } from '@/bibliography/provenance-read';
 import type { CanonicalModel } from '@/bibliography/model';
@@ -311,10 +312,19 @@ function formatFinding(finding: ValidationFinding): string {
 /**
  * `bib validate [--archive-root <path>] [--json]`: build the canonical model
  * (mirroring `runShow`'s SSOT + provenance gathering) and run every
- * implemented check over it (contracts/cli.md).
+ * implemented check over it (contracts/cli.md). Also loads
+ * `bibliography/search-log.yml` (`@/bibliography/validate-search-log`'s
+ * `loadSearchLogForValidate`) alongside the SSOT sources -- a malformed
+ * search-log (duplicate id / missing required field, V6/V7) fails loud here
+ * the same way a malformed SSOT source file already does, rather than only
+ * surfacing later via `bib coverage`. The loaded entries are not folded into
+ * `findings` (the search-log-driven coverage projection is `bib coverage`'s
+ * concern); this call exists purely to enforce V6/V7 as part of `bib
+ * validate`.
  *
  * Exit codes: `0` clean (no findings), `1` findings exist, `2` malformed /
- * unreadable SSOT (a thrown load error) -- findings themselves never throw.
+ * unreadable SSOT or search-log (a thrown load error) -- findings themselves
+ * never throw.
  */
 async function runValidate(rest: string[]): Promise<number> {
   let args: BibArgs;
@@ -331,6 +341,7 @@ async function runValidate(rest: string[]): Promise<number> {
   let findings: ValidationFinding[];
   try {
     const loaded = loadAllSources(sourcesDir);
+    loadSearchLogForValidate(repoRoot);
     const archiveRoot = resolveArchiveRoot(repoRoot, args.archiveRoot);
     const provenanceBySource = await gatherProvenanceForAll(
       loaded.map((entry) => entry.source),
