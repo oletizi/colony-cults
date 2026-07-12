@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/edition-publishing",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-print-pdf",
+  "override": true,
+  "overrideReason": "audit-barrage killed by harness before convergence (known env limitation, cf corpus-print-pdf); partial-fleet + controller findings harvested and fixed-f992e09 (codex-01 HIGH rightsBasis-trim, controller-01 upload-ordering); live-validated: 64 publish tests + full suite green, typecheck clean, all pdf/publish modules <=500 lines"
+}

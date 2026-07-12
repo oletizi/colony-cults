@@ -33,3 +33,4 @@
 {"id":"T033","tierLabel":"fast","model":"haiku","commitRange":"8015ec5..e86477a","reviewClean":true,"note":"README pdf:publish section"}
 {"id":"T034","tierLabel":"balanced","model":"opus","commitRange":"8015ec5..e86477a","reviewClean":true,"note":"full-suite green + Constitution VII refactor of publish.ts into 4 modules (all <=500)"}
 {"id":"T035","tierLabel":"powerful","model":"n/a","commitRange":"","reviewClean":false,"note":"DEFERRED [~] operator live-prod acceptance (real B2/CDN + build); excluded from tasks-complete gate (audit-before-acceptance)"}
+{"id":"govern","tierLabel":"n/a","model":"barrage+override","commitRange":"","reviewClean":true,"note":"whole-feature govern: barrage killed (env), findings harvested+fixed-f992e09, converged via --override; terminal-outcome=graduated"}
