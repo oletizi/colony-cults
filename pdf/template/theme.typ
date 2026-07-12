@@ -20,6 +20,59 @@
 #let face-en = "IBM Plex Sans" // EN translation body + apparatus labels
 #let face-mono = "IBM Plex Mono" // provenance/evidentiary register
 
+// ---- Density typography (DESIGN.md § "Density (both text rectos)") --------
+//
+// Shared by BOTH text rectos (parallel FR|EN and english-only) so the two
+// modes read as one system. Title page, colophon, and verso are unaffected.
+
+// Body type size / leading — 8.5 / 11pt for both EN (Plex Sans) and FR (EB
+// Garamond) body columns (down from 9.5/9pt at looser leading).
+#let body-size = 8.5pt
+#let body-leading = 11pt
+
+// Two-column gap in both text-recto modes (down from 22pt); the inter-column
+// hairline is unchanged (drawn by the caller).
+#let body-column-gap = 12pt
+
+// DESIGN.md calls for book style: first-line indent, ZERO inter-paragraph
+// space -- "a paragraph is marked by its indent, not a gap". Literal
+// `spacing: 0pt` is what the spec asks for, but at this size/leading Typst
+// 0.15 lays out the next paragraph's first line OVER the previous paragraph's
+// last line (a rendering defect, not a design choice) rather than a flush
+// zero-gap join. `body-par-spacing` is the smallest value that reads as a
+// flush, indent-marked join -- visually indistinguishable from the
+// in-paragraph line rhythm -- without the overlap; verified against both body
+// faces (EB Garamond + IBM Plex Sans) at 8.5/11pt.
+#let body-par-spacing = 3pt
+
+// Book-style paragraph settings for a dense text-recto column: first-line
+// indent marks a new paragraph; no blank-line gap (DESIGN.md § Density). The
+// first paragraph of the flow is not indented.
+#let set-body-par() = {
+  set par(
+    first-line-indent: (amount: 1.2em, all: false),
+    spacing: body-par-spacing,
+    leading: body-leading,
+    justify: false,
+  )
+}
+
+// Splits OCR/translation text on blank-line paragraph breaks (`\n\n`, the
+// convention `toTypstInput` emits) into REAL Typst paragraphs joined by
+// `parbreak()`. Splicing a plain string into content via `#s` does NOT turn
+// its embedded blank lines into genuine paragraph breaks in Typst -- without
+// this, `set-body-par`'s indent/spacing never engage (the string renders as
+// one run of text, or as raw linebreaks, not as separate paragraphs). Blank/
+// whitespace-only segments are dropped defensively (stray blank lines in
+// source OCR).
+#let flow-paragraphs(s) = {
+  let segments = s.split("\n\n").map(p => p.trim()).filter(p => p.len() > 0)
+  for (i, seg) in segments.enumerate() {
+    if i > 0 { parbreak() }
+    seg
+  }
+}
+
 // ---- Shared marks ----------------------------------------------------------
 
 // A tracked, uppercase column/section label in the apparatus register

@@ -84,21 +84,21 @@
   // Two columns + the dividing hairline.
   grid(
     columns: (1fr, 1fr),
-    column-gutter: 22pt,
+    column-gutter: body-column-gap,
     grid.vline(x: 1, stroke: 0.4pt + rule-col),
     // FR OCR — source register.
     [
       #label-caps("Transcription · FR (OCR)")
       #v(6pt)
-      #set par(justify: false, leading: 0.62em)
-      #text(font: face-fr, size: 9.5pt, fill: source-ink)[#pg.recto.ocrFrench]
+      #set-body-par()
+      #text(font: face-fr, size: body-size, fill: source-ink)[#flow-paragraphs(pg.recto.ocrFrench)]
     ],
     // EN translation — apparatus register (machine-assisted).
     [
       #label-caps("Translation · EN (Machine-assisted)", tick: true)
       #v(6pt)
-      #set par(justify: false, leading: 0.68em)
-      #text(font: face-en, size: 9pt, fill: apparatus-ink)[#pg.recto.english]
+      #set-body-par()
+      #text(font: face-en, size: body-size, fill: apparatus-ink)[#flow-paragraphs(pg.recto.english)]
     ],
   )
 
@@ -123,8 +123,8 @@
 // hairline, and the oxblood rail — but the two columns are the SAME English
 // text flowing newspaper-style (fill the left column, continue into the right),
 // under ONE spanning `TRANSLATION · EN` label. The FR column + its label are
-// dropped; nothing is added back. Same EN face/size (IBM Plex Sans 9/13pt) so
-// the per-column measure stays comfortable (~38–42 chars).
+// dropped; nothing is added back. Same EN face/size (IBM Plex Sans, DESIGN.md
+// § Density: 8.5/11pt) so the per-column measure stays comfortable.
 #let english-recto(pg, source-short, issue-date, prov) = {
   // Running head — identical to the parallel recto.
   block(width: 100%)[
@@ -147,11 +147,11 @@
   // the rendered column height (~half the natural height) — matching the
   // parallel grid's text-height vline rather than dangling to the page foot.
   layout(size => {
-    let gutter = 22pt
+    let gutter = body-column-gap
     let col-w = (size.width - gutter) / 2
     let body = {
-      set par(justify: false, leading: 0.68em)
-      text(font: face-en, size: 9pt, fill: apparatus-ink)[#pg.recto.english]
+      set-body-par()
+      text(font: face-en, size: body-size, fill: apparatus-ink)[#flow-paragraphs(pg.recto.english)]
     }
     let natural = measure(box(width: col-w, body)).height
     let rule-h = calc.min(natural / 2, size.height)

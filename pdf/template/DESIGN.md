@@ -124,6 +124,35 @@ to its scan.
   one-line `Plex Mono` note, e.g. `edition: english-only` / `edition: parallel FR|EN`) so the artifact
   is self-describing.
 
+## Density (both text rectos) — match the letterpress of the source
+
+An 1880s newspaper was *set dense*: small type, tight leading, negligible paragraph spacing. The
+reading edition should feel like the dense sheet it reproduces, not a spacious trade paperback — so
+this tightening is subject-true, not merely utilitarian. Applies to BOTH the parallel and english-only
+text rectos (shared settings); title page, colophon, and verso are **unchanged**.
+
+Measured problem: a dense page's translation is ~6,200 chars across ~31 paragraphs, and blank-line
+paragraph gaps alone spill it across several leaves. Concrete specs (hand these to the implementer):
+
+- **Paragraph style — the dominant lever.** Blank-line paragraph gaps → **book style: first-line
+  indent `1.2em`, inter-paragraph space `0`** (a paragraph is marked by its indent, not a gap). The
+  first paragraph of a column/after a break is not indented. *Rationale:* removes ~31 gaps/page (~5in
+  of wasted height) — roughly halves text height by itself.
+- **Type size — `8.5pt`** for both EN (Plex Sans) and FR (EB Garamond), down from 9 / 9.5. *Rationale:*
+  matches period newspaper body size; the artifact is read on a phone (zoomable), 8.5pt is the floor.
+- **Leading — `8.5 / 11pt`** (ratio ~1.29) for both, down from ~1.44. *Rationale:* comfortable for a
+  dense reference read; period sheets ran tighter still.
+- **Margins (6×9in page):** inner/gutter `0.6in`, outer `0.75in` (holds the running-head folio + the
+  oxblood rail), top `0.6in`, bottom `0.65in` — down from ~0.9–1in. *Rationale:* widens the measure so
+  each two-column EN line grows from ~40 to ~46 chars (still comfortable) and adds lines per page.
+- **Column gap** (two-column modes): tighten to ~`12pt` with the hairline, recovering a little measure.
+- Optional: an all-caps heading line mid-flow (e.g. `THE NEW FRANCE`) may take a hair of lead-in space;
+  uniform indent-no-space is acceptable for v1.
+
+Rough combined effect: a dense page that took ~3 recto leaves should take ~1.3–1.5 — english-only
+issue ~42pp → ~26–30pp, parallel ~60pp → ~40pp. The one risk (denser than a modern edition) is the
+intended, source-true look.
+
 ## Reproducibility notes for the implementer
 
 - Vendor the four OFL font files under `pdf/template/fonts/` and compile with a pinned `--font-path`

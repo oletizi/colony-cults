@@ -38,11 +38,14 @@
 
 #set document(title: doc.titlePage.title, author: (), date: none)
 
+// Margins (DESIGN.md § Density): inner/gutter 0.6in, outer 0.75in (holds the
+// running-head folio + the oxblood provenance rail), top 0.6in, bottom
+// 0.65in -- down from ~0.9-1in to widen the measure.
 #set page(
   width: 6in,
   height: 9in,
   fill: paper,
-  margin: (top: 0.72in, bottom: 0.68in, inside: 0.78in, outside: 0.62in),
+  margin: (top: 0.6in, bottom: 0.65in, inside: 0.6in, outside: 0.75in),
   numbering: none,
 )
 
