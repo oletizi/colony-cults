@@ -5,25 +5,37 @@
  * READ/consumption side only. It maps `https://<worker>.workers.dev/<key>` to
  * the B2 friendly download URL `${B2_DOWNLOAD_BASE}/<key>` and serves the
  * response from Cloudflare's edge cache, so a cache HIT never touches B2 (no
- * Class B download transaction, no egress -- B2->Cloudflare egress is free via
- * the Bandwidth Alliance).
+ * Class B download transaction; B2->Cloudflare egress is free via the
+ * Bandwidth Alliance).
  *
  * Reads only. Writes (PutObject, Class A) and integrity --verify talk to B2
- * DIRECTLY, never through this cache -- otherwise --verify would check stale
- * edge state and the integrity guarantee is defeated (see the TASK-12 design).
+ * DIRECTLY, never through this cache.
  *
- * `<key>` is the archive-relative object key, identical to the per-asset
- * provenance `object_store.key` (e.g.
- * `archive/cases/port-breton/newspapers/la-nouvelle-france/1879-08-15_bpt6k56068358/f001.jpg`).
- * The corpus-browser `b2-cdn` image provider builds `${CORPUS_CDN_BASE}/<key>`,
- * so point `CORPUS_CDN_BASE` at this Worker's origin.
+ * `<key>` is the archive-relative object key, identical to a provenance
+ * `object_store.key`. The corpus-browser `b2-cdn` image provider builds
+ * `${CORPUS_CDN_BASE}/<key>`, so point `CORPUS_CDN_BASE` at this Worker.
  *
- * Config comes from wrangler `[vars]`:
+ * Caching contract (IMPORTANT):
+ *   - ONLY 2xx responses are cached, via the explicit Cache API (`caches.default`)
+ *     under a versioned key. Error responses (e.g. a B2 403
+ *     `download_cap_exceeded` while the daily cap is blown) are NEVER cached --
+ *     otherwise a transient 403 would be served for the whole TTL even after the
+ *     cap resets. (An earlier version used `cf.cacheEverything + cacheTtl`, which
+ *     cached errors too; `cacheTtlByStatus` would fix that but is Enterprise-only,
+ *     so we cache explicitly instead.)
+ *   - Bump `CACHE_VERSION` to invalidate the whole namespace without a
+ *     zone-level purge (workers.dev has no zone to purge). The version also rides
+ *     on the origin fetch as `?ccv=` (B2 ignores unknown query params) so a new
+ *     version bypasses any stale edge entry under the old key.
+ *
+ * Config (wrangler `[vars]`):
  *   - B2_DOWNLOAD_BASE   e.g. https://f004.backblazeb2.com/file/colony-cults
- *   - EDGE_TTL_SECONDS   edge + browser cache lifetime (string int)
+ *   - EDGE_TTL_SECONDS   edge + browser cache lifetime for 2xx (string int)
  */
+const CACHE_VERSION = '1';
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response('Method Not Allowed', {
         status: 405,
@@ -33,7 +45,6 @@ export default {
 
     const base = env.B2_DOWNLOAD_BASE;
     if (!base) {
-      // Fail loud: a misconfigured Worker must not silently 404 every read.
       return new Response('CDN misconfigured: B2_DOWNLOAD_BASE unset', {
         status: 500,
       });
@@ -46,28 +57,38 @@ export default {
       return new Response('Not Found (no object key)', { status: 404 });
     }
 
-    const originUrl = `${base}/${key}`;
+    // Our own edge-cache entry, namespaced by version. Only 2xx ever land here.
+    const cache = caches.default;
+    const cacheKey = new Request(`${url.origin}/__cdn/v${CACHE_VERSION}/${key}`);
 
-    // `cf.cacheEverything` + `cacheTtl` makes Cloudflare cache the B2 response
-    // at the edge PoP; subsequent requests are served from cache without a B2
-    // round-trip. Preserve the client method (HEAD stays HEAD).
-    const originResponse = await fetch(originUrl, {
-      method: request.method,
-      cf: { cacheEverything: true, cacheTtl: ttl },
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      const hit = new Response(cached.body, cached);
+      hit.headers.set('X-CDN-Cache', 'HIT');
+      return hit;
+    }
+
+    // Miss: fetch B2 directly. `cacheEverything: false` keeps Cloudflare from
+    // implicitly caching the subrequest (so errors are never cached); the
+    // `?ccv=` version busts any stale entry left by an earlier code version.
+    const origin = await fetch(`${base}/${key}?ccv=${CACHE_VERSION}`, {
+      cf: { cacheEverything: false },
     });
 
-    // Re-emit with an explicit long-lived Cache-Control so browsers/other
-    // proxies also cache. The archive masters are effectively immutable; an
-    // overwrite is a deliberate, rare event handled by explicit purge (a
-    // follow-up: invalidation-on-overwrite in the archive writer).
-    const response = new Response(originResponse.body, originResponse);
-    if (originResponse.ok) {
-      response.headers.set(
-        'Cache-Control',
-        `public, max-age=${ttl}, immutable`,
-      );
+    if (!origin.ok) {
+      // Never cache an error (e.g. B2 403 download_cap_exceeded).
+      const err = new Response(origin.body, origin);
+      err.headers.set('Cache-Control', 'no-store');
+      err.headers.set('X-CDN-Cache', 'BYPASS-ERR');
+      err.headers.set('X-CDN-Origin', 'b2');
+      return err;
     }
-    response.headers.set('X-CDN-Origin', 'b2');
-    return response;
+
+    const ok = new Response(origin.body, origin);
+    ok.headers.set('Cache-Control', `public, max-age=${ttl}, immutable`);
+    ok.headers.set('X-CDN-Cache', 'MISS');
+    ok.headers.set('X-CDN-Origin', 'b2');
+    ctx.waitUntil(cache.put(cacheKey, ok.clone()));
+    return ok;
   },
 };
