@@ -22,10 +22,10 @@
  *                                        nothing.
  *   --out <dir>                         built-PDF root (default `build/pdf`).
  *   --no-warm                           skip the best-effort CDN warm (FR-015).
- *
- * NOT implemented here: `--reconcile` (T032, FR-013's back-fill mode) --
- * deliberately left out so `parseArgs` stays a straightforward flag surface
- * to extend, per T021's scope.
+ *   --reconcile                         back-fill mode (T032, FR-013/G-8):
+ *                                        record the source's already-served
+ *                                        legacy-flat URLs WITHOUT any upload.
+ *                                        Requires `--confirm` to write records.
  *
  * Fail-loud preflight (before any upload/record work, contracts/cli.md
  * "Environment"):
@@ -73,6 +73,8 @@ interface CliArgs {
   out: string | undefined;
   /** `false` when `--no-warm` is given; `true` otherwise (the default). */
   warm: boolean;
+  /** `--reconcile` back-fill mode (FR-013/G-8). Requires `--confirm` to write. */
+  reconcile: boolean;
 }
 
 /** Parse `process.argv.slice(2)`. Fails loud on an unknown flag, a missing/bad `--variant`, or extra args. */
@@ -82,6 +84,7 @@ function parseArgs(argv: string[]): CliArgs {
   let confirm = false;
   let out: string | undefined;
   let warm = true;
+  let reconcile = false;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -97,6 +100,8 @@ function parseArgs(argv: string[]): CliArgs {
       variant = value;
     } else if (arg === '--confirm') {
       confirm = true;
+    } else if (arg === '--reconcile') {
+      reconcile = true;
     } else if (arg === '--no-warm') {
       warm = false;
     } else if (arg === '--out') {
@@ -131,7 +136,7 @@ function parseArgs(argv: string[]): CliArgs {
     );
   }
 
-  return { sourceId, variant, confirm, out, warm };
+  return { sourceId, variant, confirm, out, warm, reconcile };
 }
 
 /** Everything the fail-loud preflight resolves, reused by the run itself. */
@@ -207,9 +212,16 @@ async function main(): Promise<void> {
   const publicationsDir = path.join(repoRoot, 'bibliography', 'publications');
 
   const outLabel = args.out ?? 'build/pdf (config default)';
+  const modeLabel = args.reconcile
+    ? args.confirm
+      ? 'reconcile (confirmed)'
+      : 'reconcile (DRY RUN)'
+    : args.confirm
+      ? 'confirmed'
+      : 'DRY RUN';
   process.stdout.write(
     `pdf:publish -- source ${args.sourceId}  variant ${args.variant}  ` +
-      `(${args.confirm ? 'confirmed' : 'DRY RUN'})\n` +
+      `(${modeLabel})\n` +
       `  cdn base: ${cdnBase}\n` +
       `  snapshot: ${snapshot.short} (pinned ${snapshot.full})\n` +
       `  out root: ${outLabel}\n` +
@@ -222,6 +234,7 @@ async function main(): Promise<void> {
     sourceId: args.sourceId,
     variant: args.variant,
     confirm: args.confirm,
+    reconcile: args.reconcile,
     outDir: args.out,
     sourcesDir,
     publicationsDir,
