@@ -32,7 +32,7 @@
  *   - B2_DOWNLOAD_BASE   e.g. https://f004.backblazeb2.com/file/colony-cults
  *   - EDGE_TTL_SECONDS   edge + browser cache lifetime for 2xx (string int)
  */
-const CACHE_VERSION = '1';
+const CACHE_VERSION = '2';
 
 export default {
   async fetch(request, env, ctx) {
@@ -65,6 +65,10 @@ export default {
     if (cached) {
       const hit = new Response(cached.body, cached);
       hit.headers.set('X-CDN-Cache', 'HIT');
+      // CORS so browsers can use the image cross-origin (the corpus-browser
+      // OpenSeadragon viewer requests it with crossOrigin=anonymous; without
+      // this the canvas taints and the scan blanks).
+      hit.headers.set('Access-Control-Allow-Origin', '*');
       return hit;
     }
 
@@ -88,6 +92,8 @@ export default {
     ok.headers.set('Cache-Control', `public, max-age=${ttl}, immutable`);
     ok.headers.set('X-CDN-Cache', 'MISS');
     ok.headers.set('X-CDN-Origin', 'b2');
+    // CORS on the cached copy too, so HITs carry it (see the HIT path above).
+    ok.headers.set('Access-Control-Allow-Origin', '*');
     ctx.waitUntil(cache.put(cacheKey, ok.clone()));
     return ok;
   },
