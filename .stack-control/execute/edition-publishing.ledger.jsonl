@@ -23,3 +23,7 @@
 {"id":"T025","tierLabel":"balanced","model":"sonnet","commitRange":"459b430..5e9736f","reviewClean":true,"note":"PB-P001 affirmative rights public-domain"}
 {"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"2629383..71a0e27","reviewClean":true,"note":"end-to-end publish integration test (SC-001/SC-004)"}
 {"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"2629383..71a0e27","reviewClean":true,"note":"scripts/publish-pdf.ts CLI verb + commit hook"}
+{"id":"T026","tierLabel":"balanced","model":"sonnet","commitRange":"0a2f06e..ca209f1","reviewClean":true,"note":"idempotency unit proof (0 new puts, unchanged SSOT)"}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"0a2f06e..ca209f1","reviewClean":true,"note":"immutability unit proof (new version, prior untouched)"}
+{"id":"T028","tierLabel":"balanced","model":"sonnet","commitRange":"0a2f06e..ca209f1","reviewClean":true,"note":"record.ts idempotent-upsert invariants verified (no edit)"}
+{"id":"T029","tierLabel":"balanced","model":"sonnet","commitRange":"0a2f06e..ca209f1","reviewClean":true,"note":"upload.ts immutability guard verified (no edit)"}
