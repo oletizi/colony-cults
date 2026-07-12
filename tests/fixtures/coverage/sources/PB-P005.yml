@@ -1,6 +1,6 @@
-sourceId: FX-P005
+sourceId: PB-P005
 kind: monograph
-partOf: FX-P001
+partOf: PB-P001
 status: excluded
 case: fixture-case-a
 language: French

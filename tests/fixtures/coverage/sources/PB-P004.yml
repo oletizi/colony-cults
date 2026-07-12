@@ -1,6 +1,6 @@
-sourceId: FX-P004
+sourceId: PB-P004
 kind: monograph
-partOf: FX-P001
+partOf: PB-P001
 status: approved-for-acquisition
 case: fixture-case-a
 language: French
@@ -15,15 +15,15 @@ repositoryRecords:
     originalUrl: https://archive-a.example.com/resource/fx-p004-v1
     retrievedAt: 2026-07-11T10:00:00.000Z
     identifiers:
-      - type: handle
-        value: "123456/fx-p004-v1"
+      - type: ark
+        value: "ark:/12148/fx-p004-v1"
   - sourceArchive: Archive B
     status: to-collect
     originalUrl: https://archive-b.example.com/resource/fx-p004-v2
     retrievedAt: 2026-07-11T10:15:00.000Z
     identifiers:
-      - type: url
-        value: "https://archive-b.example.com/resource/fx-p004-v2"
+      - type: ark
+        value: "ark:/12148/fx-p004-v2"
 references:
   - citedAs: "Unknown Journal Reference"
     citedKind: journal
@@ -31,5 +31,5 @@ references:
   - citedAs: "Prospectus of the Campaign"
     citedKind: pamphlet
     basis: "directly cited in the text"
-    resolvedTo: FX-P008
-    notes: "Same prospectus appears to be referenced in FX-P007 as well"
+    resolvedTo: PB-P008
+    notes: "Same prospectus appears to be referenced in PB-P007 as well"

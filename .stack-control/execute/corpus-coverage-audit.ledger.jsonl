@@ -2,3 +2,5 @@
 {"id":"T002","tierLabel":"balanced","model":"sonnet","commitRange":"477d89f","reviewClean":true}
 {"id":"T003","tierLabel":"balanced","model":"sonnet","commitRange":"477d89f","reviewClean":true}
 {"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"477d89f","reviewClean":true}
+{"id":"T005","tierLabel":"powerful","model":"opus","commitRange":"b15125b","reviewClean":true}
+{"id":"T007","tierLabel":"powerful","model":"opus","commitRange":"pending","reviewClean":true}

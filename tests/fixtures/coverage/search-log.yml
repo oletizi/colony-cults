@@ -1,7 +1,7 @@
 - id: SRCH-0001
   date: 2026-07-01
   repository: Fixture Archive A
-  campaign: FX-P001
+  campaign: PB-P001
   scope: "Campaign A records and related materials"
   coverage: "Full catalogue search completed; 3 members identified, 1 suspected gap identified"
   remainingQuestions:
@@ -12,9 +12,9 @@
 - id: SRCH-0002
   date: 2026-07-05
   repository: Fixture Archive B
-  campaign: FX-P001
+  campaign: PB-P001
   scope: "Secondary sources and references citing campaign A materials"
-  coverage: "Located 2 unresolved references; cross-referenced with FX-P008"
+  coverage: "Located 2 unresolved references; cross-referenced with PB-P008"
   remainingQuestions:
     - "Are there digitised versions available?"
   notes: "Focused on discovering referenced works"
@@ -22,7 +22,7 @@
 - id: SRCH-0003
   date: 2026-07-08
   repository: Fixture Archive C
-  campaign: FX-P002
+  campaign: PB-P002
   scope: "Materials related to fixture campaign B"
-  coverage: "Found 1 source (FX-P006) with lifecycle status tracking; extent remains unknown"
+  coverage: "Found 1 source (PB-P006) with lifecycle status tracking; extent remains unknown"
   notes: "Campaign B has uncertain total member count; ongoing discovery"

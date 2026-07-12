@@ -1,6 +1,6 @@
-sourceId: FX-P003
+sourceId: PB-P003
 kind: monograph
-partOf: FX-P001
+partOf: PB-P001
 status: discovered
 case: fixture-case-a
 language: French

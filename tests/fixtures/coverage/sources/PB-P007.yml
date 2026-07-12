@@ -1,4 +1,4 @@
-sourceId: FX-P007
+sourceId: PB-P007
 kind: monograph
 case: fixture-case-a
 language: French
@@ -14,4 +14,4 @@ references:
   - citedAs: "Campaign Prospectus"
     citedKind: pamphlet
     basis: "explicitly cited as promotional material"
-    resolvedTo: FX-P008
+    resolvedTo: PB-P008
