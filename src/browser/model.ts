@@ -165,6 +165,26 @@ export type ImageProviderConfig =
     };
 
 /**
+ * The machine-assisted-translation label carried on a page's provenance: which
+ * engine + model produced the English translation, and when it was retrieved.
+ * Sourced from the English translation sidecar (`translation/pNNN.en.txt.yml`
+ * `engine` / `model` / `retrieved`) so the PDF colophon can render it
+ * reproducibly from the pin (specs/007-corpus-print-pdf research Decision 3 /
+ * data-model.md § MachineAssistLabel).
+ *
+ * Absence is honest: when the sidecar carries no `engine`/`retrieved`, the
+ * label is left absent rather than fabricated (fail-loud philosophy).
+ */
+export interface MachineAssistLabel {
+  /** Machine-assistance engine, e.g. `claude-code-cli` / `codex-cli`. */
+  engine: string;
+  /** Resolved model id if recorded, else `null`. */
+  model: string | null;
+  /** ISO timestamp the translation was produced (`retrieved`). */
+  retrieved: string;
+}
+
+/**
  * The identifying facts rendered in the monospace provenance rail (FR-014),
  * assembled from the page sidecar + SSOT.
  *
@@ -183,6 +203,13 @@ export interface ProvenanceRecord {
   page: string;
   /** Content hash from the sidecar. */
   sha256: string;
+  /**
+   * OPTIONAL machine-assisted-translation label (engine / model / retrieved)
+   * from the EN translation sidecar. Additive: absent on committed snapshots
+   * predating the extension, and absent when the sidecar carries no label. The
+   * PDF colophon reads it; the browser reading view ignores it.
+   */
+  machineAssist?: MachineAssistLabel | null;
 }
 
 /**
@@ -204,6 +231,19 @@ export interface RawPage {
   ark: string;
   /** The archive `object_store` key for this page's image, or `null` when absent (used by `b2-cdn`). */
   objectStoreKey: string | null;
+  /**
+   * The IMAGE-MASTER sha256 -- the top-level `sha256:` of the folio sidecar
+   * (`fNNN.yml`), which is the checksum of the actual page-image master stored
+   * in B2 (`object_store.key`). This is DISTINCT from
+   * {@link ProvenanceRecord.sha256}, which is the translation/OCR TEXT
+   * artifact's hash. Consumers that verify fetched image bytes (the PDF
+   * `b2-cdn` fetch) MUST use THIS field, not the text hash.
+   *
+   * OPTIONAL + additive: `null` when the folio sidecar carries no top-level
+   * `sha256`, and absent entirely on snapshots committed before this field was
+   * introduced (so those older snapshots still parse).
+   */
+  imageSha256?: string | null;
   /** Raw French OCR for this page (a form-feed segment of `issue.txt`); may be noisy. */
   ocrFrench: string;
   /** Corrected French (`translation/pNNN.fr.txt`) when present. */

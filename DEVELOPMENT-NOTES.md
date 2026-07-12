@@ -135,4 +135,5 @@ workflow(graduate): impl:feature/canonical-source-metadata merging -> validating
 workflow(graduate): impl:feature/source-groups merging -> validating
 workflow(graduate): impl:feature/corpus-browser merging -> validating
 workflow(graduate): impl:feature/source-group-acquisition merging -> validating
+workflow(start-implementing): impl:feature/corpus-print-pdf specifying -> implementing
 workflow(graduate): impl:feature/corpus-coverage-audit merging -> validating

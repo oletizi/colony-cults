@@ -1,2 +1,0 @@
-[      33ms] [WARNING] Viewer.buttons is deprecated; Please use Viewer.buttonGroup @ http://localhost:4321/_astro/hoisted.AmjVUI6s.js:5
-[      63ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:4321/favicon.ico:0

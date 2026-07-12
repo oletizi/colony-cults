@@ -8,6 +8,7 @@
 
 import type {
   CorpusSnapshot,
+  MachineAssistLabel,
   ProvenanceRecord,
   RawIssue,
   RawPage,
@@ -81,9 +82,27 @@ function describe(value: unknown): string {
   return typeof value;
 }
 
-function parseProvenance(value: unknown, where: string): ProvenanceRecord {
+/**
+ * Parses the OPTIONAL machine-assist label. Absent (`undefined`) or explicit
+ * `null` -> `null` (no label). Present -> a well-typed {@link MachineAssistLabel}
+ * (`engine` + `retrieved` required strings, `model` string|null), else throws.
+ * This is additive: snapshots predating the extension simply lack the field.
+ */
+function parseMachineAssist(value: unknown, where: string): MachineAssistLabel | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
   const record = requireRecord(value, where);
   return {
+    engine: requireString(record, 'engine', where),
+    model: requireStringOrNull(record, 'model', where),
+    retrieved: requireString(record, 'retrieved', where),
+  };
+}
+
+function parseProvenance(value: unknown, where: string): ProvenanceRecord {
+  const record = requireRecord(value, where);
+  const base: ProvenanceRecord = {
     sourceId: requireString(record, 'sourceId', where),
     ark: requireString(record, 'ark', where),
     date: requireString(record, 'date', where),
@@ -91,11 +110,15 @@ function parseProvenance(value: unknown, where: string): ProvenanceRecord {
     page: requireString(record, 'page', where),
     sha256: requireString(record, 'sha256', where),
   };
+  // Additive optional field: only attach the key when a real label is present,
+  // so provenance without a label re-serializes/round-trips unchanged.
+  const machineAssist = parseMachineAssist(record.machineAssist, `${where}.machineAssist`);
+  return machineAssist === null ? base : { ...base, machineAssist };
 }
 
 function parseRawPage(value: unknown, where: string): RawPage {
   const record = requireRecord(value, where);
-  return {
+  const base: RawPage = {
     pageId: requireString(record, 'pageId', where),
     folioId: requireString(record, 'folioId', where),
     ark: requireString(record, 'ark', where),
@@ -106,6 +129,13 @@ function parseRawPage(value: unknown, where: string): RawPage {
     ocrCondition: requireStringOrNull(record, 'ocrCondition', where),
     provenance: parseProvenance(record.provenance, `${where}.provenance`),
   };
+  // Additive optional field (the image-master sha256): only attach the key when
+  // present, so snapshots predating the extension round-trip unchanged. Present
+  // -> string|null (validated); absent -> omitted.
+  if (record.imageSha256 === undefined) {
+    return base;
+  }
+  return { ...base, imageSha256: requireStringOrNull(record, 'imageSha256', where) };
 }
 
 function parseRawIssue(value: unknown, where: string): RawIssue {

@@ -1,0 +1,18 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"edb3c2a..e13dd33","reviewClean":true,"note":"pdf:build + pdf:test npm scripts"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"edb3c2a..e13dd33","reviewClean":true,"note":"src/pdf + pdf/template + tests/pdf dir skeleton"}
+{"id":"T003","tierLabel":"powerful","model":"opus","commitRange":"edb3c2a..e13dd33","reviewClean":true,"note":"src/pdf/model.ts pure Edition types; typecheck green; matches data-model.md"}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"edb3c2a..e13dd33","reviewClean":true,"note":"src/pdf/config.ts env-only; reuses resolveRepoRoot; live pin-ref check"}
+{"id":"T005","tierLabel":"powerful","model":"opus","commitRange":"e13dd33..1268e8b","reviewClean":true,"note":"additive machineAssist label on snapshot provenance; browser:test 62/62; real PB-P001 sidecars carry it"}
+{"id":"T009+T017+T018","tierLabel":"balanced","model":"sonnet","commitRange":"1268e8b..HEAD","reviewClean":true,"note":"typst-input (stable serialization, folio-stable image names) + typst-runner (injected exec, fail-loud); 17 tests"}
+{"id":"T008+T014+T015+T016","tierLabel":"balanced","model":"sonnet","commitRange":"df9b6d6..HEAD","reviewClean":true,"note":"image fetch: public-B2 master (sha256-verified) + IIIF alternate; 9 tests; contract synced"}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"4ef07b8..HEAD","reviewClean":true,"note":"regenerated 8 snapshots with machineAssist; snapshot:check deterministic; additive-only verified"}
+{"id":"T007+T011+T012+T013","tierLabel":"powerful","model":"opus","commitRange":"1fa87d9..d047c41","reviewClean":true,"note":"edition builder + source-meta + colophon; DI, all fail-loud rules; 17 tests; pdf:test 43/43"}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"d047c41..HEAD","reviewClean":true,"note":"integration test real PB-P001 issue -> Typst input; 7/7; pdf:test 50/50; flagged 1 incomplete issue"}
+{"id":"T019","tierLabel":"powerful","model":"opus","commitRange":"d047c41..HEAD","reviewClean":true,"note":"frontend-design gate: Prospectus/Dossier template design record pdf/template/DESIGN.md"}
+{"id":"T020","tierLabel":"powerful","model":"opus","commitRange":"72820d9..HEAD","reviewClean":true,"note":"Typst template (theme/spread/frontmatter/edition) + 4 OFL fonts vendored; renders 60pp PB-P001 issue, zero errors; render-sample script"}
+{"id":"T021+T022","tierLabel":"powerful","model":"opus","commitRange":"3f5c4d9..HEAD","reviewClean":true,"note":"build orchestrator + pdf:build CLI; runner --root/--font-path fix; real 60pp PDF via CLI; pdf:test 51"}
+{"id":"T023","tierLabel":"balanced","model":"sonnet","commitRange":"n/a-validation","reviewClean":true,"note":"US1 acceptance validated on real PB-P001 issue: facing spread, title+colophon provenance (all 12 images traceable), machine-derived labels, fail-loud. Known refinement: rail/head not repeated on overflow-continuation leaves."}
+{"id":"T024+T025+T026+T027","tierLabel":"balanced","model":"sonnet","commitRange":"4570538..HEAD","reviewClean":true,"note":"batch build+attributable failures; reproducibility byte-identical verified; incomplete-issue fail-loud live; pdf:test 53/53"}
+{"id":"T028+T031","tierLabel":"fast","model":"haiku","commitRange":"30de6f5..HEAD","reviewClean":true,"note":"README feature section + B2 cost note (TASK-12)"}
+{"id":"T029","tierLabel":"fast","model":"haiku","commitRange":"30de6f5..HEAD","reviewClean":true,"note":"config (22) + colophon (12) unit tests; 34 pass"}
+{"id":"T030","tierLabel":"balanced","model":"sonnet","commitRange":"c50dd2f..HEAD","reviewClean":true,"note":"final gate: typecheck clean, pdf:test 87/87, files <=276 lines; fixed one as-cast in typst-input.ts"}

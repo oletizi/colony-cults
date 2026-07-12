@@ -7,7 +7,7 @@
  * and no placeholder is ever substituted (G-4).
  *
  * This module carries each page's image HANDLES (`folioId`, `ark`,
- * `objectStoreKey`) but does NOT resolve the {@link ImageDescriptor} -- that is
+ * `objectStoreKey`, `imageSha256`) but does NOT resolve the {@link ImageDescriptor} -- that is
  * a separate step (`resolveImages`, `src/browser/load/resolve-images.ts`) so
  * the archive read and the snapshot read converge on one image-resolution path.
  */
@@ -166,7 +166,7 @@ function buildRawPage(
 
   const translation = loadPageTranslation(issue.dir, pageId, issue.date);
 
-  const objectStoreKey = readObjectStoreKey(issue.dir, folio.folioId);
+  const { objectStoreKey, imageSha256 } = readFolioImageMeta(issue.dir, folio.folioId);
 
   // The page's provenance ark is the ISSUE ark; assert the sidecar agrees so
   // a cross-wired sidecar cannot slip a mismatched handle into the rail.
@@ -183,6 +183,7 @@ function buildRawPage(
     folioId: folio.folioId,
     ark: issue.ark,
     objectStoreKey,
+    imageSha256,
     ocrFrench: ocr.ocrFrench,
     correctedFrench: translation.correctedFrench,
     english: translation.english,
@@ -191,28 +192,46 @@ function buildRawPage(
   };
 }
 
+/** The image handles read from a page's `fNNN.yml` folio sidecar. */
+interface FolioImageMeta {
+  /** The `object_store.key` (B2 master key), or `null` when the sidecar/field is absent. */
+  objectStoreKey: string | null;
+  /**
+   * The top-level `sha256` -- the IMAGE-MASTER checksum (matches the B2 object),
+   * NOT the translation-text hash carried in the provenance rail. `null` when
+   * the sidecar/field is absent.
+   */
+  imageSha256: string | null;
+}
+
 /**
- * Reads the `object_store.key` from a page's `fNNN.yml` sidecar, or `null`
- * when the sidecar or field is absent. The `source-iiif` provider ignores it;
- * `b2-cdn` (T027) requires it -- but its absence is not a load-time defect for
- * the active provider, so this does not throw.
+ * Reads a page's `fNNN.yml` sidecar and returns both image handles: the
+ * `object_store.key` and the top-level `sha256` (the image-master checksum).
+ * Absent sidecar / fields yield `null` handles -- the `source-iiif` provider
+ * ignores them, and their absence is not a load-time defect for the active
+ * provider, so this does not throw. The PDF `b2-cdn` fetch consumes
+ * {@link FolioImageMeta.imageSha256} to verify the fetched master bytes.
  */
-function readObjectStoreKey(issueDir: string, folioId: string): string | null {
+function readFolioImageMeta(issueDir: string, folioId: string): FolioImageMeta {
   const sidecarPath = path.join(issueDir, `${folioId}.yml`);
   if (!existsSync(sidecarPath)) {
-    return null;
+    return { objectStoreKey: null, imageSha256: null };
   }
 
   const parsed: unknown = parseYaml(readFileSync(sidecarPath, 'utf-8'));
   if (!isRecord(parsed)) {
-    return null;
+    return { objectStoreKey: null, imageSha256: null };
   }
+
   const objectStore = parsed.object_store;
-  if (!isRecord(objectStore)) {
-    return null;
-  }
-  const key = objectStore.key;
-  return typeof key === 'string' && key.trim().length > 0 ? key : null;
+  const key = isRecord(objectStore) ? objectStore.key : undefined;
+  const objectStoreKey =
+    typeof key === 'string' && key.trim().length > 0 ? key : null;
+
+  const sha = parsed.sha256;
+  const imageSha256 = typeof sha === 'string' && sha.trim().length > 0 ? sha : null;
+
+  return { objectStoreKey, imageSha256 };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

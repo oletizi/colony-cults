@@ -98,6 +98,9 @@ Scoped-down capture from a third-party "Corpus Coverage & Discovery Audit" propo
 
 ## impl:feature/corpus-print-pdf
 - status: in-flight
+- closes: TASK-14
+- analyze-clean: yes
+- spec: specs/007-corpus-print-pdf
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-11-corpus-print-pdf-design.md
 - depends-on: impl:feature/corpus-browser
