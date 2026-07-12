@@ -12,6 +12,15 @@
 
 **Roadmap item**: `impl:feature/edition-publishing`
 
+## Clarifications
+
+### Session 2026-07-12
+
+- Q: Publish scope — PDFs only, or also the corpus-browser site's public-domain export? → A: **PDF editions only.** The site's PD text/image export is a genuinely different mechanism (Astro build + deploy) and becomes its own later roadmap item; this feature stays focused on publishing the facsimile-edition PDFs.
+- Q: Where does the affirmative rights determination live, and how strict is the vocabulary? → A: **A top-level `rights` field on the Source, controlled vocabulary** (e.g. `public-domain` | `openly-licensed` | …). The publish gate requires an affirmative distributable value; a published edition derives from the source as a whole, so the determination is source-level.
+- Q: How are the 72 already-hand-published PB-P001 PDFs reconciled (they're live at un-versioned URLs the review index links to)? → A: **Record them at their existing un-versioned URLs** (back-fill only, no re-upload) so the current URLs + index stay valid; **NEW publications going forward use the immutable versioned scheme.** The two URL shapes coexist by design (legacy flat for the already-published set, versioned for everything new).
+- Q: What identifies a build's version in the immutable artifact key? → A: **The pinned snapshot archive-commit short** (e.g. `<issue>__3b8b1fd6.pdf`) — ties every published artifact to its reproducible corpus version; a re-pin/rebuild yields a new token.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Publish a source's editions and record them in the SSOT (Priority: P1)
@@ -139,12 +148,13 @@ english-only PDFs; confirm the source's metadata afterward records that publishe
   edition PDFs (it does not build them); building and publishing are separate, composable
   steps.
 - **FR-002**: The system MUST refuse to publish a source that lacks an *affirmative*
-  distributable-rights determination — fail-closed. A "likely", absent, or
-  non-distributable rights state MUST block the publish with a descriptive message
-  (Constitution IV).
+  distributable-rights determination in the Source's top-level `rights` field (a controlled
+  value, e.g. `public-domain`) — fail-closed. A "likely", absent, or non-distributable
+  rights state MUST block the publish with a descriptive message (Constitution IV).
 - **FR-003**: Each published PDF MUST be uploaded to an **immutable, versioned** public
-  location, keyed by edition variant, source, issue, and the build's pinned snapshot, so a
-  distinct build never overwrites a prior published artifact.
+  location, keyed by edition variant, source, issue, and the build's **pinned snapshot
+  archive-commit short** (the version token), so a distinct build yields a distinct key and
+  never overwrites a prior published artifact.
 - **FR-004**: The publish operation MUST be idempotent — it MUST NOT re-upload an artifact
   when the exact versioned target already holds the identical PDF (verified by checksum),
   and MUST leave the metadata unchanged in that case.
@@ -171,9 +181,11 @@ english-only PDFs; confirm the source's metadata afterward records that publishe
   NOT silently skip, substitute, or publish partial/placeholder content.
 - **FR-012**: The system MUST support both edition variants (`parallel` and `english-only`)
   — publishing whichever variant's PDFs are built.
-- **FR-013**: The system MUST be able to reconcile already-published editions into the SSOT
-  — recording the 72 hand-published PB-P001 english-only PDFs so the record matches what is
-  actually served.
+- **FR-013**: The system MUST reconcile the already-published editions into the SSOT by
+  **recording the 72 hand-published PB-P001 english-only PDFs at their existing un-versioned
+  URLs** (back-fill only — no re-upload), so the currently-served URLs (and the review
+  index) stay valid. New publications use the immutable versioned scheme (FR-003); the two
+  URL shapes coexist by design.
 - **FR-014**: The published artifacts MUST be reachable through the public read-through CDN,
   and the recorded canonical URL MUST reference the CDN (so recorded reads are cache-served,
   not direct-store transactions).
@@ -215,25 +227,25 @@ english-only PDFs; confirm the source's metadata afterward records that publishe
 
 ## Assumptions
 
-_Informed defaults; the material scope decisions below are revisited in `/speckit-clarify`._
+_Resolved decisions are in Clarifications; the remaining items are informed defaults._
 
-- **Rights determination** is a structured, affirmative field on the Source with a
-  controlled value (e.g. `public-domain`); the publish gate requires it. PB-P001's current
-  free-text "Public domain: likely" note is upgraded to an affirmative determination as
-  part of enabling its publication. (Exact vocabulary + placement — top-level vs on a
-  repository record — is a clarify/plan detail.)
-- **Publication manifest location**: a dedicated location under the bibliography metadata
-  (e.g. `bibliography/publications/`), named stably across re-publishes.
-- **Version token**: the pinned snapshot archive-commit short identifies a build's version
-  in the artifact key (a distinct build → a distinct key).
+- **Rights determination** (decided): a structured, affirmative **top-level `rights` field
+  on the Source** with a controlled value (e.g. `public-domain`); the publish gate requires
+  an affirmative distributable value. PB-P001's current free-text "Public domain: likely"
+  note is upgraded to an affirmative determination as part of enabling its publication.
+- **Version token** (decided): the **pinned snapshot archive-commit short** identifies a
+  build's version in the artifact key (a distinct build → a distinct key).
+- **Reconciliation** (decided): the 72 already-published PB-P001 english-only PDFs are
+  recorded at their **existing un-versioned URLs** (no re-upload); new publications use the
+  versioned scheme; the two URL shapes coexist.
+- **Publish scope** (decided): **PDF editions only.** The corpus-browser site's public PD
+  text/image export is a separate later roadmap item, not this feature.
+- **Publication manifest location** (default): a dedicated location under the bibliography
+  metadata (e.g. `bibliography/publications/`), named stably across re-publishes.
 - **Both edition variants** (`parallel`, `english-only`) are in scope; the operator
-  publishes whichever variant is built (scoping which to publish first is a later pass).
-- **Canonical URL**: the recorded URL uses the configured read-through CDN base. A future
-  custom-domain move (a stable public alias) is a plan-time concern, not a v1 blocker.
-- **Publish scope**: this feature publishes the **PDF editions**. The corpus-browser
-  **site's** public PD text/image export (the other half of the spec-007 deferral) is a
-  related but separate mechanism; whether to fold it in is confirmed in clarify (captured,
-  not cut).
+  publishes whichever variant is built.
+- **Canonical URL** (default): the recorded URL uses the configured read-through CDN base. A
+  future custom-domain move (a stable public alias) is a plan-time concern, not a v1 blocker.
 - **Transaction classes**: uploading published artifacts is a write-class operation, not
   blocked by the public store's download cap; warming/verification reads are the capped
   class and are handled non-fatally.

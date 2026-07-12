@@ -31,7 +31,8 @@
 
 ## Notes
 
-- Material scope decisions (rights vocabulary/placement; whether to fold in the
-  corpus-browser site's public export; manifest location; version token) are captured in
-  the Assumptions section and revisited in `/speckit-clarify` — not left as embedded
-  markers.
+- The material scope decisions (publish scope = PDFs only; rights = top-level Source.rights
+  controlled vocab; reconcile the 72 at existing URLs + versioned for new; version token =
+  snapshot-commit short) were resolved in `/speckit-clarify` and are recorded in the
+  Clarifications section. Remaining items (manifest location, CDN alias) are informed
+  defaults documented in Assumptions.
