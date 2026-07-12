@@ -1,0 +1,11 @@
+sourceId: FX-P005
+kind: monograph
+partOf: FX-P001
+status: excluded
+case: fixture-case-a
+language: French
+creator: Author C
+titles:
+  - text: "Excluded Work from Campaign A"
+    role: canonical
+notes: "Excluded due to being a secondary or derivative source"

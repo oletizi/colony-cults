@@ -1,4 +1,4 @@
-import type { SourceLifecycleStatus } from '@/bibliography/vocab';
+import type { CitedKind, EvidenceClass, SourceLifecycleStatus } from '@/bibliography/vocab';
 import type { WorkLevelIdentifierType } from '@/model/identifiers';
 
 /**
@@ -49,6 +49,21 @@ export interface Source {
   identifiers: WorkIdentifier[];
   /** Corpus grouping, e.g. `port-breton`. */
   case?: string;
+  /**
+   * The genre/evidence class of this work, e.g. `pamphlet` or `trial-record`.
+   * Orthogonal to the structural `kind` (a `monograph` may be a `pamphlet`,
+   * `prospectus`, ...) -- this describes what kind of evidence the work IS,
+   * not its structural role in the corpus. Absent -> counted *unclassified*
+   * by the coverage report; that is expected, not an error.
+   */
+  evidenceClass?: EvidenceClass;
+  /**
+   * Citations mined FROM this source -- works this Source cites, quotes, or
+   * otherwise points to, whether or not that cited work has been identified
+   * in the corpus. Absent/empty means no citations have been mined yet, not
+   * that the work cites nothing.
+   */
+  references?: Reference[];
   /** Free-text notes. */
   notes?: string;
 }
@@ -73,4 +88,34 @@ export interface WorkIdentifier {
   type: WorkLevelIdentifierType;
   /** The identifier value, e.g. `978-0-000-00000-0`. */
   value: string;
+}
+
+/**
+ * One citation mined FROM a {@link Source} -- a work this Source cites,
+ * quotes, or otherwise points to. A `Reference` without `resolvedTo` is the
+ * *referenced-but-unidentified* population: it is known that the citing
+ * Source points to something, but that something has not yet been matched
+ * to a `sourceId` in the corpus. Gaining a `resolvedTo` edge later is a
+ * plain, hand-authored field edit, not a state-machine transition.
+ */
+export interface Reference {
+  /** How the cited work appears in the citation, verbatim or near-verbatim. */
+  citedAs: string;
+  /** The kind of thing cited (journal/book/newspaper/...), if known. */
+  citedKind?: CitedKind;
+  /**
+   * FREE-FORM prose explaining how/why this citation was made or found, e.g.
+   * `"advertised in the colony's promotional matter"`. Deliberately NOT
+   * validated against a vocabulary -- unlike `citedKind`, this is open text.
+   */
+  basis?: string;
+  /**
+   * The `sourceId` of the Source this citation has been identified as, once
+   * discovered. Its absence means the citation is referenced-but-unidentified;
+   * its presence is provenance for "how this source was found" -- i.e. this
+   * Source was located BECAUSE the citing work pointed to it.
+   */
+  resolvedTo?: string;
+  /** Free-text notes. */
+  notes?: string;
 }

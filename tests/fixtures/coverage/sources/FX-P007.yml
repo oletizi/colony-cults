@@ -1,0 +1,17 @@
+sourceId: FX-P007
+kind: monograph
+case: fixture-case-a
+language: French
+creator: Author F
+titles:
+  - text: "Standalone Work with References"
+    role: canonical
+evidenceClass: newspaper
+notes: "Ungrouped source to exercise the register's no-campaign bucket"
+references:
+  - citedAs: "Private Letter to the Governor"
+    basis: "quoted in the text but source not yet located"
+  - citedAs: "Campaign Prospectus"
+    citedKind: pamphlet
+    basis: "explicitly cited as promotional material"
+    resolvedTo: FX-P008
