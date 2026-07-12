@@ -95,6 +95,24 @@
   }
 }
 
+// ---- Column-rule geometry --------------------------------------------------
+//
+// edition.typ draws the inter-column rule as a page FOREGROUND. To make it the
+// LENGTH OF THE TEXT COLUMN (starting below the running head + label, not from
+// the top margin), each recto records — via `mark-col-top()`, called right
+// before its column block — the page its columns start on and the y where they
+// begin. The foreground starts the rule at that y on the recto's FIRST leaf; on
+// continuation leaves (page != start page) the columns begin at the top margin,
+// so the rule spans the full text height there.
+#let recto-rule = state("recto-rule", false)
+#let recto-start-page = state("recto-start-page", 0)
+#let recto-col-top = state("recto-col-top", 0pt)
+
+#let mark-col-top() = context {
+  recto-start-page.update(here().page())
+  recto-col-top.update(here().position().y)
+}
+
 // ---- Shared marks ----------------------------------------------------------
 
 // A tracked, uppercase column/section label in the apparatus register

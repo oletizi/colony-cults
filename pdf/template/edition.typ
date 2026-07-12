@@ -51,18 +51,13 @@
 // The inter-column rule is drawn as a page FOREGROUND (not an in-flow placed
 // rect, which can't repeat across page breaks and isn't bounded to the text
 // area). It runs at the horizontal centre of the recto text block (= the column
-// gutter centre) from the top margin to the bottom margin, so it respects both
-// margins AND repeats on every leaf a recto's columns flow across. A state flag
-// gates it to recto-text pages only (set true at each recto, false at each verso
-// / title / colophon) — avoiding the extra-blank-page hazard of toggling `set
-// page` mid-flow.
-#let recto-rule = state("recto-rule", false)
-#let col-rule = place(
-  top + left,
-  dx: m-inside + (page-w - m-inside - m-outside) / 2,
-  dy: m-top,
-  rect(width: 0.4pt, height: page-h - m-top - m-bottom, fill: rule-col),
-)
+// gutter centre). A `recto-rule` state flag (theme.typ) gates it to recto-text
+// pages only — set true at each recto, false at each verso / title / colophon —
+// avoiding the extra-blank-page hazard of toggling `set page` mid-flow. Its TOP
+// is the recorded column top on the recto's first leaf (below the header), and
+// the top margin on continuation leaves (no header); its bottom is the bottom
+// margin. So the rule is exactly the length of the text column.
+#let col-rule-x = m-inside + (page-w - m-inside - m-outside) / 2
 
 #set page(
   width: page-w,
@@ -70,7 +65,17 @@
   fill: paper,
   margin: (top: m-top, bottom: m-bottom, inside: m-inside, outside: m-outside),
   numbering: none,
-  foreground: context { if recto-rule.get() { col-rule } },
+  foreground: context {
+    if recto-rule.get() {
+      let sy = if here().page() == recto-start-page.get() { recto-col-top.get() } else { m-top }
+      place(
+        top + left,
+        dx: col-rule-x,
+        dy: sy,
+        rect(width: 0.4pt, height: page-h - m-bottom - sy, fill: rule-col),
+      )
+    }
+  },
 )
 
 #set text(fill: source-ink, hyphenate: false, lang: "fr")

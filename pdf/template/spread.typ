@@ -85,8 +85,12 @@
   ]
   v(12pt)
 
+  // Record the column top so the page-foreground rule starts here (below the
+  // header), not at the top margin.
+  mark-col-top()
+
   // Two columns; the dividing rule is drawn per-page as the page foreground
-  // (edition.typ `col-rule`), so it spans the text area and repeats on every leaf.
+  // (edition.typ `col-rule`), so it spans the column and repeats on every leaf.
   grid(
     columns: (1fr, 1fr),
     column-gutter: body-column-gap,
@@ -148,10 +152,14 @@
   label-caps("Translation · EN (Machine-assisted)", tick: true)
   v(6pt)
 
+  // Record the column top so the page-foreground rule starts here (below the
+  // header + label), not at the top margin.
+  mark-col-top()
+
   // Two columns of the SAME English, newspaper flow (fill the left column,
   // continue into the right, then onto the next leaf). The dividing rule is
   // drawn per-page as the page foreground (edition.typ `col-rule`) so it spans
-  // the text area and repeats on every leaf — no in-flow placed rect.
+  // the column and repeats on every leaf — no in-flow placed rect.
   columns(2, gutter: body-column-gap)[
     #set-body-par(
       text(font: face-en-body, size: body-size, fill: apparatus-ink, lang: "en")[#flow-paragraphs(pg.recto.english)],
