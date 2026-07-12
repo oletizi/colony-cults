@@ -30,3 +30,6 @@
 {"id":"T030","tierLabel":"balanced","model":"sonnet","commitRange":"023f53c..50e123a","reviewClean":true,"note":"reconcile.test.ts legacy-flat back-fill proof (SC-006)"}
 {"id":"T031","tierLabel":"powerful","model":"opus","commitRange":"023f53c..50e123a","reviewClean":true,"note":"runReconcile in publish.ts (no upload, legacy-flat)"}
 {"id":"T032","tierLabel":"fast","model":"haiku","commitRange":"023f53c..50e123a","reviewClean":true,"note":"--reconcile verb flag"}
+{"id":"T033","tierLabel":"fast","model":"haiku","commitRange":"8015ec5..e86477a","reviewClean":true,"note":"README pdf:publish section"}
+{"id":"T034","tierLabel":"balanced","model":"opus","commitRange":"8015ec5..e86477a","reviewClean":true,"note":"full-suite green + Constitution VII refactor of publish.ts into 4 modules (all <=500)"}
+{"id":"T035","tierLabel":"powerful","model":"n/a","commitRange":"","reviewClean":false,"note":"DEFERRED [~] operator live-prod acceptance (real B2/CDN + build); excluded from tasks-complete gate (audit-before-acceptance)"}
