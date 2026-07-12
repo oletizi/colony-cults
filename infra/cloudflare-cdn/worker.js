@@ -27,6 +27,12 @@
  *     zone-level purge (workers.dev has no zone to purge). The version also rides
  *     on the origin fetch as `?ccv=` (B2 ignores unknown query params) so a new
  *     version bypasses any stale edge entry under the old key.
+ *   - CORS: every response carries `Access-Control-Allow-Origin: *`. The reading
+ *     viewer loads page images through OpenSeadragon with
+ *     `crossOriginPolicy: 'Anonymous'` (see `site/src/islands/viewer.ts`), so the
+ *     browser requires an ACAO header or it taints the canvas and the image fails
+ *     to render. B2 sends no CORS header on the public bucket, so the Worker adds
+ *     it. `*` is origin-independent, so it is safe to bake into the cached entry.
  *
  * Config (wrangler `[vars]`):
  *   - B2_DOWNLOAD_BASE   e.g. https://f004.backblazeb2.com/file/colony-cults
@@ -85,6 +91,7 @@ export default {
       err.headers.set('Cache-Control', 'no-store');
       err.headers.set('X-CDN-Cache', 'BYPASS-ERR');
       err.headers.set('X-CDN-Origin', 'b2');
+      err.headers.set('Access-Control-Allow-Origin', '*');
       return err;
     }
 
@@ -92,7 +99,6 @@ export default {
     ok.headers.set('Cache-Control', `public, max-age=${ttl}, immutable`);
     ok.headers.set('X-CDN-Cache', 'MISS');
     ok.headers.set('X-CDN-Origin', 'b2');
-    // CORS on the cached copy too, so HITs carry it (see the HIT path above).
     ok.headers.set('Access-Control-Allow-Origin', '*');
     ctx.waitUntil(cache.put(cacheKey, ok.clone()));
     return ok;
