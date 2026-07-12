@@ -1,0 +1,7 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"ef98107..1d37667","reviewClean":true,"note":"pdf:publish + publish:test npm scripts"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"ef98107..1d37667","reviewClean":true,"note":"src/pdf/publish + tests/{unit,integration}/publish skeleton"}
+{"id":"T003","tierLabel":"powerful","model":"opus","commitRange":"ef98107..1d37667","reviewClean":true,"note":"src/model/publication.ts publication view-model types"}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"1d37667..26997da","reviewClean":true,"note":"Source.rights + publications[] additive; index re-exports"}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commitRange":"1d37667..26997da","reviewClean":true,"note":"SOURCE_RIGHTS_STATUS_VALUES vocab + predicate + test"}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"1d37667..26997da","reviewClean":true,"note":"version.ts snapshotShort + resolveSnapshot (injected pin reader)"}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"1d37667..26997da","reviewClean":true,"note":"key.ts versioned/legacy keys + cdnUrl + resolveCdnBase"}
