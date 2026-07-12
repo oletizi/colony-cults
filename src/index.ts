@@ -50,8 +50,8 @@ Usage:
 
 Commands:
   bib <subaction>                Bibliography SSOT verbs: migrate, show,
-                                 validate, regenerate; source-group pipeline:
-                                 inventory, verify-member, promote,
+                                 validate, regenerate, coverage; source-group
+                                 pipeline: inventory, verify-member, promote,
                                  exclude-member, acquire, discover
   census <periodicalArk>        Build/refresh the per-source census
   fetch-issue <issueArk>        Fetch one issue's page images (private archive)

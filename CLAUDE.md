@@ -1,5 +1,5 @@
 <!-- SPECKIT START -->
-Active plan: specs/007-corpus-print-pdf/plan.md
+Active plan: specs/007-corpus-coverage-audit/plan.md
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the active plan above.
 <!-- SPECKIT END -->

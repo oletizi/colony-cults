@@ -14,6 +14,18 @@
   # Astro 7 requires Node >= 22.12.0; pin it so Netlify's default image Node
   # (older) does not fail the build. Keep in sync with .nvmrc.
   NODE_VERSION = "22"
-  # Resolve page images straight from Gallica's public IIIF service (no CDN /
-  # object-store mirror required for a public deploy).
-  CORPUS_IMAGE_PROVIDER = "source-iiif"
+  # Serve page images from our Cloudflare read-through CDN in front of the public
+  # B2 bucket (TASK-12, infra/cloudflare-cdn/), NOT straight from Gallica -- so
+  # public reads hit the edge cache and never hammer the upstream French source.
+  # The b2-cdn provider builds `${CORPUS_CDN_BASE}/<object_store key>`.
+  CORPUS_IMAGE_PROVIDER = "b2-cdn"
+  CORPUS_CDN_BASE = "https://colony-cults-cdn.oletizi.workers.dev"
+  # Reading width (px): the b2-cdn provider appends `?w=` so the CDN Worker
+  # resizes the master (cf.image, scale-down) to a reading-size image -- faster
+  # first paint, less bandwidth. Measured against the live CDN: at 2000 the heavy
+  # ~2 MB newspaper masters roughly halve (~0.9-1.2 MB) while staying legible,
+  # and every smaller page (down to ~14 KB monographs) stays at/under its master
+  # size (scale-down never upscales; a smaller width can re-encode tiny scans
+  # LARGER). Set to "full" (or 0) for the untouched master; raise for sharper max
+  # zoom at more bandwidth.
+  CORPUS_CDN_IMAGE_WIDTH = "2000"

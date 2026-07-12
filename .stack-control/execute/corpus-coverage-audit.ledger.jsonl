@@ -1,0 +1,31 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"477d89f","reviewClean":true}
+{"id":"T002","tierLabel":"balanced","model":"sonnet","commitRange":"477d89f","reviewClean":true}
+{"id":"T003","tierLabel":"balanced","model":"sonnet","commitRange":"477d89f","reviewClean":true}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"477d89f","reviewClean":true}
+{"id":"T005","tierLabel":"powerful","model":"opus","commitRange":"b15125b","reviewClean":true}
+{"id":"T007","tierLabel":"powerful","model":"opus","commitRange":"pending","reviewClean":true}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true}
+{"id":"T008","tierLabel":"fast","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T009","tierLabel":"fast","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T010","tierLabel":"powerful","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T011","tierLabel":"balanced","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T012","tierLabel":"balanced","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T014","tierLabel":"fast","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T016","tierLabel":"balanced","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T019","tierLabel":"balanced","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T022","tierLabel":"balanced","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T025","tierLabel":"balanced","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T028","tierLabel":"balanced","model":"opus","commitRange":"pending","reviewClean":true,"batch":"A"}
+{"id":"T013","tierLabel":"fast","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T017","tierLabel":"fast","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T018","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T020","tierLabel":"fast","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T023","tierLabel":"fast","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T024","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T026","tierLabel":"fast","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"pending","reviewClean":true,"batch":"B"}
+{"id":"T029","tierLabel":"fast","model":"controller","commitRange":"pending","reviewClean":true,"note":"no PB-P004 special-casing in coverage code; verified by grep"}
+{"id":"T030","tierLabel":"fast","model":"controller","commitRange":"pending","reviewClean":true,"note":"all new modules <=208 lines; tsc clean"}
+{"id":"T031","tierLabel":"balanced","model":"controller","commitRange":"pending","reviewClean":true,"note":"search-log.yml seed + bibliography/README.md"}

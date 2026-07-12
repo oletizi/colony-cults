@@ -1,0 +1,14 @@
+sourceId: PB-P001
+kind: source-group
+case: fixture-case-a
+language: French
+creator: various
+titles:
+  - text: Fixture Source Group A - Test Campaign
+    role: canonical
+knownMemberCount: 3
+suspected:
+  - description: "Suspected private correspondence regarding the campaign"
+    basis: "Referenced indirectly in acquired members; location and archive status unknown"
+    evidenceClass: correspondence
+    notes: "May exist in family archives"
