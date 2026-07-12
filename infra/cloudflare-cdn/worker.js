@@ -71,6 +71,10 @@ export default {
     if (cached) {
       const hit = new Response(cached.body, cached);
       hit.headers.set('X-CDN-Cache', 'HIT');
+      // CORS so browsers can use the image cross-origin (the corpus-browser
+      // OpenSeadragon viewer requests it with crossOrigin=anonymous; without
+      // this the canvas taints and the scan blanks).
+      hit.headers.set('Access-Control-Allow-Origin', '*');
       return hit;
     }
 
