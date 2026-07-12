@@ -11,14 +11,21 @@ import {
   validateSourceGroups,
   validateVocab,
 } from '@/bibliography/validate-checks';
+import { validateCoverageFields, validateSearchLogCampaigns } from '@/bibliography/validate-coverage-checks';
+import type { SearchLogEntry } from '@/bibliography/search-log';
 
 /**
  * The kinds of finding `bib validate` can report -- the full union per
- * specs/004-canonical-source-metadata/contracts/validation.md. `'identifier-
- * leak'`/`'view-drift'` were implemented by US2/US4; the referential-
- * integrity, vocab, required-core, uniqueness, and manifest-shape kinds are
- * implemented in `@/bibliography/validate-checks` (US5 / T027) and composed
- * into `validate()` below.
+ * specs/004-canonical-source-metadata/contracts/validation.md and
+ * specs/007-corpus-coverage-audit/data-model.md § Validation rules.
+ * `'identifier-leak'`/`'view-drift'` were implemented by US2/US4; the
+ * referential-integrity, vocab, required-core, uniqueness, and
+ * manifest-shape kinds are implemented in `@/bibliography/validate-checks`
+ * (US5 / T027); `'dangling-resolved-to'` (V3), `'group-only-field'` (V4),
+ * and `'invalid-known-member-count'` (V5) are implemented in
+ * `@/bibliography/validate-coverage-checks` -- all composed into `validate()`
+ * below. V1/V2 (`evidenceClass`/`citedKind` vocab) are enforced at LOAD, not
+ * here -- see `validate-coverage-checks.ts`'s doc comment.
  */
 export type ValidationFindingKind =
   | 'orphan-asset'
@@ -32,7 +39,12 @@ export type ValidationFindingKind =
   | 'group-has-repository-records'
   | 'dangling-part-of'
   | 'part-of-not-a-group'
-  | 'group-is-member';
+  | 'group-is-member'
+  | 'dangling-resolved-to'
+  | 'group-only-field'
+  | 'invalid-known-member-count'
+  | 'search-log-campaign-not-found'
+  | 'search-log-campaign-not-a-group';
 
 /**
  * One `bib validate` finding. Findings are DATA, not errors -- `validate`
@@ -127,16 +139,32 @@ export function validateViewDrift(model: CanonicalModel, opts: ViewDriftOptions)
 }
 
 /**
+ * Options for {@link validate}. Both fields are optional and additive: omit
+ * `repoRoot` to skip the disk-touching view-drift check (model-only callers /
+ * tests are unaffected); supply `searchLog` (the loaded
+ * `bibliography/search-log.yml` entries) to run the V8/V9 campaign
+ * referential-integrity check, which needs both the model and the search-log.
+ */
+export interface ValidateOptions {
+  /** Public repo root for the view-drift check; when absent, view drift is skipped. */
+  repoRoot?: string;
+  /** Loaded search-log entries for the V8/V9 campaign check; when absent, that check is skipped. */
+  searchLog?: readonly SearchLogEntry[];
+}
+
+/**
  * Run every implemented validation check over `model` and concatenate their
  * findings: identifier leaks (US2), referential integrity / vocab /
  * required-core / uniqueness / manifest-shape (US5, `@/bibliography/
- * validate-checks`), and -- when `opts` is supplied -- view drift (US4, the
- * one check that also touches disk; omitting `opts` leaves existing
- * model-only callers/tests unaffected). Never throws on content findings
- * (throwing is reserved for malformed input upstream, in
- * `@/bibliography/load`).
+ * validate-checks`), the corpus-coverage-audit V3-V5 checks (`@/bibliography/
+ * validate-coverage-checks`), and -- when the matching `opts` field is supplied
+ * -- the V8/V9 search-log campaign check (needs `opts.searchLog`) and view
+ * drift (US4, needs `opts.repoRoot`, the one check that also touches disk).
+ * Omitting `opts` leaves existing model-only callers/tests unaffected. Never
+ * throws on content findings (throwing is reserved for malformed input
+ * upstream, in `@/bibliography/load`).
  */
-export function validate(model: CanonicalModel, opts?: ViewDriftOptions): ValidationFinding[] {
+export function validate(model: CanonicalModel, opts?: ValidateOptions): ValidationFinding[] {
   const findings = [
     ...validateIdentifierLeaks(model),
     ...validateOrphanRecords(model),
@@ -146,9 +174,13 @@ export function validate(model: CanonicalModel, opts?: ViewDriftOptions): Valida
     ...validateDuplicateCopies(model),
     ...validateSingleChecksum(model),
     ...validateSourceGroups(model),
+    ...validateCoverageFields(model),
   ];
-  if (opts !== undefined) {
-    findings.push(...validateViewDrift(model, opts));
+  if (opts?.searchLog !== undefined) {
+    findings.push(...validateSearchLogCampaigns(model, opts.searchLog));
+  }
+  if (opts?.repoRoot !== undefined) {
+    findings.push(...validateViewDrift(model, { repoRoot: opts.repoRoot }));
   }
   return findings;
 }

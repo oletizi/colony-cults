@@ -5,6 +5,12 @@ import { parse as parseYaml } from 'yaml';
 import type { AuthoredRepositoryRecord, IdentifierLeak } from '@/bibliography/model';
 import { validateRecord, validateTitle, validateWorkIdentifier } from '@/bibliography/load-fields';
 import {
+  optionalEvidenceClass,
+  validateKnownMemberCount,
+  validateReference,
+  validateSuspectedGap,
+} from '@/bibliography/load-coverage-fields';
+import {
   assertKnownKeys,
   describeError,
   fail,
@@ -15,7 +21,7 @@ import {
 } from '@/bibliography/load-primitives';
 import { isSourceLifecycleStatus } from '@/bibliography/vocab';
 import type { SourceLifecycleStatus } from '@/bibliography/vocab';
-import type { Source, WorkIdentifier } from '@/model/source';
+import type { Reference, Source, SuspectedGap, WorkIdentifier } from '@/model/source';
 
 /**
  * One SSOT file's parsed contents: the hand-authored {@link Source} plus its
@@ -42,6 +48,10 @@ const SOURCE_KEYS = new Set([
   'language',
   'identifiers',
   'case',
+  'evidenceClass',
+  'references',
+  'knownMemberCount',
+  'suspected',
   'notes',
   'repositoryRecords',
 ]);
@@ -142,6 +152,27 @@ export function loadSourceFile(filePath: string): LoadedSource {
   const sourceCase = optionalString(obj.case, filePath, 'case');
   const notes = optionalString(obj.notes, filePath, 'notes');
 
+  // Corpus-coverage-audit authored fields (specs/007), all optional/additive.
+  // Parsed faithfully with the loader's normal shape/required-field checks;
+  // richer vocab/referential/group-only validation is a later validation task.
+  const evidenceClass = optionalEvidenceClass(obj.evidenceClass, filePath, 'evidenceClass');
+  const references: Reference[] | undefined =
+    obj.references === undefined
+      ? undefined
+      : requireArray(obj.references, filePath, 'references').map((r, i) =>
+          validateReference(r, filePath, i),
+        );
+  const knownMemberCount =
+    obj.knownMemberCount === undefined
+      ? undefined
+      : validateKnownMemberCount(obj.knownMemberCount, filePath, 'knownMemberCount');
+  const suspected: SuspectedGap[] | undefined =
+    obj.suspected === undefined
+      ? undefined
+      : requireArray(obj.suspected, filePath, 'suspected').map((s, i) =>
+          validateSuspectedGap(s, filePath, i),
+        );
+
   // Rule 3: Source-level identifiers, work-level only. A misplaced-but-known
   // type (e.g. a copy-level `ark`) does not throw -- it is recorded as an
   // IdentifierLeak for `bib validate` to report (contract rule 3).
@@ -201,6 +232,10 @@ export function loadSourceFile(filePath: string): LoadedSource {
     creator,
     language,
     case: sourceCase,
+    evidenceClass,
+    references,
+    knownMemberCount,
+    suspected,
     notes,
   };
 

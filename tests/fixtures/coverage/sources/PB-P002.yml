@@ -1,0 +1,10 @@
+sourceId: PB-P002
+kind: source-group
+case: fixture-case-b
+language: English
+creator: various
+titles:
+  - text: Fixture Source Group B - Unknown Extent
+    role: canonical
+notes: "Source group with unknown member extent; used to test gap inference"
+knownMemberCount: unknown

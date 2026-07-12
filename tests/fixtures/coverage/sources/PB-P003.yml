@@ -1,0 +1,11 @@
+sourceId: PB-P003
+kind: monograph
+partOf: PB-P001
+status: discovered
+case: fixture-case-a
+language: French
+creator: Author A
+titles:
+  - text: "Discovered Work Within Campaign A"
+    role: canonical
+evidenceClass: pamphlet

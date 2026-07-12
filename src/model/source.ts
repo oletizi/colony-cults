@@ -1,4 +1,4 @@
-import type { SourceLifecycleStatus } from '@/bibliography/vocab';
+import type { CitedKind, EvidenceClass, SourceLifecycleStatus } from '@/bibliography/vocab';
 import type { WorkLevelIdentifierType } from '@/model/identifiers';
 
 /**
@@ -49,6 +49,42 @@ export interface Source {
   identifiers: WorkIdentifier[];
   /** Corpus grouping, e.g. `port-breton`. */
   case?: string;
+  /**
+   * The genre/evidence class of this work, e.g. `pamphlet` or `trial-record`.
+   * Orthogonal to the structural `kind` (a `monograph` may be a `pamphlet`,
+   * `prospectus`, ...) -- this describes what kind of evidence the work IS,
+   * not its structural role in the corpus. Absent -> counted *unclassified*
+   * by the coverage report; that is expected, not an error.
+   */
+  evidenceClass?: EvidenceClass;
+  /**
+   * Citations mined FROM this source -- works this Source cites, quotes, or
+   * otherwise points to, whether or not that cited work has been identified
+   * in the corpus. Absent/empty means no citations have been mined yet, not
+   * that the work cites nothing.
+   */
+  references?: Reference[];
+  /**
+   * The believed TOTAL extent of this source-group -- the denominator the
+   * coverage report measures actual members (derived from `partOf` edges)
+   * against. Valid ONLY on `kind: 'source-group'`; authoring it on any other
+   * kind is an error (enforced by a later validation task, not the loader).
+   * Distinct from the *derived* actual count: this is the hand-authored belief
+   * about how many members SHOULD exist. The literal string `'unknown'` is
+   * first-class and deliberately distinct from an incomplete group and from a
+   * count of `0` -- `unknown != incomplete != 0`. Absent means the extent has
+   * not been asserted (treated as `'unknown'` by the report).
+   */
+  knownMemberCount?: number | 'unknown';
+  /**
+   * Inferred, uncited pre-discovery gaps in this source-group -- works
+   * suspected to exist from publication pattern, testimony, or indirect
+   * mention, but NOT via a direct citation by an acquired source. Group-only
+   * (valid on `kind: 'source-group'`). The boundary with {@link Reference}: a
+   * gap whose basis IS a direct citation belongs in the citing Source's
+   * `references[]` (the referenced-but-unidentified population), not here.
+   */
+  suspected?: SuspectedGap[];
   /** Free-text notes. */
   notes?: string;
 }
@@ -73,4 +109,58 @@ export interface WorkIdentifier {
   type: WorkLevelIdentifierType;
   /** The identifier value, e.g. `978-0-000-00000-0`. */
   value: string;
+}
+
+/**
+ * One citation mined FROM a {@link Source} -- a work this Source cites,
+ * quotes, or otherwise points to. A `Reference` without `resolvedTo` is the
+ * *referenced-but-unidentified* population: it is known that the citing
+ * Source points to something, but that something has not yet been matched
+ * to a `sourceId` in the corpus. Gaining a `resolvedTo` edge later is a
+ * plain, hand-authored field edit, not a state-machine transition.
+ */
+export interface Reference {
+  /** How the cited work appears in the citation, verbatim or near-verbatim. */
+  citedAs: string;
+  /** The kind of thing cited (journal/book/newspaper/...), if known. */
+  citedKind?: CitedKind;
+  /**
+   * FREE-FORM prose explaining how/why this citation was made or found, e.g.
+   * `"advertised in the colony's promotional matter"`. Deliberately NOT
+   * validated against a vocabulary -- unlike `citedKind`, this is open text.
+   */
+  basis?: string;
+  /**
+   * The `sourceId` of the Source this citation has been identified as, once
+   * discovered. Its absence means the citation is referenced-but-unidentified;
+   * its presence is provenance for "how this source was found" -- i.e. this
+   * Source was located BECAUSE the citing work pointed to it.
+   */
+  resolvedTo?: string;
+  /** Free-text notes. */
+  notes?: string;
+}
+
+/**
+ * One inferred, uncited gap in a source-group (element of
+ * {@link Source.suspected}). A `SuspectedGap` records a work believed to exist
+ * that has NOT yet been discovered and is NOT backed by a direct citation --
+ * inferred instead from a publication pattern, testimony, or an indirect
+ * mention. The boundary with {@link Reference}: a gap whose `basis` IS a direct
+ * citation by an acquired source belongs in that source's `references[]` (the
+ * referenced-but-unidentified population), not here.
+ */
+export interface SuspectedGap {
+  /** What is suspected to exist (e.g. `"appeal-court records for the trial"`). */
+  description: string;
+  /**
+   * FREE-FORM prose explaining WHY the gap is inferred, e.g. `"trial testimony
+   * references an appeal not yet located"`. Deliberately NOT validated against
+   * any vocabulary -- unlike `evidenceClass`, this is open explanatory text.
+   */
+  basis: string;
+  /** The evidence class the suspected work is expected to be, if a class can be anticipated. */
+  evidenceClass?: EvidenceClass;
+  /** Free-text notes. */
+  notes?: string;
 }

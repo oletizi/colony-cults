@@ -69,6 +69,48 @@ export const OCR_STATUS_VALUES = ['none', 'searchable', 'failed'] as const;
 export type OcrStatus = (typeof OCR_STATUS_VALUES)[number];
 
 /**
+ * Genre/evidence class of a `Source` (specs/007-corpus-coverage-audit) --
+ * e.g. `pamphlet` or `trial-record` on a monograph-shaped `Source`. Orthogonal
+ * to the structural `kind` field: a `monograph` may be a `pamphlet`,
+ * `prospectus`, etc. Closed-but-EXTENSIBLE -- validated at runtime
+ * (`isEvidenceClass`) the same as the shipped `RIGHTS_VALUES` /
+ * `OCR_STATUS_VALUES`, but the initial set below is illustrative, not
+ * exhaustive: adding a value is a deliberate one-line edit here, not a schema
+ * migration. Absent on a `Source` means *unclassified* (not an error; the
+ * coverage report counts it separately).
+ */
+export const EVIDENCE_CLASS_VALUES = [
+  'book',
+  'pamphlet',
+  'prospectus',
+  'newspaper',
+  'trial-record',
+  'gov-report',
+  'map',
+  'correspondence',
+  'periodical-article',
+] as const;
+export type EvidenceClass = (typeof EVIDENCE_CLASS_VALUES)[number];
+
+/**
+ * Kind of work a `Reference` cites (specs/007-corpus-coverage-audit),
+ * e.g. `journal` or `government-record` on an entry in `Source.references[]`.
+ * Closed-but-EXTENSIBLE, same discipline as `EVIDENCE_CLASS_VALUES` above --
+ * validated at runtime (`isCitedKind`) but the initial set is illustrative;
+ * adding a value is a one-line edit. Optional on a `Reference`; when present
+ * it MUST be a member of this vocabulary (fail loud otherwise).
+ */
+export const CITED_KIND_VALUES = [
+  'journal',
+  'book',
+  'newspaper',
+  'pamphlet',
+  'government-record',
+  'article',
+] as const;
+export type CitedKind = (typeof CITED_KIND_VALUES)[number];
+
+/**
  * Closed vocab field names, mapped to their allowed-value arrays. The
  * field-name-keyed `status` entry has always meant a `RepositoryRecord`'s
  * acquisition status (`validateVocab` in `@/bibliography/validate-checks`
@@ -127,6 +169,26 @@ export function isAllowed(field: string, value: string): boolean {
  */
 export function isSourceLifecycleStatus(value: string): value is SourceLifecycleStatus {
   return includesValue(SOURCE_LIFECYCLE_STATUS_VALUES, value);
+}
+
+/**
+ * Membership test for the `EvidenceClass` vocabulary (specs/007):
+ * `isEvidenceClass('pamphlet')` -> `true`; `isEvidenceClass('scroll')` ->
+ * `false`. Use wherever a `Source.evidenceClass` or `SuspectedGap.evidenceClass`
+ * value is checked (see `@/bibliography/load`).
+ */
+export function isEvidenceClass(value: string): value is EvidenceClass {
+  return includesValue(EVIDENCE_CLASS_VALUES, value);
+}
+
+/**
+ * Membership test for the `CitedKind` vocabulary (specs/007):
+ * `isCitedKind('journal')` -> `true`; `isCitedKind('scroll')` -> `false`. Use
+ * wherever a `Reference.citedKind` value is checked (see
+ * `@/bibliography/load`).
+ */
+export function isCitedKind(value: string): value is CitedKind {
+  return includesValue(CITED_KIND_VALUES, value);
 }
 
 /** One required-field entry in a required-field core spec (FR-019). */

@@ -1,0 +1,12 @@
+sourceId: PB-P006
+kind: monograph
+partOf: PB-P002
+status: approved-for-acquisition
+case: fixture-case-b
+language: English
+creator: Author D
+titles:
+  - text: "Approved Member of Group B"
+    role: canonical
+evidenceClass: trial-record
+notes: "Court record belonging to fixture group B"

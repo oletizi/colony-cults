@@ -1,0 +1,10 @@
+sourceId: PB-P008
+kind: monograph
+case: fixture-case-a
+language: French
+creator: Author E
+titles:
+  - text: "Prospectus of the Campaign"
+    role: canonical
+evidenceClass: prospectus
+notes: "Standalone source referenced by multiple other works"

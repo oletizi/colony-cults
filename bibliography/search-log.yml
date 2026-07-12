@@ -1,0 +1,22 @@
+# Repository search history — authored SSOT for the corpus coverage audit.
+#
+# Append-only, date-ordered record of repository searches. Nothing else records
+# per-search facts (RepositoryRecords are per-copy, not per-search). This file is
+# authored by hand; `bib coverage` aggregates it into the repository x campaign
+# matrix and the repository-axis rollup. It is committed primary data.
+#
+# Each entry (append a new one; never rewrite an existing one):
+#   - id: SRCH-0001                 # stable flat-opaque id; UNIQUE across the file
+#     date: 2026-07-03              # ISO YYYY-MM-DD of the search
+#     repository: State Library of Queensland
+#     campaign: PB-P004             # a source-group sourceId
+#     scope: "de Rays trial records, 1880s"
+#     coverage: "catalogue searched; 2 hits, both already held"
+#     remainingQuestions:           # optional
+#       - "appeal-court records not online"
+#     notes: "optional free-text"   # optional
+#
+# Validation: entry ids must be unique and each entry must carry
+# id/date/repository/campaign/scope/coverage (surfaced by `bib validate`).
+
+[]
