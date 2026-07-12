@@ -332,6 +332,53 @@ Each build fetches page images at generation time. Using `--provider b2` incurs 
 
 See `specs/007-corpus-print-pdf/quickstart.md` for the end-to-end walkthrough and fail-loud checks.
 
+## Publishing Facsimile Editions
+
+Publishes pre-built PDF facsimile editions (`build/pdf/<sourceId>/<issueId>.pdf`, written by `pdf:build`) to the Backblaze B2 object store, fronted by the Cloudflare CDN, as immutable snapshot-versioned artifacts. Each publication is recorded in the bibliography SSOT: a `publications[]` entry on the Source, plus a per-issue manifest with sha256, URL, and page count. This tool publishes only — it never builds, fetches images, or runs Typst.
+
+### Prerequisites
+
+- Pre-built PDFs: output from `pdf:build` under the specified `--out` directory (default `build/pdf`).
+- B2 object store credentials: `COLONY_S3_BUCKET`, `COLONY_S3_ENDPOINT`, `COLONY_S3_REGION` environment variables set, and `~/.config/backblaze/b2-credentials.txt` present.
+- CDN base URL: `CORPUS_CDN_BASE` environment variable (e.g. `https://colony-cults-cdn.oletizi.workers.dev`).
+- Archive pin: `site/data/archive-source.json` present and readable (used for snapshot versioning and commit message).
+- Rights determination: the Source must carry an affirmative `rights.status: public-domain` determination, or publication is refused and fails loud (rights-gated, fail-closed).
+
+### Usage
+
+Run via `npm run pdf:publish -- <sourceId> --variant <english-only|parallel> [--confirm] [--reconcile] [--out <dir>] [--no-warm]`.
+
+**Arguments & flags**:
+
+- `<sourceId>` (required, positional): source identifier (e.g. `PB-P001`). Unknown → fail loud naming the id.
+- `--variant <english-only|parallel>` (required): which built variant to publish. Not inferable from the built path, so explicit and recorded in the artifact key.
+- `--confirm` (optional): deliberate-action gate. Absent → dry-run: plans keys/URLs, prints what would be published/recorded, uploads and records nothing.
+- `--reconcile` (optional): back-fill mode for already-served editions. Records the legacy-flat URLs without any upload. Requires `--confirm` to write records.
+- `--out <dir>` (optional, default `build/pdf`): built-PDF root directory.
+- `--no-warm` (optional): skip the best-effort CDN warm after publication (default: warm each new URL, non-fatally).
+
+**Examples**:
+
+```bash
+npm run pdf:publish -- PB-P001 --variant english-only
+npm run pdf:publish -- PB-P001 --variant parallel --confirm
+npm run pdf:publish -- PB-P001 --variant english-only --confirm --reconcile
+```
+
+### URL schemes
+
+**Versioned artifacts** (newly published): `editions/<variant>/<sourceId>/<issueId>__<snapshotShort>.pdf`. Each distinct build produces a distinct snapshot token, so the key is always unique; prior keys are never overwritten (immutable).
+
+**Legacy-flat URLs** (reconciled set): `editions/english-only/<sourceId>/<issueId>.pdf`. These coexist with versioned URLs by design, recording already-served content without re-upload.
+
+### Environment
+
+The tool preflights all required environment before any work:
+
+- `COLONY_S3_BUCKET`, `COLONY_S3_ENDPOINT`, `COLONY_S3_REGION` plus the B2 credentials file `~/.config/backblaze/b2-credentials.txt` → eagerly constructs the object store (missing/invalid → fail loud).
+- `CORPUS_CDN_BASE` → the canonical URL base for all published artifacts (unset → fail loud, no fallback).
+- Archive pin (`site/data/archive-source.json`) → resolved and validated (missing/empty → fail loud; its short token seeds the commit message).
+
 ## Legal and citation note
 
 This repository is intended to hold metadata, notes, citations, research leads, and links to lawful sources. Public-domain material may be linked or quoted within normal scholarly practice. Copyrighted works should be cited and summarized, not redistributed.

@@ -157,7 +157,7 @@ edition (per-issue legacy-flat URLs + checksums) consistent with the served arti
 
 - [ ] T033 [P] [tier:fast] Add a `pdf:publish` section to `README.md` (usage, flags, env, the versioned-vs-legacy URL schemes)
 - [ ] T034 [tier:balanced] Run `npm run typecheck` and `npm run publish:test` (+ full `npm test`) green; fix any fallout
-- [ ] T035 [tier:powerful] Execute `quickstart.md` Scenarios 1–6 against a real build of PB-P001 english-only (behind `--confirm`) and confirm a recorded URL's fetched bytes sha256-match its manifest entry (SC-002 end-to-end); record the outcome
+- [~] T035 [tier:powerful] [operator live-prod acceptance] Execute `quickstart.md` Scenarios 1–6 against a real build of PB-P001 english-only (behind `--confirm`) and confirm a recorded URL's fetched bytes sha256-match its manifest entry (SC-002 end-to-end); record the outcome. Marked `[~]` (excluded from the tasks-complete gate): it writes real artifacts to the production public B2 bucket + CDN and requires live B2 credentials + a real Typst build — an operator acceptance run AFTER the cross-model govern audit (audit-before-acceptance), not an in-session agent step.
 
 ---
 
