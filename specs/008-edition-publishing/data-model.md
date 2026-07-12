@@ -67,7 +67,7 @@ One published derivative edition (one variant, from one pinned snapshot).
 | `cdnBase` | `string` | yes | the recorded canonical CDN base (`${CORPUS_CDN_BASE}`), so per-issue URLs are reconstructable and a future custom-domain move is a base rewrite (FR-014) |
 | `keyScheme` | `'versioned' \| 'legacy-flat'` | yes | `versioned` for new publications; `legacy-flat` for the reconciled 72 (FR-013) — makes the two coexisting URL shapes explicit in the record |
 | `rightsBasis` | `string` | yes | the `SourceRights.basis` that cleared the gate (FR-005) |
-| `machineAssist` | `MachineAssistLabel` | no | engine + date for machine-assisted (translated) editions; REQUIRED for `english-only` (translated), absent for a pure-facsimile edition (Constitution IV) |
+| `machineAssist` | `MachineAssistLabel` | conditional | engine + date for machine-assisted translation. REQUIRED for **any variant that carries machine translation** — both in-scope variants qualify (`english-only` = EN; `parallel` = FR OCR │ EN), so both MUST carry it (Constitution IV: translations MUST be labeled machine-assisted unless human-reviewed). Absent ONLY for a hypothetical pure-facsimile variant with no translated text (none in v1 scope). |
 | `manifest` | `PublicationManifestRef` | yes | reference to the per-issue integrity manifest file (FR-006) |
 
 `MachineAssistLabel`: reuse the existing shape from `@/pdf/model` (`MachineAssistLabel` — the
@@ -114,7 +114,7 @@ reconciled 72: `<sourceId>-<variant>-legacy.yml`, since they have no snapshot ve
 | `url` | `string` | yes | canonical public CDN URL `${cdnBase}/${key}` (FR-006/FR-014) |
 | `key` | `string` | yes | the object-store key (versioned or legacy-flat) |
 | `sha256` | `string` | yes | lowercase-hex sha256 of the published PDF bytes (FR-007) |
-| `pages` | `number` | yes | page count of the PDF |
+| `pages` | `number` | yes | the built PDF's page count. **Source**: read from the build's per-item `<issueId>.input.json` (the Typst input document written alongside the PDF by `pdf:build`, which enumerates the edition's pages), NOT by parsing PDF bytes — avoids a PDF-parsing dependency and stays consistent with what was rendered. |
 
 **Validation**:
 - Every `sha256` is 64 lowercase hex chars (reuses the archive's checksum invariant).
