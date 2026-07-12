@@ -44,9 +44,13 @@
     pg.folioId + "  ·  " + key-tail(prov.objectStoreKey) + "  ·  " + clip(prov.sha256, 10)
   }
   // Sit in the outer (right) margin of the recto, below the running head.
+  // The outer margin was halved to 0.375in (edition.typ § Density), so the rail
+  // `dx` is reduced from 0.44in to 0.1in to keep the oxblood rule + rotated
+  // Plex Mono text fully WITHIN that narrower margin band and on-page (verified
+  // in a compiled render — nothing clipped at the page edge).
   place(
     top + right,
-    dx: 0.44in,
+    dx: 0.1in,
     dy: 4pt,
     box(height: 6.4in)[
       #place(top + left, rect(width: 0.6pt, height: 6.4in, fill: oxblood))
@@ -81,24 +85,27 @@
   ]
   v(12pt)
 
-  // Two columns + the dividing hairline.
+  // Two columns; the dividing rule is drawn per-page as the page foreground
+  // (edition.typ `col-rule`), so it spans the text area and repeats on every leaf.
   grid(
     columns: (1fr, 1fr),
     column-gutter: body-column-gap,
-    grid.vline(x: 1, stroke: 0.4pt + rule-col),
-    // FR OCR — source register.
+    // FR OCR — source register (EB Garamond, unchanged).
     [
       #label-caps("Transcription · FR (OCR)")
       #v(6pt)
-      #set-body-par()
-      #text(font: face-fr, size: body-size, fill: source-ink)[#flow-paragraphs(pg.recto.ocrFrench)]
+      #set-body-par(
+        text(font: face-fr, size: body-size, fill: source-ink, lang: "fr")[#flow-paragraphs(pg.recto.ocrFrench)],
+      )
     ],
-    // EN translation — apparatus register (machine-assisted).
+    // EN translation — apparatus register (machine-assisted). Body in the dense
+    // period serif (face-en-body); the label above stays IBM Plex Sans chrome.
     [
       #label-caps("Translation · EN (Machine-assisted)", tick: true)
       #v(6pt)
-      #set-body-par()
-      #text(font: face-en, size: body-size, fill: apparatus-ink)[#flow-paragraphs(pg.recto.english)]
+      #set-body-par(
+        text(font: face-en-body, size: body-size, fill: apparatus-ink, lang: "en")[#flow-paragraphs(pg.recto.english)],
+      )
     ],
   )
 
@@ -123,8 +130,8 @@
 // hairline, and the oxblood rail — but the two columns are the SAME English
 // text flowing newspaper-style (fill the left column, continue into the right),
 // under ONE spanning `TRANSLATION · EN` label. The FR column + its label are
-// dropped; nothing is added back. Same EN face/size (IBM Plex Sans, DESIGN.md
-// § Density: 8.5/11pt) so the per-column measure stays comfortable.
+// dropped; nothing is added back. Same EN body face/size (Old Standard TT,
+// DESIGN.md § Density: 8/10pt) so the per-column measure stays comfortable.
 #let english-recto(pg, source-short, issue-date, prov) = {
   // Running head — identical to the parallel recto.
   block(width: 100%)[
@@ -141,25 +148,15 @@
   label-caps("Translation · EN (Machine-assisted)", tick: true)
   v(6pt)
 
-  // Two columns of the SAME English, newspaper flow, across the full recto
-  // measure (the width the FR|EN pair used together). `layout` + `measure`
-  // recover the natural single-column height so the inter-column hairline spans
-  // the rendered column height (~half the natural height) — matching the
-  // parallel grid's text-height vline rather than dangling to the page foot.
-  layout(size => {
-    let gutter = body-column-gap
-    let col-w = (size.width - gutter) / 2
-    let body = {
-      set-body-par()
-      text(font: face-en, size: body-size, fill: apparatus-ink)[#flow-paragraphs(pg.recto.english)]
-    }
-    let natural = measure(box(width: col-w, body)).height
-    let rule-h = calc.min(natural / 2, size.height)
-    block(width: 100%, breakable: true)[
-      #place(top + center, rect(width: 0.4pt, height: rule-h, fill: rule-col))
-      #columns(2, gutter: gutter, body)
-    ]
-  })
+  // Two columns of the SAME English, newspaper flow (fill the left column,
+  // continue into the right, then onto the next leaf). The dividing rule is
+  // drawn per-page as the page foreground (edition.typ `col-rule`) so it spans
+  // the text area and repeats on every leaf — no in-flow placed rect.
+  columns(2, gutter: body-column-gap)[
+    #set-body-par(
+      text(font: face-en-body, size: body-size, fill: apparatus-ink, lang: "en")[#flow-paragraphs(pg.recto.english)],
+    )
+  ]
 
   // OCR-condition apparatus note, only when present (null renders nothing).
   if pg.recto.ocrCondition != none {

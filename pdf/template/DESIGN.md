@@ -134,20 +134,30 @@ text rectos (shared settings); title page, colophon, and verso are **unchanged**
 Measured problem: a dense page's translation is ~6,200 chars across ~31 paragraphs, and blank-line
 paragraph gaps alone spill it across several leaves. Concrete specs (hand these to the implementer):
 
-- **Paragraph style — the dominant lever.** Blank-line paragraph gaps → **book style: first-line
-  indent `1.2em`, inter-paragraph space `0`** (a paragraph is marked by its indent, not a gap). The
-  first paragraph of a column/after a break is not indented. *Rationale:* removes ~31 gaps/page (~5in
-  of wasted height) — roughly halves text height by itself.
-- **Type size — `8.5pt`** for both EN (Plex Sans) and FR (EB Garamond), down from 9 / 9.5. *Rationale:*
-  matches period newspaper body size; the artifact is read on a phone (zoomable), 8.5pt is the floor.
-- **Leading — `8.5 / 11pt`** (ratio ~1.29) for both, down from ~1.44. *Rationale:* comfortable for a
-  dense reference read; period sheets ran tighter still.
-- **Margins (6×9in page):** inner/gutter `0.6in`, outer `0.75in` (holds the running-head folio + the
-  oxblood rail), top `0.6in`, bottom `0.65in` — down from ~0.9–1in. *Rationale:* widens the measure so
-  each two-column EN line grows from ~40 to ~46 chars (still comfortable) and adds lines per page.
-- **Column gap** (two-column modes): tighten to ~`12pt` with the hairline, recovering a little measure.
-- Optional: an all-caps heading line mid-flow (e.g. `THE NEW FRANCE`) may take a hair of lead-in space;
-  uniform indent-no-space is acceptable for v1.
+This is a **print edition** — judge type, margins, and density as print typography, not screen. (The
+facing-page parity that puts each verso on a left leaf is correct for binding and stays.)
+
+- **Body face — a dense 19th-century serif.** The translation BODY moves from the grotesque (IBM Plex
+  Sans) to **Old Standard TT** — a Modern/Scotch-lineage text serif (OFL) that reads as period
+  letterpress and pairs with the Theano Didot display voice. It replaces the sans for running text in
+  both text rectos. The FR OCR body stays EB Garamond. Apparatus *chrome* — the `TRANSLATION · EN`
+  label, running head, colophon data — stays IBM Plex Sans / Mono (the Dossier register is unchanged;
+  only the reading text becomes period-serif). If Old Standard renders too light at body size, use a
+  sturdier period text serif with full French-diacritic coverage and report the choice.
+- **Paragraph style — indent, no gap (and it MUST actually render).** A paragraph is marked ONLY by a
+  **first-line indent (`1.2em`)** with **no extra inter-paragraph space** — no blank-line gap. The
+  first paragraph after a heading/break is not indented. The earlier pass claimed this but the render
+  still showed blank-line gaps and no indent; the implementer MUST verify in the compiled PDF that the
+  indent appears and the paragraph gap is gone (watch the two-column `layout`/`columns` scope — a `set
+  par` may not be reaching the flowed text there).
+- **Type size / leading — `8 / 10pt`** for both body faces. A dense period newspaper body size; the
+  goal remains that each source page's full text fits its single facing recto (≈6,200 chars vs ≈8,200
+  recto capacity) so it stays adjacent to its scan.
+- **Margins (6×9in page) — halve the left/right.** Inner/gutter `0.3in`, outer `0.375in` (down from
+  0.6 / 0.75); top `0.6in`, bottom `0.65in` unchanged. This widens the measure substantially (period
+  newspapers ran tight margins). The oxblood provenance rail must be repositioned to sit *within* the
+  narrower outer margin (reduce its `dx`) and stay on-page.
+- **Column gap** (two-column modes): `12pt` with the hairline.
 
 Rough combined effect: a dense page that took ~3 recto leaves should take ~1.3–1.5 — english-only
 issue ~42pp → ~26–30pp, parallel ~60pp → ~40pp. The one risk (denser than a modern edition) is the

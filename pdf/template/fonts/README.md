@@ -12,7 +12,10 @@ system fonts (SC-004).
 | `TheanoDidot-Regular.ttf` | Theano Didot | source/display voice — title, section openers | CTAN `theanodidot` package: <https://ctan.org/pkg/theanodidot> (`truetype/TheanoDidot-Regular.ttf`; by Alexey Kryukov, retired from Google Fonts, still OFL 1.1) |
 | `EBGaramond[wght].ttf` | EB Garamond | FR OCR body (recto, left) | google/fonts OFL: <https://github.com/google/fonts/tree/main/ofl/ebgaramond> (variable, weight 400–800) |
 | `EBGaramond-Italic[wght].ttf` | EB Garamond (italic) | FR emphasis / creator line | google/fonts OFL: <https://github.com/google/fonts/tree/main/ofl/ebgaramond> |
-| `IBMPlexSans[wdth,wght].ttf` | IBM Plex Sans | EN translation body + apparatus labels | google/fonts OFL: <https://github.com/google/fonts/tree/main/ofl/ibmplexsans> (variable, weight 100–700) |
+| `OldStandard-Regular.ttf` | Old Standard TT | EN translation BODY (dense 19th-c. text serif) | google/fonts OFL: <https://github.com/google/fonts/tree/main/ofl/oldstandardtt> |
+| `OldStandard-Bold.ttf` | Old Standard TT (bold) | EN body emphasis | google/fonts OFL: <https://github.com/google/fonts/tree/main/ofl/oldstandardtt> |
+| `OldStandard-Italic.ttf` | Old Standard TT (italic) | EN body emphasis | google/fonts OFL: <https://github.com/google/fonts/tree/main/ofl/oldstandardtt> |
+| `IBMPlexSans[wdth,wght].ttf` | IBM Plex Sans | apparatus chrome — labels, running head, colophon | google/fonts OFL: <https://github.com/google/fonts/tree/main/ofl/ibmplexsans> (variable, weight 100–700) |
 | `IBMPlexMono-Regular.ttf` | IBM Plex Mono | provenance data (rail + colophon) | google/fonts OFL: <https://github.com/google/fonts/tree/main/ofl/ibmplexmono> |
 | `IBMPlexMono-Medium.ttf` | IBM Plex Mono (500) | provenance emphasis | google/fonts OFL: <https://github.com/google/fonts/tree/main/ofl/ibmplexmono> |
 
@@ -20,6 +23,7 @@ system fonts (SC-004).
 
 - `OFL-TheanoDidot.txt` — SIL OFL 1.1 (from the CTAN `theanodidot/doc/` dir).
 - `OFL-EBGaramond.txt` — SIL OFL 1.1.
+- `OFL-OldStandardTT.txt` — SIL OFL 1.1 (Copyright 2011 The Old Standard Project Authors).
 - `OFL-IBMPlexSans.txt` — SIL OFL 1.1.
 - `OFL-IBMPlexMono.txt` — SIL OFL 1.1.
 

@@ -17,44 +17,66 @@
 
 #let face-display = "Theano Didot" // source/display voice
 #let face-fr = "EB Garamond" // FR OCR body — source register
-#let face-en = "IBM Plex Sans" // EN translation body + apparatus labels
+#let face-en = "IBM Plex Sans" // apparatus chrome — labels, running head, colophon
+#let face-en-body = "Old Standard TT" // EN translation BODY — dense period text serif
 #let face-mono = "IBM Plex Mono" // provenance/evidentiary register
+
+// DESIGN.md § Density: the running EN translation text moves from the grotesque
+// (IBM Plex Sans) to Old Standard TT — a Modern/Scotch-lineage OFL text serif
+// that reads as 19th-c. letterpress and pairs with the Theano Didot display
+// voice. `face-en` stays IBM Plex Sans for apparatus CHROME only (the
+// `TRANSLATION · EN` label, running head, colophon). Old Standard TT carries
+// full French-diacritic coverage (é è ê ç à ô œ ù î â), so it serves the FR
+// register too where needed; the FR OCR body itself stays EB Garamond.
 
 // ---- Density typography (DESIGN.md § "Density (both text rectos)") --------
 //
 // Shared by BOTH text rectos (parallel FR|EN and english-only) so the two
 // modes read as one system. Title page, colophon, and verso are unaffected.
 
-// Body type size / leading — 8.5 / 11pt for both EN (Plex Sans) and FR (EB
-// Garamond) body columns (down from 9.5/9pt at looser leading).
-#let body-size = 8.5pt
-#let body-leading = 11pt
+// Body type size / leading. NOTE: Typst `par.leading` is the GAP between lines,
+// NOT the total line advance. Measured for Old Standard TT at 8pt: leading 10pt
+// -> ~1.96x line advance (nearly double-spaced); leading 3pt -> ~1.09x — single,
+// dense-letterpress spacing (the operator asked for single, not 1.5). 3pt is the
+// tight single-spaced value.
+#let body-size = 8pt
+#let body-leading = 3pt
 
 // Two-column gap in both text-recto modes (down from 22pt); the inter-column
 // hairline is unchanged (drawn by the caller).
 #let body-column-gap = 12pt
 
-// DESIGN.md calls for book style: first-line indent, ZERO inter-paragraph
-// space -- "a paragraph is marked by its indent, not a gap". Literal
-// `spacing: 0pt` is what the spec asks for, but at this size/leading Typst
-// 0.15 lays out the next paragraph's first line OVER the previous paragraph's
-// last line (a rendering defect, not a design choice) rather than a flush
-// zero-gap join. `body-par-spacing` is the smallest value that reads as a
-// flush, indent-marked join -- visually indistinguishable from the
-// in-paragraph line rhythm -- without the overlap; verified against both body
-// faces (EB Garamond + IBM Plex Sans) at 8.5/11pt.
+// Book style: first-line indent, NO blank-line inter-paragraph gap -- "a
+// paragraph is marked by its indent, not a gap". The paragraph gap must equal
+// the in-paragraph line gap EXACTLY (continuous rhythm). Measured at 8pt Old
+// Standard: a line-pair (leading 3pt) is 14.39pt; a paragraph-pair matches at
+// exactly `spacing = 3pt` (Δ 0pt). So `body-par-spacing` tracks `body-leading`.
 #let body-par-spacing = 3pt
 
 // Book-style paragraph settings for a dense text-recto column: first-line
 // indent marks a new paragraph; no blank-line gap (DESIGN.md § Density). The
 // first paragraph of the flow is not indented.
-#let set-body-par() = {
+//
+// Takes the column `body` as an argument and returns it under the `set par`.
+// A bare `#let set-body-par() = { set par(...) }` DOES NOT WORK: a `set` rule
+// at the end of a function body applies only to the (empty) remainder of that
+// body and never leaks to the caller, so the following text kept Typst's
+// DEFAULT paragraph spacing + no indent (the defect the earlier pass shipped).
+// Wrapping the body so the `set` precedes it in the SAME block is what makes
+// the indent + tightened spacing actually reach the flowed paragraphs --
+// including inside the english-recto `columns()` / `measure()` scope, since
+// the styling is baked into the returned content.
+#let set-body-par(body) = {
   set par(
     first-line-indent: (amount: 1.2em, all: false),
     spacing: body-par-spacing,
     leading: body-leading,
-    justify: false,
+    justify: true,
   )
+  // Hyphenate at line endings (with justify, the 19th-c. tight-justified column;
+  // the per-language dictionary follows `text.lang`, set by each body column).
+  set text(hyphenate: true)
+  body
 }
 
 // Splits OCR/translation text on blank-line paragraph breaks (`\n\n`, the

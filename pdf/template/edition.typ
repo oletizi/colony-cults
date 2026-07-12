@@ -38,15 +38,39 @@
 
 #set document(title: doc.titlePage.title, author: (), date: none)
 
-// Margins (DESIGN.md § Density): inner/gutter 0.6in, outer 0.75in (holds the
-// running-head folio + the oxblood provenance rail), top 0.6in, bottom
-// 0.65in -- down from ~0.9-1in to widen the measure.
+// Margins (DESIGN.md § Density): all four halved for a period-newspaper-tight
+// text block — inner/gutter 0.3in, outer 0.375in (holds the repositioned oxblood
+// rail), top 0.3in, bottom 0.325in.
+#let page-w = 6in
+#let page-h = 9in
+#let m-top = 0.3in
+#let m-bottom = 0.325in
+#let m-inside = 0.3in
+#let m-outside = 0.375in
+
+// The inter-column rule is drawn as a page FOREGROUND (not an in-flow placed
+// rect, which can't repeat across page breaks and isn't bounded to the text
+// area). It runs at the horizontal centre of the recto text block (= the column
+// gutter centre) from the top margin to the bottom margin, so it respects both
+// margins AND repeats on every leaf a recto's columns flow across. A state flag
+// gates it to recto-text pages only (set true at each recto, false at each verso
+// / title / colophon) — avoiding the extra-blank-page hazard of toggling `set
+// page` mid-flow.
+#let recto-rule = state("recto-rule", false)
+#let col-rule = place(
+  top + left,
+  dx: m-inside + (page-w - m-inside - m-outside) / 2,
+  dy: m-top,
+  rect(width: 0.4pt, height: page-h - m-top - m-bottom, fill: rule-col),
+)
+
 #set page(
-  width: 6in,
-  height: 9in,
+  width: page-w,
+  height: page-h,
   fill: paper,
-  margin: (top: 0.6in, bottom: 0.65in, inside: 0.6in, outside: 0.75in),
+  margin: (top: m-top, bottom: m-bottom, inside: m-inside, outside: m-outside),
   numbering: none,
+  foreground: context { if recto-rule.get() { col-rule } },
 )
 
 #set text(fill: source-ink, hyphenate: false, lang: "fr")
@@ -66,9 +90,11 @@
 // two-column English-only reading recto when false. Everything else — verso,
 // running head, folio markers, rail, front/back matter — is identical.
 #for pg in doc.pages {
+  recto-rule.update(false) // clear BEFORE the parity break: no rule on the blank leaf or the verso
   pagebreak(to: "even", weak: true)
   facsimile-verso(pg, source-short, images-dir)
   pagebreak(weak: true)
+  recto-rule.update(true) // recto (+ any continuation leaves): column rule
   if doc.showFrench {
     parallel-recto(pg, source-short, doc.titlePage.date, prov-of(pg.folioId))
   } else {
@@ -78,5 +104,6 @@
 
 // ---- Colophon --------------------------------------------------------------
 
+#recto-rule.update(false)
 #pagebreak(weak: true)
 #colophon-page(doc.colophon, doc.showFrench)
