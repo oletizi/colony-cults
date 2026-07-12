@@ -9,3 +9,12 @@
 {"id":"T007","tierLabel":"balanced","model":"sonnet","commitRange":"6c73483..d4340dd","reviewClean":true,"note":"serializeSource emits rights + publications[] (orderedPublication, idempotent)"}
 {"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"6c73483..d4340dd","reviewClean":true,"note":"source-writer.ts writeSourceFile over serializeSource"}
 {"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"6c73483..d4340dd","reviewClean":true,"note":"publication validation checks + ValidationFindingKind extension"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"upload idempotency test (RED-first)"}
+{"id":"T013","tierLabel":"fast","model":"haiku","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"key/url unit test"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"record round-trip test"}
+{"id":"T016","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"resolve.ts enumerate + missing-PDF surfacing"}
+{"id":"T017","tierLabel":"powerful","model":"opus","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"upload.ts idempotent immutable uploader"}
+{"id":"T018","tierLabel":"powerful","model":"opus","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"record.ts manifest+publication build/upsert"}
+{"id":"T019","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"warm.ts non-fatal CDN warm"}
+{"id":"T022","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"rights-gate refusal test (SC-003)"}
+{"id":"T023","tierLabel":"powerful","model":"opus","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"rights-gate.ts affirmative fail-closed"}
