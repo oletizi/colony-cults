@@ -21,3 +21,5 @@
 {"id":"T020","tierLabel":"powerful","model":"opus","commitRange":"459b430..5e9736f","reviewClean":true,"note":"publish.ts orchestration (dry-run/confirm, record-and-continue)"}
 {"id":"T024","tierLabel":"balanced","model":"sonnet","commitRange":"459b430..5e9736f","reviewClean":true,"note":"rights gate wired first in publish.ts (with T020)"}
 {"id":"T025","tierLabel":"balanced","model":"sonnet","commitRange":"459b430..5e9736f","reviewClean":true,"note":"PB-P001 affirmative rights public-domain"}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"2629383..71a0e27","reviewClean":true,"note":"end-to-end publish integration test (SC-001/SC-004)"}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"2629383..71a0e27","reviewClean":true,"note":"scripts/publish-pdf.ts CLI verb + commit hook"}
