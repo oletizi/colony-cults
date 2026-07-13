@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import type { Source } from '@/model/source';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import { serializeSource } from '@/bibliography/migrate-serialize';
-import { parseAcquireArgs, registerMemberArchiveLayout } from '@/cli/bib-sourcegroup';
+import { parseAcquireArgs, parseReconcileArgs, registerMemberArchiveLayout } from '@/cli/bib-sourcegroup';
 import { sourceLayout } from '@/archive/location';
 
 /**
@@ -194,5 +194,36 @@ describe('parseAcquireArgs', () => {
     expect(() => parseAcquireArgs(['PB-P100', '--checkpoint-every', 'abc'])).toThrow(
       /checkpoint-every/i,
     );
+  });
+});
+
+describe('parseReconcileArgs', () => {
+  it('parses the sole positional as the id, leaving optional selectors undefined', () => {
+    const parsed = parseReconcileArgs(['PB-P007']);
+    expect(parsed.id).toBe('PB-P007');
+    expect(parsed.archive).toBeUndefined();
+    expect(parsed.archiveRoot).toBeUndefined();
+  });
+
+  it('parses --archive and --archive-root into typed fields', () => {
+    const parsed = parseReconcileArgs([
+      'PB-P007',
+      '--archive',
+      'Gallica / BnF',
+      '--archive-root',
+      '/tmp/archive',
+    ]);
+    expect(parsed.id).toBe('PB-P007');
+    expect(parsed.archive).toBe('Gallica / BnF');
+    expect(parsed.archiveRoot).toBe('/tmp/archive');
+  });
+
+  it('leaves id undefined when no positional is given (handler reports the missing arg)', () => {
+    const parsed = parseReconcileArgs([]);
+    expect(parsed.id).toBeUndefined();
+  });
+
+  it('fails loud on an unknown flag (strict parsing, no silent ignore)', () => {
+    expect(() => parseReconcileArgs(['PB-P007', '--object-store'])).toThrow();
   });
 });
