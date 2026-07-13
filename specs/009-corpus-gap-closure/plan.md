@@ -1,6 +1,6 @@
 # Implementation Plan: Corpus Gap Closure
 
-**Branch**: `main` (long-lived; dir resolved via `.specify/feature.json`) | **Date**: 2026-07-13 | **Spec**: [spec.md](./spec.md)
+**Branch**: `feature/corpus-gap-closure` (long-lived; spec dir `specs/009-corpus-gap-closure` resolved via `.specify/feature.json`, not the branch name) | **Date**: 2026-07-13 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/009-corpus-gap-closure/spec.md`; design record `docs/superpowers/specs/2026-07-13-corpus-gap-closure-design.md`.
 

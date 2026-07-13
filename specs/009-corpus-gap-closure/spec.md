@@ -1,6 +1,6 @@
 # Feature Specification: Corpus Gap Closure
 
-**Feature Branch**: `009-corpus-gap-closure`
+**Feature Branch**: `feature/corpus-gap-closure` (long-lived; spec dir `specs/009-corpus-gap-closure` resolved via `.specify/feature.json`, not the branch name)
 
 **Created**: 2026-07-13
 
@@ -147,7 +147,7 @@ The researcher determines when a repository × campaign is "searched for now" (a
 - **FR-012**: The program MUST reuse the shipped `source-group-acquisition` pipeline (discover/inventory/verify/promote/acquire/reconcile) and MUST NOT use `bib migrate` (which rebuilds from stale legacy inputs).
 - **FR-013**: The program MUST track per-repository capability gaps (missing acquisition/discovery adapters, e.g. Trove) as first-class work items as they surface, without those gaps blocking progress on other repositories.
 - **FR-014**: The program MUST operate against per-session archive clones only (never a shared working tree); the shared object store (B2) is the only shared asset store.
-- **FR-015**: The program MUST count a single intellectual work once in coverage; multiple repository copies of the same work are tracked as separate RepositoryRecords, not duplicate works.
+- **FR-015**: The program MUST count a single intellectual work once in coverage; multiple repository copies of the same work are tracked as separate RepositoryRecords, not duplicate works. (Enforced by the reused coverage-audit's single-work invariant — see data-model Invariants; no new code, asserted in the T026 validate pass rather than a dedicated build task.)
 
 ### Key Entities *(include if feature involves data)*
 
@@ -163,7 +163,7 @@ The researcher determines when a repository × campaign is "searched for now" (a
 
 ### Measurable Outcomes
 
-- **SC-001**: Every in-scope repository has at least one dated search-log entry per campaign it is relevant to — search history is no longer empty for any campaign.
+- **SC-001**: Every in-scope repository has at least one dated search-log entry per campaign it is relevant to — search history is no longer empty for any campaign. The SC-001-binding set for the program's initial measured-closure is **{Gallica, BnF catalogue, Trove/NLA, New Italy Museum}** (the repositories with a relevant campaign today; see tasks T008–T009). Further repositories (Internet Archive, HathiTrust, WorldCat, National Archives, State Library of Queensland, …) are **captured-when-reached** as first-class capability items per FR-013 / T027 — they extend the binding set as a relevant campaign surfaces there, and are not required for SC-001's first satisfaction.
 - **SC-002**: 100% of sources carry an evidence-class (the audit's `unclassified` bucket is empty).
 - **SC-003**: Every source whose masters are in the object store shows an acquired RepositoryRecord status — zero acquired-but-unreconciled sources remain.
 - **SC-004**: Every `suspected`/`referenced` lead is resolved — identified-and-inventoried, or documented as excluded/unavailable with a stated basis; none remain unexamined.

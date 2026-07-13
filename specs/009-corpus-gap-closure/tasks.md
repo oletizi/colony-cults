@@ -72,7 +72,7 @@ A research program with a small tooling tail. Tasks are of two kinds: **[code]**
 
 ## Phase 10: Polish & cross-cutting
 
-- [ ] T026 [P] [research] After every loop iteration: `bib validate` clean, `bib coverage` shows no silently-empty dimension (SC-007), commit + push (Principle IX).
+- [ ] T026 [P] [research] After every loop iteration: `bib validate` clean, `bib coverage` shows no silently-empty dimension (SC-007), and confirm single-work-once holds — multiple repository copies of one work stay counted once (FR-015) — then commit + push (Principle IX).
 - [ ] T027 [P] [research] Capture each surfaced per-repository capability gap (missing adapter, e.g. HathiTrust/WorldCat/archives) as a backlog item (FR-013) — tracked, not blocking.
 - [ ] T028 [P] Honesty pass: RESEARCH_LOG entries state progress as measured deltas + milestone/phase terms — no temporal projections or baseless statistics (Additional Constraints).
 
