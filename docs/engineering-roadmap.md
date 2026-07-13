@@ -106,7 +106,7 @@ Scoped-down capture from a third-party "Corpus Coverage & Discovery Audit" propo
 - depends-on: impl:feature/corpus-browser
 
 ## impl:feature/edition-publishing
-- status: in-flight
+- status: shipped
 - analyze-clean: yes
 - spec: specs/008-edition-publishing
 - design-approved: yes

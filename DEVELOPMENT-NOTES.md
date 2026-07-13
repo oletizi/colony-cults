@@ -211,3 +211,4 @@ workflow(graduate): impl:feature/source-group-acquisition merging -> validating
 workflow(start-implementing): impl:feature/corpus-print-pdf specifying -> implementing
 workflow(graduate): impl:feature/corpus-coverage-audit merging -> validating
 workflow(graduate): impl:feature/corpus-print-pdf merging -> validating
+workflow(graduate): impl:feature/edition-publishing merging -> validating
