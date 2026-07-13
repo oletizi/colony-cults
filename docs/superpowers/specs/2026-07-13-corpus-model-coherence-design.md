@@ -5,6 +5,19 @@
 **Status**: design (awaiting operator approval marker)
 **Backend**: superpowers:brainstorming, driven via /stack-control:design
 
+## Governing constraint — clean breaks only (operator directive, non-negotiable)
+
+This feature ships as a **clean break**. No intermediate migrations, no transitional
+dual-representations, no backwards-compatibility shims or aliases — anywhere in the
+implementation. Every schema/format/interface change is a single clean cutover:
+the existing data is rewritten to the new canonical shape and every consumer speaks
+**only** the new shape, **failing loud on the old one** (a retired field/key is an
+error, never a tolerated alias or silently-ignored key). Rationale: a transitional
+state invites agents who cannot tell transitional from canonical to build on the
+soon-to-be-removed thing; backwards compatibility is inexcusable tech debt. (This
+is distinct from — and must not become — a `bib migrate`-style rebuild from stale
+legacy inputs, which is separately prohibited.)
+
 ## Problem domain
 
 The corpus coverage model (specs/007-corpus-coverage-audit + the source-group /
@@ -120,7 +133,9 @@ settled model invariants (they are decidable now, not build minutiae).
    There is exactly one hand-authored entry (SRCH-0001) and the search-log is
    hand-authored by design, so there is no transition window to manage: the single
    entry is rewritten by hand to the `scope:` shape and the loader/coverage read
-   **only** `scope:` from the start. `campaign:` is retired immediately — kept as a
+   **only** `scope:` from the start. `campaign:` is retired immediately and a
+   `campaign:` key thereafter is a **hard error (fail loud)** — never a tolerated
+   alias or silently-ignored key (per the clean-breaks constraint above). Kept as a
    permanent parallel representation it would recreate the very coherence problem
    this feature fixes. **This cutover is a hand-edit of one entry, NOT a
    `bib migrate`** (which is prohibited — it rebuilds the SSOT from stale legacy
