@@ -12,10 +12,12 @@ import {
   validatePublicationRightsBasis,
   validateSingleChecksum,
   validateSourceGroups,
+  validateSourceThreads,
   validateVocab,
 } from '@/bibliography/validate-checks';
 import { validateCoverageFields } from '@/bibliography/validate-coverage-checks';
 import { buildScopeResolutionContext, validateSearchLogScopes } from '@/bibliography/validate-search-log';
+import { loadScopesRegistry, threadIdSet } from '@/bibliography/scopes-registry';
 import type { SearchLogEntry } from '@/bibliography/search-log';
 
 /**
@@ -32,6 +34,8 @@ import type { SearchLogEntry } from '@/bibliography/search-log';
  * here -- see `validate-coverage-checks.ts`'s doc comment. `'search-log-
  * scope-unresolved'` (spec 010, replacing the retired campaign-based V8/V9
  * check) is implemented in `@/bibliography/validate-search-log`.
+ * `'source-thread-unresolved'` (spec 010, INV-5) is implemented in
+ * `@/bibliography/validate-checks`'s `validateSourceThreads`.
  */
 export type ValidationFindingKind =
   | 'orphan-asset'
@@ -50,6 +54,7 @@ export type ValidationFindingKind =
   | 'group-only-field'
   | 'invalid-known-member-count'
   | 'search-log-scope-unresolved'
+  | 'source-thread-unresolved'
   | 'duplicate-publication'
   | 'publication-manifest-missing';
 
@@ -185,11 +190,13 @@ export function validatePublicationManifests(model: CanonicalModel, opts: ViewDr
 
 /**
  * Options for {@link validate}. Both fields are optional and additive: omit
- * `repoRoot` to skip the disk-touching view-drift check (model-only callers /
- * tests are unaffected); supply BOTH `searchLog` (the loaded
- * `bibliography/search-log.yml` entries) AND `repoRoot` to run the
- * search-log scope referential-integrity check (spec 010) -- it needs
- * `repoRoot` to load the thread registry (`bibliography/scopes.yml`) a
+ * `repoRoot` to skip the disk-touching view-drift, thread-registry, and
+ * search-log-scope checks (model-only callers / tests are unaffected);
+ * supplying `repoRoot` alone runs `validateSourceThreads` against the
+ * thread registry (`bibliography/scopes.yml`, spec 010 INV-5); supply BOTH
+ * `searchLog` (the loaded `bibliography/search-log.yml` entries) AND
+ * `repoRoot` to additionally run the search-log scope referential-integrity
+ * check (spec 010) -- it needs `repoRoot` to load the SAME thread registry a
  * `{kind:'thread'}` scope resolves against, the same way the view-drift
  * check needs it to locate committed views.
  */
@@ -206,12 +213,13 @@ export interface ValidateOptions {
  * required-core / uniqueness / manifest-shape (US5, `@/bibliography/
  * validate-checks`), the corpus-coverage-audit V3-V5 checks (`@/bibliography/
  * validate-coverage-checks`), and -- when the matching `opts` fields are
- * supplied -- the search-log scope-resolution check (spec 010, needs BOTH
- * `opts.searchLog` and `opts.repoRoot`) and view drift (US4, needs
- * `opts.repoRoot`, the one check that also touches disk). Omitting `opts`
- * leaves existing model-only callers/tests unaffected. Never throws on
- * content findings (throwing is reserved for malformed input upstream, in
- * `@/bibliography/load`).
+ * supplied -- the thread-membership check (spec 010 INV-5, needs
+ * `opts.repoRoot` to load `bibliography/scopes.yml`), the search-log
+ * scope-resolution check (spec 010, needs BOTH `opts.searchLog` and
+ * `opts.repoRoot`), and view drift (US4, needs `opts.repoRoot`, the one
+ * check that also touches disk). Omitting `opts` leaves existing model-only
+ * callers/tests unaffected. Never throws on content findings (throwing is
+ * reserved for malformed input upstream, in `@/bibliography/load`).
  */
 export function validate(model: CanonicalModel, opts?: ValidateOptions): ValidationFinding[] {
   const findings = [
@@ -227,6 +235,10 @@ export function validate(model: CanonicalModel, opts?: ValidateOptions): Validat
     ...validateDuplicatePublications(model),
     ...validatePublicationRightsBasis(model),
   ];
+  if (opts?.repoRoot !== undefined) {
+    const threadIds = threadIdSet(loadScopesRegistry(path.join(opts.repoRoot, 'bibliography', 'scopes.yml')));
+    findings.push(...validateSourceThreads(model, threadIds));
+  }
   if (opts?.searchLog !== undefined && opts?.repoRoot !== undefined) {
     const scopeContext = buildScopeResolutionContext(opts.repoRoot, model.sources);
     findings.push(...validateSearchLogScopes(opts.searchLog, scopeContext));

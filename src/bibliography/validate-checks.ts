@@ -395,6 +395,46 @@ export function validateDuplicatePublications(model: CanonicalModel): Validation
   return findings;
 }
 
+/** One `source-thread-unresolved` finding naming the offending id + owning Source. */
+function threadUnresolvedFinding(source: Source, threadId: string): ValidationFinding {
+  return {
+    kind: 'source-thread-unresolved',
+    sourceId: source.sourceId,
+    detail:
+      `Source "${source.sourceId}" threads[] id "${threadId}" does not resolve to any entry ` +
+      `in the thread registry (bibliography/scopes.yml)`,
+  };
+}
+
+/**
+ * INV-5 (spec 010, FR-010/FR-011): every id in a Source's `threads[]` MUST
+ * resolve to an entry in the thread registry (`bibliography/scopes.yml`,
+ * `@/bibliography/scopes-registry`'s `loadScopesRegistry` + `threadIdSet`).
+ * This is a whole-registry referential check -- like `references[].
+ * resolvedTo` (V3) -- so it cannot be done at per-file load (`@/bibliography/
+ * load-coverage-fields`'s `validateThreads` only checks shape: an array of
+ * strings). `threadIds` is injected rather than loaded here so this stays a
+ * pure, disk-free function -- the caller (`@/bibliography/validate`'s
+ * `validate()`) is responsible for loading the registry when a `repoRoot` is
+ * available. An empty `threadIds` set + a Source with no `threads` is VALID
+ * (no finding); a `threads[]` id absent from `threadIds` is reported once
+ * per offending id, naming the owning Source.
+ */
+export function validateSourceThreads(
+  model: CanonicalModel,
+  threadIds: ReadonlySet<string>,
+): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
+  for (const source of model.sources) {
+    for (const threadId of source.threads ?? []) {
+      if (!threadIds.has(threadId)) {
+        findings.push(threadUnresolvedFinding(source, threadId));
+      }
+    }
+  }
+  return findings;
+}
+
 /**
  * Every `Publication.rightsBasis` MUST be present and non-empty
  * (specs/008-edition-publishing/contracts/ssot-publications.md § 2, FR-005):

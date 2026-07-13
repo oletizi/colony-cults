@@ -9,6 +9,7 @@ import {
   validateKnownMemberCount,
   validateReference,
   validateSuspectedGap,
+  validateThreads,
 } from '@/bibliography/load-coverage-fields';
 import {
   assertKnownKeys,
@@ -59,6 +60,7 @@ const SOURCE_KEYS = new Set([
   'notes',
   'publications',
   'repositoryRecords',
+  'threads',
 ]);
 
 // Closed nested-key allow-lists for the specs/008 publish fields, mirroring the
@@ -322,6 +324,11 @@ export function loadSourceFile(filePath: string): LoadedSource {
           validateSuspectedGap(s, filePath, i),
         );
 
+  // Thread membership (spec 010, FR-010/FR-011), one-directional on the
+  // Source. Absent stays undefined; shape-only here, registry membership is
+  // a whole-corpus validate-time check (`validateSourceThreads`).
+  const threads = obj.threads === undefined ? undefined : validateThreads(obj.threads, filePath, 'threads');
+
   // Edition-publishing authored fields (specs/008), optional/additive. `rights`
   // is the affirmative work-level publish-gate determination; absence fails
   // closed at the gate (not here -- the loader only checks shape/vocab).
@@ -419,6 +426,7 @@ export function loadSourceFile(filePath: string): LoadedSource {
     suspected,
     notes,
     publications,
+    threads,
   };
 
   return { source, records, identifierLeaks };

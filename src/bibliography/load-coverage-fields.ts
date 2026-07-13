@@ -131,3 +131,26 @@ export function validateKnownMemberCount(
   }
   fail(filePath, `${where} must be a number or the literal string "unknown"`);
 }
+
+/**
+ * Parse an authored `threads[]` (spec 010, FR-010/FR-011): an array of
+ * strings naming thread ids this Source belongs to. This is the loader's
+ * NORMAL shape check only -- an array of non-strings fails loud here, but
+ * whether each id actually resolves against `bibliography/scopes.yml` is a
+ * whole-registry referential check, done at `bib validate` time
+ * (`@/bibliography/validate-checks`'s `validateSourceThreads`), the same
+ * split as `references[].resolvedTo` (V3, checked in
+ * `@/bibliography/validate-coverage-checks`) rather than here. Absent stays
+ * `undefined`, matching every other optional field on `Source`.
+ */
+export function validateThreads(value: unknown, filePath: string, where: string): string[] {
+  if (!Array.isArray(value)) {
+    fail(filePath, `${where} must be an array of thread id strings`);
+  }
+  return value.map((entry, index) => {
+    if (typeof entry !== 'string' || entry.trim().length === 0) {
+      fail(filePath, `${where}[${index}] must be a non-empty string`);
+    }
+    return entry;
+  });
+}
