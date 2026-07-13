@@ -131,7 +131,7 @@ A governed pipeline to publish the rendered facsimile-edition PDFs (from corpus-
 - depends-on: impl:feature/corpus-coverage-audit
 
 ## impl:feature/corpus-model-coherence
-- status: planned
+- status: shipped
 - analyze-clean: yes
 - spec: specs/010-corpus-model-coherence
 - design-approved: yes
