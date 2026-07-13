@@ -11,7 +11,7 @@ Validates the program end-to-end on real state. The research *judgment* is human
   export COLONY_ARCHIVE_ROOT=~/work/colony-cults-work/<session>-archive
   export COLONY_S3_BUCKET=colony-cults COLONY_S3_ENDPOINT=https://s3.us-west-004.backblazeb2.com COLONY_S3_REGION=us-west-004
   ```
-- Baseline measure: `npx tsx src/index.ts bib coverage` (note the current unknowns).
+- Baseline measure: `npx tsx src/index.ts bib coverage` (note the current `unexamined` dimensions).
 
 ## Track-1 (immediate, reused tooling — no new code)
 
@@ -56,7 +56,7 @@ Validates the program end-to-end on real state. The research *judgment* is human
 
 ## Definition of done (measured, not zero)
 
-The program is measured-closed for a campaign when: every surfaced lead is resolved-or-acquired (SC-004), every in-scope repository has ≥1 dated search-log entry (SC-001), every source is classified (SC-002) and every acquired source reconciled (SC-003), and the remaining `unknown` is documented as an irreducible residual with basis (SC-005). `bib coverage` shows no silently-empty dimension (SC-007).
+The program is measured-closed for a campaign when: every surfaced lead is resolved-or-acquired (SC-004), every in-scope repository has ≥1 dated search-log entry (SC-001), every source is classified (SC-002) and every acquired source reconciled (SC-003), and every remaining not-fully-measured dimension is documented as `irreducible` with basis, with no `unexamined` left (SC-005). `bib coverage` shows no silently-empty dimension (SC-007).
 
 ## New-adapter path (when a source needs a non-Gallica repository)
 

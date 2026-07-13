@@ -103,6 +103,17 @@ export interface Source {
    * {@link Publication}.
    */
   publications?: Publication[];
+  /**
+   * Thread ids (`{kind:'thread'}` ScopeRef referents) this Source belongs to
+   * -- a many-to-many, one-directional edge authored ONLY on the Source
+   * (the existing `partOf` precedent; no fact stored twice, see
+   * specs/010-corpus-model-coherence/data-model.md § Source and D7). Each id
+   * MUST resolve to an entry in `bibliography/scopes.yml` (fail loud).
+   * Reverse membership ("works in thread X") is derived at read time, never
+   * stored on the thread registry. Absent/empty means no thread membership
+   * has been authored -- expected for every Source this build (FR-011).
+   */
+  threads?: string[];
 }
 
 /**

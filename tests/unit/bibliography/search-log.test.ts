@@ -9,8 +9,10 @@ const VALID_YAML = `
 - id: SRCH-0001
   date: 2026-07-03
   repository: State Library of Queensland
-  campaign: PB-P004
-  scope: "de Rays trial records, 1880s"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "de Rays trial records, 1880s"
   coverage: "catalogue searched; 2 hits, both already held"
   remainingQuestions:
     - "appeal-court records not online"
@@ -18,8 +20,10 @@ const VALID_YAML = `
 - id: SRCH-0002
   date: 2026-07-05
   repository: Gallica / BnF
-  campaign: PB-P004
-  scope: "Marquis de Rays pamphlets"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "Marquis de Rays pamphlets"
   coverage: "OAI search; 1 new candidate inventoried (PB-P007)"
 `;
 
@@ -49,8 +53,8 @@ describe('loadSearchLog', () => {
       id: 'SRCH-0001',
       date: '2026-07-03',
       repository: 'State Library of Queensland',
-      campaign: 'PB-P004',
-      scope: 'de Rays trial records, 1880s',
+      scope: { kind: 'work-bundle', id: 'PB-P004' },
+      query: 'de Rays trial records, 1880s',
       coverage: 'catalogue searched; 2 hits, both already held',
       remainingQuestions: ['appeal-court records not online'],
       notes: 'revisit after digitisation project completes',
@@ -59,8 +63,8 @@ describe('loadSearchLog', () => {
       id: 'SRCH-0002',
       date: '2026-07-05',
       repository: 'Gallica / BnF',
-      campaign: 'PB-P004',
-      scope: 'Marquis de Rays pamphlets',
+      scope: { kind: 'work-bundle', id: 'PB-P004' },
+      query: 'Marquis de Rays pamphlets',
       coverage: 'OAI search; 1 new candidate inventoried (PB-P007)',
     });
   });
@@ -75,8 +79,10 @@ describe('loadSearchLog', () => {
 - id: SRCH-0001
   date: 2026-07-03
   repository: State Library of Queensland
-  campaign: PB-P004
-  scope: "de Rays trial records, 1880s"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "de Rays trial records, 1880s"
 `;
     const filePath = writeSearchLog('search-log.yml', yaml);
     expect(() => loadSearchLog(filePath)).toThrow(/SRCH-0001/);
@@ -87,8 +93,10 @@ describe('loadSearchLog', () => {
     const yaml = `
 - date: 2026-07-03
   repository: State Library of Queensland
-  campaign: PB-P004
-  scope: "de Rays trial records, 1880s"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "de Rays trial records, 1880s"
   coverage: "found nothing"
 `;
     const filePath = writeSearchLog('search-log.yml', yaml);
@@ -101,14 +109,18 @@ describe('loadSearchLog', () => {
 - id: SRCH-0001
   date: 2026-07-03
   repository: State Library of Queensland
-  campaign: PB-P004
-  scope: "de Rays trial records, 1880s"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "de Rays trial records, 1880s"
   coverage: "catalogue searched; nothing new"
 - id: SRCH-0001
   date: 2026-07-05
   repository: Gallica / BnF
-  campaign: PB-P004
-  scope: "Marquis de Rays pamphlets"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "Marquis de Rays pamphlets"
   coverage: "OAI search; 1 new candidate"
 `;
     const filePath = writeSearchLog('search-log.yml', yaml);
@@ -136,8 +148,10 @@ describe('loadSearchLog', () => {
 - id: SRCH-0001
   date: 2026-07-03
   repository: State Library of Queensland
-  campaign: PB-P004
-  scope: "de Rays trial records, 1880s"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "de Rays trial records, 1880s"
   coverage: "nothing new"
   bogusField: "oops"
 `;
@@ -152,8 +166,10 @@ describe('loadSearchLog date validation (V10)', () => {
 - id: SRCH-0001
   date: ${date}
   repository: Gallica
-  campaign: PB-P004
-  scope: "trial records"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "trial records"
   coverage: "catalogue searched"
 `;
   }

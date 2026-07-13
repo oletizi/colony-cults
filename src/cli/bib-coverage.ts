@@ -6,6 +6,7 @@ import { buildCoverageReport } from '@/bibliography/coverage/coverage-model';
 import { renderCoverage } from '@/bibliography/coverage/coverage-render';
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
+import { loadScopesRegistry, threadIdSet } from '@/bibliography/scopes-registry';
 import { loadSearchLog } from '@/bibliography/search-log';
 
 /** `bib coverage`'s own flags: no positionals -- it reports over the whole corpus. */
@@ -51,11 +52,13 @@ export async function runCoverageCli(rest: string[]): Promise<number> {
   const repoRoot = resolveRepoRoot();
   const sourcesDir = path.join(repoRoot, 'bibliography', 'sources');
   const searchLogPath = path.join(repoRoot, 'bibliography', 'search-log.yml');
+  const scopesPath = path.join(repoRoot, 'bibliography', 'scopes.yml');
 
   try {
     const sources = loadAllSources(sourcesDir);
     const searchLog = loadSearchLog(searchLogPath);
-    const report = buildCoverageReport({ sources, searchLog });
+    const threadIds = threadIdSet(loadScopesRegistry(scopesPath));
+    const report = buildCoverageReport({ sources, searchLog, threadIds });
     console.log(renderCoverage(report, { json: args.json }));
     return 0;
   } catch (error) {

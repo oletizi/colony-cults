@@ -136,6 +136,10 @@ export const SOURCE_RIGHTS_STATUS_VALUES = [
 ] as const;
 export type SourceRightsStatus = (typeof SOURCE_RIGHTS_STATUS_VALUES)[number];
 
+/** Scope kind for a search/coverage scope (specs/010-corpus-model-coherence). */
+export const SCOPE_KIND_VALUES = ['case', 'thread', 'work-bundle', 'work'] as const;
+export type ScopeKind = (typeof SCOPE_KIND_VALUES)[number];
+
 /**
  * Closed vocab field names, mapped to their allowed-value arrays. The
  * field-name-keyed `status` entry has always meant a `RepositoryRecord`'s

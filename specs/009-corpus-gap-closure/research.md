@@ -65,3 +65,11 @@ Resolves the open methodology decisions from the design + spec. Each: Decision /
 **Rationale**: Durable work (Principle IX) + honesty-in-language (Additional Constraints); the program must survive context loss.
 
 **Alternatives**: batch commits at "done" (rejected — un-replicated state is the dangerous one); progress-by-percentage (rejected — false precision over an `unknown` denominator).
+
+## R9 — Naming the two kinds of "unknown" extent (FR-006, SC-005, US6/US7)
+
+**Decision**: Never render a campaign's extent (or any not-fully-measured coverage dimension) as the bare word `unknown`. Use two explicit, non-overlapping states: **`unexamined`** — not yet researched (baseline; no basis required) — and **`irreducible`** — researched and genuinely unbounded (basis required). A bounded extent is a **number** (basis required). These reuse vocabulary the spec already carries: `unexamined` is the leads-resolution baseline (data-model SuspectedLead) and `irreducible` is the residual FR-010/SC-005 already name.
+
+**Rationale**: A single `unknown` overloads "we haven't looked" with "we looked and it's unknowable" — the exact ambiguity that would let a campaign be called measured-closed while research is actually still open. Two named states make the difference immediately obvious in `bib coverage`, and let measured-closure (FR-010) test-fail on any lingering `unexamined`. Mirrors the structural distinction the search-log (dated-dry vs empty) and the leads resolution (`unexamined` vs `excluded`/`unavailable`) already make.
+
+**Alternatives**: bare `unknown` + optional free-text basis (rejected — the distinction hides in a field the report never surfaces, so `unexamined` and `irreducible` stay indistinguishable to a reader); a boolean `researched` flag (rejected — less legible than a named state and it does not name the terminal case); finer states like `partially-examined` (rejected now — beyond the two the audit must distinguish; addable later since the vocabulary is open, as in R2).

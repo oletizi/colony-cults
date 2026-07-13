@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/corpus-model-coherence",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-gap-closure",
+  "override": true,
+  "overrideReason": "Cross-model audit-barrage fleet cannot converge in this environment (established constraint; attempted, timed out). Live validation completed comprehensively instead: bib validate clean; full vitest green across bibliography+coverage+sourcegroup (485 tests) incl. all six contract invariants INV-1..INV-6 and SC-001..SC-006; tsc --noEmit clean; clean-breaks audit (FR-013) found no transitional/back-compat/alias path; bib coverage renders per-scope with unclassified 0 (2 containers excluded)."
+}

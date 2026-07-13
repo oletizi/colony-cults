@@ -36,8 +36,10 @@ describe('loadSearchLogForValidate (bib validate wiring for V6/V7)', () => {
 - id: SRCH-0001
   date: 2026-07-03
   repository: State Library of Queensland
-  campaign: PB-P004
-  scope: "de Rays trial records"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "de Rays trial records"
   coverage: "catalogue searched; nothing new"
 `);
     const entries = loadSearchLogForValidate(repoRoot);
@@ -54,14 +56,18 @@ describe('loadSearchLogForValidate (bib validate wiring for V6/V7)', () => {
 - id: SRCH-0001
   date: 2026-07-03
   repository: State Library of Queensland
-  campaign: PB-P004
-  scope: "de Rays trial records"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "de Rays trial records"
   coverage: "catalogue searched; nothing new"
 - id: SRCH-0001
   date: 2026-07-05
   repository: Gallica / BnF
-  campaign: PB-P004
-  scope: "Marquis de Rays pamphlets"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "Marquis de Rays pamphlets"
   coverage: "OAI search; 1 new candidate"
 `);
     expect(() => loadSearchLogForValidate(repoRoot)).toThrow(/SRCH-0001/);
@@ -73,8 +79,10 @@ describe('loadSearchLogForValidate (bib validate wiring for V6/V7)', () => {
 - id: SRCH-0001
   date: 2026-07-03
   repository: State Library of Queensland
-  campaign: PB-P004
-  scope: "de Rays trial records"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "de Rays trial records"
 `);
     expect(() => loadSearchLogForValidate(repoRoot)).toThrow(/SRCH-0001/);
     expect(() => loadSearchLogForValidate(repoRoot)).toThrow(/coverage/);

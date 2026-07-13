@@ -157,7 +157,19 @@ function renderSearchHistory(history: CoverageSearchHistory, lines: string[]): v
     for (const cell of history.matrix) {
       const open = cell.openQuestions.length === 0 ? NONE : cell.openQuestions.join('; ');
       lines.push(
-        `  ${cell.campaign} x ${cell.repository}  last: ${cell.lastSearched}  open: ${open}`,
+        `  ${cell.scope} x ${cell.repository}  last: ${cell.lastSearched}  open: ${open}`,
+      );
+    }
+  }
+
+  lines.push('  Per-scope closure:');
+  if (history.byScope.length === 0) {
+    lines.push(`    ${NONE}`);
+  } else {
+    for (const scope of history.byScope) {
+      lines.push(
+        `    ${scope.scope}  last: ${scope.lastSearched}  closure: ${scope.measuredClosure}` +
+          `  open: ${scope.openQuestions.length}`,
       );
     }
   }

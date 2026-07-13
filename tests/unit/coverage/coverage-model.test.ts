@@ -85,23 +85,31 @@ describe('T022 gap semantics (knownMemberCount vs derived actual)', () => {
   });
 });
 
-describe('T028 evidence-class distribution (FR-011)', () => {
-  it('counts every source by class, with absent -> unclassified', () => {
+describe('T028/T014/T015 evidence-class distribution (FR-011, FR-008/INV-4)', () => {
+  it('counts every WORK by class, with absent -> unclassified; source-groups excluded', () => {
     const report = buildCoverageReport(loadFixtureInput());
+    // PB-P001/PB-P002 are source-groups (containers) and are excluded entirely
+    // (FR-008/INV-4) -- only PB-P005 (a monograph with no evidenceClass) lands
+    // in unclassified.
     expect(report.evidenceClassDistribution).toEqual([
       { class: 'book', count: 1 },
       { class: 'pamphlet', count: 1 },
       { class: 'prospectus', count: 1 },
       { class: 'newspaper', count: 1 },
       { class: 'trial-record', count: 1 },
-      { class: 'unclassified', count: 3 },
+      { class: 'unclassified', count: 1 },
     ]);
   });
 
-  it('sums to the total source count', () => {
+  it('sums to the fetchable-work count, not the total source count (containers excluded)', () => {
     const report = buildCoverageReport(loadFixtureInput());
     const total = report.evidenceClassDistribution.reduce((sum, b) => sum + b.count, 0);
-    expect(total).toBe(loadFixtureInput().sources.length);
+    const workCount = loadFixtureInput().sources.filter(
+      (loaded) => loaded.source.kind !== 'source-group',
+    ).length;
+    expect(total).toBe(workCount);
+    // Sanity: the fixture has 2 source-groups (PB-P001, PB-P002) among 8 sources.
+    expect(total).toBe(loadFixtureInput().sources.length - 2);
   });
 });
 
@@ -162,13 +170,15 @@ describe('T014/T016/T019 unresolved-references register (FR-012)', () => {
   });
 });
 
-describe('T025 search history (FR-013)', () => {
-  it('builds one matrix cell per (repository, campaign), union of open questions', () => {
+describe('T025/T019 search history (FR-013/FR-009): matrix keyed + labeled per resolved scope', () => {
+  it('builds one matrix cell per (repository, scope), each scope kind-labeled', () => {
     const report = buildCoverageReport(loadFixtureInput());
+    // Spec 010 (T019): the matrix scope axis is now the KIND-LABELED scope
+    // (`work-bundle PB-P001`), not the retired bare per-campaign id.
     expect(report.searchHistory.matrix).toEqual([
       {
         repository: 'Fixture Archive A',
-        campaign: 'PB-P001',
+        scope: 'work-bundle PB-P001',
         lastSearched: '2026-07-01',
         openQuestions: [
           'Whereabouts of the suspected private correspondence?',
@@ -177,15 +187,37 @@ describe('T025 search history (FR-013)', () => {
       },
       {
         repository: 'Fixture Archive B',
-        campaign: 'PB-P001',
+        scope: 'work-bundle PB-P001',
         lastSearched: '2026-07-05',
         openQuestions: ['Are there digitised versions available?'],
       },
       {
         repository: 'Fixture Archive C',
-        campaign: 'PB-P002',
+        scope: 'work-bundle PB-P002',
         lastSearched: '2026-07-08',
         openQuestions: [],
+      },
+    ]);
+  });
+
+  it('rolls up per resolved scope with search-evidence-based measured closure (FR-012)', () => {
+    const report = buildCoverageReport(loadFixtureInput());
+    expect(report.searchHistory.byScope).toEqual([
+      {
+        scope: 'work-bundle PB-P001',
+        lastSearched: '2026-07-05',
+        openQuestions: [
+          'Whereabouts of the suspected private correspondence?',
+          'Any additional unknown members not yet catalogued?',
+          'Are there digitised versions available?',
+        ],
+        measuredClosure: 'open',
+      },
+      {
+        scope: 'work-bundle PB-P002',
+        lastSearched: '2026-07-08',
+        openQuestions: [],
+        measuredClosure: 'closed',
       },
     ]);
   });

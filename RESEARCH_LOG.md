@@ -474,3 +474,101 @@ Added a repo-local checklist for hand-reviewing the remaining `La Nouvelle Franc
 ### Notes
 
 The checklist is meant to reduce repeated orientation work when the remaining gaps are best handled by a human browser pass.
+
+## 2026-07-13 - Corpus gap-closure: baseline + Phase-2 reconcile (spec 009)
+
+### Summary
+
+First measured pass of the reshaped (research-first) corpus-gap-closure program. Captured the pre-program baseline, then reconciled the two already-acquired sources into the SSOT using only the shipped `bib reconcile` verb — zero new code.
+
+### Baseline (pre-program measured gap)
+
+- Campaign PB-P004: 5 members (approved-for-acquisition); believed extent `unknown`.
+- Campaign PB-P006: 0 members; extent `unknown`; 2 suspected New Italy Museum leads (photographs, survivor accounts) with rights basis recorded.
+- Evidence classes: 13 unclassified (all sources).
+- Search history: empty (no repository × campaign logged).
+
+### Completed
+
+- **T011** — `bib reconcile PB-P003` (Baudouin 1883 book) → `archived` (395/395 masters in object store).
+- **T012** — `bib reconcile PB-P001 --archive "Gallica / BnF"` (La Nouvelle France) → `archived` (985/985 masters). The State Library of Queensland copy correctly stays a separate `to-collect` RepositoryRecord (single-work-once holds).
+- `bib regenerate` resynced the generated `acquisition-tracker.csv` view; `bib validate` clean.
+
+### Findings (fed back to the spec's assumptions)
+
+- The real prerequisite was **not** more code but the **per-session archive clone** — `bib reconcile` reads page-image provenance from `COLONY_ARCHIVE_ROOT` (a clone of the private `colony-cults-archive` repo; masters in B2). With no clone it failed loud ("nothing acquired to reconcile"); with the clone it advanced cleanly. This is exactly the research-first thesis: the loop surfaced the actual need (env/clone setup, tasks.md T002), not a speculative tool.
+- **PB-P001 was fully archived, not partial** — the task predicted `collected`; provenance showed all 985 Gallica masters present, so `archived` is the honest result. The task's "partial" premise was stale; the tool did the provenance-driven right thing.
+- `bib reconcile` fails loud on an ambiguous multi-copy source (requires `--archive`) — correct, no silent guess.
+
+### Next actions
+
+- Continue the loop: classify the 13 sources (US5) and begin search-and-log (US1). Pull tooling (search-log authoring / evidence-class facet) only if hand-authoring proves repetitive.
+
+### Notes
+
+Per-session archive clone lives at `session-558a1445-archive` (not the shared honey-pot path); `COLONY_ARCHIVE_ROOT` + B2 env exported per quickstart.
+
+## 2026-07-13 - Corpus gap-closure: evidence-class pass (US5)
+
+### Summary
+
+Classified the 11 individual works by genre (hand-edited `evidenceClass` on each source yml — no new tool needed). `unclassified` 13 → 2.
+
+### Completed
+
+- **T021 (partial)** — evidence-class assigned by document genre: newspaper ×2 (PB-P001 propaganda paper, PB-P005 Australian coverage), book ×3 (PB-P003 Baudouin, PB-S001 modern monograph, PB-S002 Phantom Paradise), prospectus ×2 (PB-P002 settler promotional, PB-P009 subscription-closing notice), pamphlet ×2 (PB-P010 rebuttal to ministerial circular, PB-P011 published lecture), trial-record ×2 (PB-P007 judgment-stenography extract, PB-P008 appeal pleading).
+- `bib regenerate` + `bib validate` clean.
+
+### Findings (captured to backlog)
+
+- **The coverage evidence-class distribution counts source-groups (containers) as works.** The remaining `unclassified 2` are the two source-groups PB-P004 (5 members, all already classified individually) and PB-P006 (empty). SC-002 ("unclassified → empty") cannot be honestly met by classifying a heterogeneous container — the coverage model should count works, not containers (or exclude containers from the distribution). Refines SC-002.
+- **The shipped evidence-class vocab is narrower than the spec's R2 seed** — `EVIDENCE_CLASS_VALUES` = book/pamphlet/prospectus/newspaper/trial-record/gov-report/map/correspondence/periodical-article. It lacks `survivor-account` / `photograph` / `memoir`, which PB-P006's suspected New Italy items will need once inventoried. Not blocking yet (P006 has no members); extend the (closed-but-extensible) vocab when those members land.
+- Genre-vs-grouping observation: PB-P009/P010/P011 are de Rays's own promotional/defence writings yet sit under PB-P004 ("trial and legal proceedings"). Classified by genre (prospectus/pamphlet), not by group; grouping left as-is.
+
+### Next actions
+
+- Begin US1 search-and-log (turn the empty search history into measured coverage), or resolve PB-P006 suspected leads (US4). Pull the search-log authoring tool only if hand-authoring records proves repetitive.
+
+## 2026-07-13 - Corpus gap-closure: first search-and-log (US1)
+
+### Summary
+
+Authored the first `search-log.yml` entry (hand-authored by design — no tool needed), grounded in real dated evidence. Search history is no longer empty (SC-001 met for the first pair).
+
+### Completed
+
+- **T008 (partial)** — SRCH-0001: **PB-P004 × Gallica / BnF**, dated 2026-07-11, grounded in the on-disk `repository-responses/` OAI captures that resolved the 5 trial-corpus members to `domaine public` Gallica arks. `bib coverage` Search History + repository rollup now show the pair with a date and 2 open questions (was `(none)`); `bib validate` clean.
+
+### Findings (captured to backlog)
+
+- **Search-log is keyed by source-group, but only 2 exist** (PB-P004, PB-P006). The 6 standalone sources (PB-P001 newspaper, PB-P002/P003 books, PB-P005 Trove newspaper, PB-S001/S002 secondary books) belong to no source-group, so their search provenance (e.g. PB-P001's real SLQ + Gallica searches) cannot be recorded. Either those sources need a `port-breton` core source-group, or the search-log must accept a case-level / ungrouped campaign. Blocks full SC-001 coverage.
+
+### Next actions
+
+- Decide the standalone-source grouping question (backlog) before logging their searches; meanwhile continue PB-P004/PB-P006 passes and resolve PB-P006 suspected leads (US4).
+
+## 2026-07-13 - Corpus gap-closure: resolve PB-P006 suspected leads (US4)
+
+### Summary
+
+Investigated the New Italy Museum holdings and resolved both PB-P006 suspected leads from `unexamined` to **identified**. Real archival research (web); no fabrication.
+
+### Completed
+
+- **T019 (partial)** — Both suspected leads resolved to **identified**, documented in each item's `notes` with basis:
+  - *Photographs*: the museum's online catalogue (`newitaly.org.au/CAT/`, a Musarch static export) is item-level digitised with per-item detail pages + images (~55 digital images, 300+ prints). Confirmed pre-1955 public-domain candidates: "Survivors arrival in Sydney 1881", "Landing site at Port Breton", "Pioneers Group Photo 1890", "School Group Photo New Italy 1903". Excluded post-1955: "Expedition Survivors Group Photo 1961".
+  - *Survivor writings*: the Documents category (~70 items: diaries, letters, certificates) holds settler writings with item-level online records.
+- `bib validate` clean.
+
+### Findings (captured to backlog)
+
+- **TASK-25** — suspected[] needs a first-class `resolution` state that `bib coverage` renders; the shipped loader rejects it (`assertKnownKeys` allows only description/basis/evidenceClass/notes). Also confirmed `validateKnownMemberCount` accepts only number|`unknown` — the three-state extent (T029) is genuinely unbuilt. **First proven tool-on-demand pull.**
+- **TASK-26** — the identified New Italy Museum items have no acquisition path (not Gallica/Trove/IIIF); inventorying them needs a bespoke museum mechanism (FR-013).
+
+### Findings (methodological)
+
+- Resolution is real but **invisible to the audit** until TASK-25 lands: coverage still lists these as open `suspected` (it reads description/basis, not notes). So the leads are examined + documented, but the *measured* SC-004 close awaits the resolution-state field. This is exactly a research-first "the pass proved the tool need" moment.
+
+### Next actions
+
+- Operator decision: build the resolution-state + three-state-extent tool (TASK-25 / T029) as its own small spec via the front door so US4/US6 progress becomes measurable — vs. continuing more shipped-tooling passes first.

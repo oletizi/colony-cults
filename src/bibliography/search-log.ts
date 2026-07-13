@@ -2,15 +2,24 @@ import { existsSync, readFileSync } from 'node:fs';
 import { parse as parseYaml } from 'yaml';
 
 import { describeError } from '@/bibliography/load-primitives';
+import type { ScopeRef } from '@/bibliography/scope';
+import { SCOPE_KIND_VALUES } from '@/bibliography/vocab';
 
 /**
- * One recorded repository search over a campaign (source-group), authored by
- * hand into `bibliography/search-log.yml`. Append-only: existing entries and
- * `id`s are stable and never mutated once committed -- new searches are
- * recorded by adding a new entry, not editing an old one.
+ * One recorded repository search over a {@link ScopeRef} (case/thread/
+ * work-bundle/work), authored by hand into `bibliography/search-log.yml`.
+ * Append-only: existing entries and `id`s are stable and never mutated once
+ * committed -- new searches are recorded by adding a new entry, not editing
+ * an old one.
  *
- * See specs/007-corpus-coverage-audit/data-model.md § SearchLogEntry and
- * contracts/authored-fields.md.
+ * CLEAN BREAK (FR-004/FR-013, INV-CUT): this entry targets `scope: ScopeRef`,
+ * NOT the retired `campaign:` source-group scalar. The loader parses ONLY
+ * `scope:` -- a `campaign:` key (or any other unrecognized key) is a hard
+ * error, never a tolerated alias.
+ *
+ * See specs/010-corpus-model-coherence/data-model.md § SearchLogEntry,
+ * contracts/scope-model.md (INV-CUT), and (for the unchanged fields)
+ * specs/007-corpus-coverage-audit/data-model.md § SearchLogEntry.
  */
 export interface SearchLogEntry {
   /** Stable, flat-opaque, e.g. `SRCH-0001`. UNIQUE across the file (V6). */
@@ -20,12 +29,19 @@ export interface SearchLogEntry {
   /** The repository/archive searched, e.g. `"State Library of Queensland"`. */
   repository: string;
   /**
-   * The campaign this search targeted -- a source-group `sourceId`
-   * (e.g. `PB-P004`), not an arbitrary label.
+   * The scope this search targeted -- a discriminated `{ kind, id }`
+   * reference resolved by `resolveScopeRef` (`@/bibliography/scope`).
+   * REPLACES the retired `campaign` scalar (FR-004); structurally parsed
+   * here, referentially resolved by `@/bibliography/validate-search-log`.
    */
-  campaign: string;
-  /** What was searched: the query, collection, or coverage scope. */
-  scope: string;
+  scope: ScopeRef;
+  /**
+   * What was searched: the query, collection, or coverage scope in
+   * free-form prose. (Renamed from this entry's pre-cutover `scope` field --
+   * `scope` now names the {@link ScopeRef}; this field keeps its original
+   * meaning and content under a name that no longer collides.)
+   */
+  query: string;
   /** What the search covered and/or found. */
   coverage: string;
   /** Open questions remaining after this search, if any. */
@@ -38,21 +54,14 @@ const ENTRY_KEYS = new Set([
   'id',
   'date',
   'repository',
-  'campaign',
   'scope',
+  'query',
   'coverage',
   'remainingQuestions',
   'notes',
 ]);
 
-const REQUIRED_STRING_FIELDS = [
-  'id',
-  'date',
-  'repository',
-  'campaign',
-  'scope',
-  'coverage',
-] as const;
+const REQUIRED_STRING_FIELDS = ['id', 'date', 'repository', 'query', 'coverage'] as const;
 
 /** Throw a locating, descriptive error naming the file and the offending entry/field. */
 function fail(filePath: string, message: string): never {
@@ -164,12 +173,59 @@ function validateNotes(value: unknown, filePath: string, label: string): string 
   return value;
 }
 
+const SCOPE_REF_KEYS = new Set(['kind', 'id']);
+
+/**
+ * Structurally parse `value` into a {@link ScopeRef} (`{ kind, id }`):
+ * `kind` MUST be one of `SCOPE_KIND_VALUES` and `id` a non-empty string.
+ * This is PARSING ONLY -- whether `id` actually resolves under `kind`
+ * (e.g. a `work` id that names a source-group) is a referential check
+ * `@/bibliography/validate-search-log`'s `resolveScopeRef` call performs
+ * later against the loaded corpus, not here (the loader has no corpus).
+ */
+function parseScopeRef(value: unknown, filePath: string, label: string): ScopeRef {
+  if (!isPlainObject(value)) {
+    fail(filePath, `${label}.scope must be an object { kind, id }`);
+  }
+  for (const key of Object.keys(value)) {
+    if (!SCOPE_REF_KEYS.has(key)) {
+      fail(filePath, `${label}.scope has unknown key "${key}" (no silent drop)`);
+    }
+  }
+  const { kind, id } = value;
+  if (typeof id !== 'string' || id.trim().length === 0) {
+    fail(filePath, `${label}.scope.id must be a non-empty string`);
+  }
+  switch (kind) {
+    case 'case':
+      return { kind: 'case', id };
+    case 'thread':
+      return { kind: 'thread', id };
+    case 'work-bundle':
+      return { kind: 'work-bundle', id };
+    case 'work':
+      return { kind: 'work', id };
+    default:
+      fail(
+        filePath,
+        `${label}.scope.kind "${String(kind)}" must be one of ${SCOPE_KIND_VALUES.join('/')}`,
+      );
+  }
+}
+
 function validateEntry(value: unknown, filePath: string, index: number): SearchLogEntry {
   if (!isPlainObject(value)) {
     fail(filePath, `entries[${index}] must be an object`);
   }
   const label = entryLabel(value, index);
 
+  if ('campaign' in value) {
+    fail(
+      filePath,
+      `${label} carries retired key "campaign" -- search-log entries target scope: { kind, id } ` +
+        `(FR-004/INV-CUT); campaign: is a hard error, not a tolerated alias`,
+    );
+  }
   for (const key of Object.keys(value)) {
     if (!ENTRY_KEYS.has(key)) {
       fail(filePath, `${label} has unknown key "${key}" (no silent drop)`);
@@ -179,13 +235,13 @@ function validateEntry(value: unknown, filePath: string, index: number): SearchL
   const id = requireEntryString(value, 'id', filePath, label);
   const date = requireIsoDate(value, filePath, label);
   const repository = requireEntryString(value, 'repository', filePath, label);
-  const campaign = requireEntryString(value, 'campaign', filePath, label);
-  const scope = requireEntryString(value, 'scope', filePath, label);
+  const scope = parseScopeRef(value.scope, filePath, label);
+  const query = requireEntryString(value, 'query', filePath, label);
   const coverage = requireEntryString(value, 'coverage', filePath, label);
   const remainingQuestions = validateRemainingQuestions(value.remainingQuestions, filePath, label);
   const notes = validateNotes(value.notes, filePath, label);
 
-  const entry: SearchLogEntry = { id, date, repository, campaign, scope, coverage };
+  const entry: SearchLogEntry = { id, date, repository, scope, query, coverage };
   if (remainingQuestions !== undefined) {
     entry.remainingQuestions = remainingQuestions;
   }
@@ -202,8 +258,10 @@ function validateEntry(value: unknown, filePath: string, index: number): SearchL
  * Fails loud (throws, with a locating message) on:
  * - unreadable/malformed YAML,
  * - a document that isn't a list,
- * - any entry missing a required field (`id`/`date`/`repository`/`campaign`/
- *   `scope`/`coverage` -- V7) or carrying an unrecognized key,
+ * - any entry missing a required field (`id`/`date`/`repository`/`scope`/
+ *   `query`/`coverage` -- V7) or carrying an unrecognized key,
+ * - a retired `campaign:` key on any entry (FR-004/INV-CUT, clean break --
+ *   never a tolerated alias for `scope:`),
  * - two entries sharing the same `id` (V6).
  *
  * `search-log.yml` is not required to exist yet (no searches logged): a
