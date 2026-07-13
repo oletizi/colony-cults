@@ -1,0 +1,3 @@
+{"id":"T002","tierLabel":"balanced","model":"sonnet","commitRange":"b5e67b0","reviewClean":true,"note":"folded into scope-core TDD unit"}
+{"id":"T003","tierLabel":"powerful","model":"opus","commitRange":"b5e67b0","reviewClean":true,"note":"folded into scope-core TDD unit"}
+{"id":"T004","tierLabel":"powerful","model":"opus","commitRange":"b5e67b0","reviewClean":true}
