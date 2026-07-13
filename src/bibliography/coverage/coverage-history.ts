@@ -9,6 +9,14 @@ import type {
  * The search-history projection (T025, FR-013): a repository x campaign matrix
  * and a repository-axis rollup, both PURE over the already-loaded search log.
  *
+ * INTERIM (spec 010): each entry now targets `scope: ScopeRef` rather than
+ * the retired `campaign:` scalar; this projection buckets by `scope.id`
+ * (the flat id string, whatever kind it names) under the pre-existing
+ * `campaign` output field name -- unchanged grouping behavior for the
+ * `work-bundle`-scoped searches that exist today. Per-kind labeling +
+ * fail-loud `resolveScopeRef` resolution of every persisted scope (FR-009/
+ * INV-SCOPE) is US4's `bib coverage`-per-scope work (T019), not this task.
+ *
  * - `matrix`: one cell per (repository, campaign) pair present in the log.
  *   `lastSearched` is the max date across that pair's entries; `openQuestions`
  *   is the `remainingQuestions` of the LATEST entry for that pair -- NOT a
@@ -69,13 +77,13 @@ function orderedEntries(searchLog: readonly SearchLogEntry[]): SearchLogEntry[] 
 function accumulateMatrix(entries: readonly SearchLogEntry[]): MatrixAccumulator[] {
   const buckets = new Map<string, MatrixAccumulator>();
   for (const entry of entries) {
-    const key = `${entry.repository} ${entry.campaign}`;
+    const key = `${entry.repository} ${entry.scope.id}`;
     const questions = entry.remainingQuestions ?? [];
     const existing = buckets.get(key);
     if (existing === undefined) {
       buckets.set(key, {
         repository: entry.repository,
-        campaign: entry.campaign,
+        campaign: entry.scope.id,
         lastSearched: entry.date,
         openQuestions: [...questions],
       });

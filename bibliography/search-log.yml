@@ -2,28 +2,40 @@
 #
 # Append-only, date-ordered record of repository searches. Nothing else records
 # per-search facts (RepositoryRecords are per-copy, not per-search). This file is
-# authored by hand; `bib coverage` aggregates it into the repository x campaign
+# authored by hand; `bib coverage` aggregates it into the repository x scope
 # matrix and the repository-axis rollup. It is committed primary data.
+#
+# CLEAN BREAK (spec 010, FR-004/FR-005): each entry targets a `scope:` --
+# a discriminated { kind, id } reference (kind one of case/thread/work-bundle/
+# work) resolved fail-loud against the corpus by `resolveScopeRef`
+# (src/bibliography/scope.ts). The retired `campaign:` scalar (a bare
+# source-group sourceId) is a HARD ERROR if reintroduced -- there is no
+# dual-schema, no tolerated alias.
 #
 # Each entry (append a new one; never rewrite an existing one):
 #   - id: SRCH-0001                 # stable flat-opaque id; UNIQUE across the file
 #     date: 2026-07-03              # ISO YYYY-MM-DD of the search
 #     repository: State Library of Queensland
-#     campaign: PB-P004             # a source-group sourceId
-#     scope: "de Rays trial records, 1880s"
+#     scope:                        # { kind, id } -- see src/bibliography/scope.ts
+#       kind: work-bundle           # case | thread | work-bundle | work
+#       id: PB-P004                 # resolved under kind (a work-bundle id names a source-group)
+#     query: "de Rays trial records, 1880s"   # what was searched: query/collection/coverage scope
 #     coverage: "catalogue searched; 2 hits, both already held"
 #     remainingQuestions:           # optional
 #       - "appeal-court records not online"
 #     notes: "optional free-text"   # optional
 #
-# Validation: entry ids must be unique and each entry must carry
-# id/date/repository/campaign/scope/coverage (surfaced by `bib validate`).
+# Validation: entry ids must be unique; each entry must carry
+# id/date/repository/scope/query/coverage; and `scope` must resolve under its
+# declared kind (surfaced by `bib validate`).
 
 - id: SRCH-0001
   date: 2026-07-11
   repository: Gallica / BnF
-  campaign: PB-P004
-  scope: "Marquis de Rays trial + Port-Breton colony imprints — BnF OAI record resolution for the trial-corpus members"
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "Marquis de Rays trial + Port-Breton colony imprints — BnF OAI record resolution for the trial-corpus members"
   coverage: "5 trial/colony imprints resolved to Gallica arks with domaine-public rights and OAI records captured: PB-P007 (jugement-stenography extract, 1889), PB-P008 (Cour de Paris appeal pleading), PB-P009 (subscription-closing notice), PB-P010 (ministerial-circular rebuttal), PB-P011 (published lecture). Responses on disk in bibliography/repository-responses/."
   remainingQuestions:
     - "Cour de Paris appeal-court archival case files not searched beyond the one published pleading (PB-P008)"

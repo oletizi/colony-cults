@@ -14,7 +14,8 @@ import {
   validateSourceGroups,
   validateVocab,
 } from '@/bibliography/validate-checks';
-import { validateCoverageFields, validateSearchLogCampaigns } from '@/bibliography/validate-coverage-checks';
+import { validateCoverageFields } from '@/bibliography/validate-coverage-checks';
+import { buildScopeResolutionContext, validateSearchLogScopes } from '@/bibliography/validate-search-log';
 import type { SearchLogEntry } from '@/bibliography/search-log';
 
 /**
@@ -28,7 +29,9 @@ import type { SearchLogEntry } from '@/bibliography/search-log';
  * and `'invalid-known-member-count'` (V5) are implemented in
  * `@/bibliography/validate-coverage-checks` -- all composed into `validate()`
  * below. V1/V2 (`evidenceClass`/`citedKind` vocab) are enforced at LOAD, not
- * here -- see `validate-coverage-checks.ts`'s doc comment.
+ * here -- see `validate-coverage-checks.ts`'s doc comment. `'search-log-
+ * scope-unresolved'` (spec 010, replacing the retired campaign-based V8/V9
+ * check) is implemented in `@/bibliography/validate-search-log`.
  */
 export type ValidationFindingKind =
   | 'orphan-asset'
@@ -46,8 +49,7 @@ export type ValidationFindingKind =
   | 'dangling-resolved-to'
   | 'group-only-field'
   | 'invalid-known-member-count'
-  | 'search-log-campaign-not-found'
-  | 'search-log-campaign-not-a-group'
+  | 'search-log-scope-unresolved'
   | 'duplicate-publication'
   | 'publication-manifest-missing';
 
@@ -184,14 +186,17 @@ export function validatePublicationManifests(model: CanonicalModel, opts: ViewDr
 /**
  * Options for {@link validate}. Both fields are optional and additive: omit
  * `repoRoot` to skip the disk-touching view-drift check (model-only callers /
- * tests are unaffected); supply `searchLog` (the loaded
- * `bibliography/search-log.yml` entries) to run the V8/V9 campaign
- * referential-integrity check, which needs both the model and the search-log.
+ * tests are unaffected); supply BOTH `searchLog` (the loaded
+ * `bibliography/search-log.yml` entries) AND `repoRoot` to run the
+ * search-log scope referential-integrity check (spec 010) -- it needs
+ * `repoRoot` to load the thread registry (`bibliography/scopes.yml`) a
+ * `{kind:'thread'}` scope resolves against, the same way the view-drift
+ * check needs it to locate committed views.
  */
 export interface ValidateOptions {
-  /** Public repo root for the view-drift check; when absent, view drift is skipped. */
+  /** Public repo root for the view-drift + search-log-scope checks; when absent, both are skipped. */
   repoRoot?: string;
-  /** Loaded search-log entries for the V8/V9 campaign check; when absent, that check is skipped. */
+  /** Loaded search-log entries for the scope-resolution check; when absent, that check is skipped. */
   searchLog?: readonly SearchLogEntry[];
 }
 
@@ -200,12 +205,13 @@ export interface ValidateOptions {
  * findings: identifier leaks (US2), referential integrity / vocab /
  * required-core / uniqueness / manifest-shape (US5, `@/bibliography/
  * validate-checks`), the corpus-coverage-audit V3-V5 checks (`@/bibliography/
- * validate-coverage-checks`), and -- when the matching `opts` field is supplied
- * -- the V8/V9 search-log campaign check (needs `opts.searchLog`) and view
- * drift (US4, needs `opts.repoRoot`, the one check that also touches disk).
- * Omitting `opts` leaves existing model-only callers/tests unaffected. Never
- * throws on content findings (throwing is reserved for malformed input
- * upstream, in `@/bibliography/load`).
+ * validate-coverage-checks`), and -- when the matching `opts` fields are
+ * supplied -- the search-log scope-resolution check (spec 010, needs BOTH
+ * `opts.searchLog` and `opts.repoRoot`) and view drift (US4, needs
+ * `opts.repoRoot`, the one check that also touches disk). Omitting `opts`
+ * leaves existing model-only callers/tests unaffected. Never throws on
+ * content findings (throwing is reserved for malformed input upstream, in
+ * `@/bibliography/load`).
  */
 export function validate(model: CanonicalModel, opts?: ValidateOptions): ValidationFinding[] {
   const findings = [
@@ -221,8 +227,9 @@ export function validate(model: CanonicalModel, opts?: ValidateOptions): Validat
     ...validateDuplicatePublications(model),
     ...validatePublicationRightsBasis(model),
   ];
-  if (opts?.searchLog !== undefined) {
-    findings.push(...validateSearchLogCampaigns(model, opts.searchLog));
+  if (opts?.searchLog !== undefined && opts?.repoRoot !== undefined) {
+    const scopeContext = buildScopeResolutionContext(opts.repoRoot, model.sources);
+    findings.push(...validateSearchLogScopes(opts.searchLog, scopeContext));
   }
   if (opts?.repoRoot !== undefined) {
     findings.push(...validateViewDrift(model, { repoRoot: opts.repoRoot }));

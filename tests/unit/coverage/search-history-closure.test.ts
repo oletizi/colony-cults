@@ -14,8 +14,8 @@ import type { SearchLogEntry } from '@/bibliography/search-log';
 function entry(overrides: Partial<SearchLogEntry> & Pick<SearchLogEntry, 'id' | 'date'>): SearchLogEntry {
   return {
     repository: 'State Library of Queensland',
-    campaign: 'PB-P004',
-    scope: 'scope',
+    scope: { kind: 'work-bundle', id: 'PB-P004' },
+    query: 'query',
     coverage: 'coverage',
     ...overrides,
   };
@@ -44,8 +44,8 @@ describe('buildSearchHistory open-question closure', () => {
 
   it('repository rollup unions each campaign latest open questions', () => {
     const log = [
-      entry({ id: 'A', date: '2026-01-01', campaign: 'PB-P004', remainingQuestions: ['Q-P004'] }),
-      entry({ id: 'B', date: '2026-01-01', campaign: 'PB-P010', remainingQuestions: ['Q-P010'] }),
+      entry({ id: 'A', date: '2026-01-01', scope: { kind: 'work-bundle', id: 'PB-P004' }, remainingQuestions: ['Q-P004'] }),
+      entry({ id: 'B', date: '2026-01-01', scope: { kind: 'work-bundle', id: 'PB-P010' }, remainingQuestions: ['Q-P010'] }),
     ];
     const { byRepository } = buildSearchHistory(log);
     expect(byRepository).toHaveLength(1);
@@ -54,9 +54,9 @@ describe('buildSearchHistory open-question closure', () => {
 
   it('a question closed in a campaign latest search is closed in the repository rollup too', () => {
     const log = [
-      entry({ id: 'A1', date: '2026-01-01', campaign: 'PB-P004', remainingQuestions: ['Q-P004'] }),
-      entry({ id: 'A2', date: '2026-02-01', campaign: 'PB-P004', remainingQuestions: [] }),
-      entry({ id: 'B1', date: '2026-01-01', campaign: 'PB-P010', remainingQuestions: ['Q-P010'] }),
+      entry({ id: 'A1', date: '2026-01-01', scope: { kind: 'work-bundle', id: 'PB-P004' }, remainingQuestions: ['Q-P004'] }),
+      entry({ id: 'A2', date: '2026-02-01', scope: { kind: 'work-bundle', id: 'PB-P004' }, remainingQuestions: [] }),
+      entry({ id: 'B1', date: '2026-01-01', scope: { kind: 'work-bundle', id: 'PB-P010' }, remainingQuestions: ['Q-P010'] }),
     ];
     const { byRepository } = buildSearchHistory(log);
     expect(byRepository[0]?.openQuestions).toEqual(['Q-P010']);
