@@ -61,9 +61,20 @@ Terminal path for a discovered candidate that will not be acquired.
 Acquire an approved member's copy by reusing the shipped fetcher.
 
 - **Preconditions**: member `status == approved-for-acquisition`; `rightsStatus == public-domain`; copy selected per `--archive` (infer-one); the selected RepositoryRecord carries the ark.
-- **Effects**: resolves the ark from the selected RepositoryRecord and invokes the shipped fetcher (`fetch-source <ark> --source-id <id> --object-store`) → page images to object store, OCR, provenance. Advances the RepositoryRecord acquisition status via the fetcher's existing path. **No new fetch code.**
+- **Effects**: resolves the ark from the selected RepositoryRecord and invokes the shipped fetcher (`fetch-source <ark> --source-id <id> --object-store`) → page images to object store, OCR, provenance. The fetcher writes the masters + per-page provenance into the archive; it does **not** advance the code-repo SSOT `repositoryRecords[].status` — that step is `bib reconcile` (below), run after the fetch. **No new fetch code.**
 - **Errors (fail loud)**: member not approved; rights not public-domain; ambiguous copy; group itself passed (shipped guardrail blocks); fetcher error surfaced verbatim.
 - **Exit**: `0` acquired (or dry-run reported); non-zero on error.
+
+---
+
+## `bib reconcile <id> [--archive <sourceArchive>] [--archive-root <path>]`
+
+Fold the archive's per-page object-store provenance into the member's SSOT `repositoryRecords[].status` — the acquisition→SSOT step the fetcher does not perform (TASK-20/TASK-21). Idempotent and re-runnable, so it also closes members acquired out-of-band (masters already in the object store) **without re-fetching**.
+
+- **Preconditions**: member exists and carries a RepositoryRecord (copy selected per `--archive`, infer-one); page-image provenance for that copy exists under the archive root.
+- **Effects**: gathers the copy's per-page provenance and DERIVES the status — every page-image master object-store-backed → `archived`; some (or fetched-but-not-uploaded) → `collected` — then writes the source YAML via `writeSourceFile`/`serializeSource`. The object-store handle itself is not persisted onto the authored record (`deriveModel` attaches the derived `manifest.objectStore` at read time from the same provenance). Does **not** re-fetch or touch the object store. Does **not** use `bib migrate` (which rebuilds from stale legacy inputs).
+- **Errors (fail loud)**: unknown member; no RepositoryRecord / ambiguous copy with no `--archive`; no page-image provenance for the copy (nothing acquired to reconcile). Writes nothing on any failure.
+- **Exit**: `0` reconciled (or already reconciled); non-zero on error.
 
 ---
 

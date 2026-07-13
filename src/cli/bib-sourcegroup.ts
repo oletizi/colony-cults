@@ -30,6 +30,9 @@ import {
   gallicaArkMetadataResolver,
 } from '@/sourcegroup/gallica-ark-resolver';
 import { runAcquire } from '@/sourcegroup/acquire';
+import { runReconcile } from '@/sourcegroup/reconcile';
+import { gatherProvenance } from '@/bibliography/derive';
+import { resolveArchiveRoot } from '@/archive/location';
 import { BnfSruDiscoveryMechanism } from '@/sourcegroup/discovery/bnf-sru';
 import { DiscoveryDispatcher } from '@/sourcegroup/discovery/discovery';
 import type { DiscoveryCandidate } from '@/sourcegroup/discovery/discovery';
@@ -424,6 +427,89 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
     return 0;
   } catch (error) {
     console.error(`bib acquire: ${describeError(error)}`);
+    return 1;
+  }
+}
+
+/** Typed result of parsing `bib reconcile`'s argv (see {@link parseReconcileArgs}). */
+export interface ReconcileCliArgs {
+  id: string | undefined;
+  archive: string | undefined;
+  archiveRoot: string | undefined;
+}
+
+/**
+ * Parse `bib reconcile <id> [--archive <sourceArchive>] [--archive-root
+ * <path>]`'s argv into typed flags. Exported so this parsing is directly
+ * unit-testable without touching a real archive on disk.
+ */
+export function parseReconcileArgs(rest: string[]): ReconcileCliArgs {
+  const { values, positionals } = nodeParseArgs({
+    args: rest,
+    options: {
+      archive: { type: 'string' },
+      'archive-root': { type: 'string' },
+    },
+    allowPositionals: true,
+    strict: true,
+  });
+  return {
+    id: positionals[0],
+    archive: values.archive,
+    archiveRoot: values['archive-root'],
+  };
+}
+
+/**
+ * `bib reconcile <id> [--archive <sourceArchive>] [--archive-root <path>]`
+ * (TASK-21): fold the archive's per-page object_store provenance into the
+ * member's SSOT `repositoryRecords[].status`, closing the spec/impl gap
+ * TASK-20 found (contract cli-commands.md line 64). Idempotent; re-runnable on
+ * members acquired out-of-band. Registers the member's archive layout first
+ * (same overlay `bib acquire` needs) so `gatherProvenance`'s `sourceLayout`
+ * resolves a source-group member, then delegates to the tested
+ * `runReconcile`, injecting the real `gatherProvenance`.
+ */
+export async function runReconcileCli(rest: string[]): Promise<number> {
+  let parsed: ReconcileCliArgs;
+  try {
+    parsed = parseReconcileArgs(rest);
+  } catch (error) {
+    console.error(`bib reconcile: ${describeError(error)}`);
+    return 2;
+  }
+  const { id, archive, archiveRoot: archiveRootOverride } = parsed;
+
+  if (id === undefined) {
+    console.error('bib reconcile: missing required argument <id>');
+    return 2;
+  }
+
+  const repoRoot = resolveRepoRoot();
+  const sourcesDir = sourcesDirOf(repoRoot);
+  const archiveRoot = resolveArchiveRoot(repoRoot, archiveRootOverride);
+  try {
+    // Register this member's archive layout BEFORE gathering provenance --
+    // `gatherProvenance` resolves the source's slug via the synchronous,
+    // sourceId-only `sourceLayout(sourceId)`, which throws for a source-group
+    // member absent this runtime overlay (same reason `bib acquire` registers).
+    registerMemberArchiveLayout(sourcesDir, id);
+
+    const result = await runReconcile({
+      sourcesDir,
+      archiveRoot,
+      sourceId: id,
+      archive,
+      gather: gatherProvenance,
+    });
+    const verb = result.changed ? 'reconciled' : 'already reconciled';
+    console.log(
+      `bib reconcile: ${verb} ${result.sourceId} at "${result.sourceArchive}" -> ` +
+        `${result.status} (${result.storedCount}/${result.pageCount} master(s) in object store)`,
+    );
+    return 0;
+  } catch (error) {
+    console.error(`bib reconcile: ${describeError(error)}`);
     return 1;
   }
 }
