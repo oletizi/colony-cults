@@ -212,3 +212,4 @@ workflow(start-implementing): impl:feature/corpus-print-pdf specifying -> implem
 workflow(graduate): impl:feature/corpus-coverage-audit merging -> validating
 workflow(graduate): impl:feature/corpus-print-pdf merging -> validating
 workflow(graduate): impl:feature/edition-publishing merging -> validating
+workflow(graduate): impl:feature/coverage-web-view merging -> validating
