@@ -546,3 +546,29 @@ Authored the first `search-log.yml` entry (hand-authored by design — no tool n
 ### Next actions
 
 - Decide the standalone-source grouping question (backlog) before logging their searches; meanwhile continue PB-P004/PB-P006 passes and resolve PB-P006 suspected leads (US4).
+
+## 2026-07-13 - Corpus gap-closure: resolve PB-P006 suspected leads (US4)
+
+### Summary
+
+Investigated the New Italy Museum holdings and resolved both PB-P006 suspected leads from `unexamined` to **identified**. Real archival research (web); no fabrication.
+
+### Completed
+
+- **T019 (partial)** — Both suspected leads resolved to **identified**, documented in each item's `notes` with basis:
+  - *Photographs*: the museum's online catalogue (`newitaly.org.au/CAT/`, a Musarch static export) is item-level digitised with per-item detail pages + images (~55 digital images, 300+ prints). Confirmed pre-1955 public-domain candidates: "Survivors arrival in Sydney 1881", "Landing site at Port Breton", "Pioneers Group Photo 1890", "School Group Photo New Italy 1903". Excluded post-1955: "Expedition Survivors Group Photo 1961".
+  - *Survivor writings*: the Documents category (~70 items: diaries, letters, certificates) holds settler writings with item-level online records.
+- `bib validate` clean.
+
+### Findings (captured to backlog)
+
+- **TASK-25** — suspected[] needs a first-class `resolution` state that `bib coverage` renders; the shipped loader rejects it (`assertKnownKeys` allows only description/basis/evidenceClass/notes). Also confirmed `validateKnownMemberCount` accepts only number|`unknown` — the three-state extent (T029) is genuinely unbuilt. **First proven tool-on-demand pull.**
+- **TASK-26** — the identified New Italy Museum items have no acquisition path (not Gallica/Trove/IIIF); inventorying them needs a bespoke museum mechanism (FR-013).
+
+### Findings (methodological)
+
+- Resolution is real but **invisible to the audit** until TASK-25 lands: coverage still lists these as open `suspected` (it reads description/basis, not notes). So the leads are examined + documented, but the *measured* SC-004 close awaits the resolution-state field. This is exactly a research-first "the pass proved the tool need" moment.
+
+### Next actions
+
+- Operator decision: build the resolution-state + three-state-extent tool (TASK-25 / T029) as its own small spec via the front door so US4/US6 progress becomes measurable — vs. continuing more shipped-tooling passes first.
