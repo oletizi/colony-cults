@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/coverage-web-view",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-browser",
+  "override": true,
+  "overrideReason": "Cross-model audit barrage does not converge in this sandbox: the model fleet is DEGRADED (sonnet lane times out; reproduced across multiple bounded runs, per recorded env limitation). The 2 completing lanes (claude, codex) surfaced only pre-existing duplicate-code clones in unrelated files (src/archive, src/gallica, src/index, scripts/), none in the coverage-web-view feature. Feature validated LIVE instead: full site build green, /coverage renders real committed data (PB-P004 title+members, empty states), helper unit tests pass (incl. fail-loud), zero coverage percentage/progress element, exactly one global masthead nav link, source-groups render unlinked (no dangling links), tsc clean, no any/as/@ts-ignore, files <=235 lines. A full cross-model govern should be re-run where the fleet is available."
+}
