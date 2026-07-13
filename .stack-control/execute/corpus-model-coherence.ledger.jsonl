@@ -5,3 +5,7 @@
 {"id":"T007","tierLabel":"balanced","model":"sonnet","commitRange":"443db17","reviewClean":true}
 {"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"443db17","reviewClean":true}
 {"id":"T009","tierLabel":"fast","model":"haiku","commitRange":"443db17","reviewClean":true,"note":"empty registry, tier fast (data file)"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"a6ff569","reviewClean":true}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"a6ff569","reviewClean":true}
+{"id":"T016","tierLabel":"balanced","model":"sonnet","commitRange":"a6ff569","reviewClean":true}
+{"id":"T017","tierLabel":"balanced","model":"sonnet","commitRange":"a6ff569","reviewClean":true}
