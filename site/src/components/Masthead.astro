@@ -24,8 +24,10 @@ interface Props {
   current?: boolean;
   /** Bottom gap under the line, in px (preserves each header's rhythm). */
   gap?: number;
+  /** True on `/coverage`, where the Coverage nav link is the current page. */
+  coverageCurrent?: boolean;
 }
-const { tail, current = false, gap = 14 } = Astro.props;
+const { tail, current = false, gap = 14, coverageCurrent = false } = Astro.props;
 ---
 
 <p class="masthead" style={`--masthead-gap:${gap}px`}>
@@ -37,10 +39,22 @@ const { tail, current = false, gap = 14 } = Astro.props;
   >Corpus</a>
   <span class="masthead__sep" aria-hidden="true">·</span>
   <span class="masthead__tail">{tail}</span>
+  <span class="masthead__nav">
+    <a
+      class:list={[
+        'masthead__nav-link',
+        coverageCurrent ? 'masthead__nav-link--current' : 'masthead__nav-link--link',
+      ]}
+      href="/coverage"
+      aria-current={coverageCurrent ? 'page' : undefined}
+    >Coverage</a>
+  </span>
 </p>
 
 <style>
   .masthead {
+    display: flex;
+    align-items: baseline;
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: 0.22em;
@@ -79,5 +93,32 @@ const { tail, current = false, gap = 14 } = Astro.props;
 
   .masthead__tail {
     color: var(--oxide);
+  }
+
+  /* The one global-nav entry, pushed to the right edge of the baseline row.
+     Same hairline-that-ignites-to-oxide affordance as the home wordmark. */
+  .masthead__nav {
+    margin-left: auto;
+  }
+
+  .masthead__nav-link {
+    color: var(--oxide);
+    text-decoration: none;
+  }
+
+  .masthead__nav-link--link {
+    border-bottom: 1px solid var(--rule);
+    transition: border-color 120ms ease;
+  }
+
+  .masthead__nav-link--link:hover,
+  .masthead__nav-link--link:focus-visible {
+    border-bottom-color: var(--oxide);
+  }
+
+  /* On `/coverage` the Coverage link is where you already are: still a link, but
+     without the active underline so it reads as the current place. */
+  .masthead__nav-link--current {
+    border-bottom: 1px solid transparent;
   }
 </style>

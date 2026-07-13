@@ -1,0 +1,158 @@
+---
+/**
+ * T009/T010 -- the `/coverage` page: the archive's standing account of its own
+ * holes. An audit sheet in the "Prospectus / Dossier" hand -- what we hold, what
+ * we cite but have not located, and where we have already searched. Nothing here
+ * is a score; every gap is a count, or the literal word `unknown`.
+ *
+ * Built at build time from the bibliography. FAIL-LOUD: `loadCoverageReport()`
+ * is called without a try/catch, so a malformed bibliography fails the build
+ * rather than shipping a placeholder. Ids are resolved to titles from the
+ * bibliography and linked (T010) only where a reading page actually exists --
+ * source-groups (campaign ids) have no reading page, so they render plain and
+ * never leave a dead link.
+ */
+import path from 'node:path';
+
+import { loadCoverageReport } from '@/bibliography/coverage/load-coverage-report';
+import { loadAllSources } from '@/bibliography/load';
+import { resolveRepoRoot } from '@/browser/load/repo-root';
+import { loadCorpus } from '@/browser/load/corpus';
+import { resolveConfig } from '@/browser/config';
+
+import BaseLayout from '@site/layouts/BaseLayout.astro';
+import Masthead from '@site/components/Masthead.astro';
+import CampaignCoverage from '@site/components/coverage/CampaignCoverage.astro';
+import EvidenceDistribution from '@site/components/coverage/EvidenceDistribution.astro';
+import ReferenceRegister from '@site/components/coverage/ReferenceRegister.astro';
+import SearchHistory from '@site/components/coverage/SearchHistory.astro';
+
+// The repo root, resolved by walking up to the committed `bibliography/sources`
+// (build-safe: correct both from source and from Astro's bundled `site/dist`,
+// where the CLI's fixed-offset resolver would land on `site/` instead).
+const repoRoot = resolveRepoRoot();
+
+// Fail-loud: a malformed bibliography must fail the build, not degrade.
+const report = loadCoverageReport(repoRoot);
+
+// Titles from the bibliography. Canonical title, else the first authored title;
+// a source with no usable title is simply omitted so the components fall back to
+// the bare id rather than a fabricated label.
+const titleById = new Map<string, string>();
+for (const loaded of loadAllSources(path.join(repoRoot, 'bibliography', 'sources'))) {
+  const { titles } = loaded.source;
+  const title = titles.find((t) => t.role === 'canonical')?.text ?? titles[0]?.text;
+  if (title !== undefined) {
+    titleById.set(loaded.source.sourceId, title);
+  }
+}
+
+// Reading pages are exactly the corpus-browser sources. Link only to those (T010)
+// -- source-group / campaign ids are not in this set, so they render plain.
+const linkable = new Set(loadCorpus(resolveConfig()).corpus.sources.map((s) => s.sourceId));
+
+const labelFor = (id: string): { title?: string; href?: string } => ({
+  title: titleById.get(id),
+  href: linkable.has(id) ? `/sources/${id}/` : undefined,
+});
+---
+
+<BaseLayout
+  title="Coverage — what we hold, and what we're still missing"
+  description="A standing account of the corpus as research in progress: evidence gathered, works cited but not located, and repositories searched — never a score, only counts and unknown."
+>
+  <main class="coverage">
+    <header>
+      <Masthead tail="research status" coverageCurrent />
+      <h1 class="cov__title">What we hold, and what we're still missing.</h1>
+      <div class="cov__stamp" aria-hidden="true"></div>
+      <p class="cov__abstract">
+        A standing account of the corpus as a research effort in progress — the
+        evidence gathered, the works cited but not yet located, and the
+        repositories searched. Nothing here is a score; every gap is a count, or
+        the word <span class="unknown">unknown</span>.
+      </p>
+      <p class="cov__note">
+        Marks in <span class="cov__note-oxide">oxide</span> are the gaps — cited-but-unfound
+        works, suspected records, and counts we cannot yet close.
+      </p>
+    </header>
+
+    <CampaignCoverage campaigns={report.perCampaign} labelFor={labelFor} />
+    <EvidenceDistribution distribution={report.evidenceClassDistribution} />
+    <ReferenceRegister register={report.register} labelFor={labelFor} />
+    <SearchHistory history={report.searchHistory} />
+
+    <footer class="colophon">
+      Coverage · derived from the bibliography at build · never a score, only
+      counts and <span class="unknown">unknown</span>
+    </footer>
+  </main>
+</BaseLayout>
+
+<style>
+  /* Only the page shell lives here; each section owns its own scoped styles. */
+  .coverage {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 56px 28px 96px;
+  }
+
+  /* Hero: the thesis in the Didone voice -- no hero number, no percentage. */
+  .cov__title {
+    font-family: var(--didone);
+    font-weight: 400;
+    font-size: clamp(38px, 8vw, 84px);
+    line-height: 0.99;
+    letter-spacing: -0.015em;
+    margin: 0;
+    max-width: 15ch;
+  }
+
+  /* The catalogue stamp: the single oxide hairline under the title. */
+  .cov__stamp {
+    width: 132px;
+    height: 2px;
+    background: var(--oxide);
+    margin: 26px 0 22px;
+  }
+
+  .cov__abstract {
+    font-family: var(--grote);
+    font-size: clamp(15px, 2.2vw, 18px);
+    line-height: 1.62;
+    color: var(--slate);
+    max-width: 58ch;
+    margin: 0;
+  }
+
+  .cov__note {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--faint);
+    margin: 18px 0 0;
+  }
+
+  .cov__note-oxide {
+    color: var(--oxide);
+  }
+
+  /* The literal `unknown` token -- the page's one bold mark, in the archive's
+     oxide critical hand. */
+  .unknown {
+    color: var(--oxide);
+    font-variant: small-caps;
+    letter-spacing: 0.06em;
+  }
+
+  .colophon {
+    margin-top: 64px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: var(--faint);
+  }
+</style>

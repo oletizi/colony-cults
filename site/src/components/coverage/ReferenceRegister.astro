@@ -1,0 +1,207 @@
+---
+/**
+ * T007 -- the unresolved-references section of `/coverage`. The archive's
+ * standing account of the works it knows it does NOT hold: references cited in
+ * the corpus but not yet located, and suspected gaps inferred from the record.
+ * Rendered in the "Prospectus / Dossier" hand, grouped by owning campaign with a
+ * final "No campaign" bucket for references on sources outside any group.
+ *
+ * The signature mark: absence is stamped in oxide (`--oxide`). A `suspected gap`
+ * tag and the `No campaign` bucket heading -- the places a gap could hide -- burn
+ * oxide; a plain cited-but-unidentified reference stays quiet in `--faint`. The
+ * cited work itself speaks in the warm `--serif` source voice; its basis and
+ * owner stay in the cool apparatus voices. Owners link only when a target exists
+ * (T010) -- otherwise the id is rendered plain, never a dead link.
+ */
+import type { CoverageRegister } from '@/bibliography/coverage/coverage-model';
+
+interface Props {
+  register: CoverageRegister;
+  /** Resolve a source/campaign id to its display title and (optional) href. */
+  labelFor: (sourceId: string) => { title?: string; href?: string };
+}
+
+const { register, labelFor } = Astro.props;
+
+// "N open" -- every unresolved entry across both axes, campaign-grouped + loose.
+const totalOpen =
+  register.byCampaign.reduce((sum, group) => sum + group.entries.length, 0) +
+  register.ungrouped.length;
+
+// One flat list of renderable groups: campaign groups (title, then · id) that
+// actually carry entries, then the ungrouped bucket under the oxide "No campaign"
+// heading -- omitted entirely when empty so no bare heading is left behind.
+const groups = [
+  ...register.byCampaign
+    .filter((group) => group.entries.length > 0)
+    .map((group) => {
+      const title = labelFor(group.campaign).title;
+      return {
+        heading: title === undefined ? group.campaign : `${title} · ${group.campaign}`,
+        isNone: false,
+        entries: group.entries,
+      };
+    }),
+  ...(register.ungrouped.length > 0
+    ? [{ heading: 'No campaign', isNone: true, entries: register.ungrouped }]
+    : []),
+];
+---
+
+<section class="sec">
+  <p class="sec__label">Unresolved references<span class="sec__count">{totalOpen} open</span></p>
+  {totalOpen === 0 ? (
+    <p class="empty">Nothing unresolved in the register.</p>
+  ) : (
+    groups.map((group) => (
+      <div class="reg__group">
+        <p class={`reg__group-h${group.isNone ? ' reg__group-h--none' : ''}`}>{group.heading}</p>
+        {group.entries.map((entry) => {
+          const work = entry.kind === 'reference' ? entry.citedAs : entry.description;
+          const owner = labelFor(entry.owner);
+          return (
+            <div class="reg__entry">
+              {entry.kind === 'suspected' ? (
+                <span class="reg__tag reg__tag--sus">Suspected gap</span>
+              ) : (
+                <span class="reg__tag reg__tag--ref">Cited · unidentified</span>
+              )}
+              <div>
+                <p class="reg__cited">{work}</p>
+                {entry.basis ? <p class="reg__basis">{entry.basis}</p> : null}
+                <p class="reg__owner">
+                  owner{' '}
+                  {owner.href ? <a href={owner.href}>{entry.owner}</a> : entry.owner}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    ))
+  )}
+</section>
+
+<style>
+  .sec {
+    margin-top: 56px;
+  }
+
+  .sec__label {
+    display: flex;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .sec__count {
+    margin-left: auto;
+    color: var(--faint);
+  }
+
+  .empty {
+    font-family: var(--grote);
+    font-size: 14px;
+    color: var(--faint);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* The register groups by owning campaign; a group heading is a quiet mono
+     rule, save the "No campaign" bucket which is itself a gap and burns oxide. */
+  .reg__group {
+    margin-bottom: 26px;
+  }
+
+  .reg__group-h {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin: 0 0 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .reg__group-h--none {
+    color: var(--oxide);
+  }
+
+  /* Each entry: a mono tag against the cited work. Two columns on a comfortable
+     viewport; on a narrow one the tag stacks above the work rather than crushing
+     into a sliver. */
+  .reg__entry {
+    padding: 12px 0;
+    border-top: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: 148px 1fr;
+    gap: 4px 18px;
+  }
+
+  .reg__tag {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* A plain cited-but-unfound reference stays quiet; a suspected gap is stamped. */
+  .reg__tag--ref {
+    color: var(--faint);
+  }
+
+  .reg__tag--sus {
+    color: var(--oxide);
+  }
+
+  /* The cited work speaks in the warm source serif -- the one voice the archive
+     lets the missing object keep. */
+  .reg__cited {
+    font-family: var(--serif);
+    font-size: 16px;
+    color: var(--ink);
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .reg__basis {
+    font-family: var(--grote);
+    font-size: 13px;
+    color: var(--slate);
+    margin: 4px 0 0;
+  }
+
+  .reg__owner {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    margin: 6px 0 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* The owner id links only where a target exists (T010): a hairline that
+     ignites to oxide on hover, matching the home wordmark's affordance. */
+  .reg__owner a {
+    border-bottom: 1px solid var(--rule);
+    text-decoration: none;
+  }
+
+  .reg__owner a:hover {
+    border-bottom-color: var(--oxide);
+    color: var(--oxide);
+  }
+
+  /* Narrow screens: let the tag sit on its own line above the cited work so the
+     two-column row degrades gracefully rather than squeezing. */
+  @media (max-width: 560px) {
+    .reg__entry {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+  }
+</style>

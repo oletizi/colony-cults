@@ -1,0 +1,13 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":null,"reviewClean":true,"note":"@/* -> ../src/* alias already present in site/tsconfig.json; @/bibliography resolves for the site build; controller-verified, no change needed"}
+{"id":"T002","tierLabel":"balanced","model":"sonnet","commitRange":"70ce9a2","reviewClean":true}
+{"id":"T003","tierLabel":"balanced","model":"sonnet","commitRange":"70ce9a2","reviewClean":true}
+{"id":"T004","tierLabel":"powerful","model":"opus","commitRange":"cbd0011","reviewClean":true,"note":"frontend-design output: mockup (screenshot-verified) + design-notes.md; stamped-gap signature, no percentage"}
+{"id":"T005","tierLabel":"powerful","model":"opus","commitRange":"dc45418","reviewClean":true}
+{"id":"T006","tierLabel":"powerful","model":"opus","commitRange":"2008470","reviewClean":true}
+{"id":"T007","tierLabel":"powerful","model":"opus","commitRange":"8c76fe0","reviewClean":true}
+{"id":"T008","tierLabel":"powerful","model":"opus","commitRange":"c3c98b5","reviewClean":true}
+{"id":"T009","tierLabel":"powerful","model":"opus","commitRange":"4275b3f","reviewClean":true}
+{"id":"T010","tierLabel":"powerful","model":"opus","commitRange":"4275b3f","reviewClean":true,"note":"cross-link hrefs resolved in page from corpus source list; source-groups render plain (verified PB-P004 unlinked)"}
+{"id":"T011","tierLabel":"powerful","model":"opus","commitRange":"4275b3f","reviewClean":true,"note":"masthead Coverage nav link; global (1 per page) verified across landing/source/coverage"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":null,"reviewClean":true,"note":"quickstart verified by controller: site build green, /coverage emitted, no percentage/progress, 1 global nav link, fail-loud proven by T003 unit test, empty states render on real sparse data"}
+{"id":"T013","tierLabel":"fast","model":"haiku","commitRange":null,"reviewClean":true,"note":"type/lint gate: tsc --noEmit OK; no any/as/@ts-ignore; all files <=235 lines"}
