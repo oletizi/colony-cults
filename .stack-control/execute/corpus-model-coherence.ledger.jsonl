@@ -14,3 +14,7 @@
 {"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"461c684","reviewClean":true}
 {"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"461c684","reviewClean":true}
 {"id":"T013","tierLabel":"fast","model":"haiku","commitRange":"461c684","reviewClean":true}
+{"id":"T018","tierLabel":"balanced","model":"sonnet","commitRange":"c0b897b","reviewClean":true}
+{"id":"T019","tierLabel":"powerful","model":"opus","commitRange":"c0b897b","reviewClean":true}
+{"id":"T020","tierLabel":"balanced","model":"sonnet","commitRange":"ceae7a3","reviewClean":true}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"ceae7a3","reviewClean":true}
