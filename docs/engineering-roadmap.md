@@ -125,6 +125,7 @@ A governed pipeline to publish the rendered facsimile-edition PDFs (from corpus-
 
 ## impl:feature/corpus-gap-closure
 - status: in-flight
+- spec: specs/009-corpus-gap-closure
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-13-corpus-gap-closure-design.md
 - depends-on: impl:feature/corpus-coverage-audit
