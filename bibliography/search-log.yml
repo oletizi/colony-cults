@@ -19,4 +19,13 @@
 # Validation: entry ids must be unique and each entry must carry
 # id/date/repository/campaign/scope/coverage (surfaced by `bib validate`).
 
-[]
+- id: SRCH-0001
+  date: 2026-07-11
+  repository: Gallica / BnF
+  campaign: PB-P004
+  scope: "Marquis de Rays trial + Port-Breton colony imprints — BnF OAI record resolution for the trial-corpus members"
+  coverage: "5 trial/colony imprints resolved to Gallica arks with domaine-public rights and OAI records captured: PB-P007 (jugement-stenography extract, 1889), PB-P008 (Cour de Paris appeal pleading), PB-P009 (subscription-closing notice), PB-P010 (ministerial-circular rebuttal), PB-P011 (published lecture). Responses on disk in bibliography/repository-responses/."
+  remainingQuestions:
+    - "Cour de Paris appeal-court archival case files not searched beyond the one published pleading (PB-P008)"
+    - "Contemporary French press coverage of the trial beyond the colony's own newspaper not yet searched"
+  notes: "Discovery mechanism: operator-supplied arks + BnF OAI resolution (spec 009 assumption). Logged retroactively from the dated repository-responses evidence (2026-07-11); not a fresh query."

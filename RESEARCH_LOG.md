@@ -528,3 +528,21 @@ Classified the 11 individual works by genre (hand-edited `evidenceClass` on each
 ### Next actions
 
 - Begin US1 search-and-log (turn the empty search history into measured coverage), or resolve PB-P006 suspected leads (US4). Pull the search-log authoring tool only if hand-authoring records proves repetitive.
+
+## 2026-07-13 - Corpus gap-closure: first search-and-log (US1)
+
+### Summary
+
+Authored the first `search-log.yml` entry (hand-authored by design — no tool needed), grounded in real dated evidence. Search history is no longer empty (SC-001 met for the first pair).
+
+### Completed
+
+- **T008 (partial)** — SRCH-0001: **PB-P004 × Gallica / BnF**, dated 2026-07-11, grounded in the on-disk `repository-responses/` OAI captures that resolved the 5 trial-corpus members to `domaine public` Gallica arks. `bib coverage` Search History + repository rollup now show the pair with a date and 2 open questions (was `(none)`); `bib validate` clean.
+
+### Findings (captured to backlog)
+
+- **Search-log is keyed by source-group, but only 2 exist** (PB-P004, PB-P006). The 6 standalone sources (PB-P001 newspaper, PB-P002/P003 books, PB-P005 Trove newspaper, PB-S001/S002 secondary books) belong to no source-group, so their search provenance (e.g. PB-P001's real SLQ + Gallica searches) cannot be recorded. Either those sources need a `port-breton` core source-group, or the search-log must accept a case-level / ungrouped campaign. Blocks full SC-001 coverage.
+
+### Next actions
+
+- Decide the standalone-source grouping question (backlog) before logging their searches; meanwhile continue PB-P004/PB-P006 passes and resolve PB-P006 suspected leads (US4).
