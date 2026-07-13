@@ -6,9 +6,9 @@ import type { SearchLogEntry } from '@/bibliography/search-log';
 /**
  * Closure semantics for search-history open questions (review fix): a question
  * recorded by an early search and omitted by a later search for the same
- * (repository, campaign) is CLOSED -- `openQuestions` reflects the latest
+ * (repository, scope) is CLOSED -- `openQuestions` reflects the latest
  * entry, not a union across all history. The repository rollup unions each
- * campaign's CURRENT open questions.
+ * scope's CURRENT open questions.
  */
 
 function entry(overrides: Partial<SearchLogEntry> & Pick<SearchLogEntry, 'id' | 'date'>): SearchLogEntry {
@@ -22,7 +22,7 @@ function entry(overrides: Partial<SearchLogEntry> & Pick<SearchLogEntry, 'id' | 
 }
 
 describe('buildSearchHistory open-question closure', () => {
-  it('drops a question a later search omits (resolved) for the same repo x campaign', () => {
+  it('drops a question a later search omits (resolved) for the same repo x scope', () => {
     const log = [
       entry({ id: 'SRCH-0001', date: '2026-01-01', remainingQuestions: ['Were appeal records digitized?'] }),
       entry({ id: 'SRCH-0002', date: '2026-02-01', remainingQuestions: [] }),
@@ -42,7 +42,7 @@ describe('buildSearchHistory open-question closure', () => {
     expect(matrix[0]?.openQuestions).toEqual(['Q2']);
   });
 
-  it('repository rollup unions each campaign latest open questions', () => {
+  it('repository rollup unions each scope latest open questions', () => {
     const log = [
       entry({ id: 'A', date: '2026-01-01', scope: { kind: 'work-bundle', id: 'PB-P004' }, remainingQuestions: ['Q-P004'] }),
       entry({ id: 'B', date: '2026-01-01', scope: { kind: 'work-bundle', id: 'PB-P010' }, remainingQuestions: ['Q-P010'] }),
@@ -52,7 +52,7 @@ describe('buildSearchHistory open-question closure', () => {
     expect(byRepository[0]?.openQuestions.sort()).toEqual(['Q-P004', 'Q-P010']);
   });
 
-  it('a question closed in a campaign latest search is closed in the repository rollup too', () => {
+  it('a question closed in a scope latest search is closed in the repository rollup too', () => {
     const log = [
       entry({ id: 'A1', date: '2026-01-01', scope: { kind: 'work-bundle', id: 'PB-P004' }, remainingQuestions: ['Q-P004'] }),
       entry({ id: 'A2', date: '2026-02-01', scope: { kind: 'work-bundle', id: 'PB-P004' }, remainingQuestions: [] }),
