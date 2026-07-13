@@ -1,0 +1,14 @@
+# Thread registry — bibliography/scopes.yml
+#
+# The `thread` ScopeRef kind's referent set: a flat list of research threads,
+# each `{ id, name, description }`. Owns thread IDENTITY + DESCRIPTION ONLY —
+# never a member list (D7). Membership is authored one-directionally on a
+# Source's `threads: [id]` field and resolved/derived from there; this file
+# never lists which Sources belong to a thread.
+#
+# Defined but UNPOPULATED this build (FR-011): an empty list is valid, and no
+# thread is required to exist. `bib validate` and `bib coverage` both succeed
+# against an empty registry. Loaded + validated fail-loud by
+# src/bibliography/scopes-registry.ts (see specs/010-corpus-model-coherence/
+# data-model.md § Thread registry and contracts/scope-model.md, INV-5).
+[]
