@@ -14,3 +14,11 @@ export type { Issue } from '@/model/issue';
 export type { Rights } from '@/model/rights';
 export type { Asset } from '@/model/asset';
 export type { Provenance } from '@/model/provenance';
+export type {
+  SourceRights,
+  SourceRightsStatus,
+  Publication,
+  PublicationManifest,
+  PublicationManifestRef,
+  PublishedArtifactRef,
+} from '@/model/publication';

@@ -104,3 +104,12 @@ Scoped-down capture from a third-party "Corpus Coverage & Discovery Audit" propo
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-11-corpus-print-pdf-design.md
 - depends-on: impl:feature/corpus-browser
+
+## impl:feature/edition-publishing
+- status: in-flight
+- analyze-clean: yes
+- spec: specs/008-edition-publishing
+- design-approved: yes
+- design: docs/superpowers/specs/2026-07-12-edition-publishing-design.md
+- depends-on: impl:feature/canonical-source-metadata, impl:feature/corpus-print-pdf
+A governed pipeline to publish the rendered facsimile-edition PDFs (from corpus-print-pdf) to the public B2 bucket / Cloudflare CDN and RECORD each publication in the canonical bibliography SSOT (Source / Repository-Record): the published derivative's public URL, PDF sha256, publish date, edition variant (parallel / english-only), and the pinned snapshot commit it was built from. Rights-gated, fail-closed — only lawfully-distributable / public-domain material. Replaces the ad-hoc upload scripts used to hand-publish the 72 PB-P001 english-only issues, and captures the public-export deferral from corpus-print-pdf spec 007.

@@ -5,6 +5,7 @@ import {
   REPOSITORY_RECORD_REQUIRED_FIELDS,
   SOURCE_REQUIRED_FIELDS,
 } from '@/bibliography/vocab';
+import type { Publication } from '@/model/publication';
 import type { AssetManifestRef, IssueRef, RepositoryRecord } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 
@@ -13,7 +14,12 @@ import type { Source } from '@/model/source';
  * manifest-shape checks (US5 / T027) -- the remaining checks
  * `@/bibliography/validate`'s `validate()` composes alongside the US2 leak
  * check and the US4 view-drift check. Split out of `validate.ts` to keep
- * that file's total under the repo's ~300-line-per-file guidance.
+ * that file's total under the repo's ~300-line-per-file guidance. Also holds
+ * the two model-only `Source.publications[]` checks (T011,
+ * specs/008-edition-publishing/contracts/ssot-publications.md) -- the
+ * manifest-file-existence check from that same contract is FS-touching and
+ * lives in `validate.ts` instead, alongside `validateViewDrift`, the other
+ * disk-reading check.
  *
  * See specs/004-canonical-source-metadata/contracts/validation.md.
  */
@@ -220,7 +226,7 @@ export function validateDuplicateCopies(model: CanonicalModel): ValidationFindin
   const seenKeys = new Set<string>();
   const findings: ValidationFinding[] = [];
   for (const record of model.repositoryRecords) {
-    const key = `${record.sourceId} ${record.sourceArchive}`;
+    const key = `${record.sourceId} ${record.sourceArchive}`;
     if (seenKeys.has(key)) {
       findings.push({
         kind: 'duplicate-copy',
@@ -350,4 +356,70 @@ export function validateSourceGroups(model: CanonicalModel): ValidationFinding[]
     ...partOfFindings(model),
     ...groupIsMemberFindings(model),
   ];
+}
+
+/** Label for one `Source.publications[]` entry, naming its `(variant, snapshotShort)` key. */
+function publicationLabel(source: Source, publication: Publication): string {
+  return (
+    `Source "${source.sourceId}" publication (variant: ${publication.variant}, ` +
+    `snapshotShort: ${publication.snapshotShort})`
+  );
+}
+
+/**
+ * `(variant, snapshotShort)` MUST be unique within a Source's
+ * `publications[]` (specs/008-edition-publishing/contracts/ssot-publications.md
+ * § 2). A duplicate would mean two published entries claim the same version
+ * key -- a re-publish of an unchanged build is a no-op (FR-004), not a second
+ * entry. Sources with no `publications[]` are skipped. Reports one
+ * `duplicate-publication` finding per duplicate occurrence beyond the first
+ * for a given key, naming the owning Source.
+ */
+export function validateDuplicatePublications(model: CanonicalModel): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
+  for (const source of model.sources) {
+    const seenKeys = new Set<string>();
+    for (const publication of source.publications ?? []) {
+      const key = `${publication.variant} ${publication.snapshotShort}`;
+      if (seenKeys.has(key)) {
+        findings.push({
+          kind: 'duplicate-publication',
+          sourceId: source.sourceId,
+          detail: `duplicate ${publicationLabel(source, publication)} -- (variant, snapshotShort) must be unique within publications[]`,
+        });
+        continue;
+      }
+      seenKeys.add(key);
+    }
+  }
+  return findings;
+}
+
+/**
+ * Every `Publication.rightsBasis` MUST be present and non-empty
+ * (specs/008-edition-publishing/contracts/ssot-publications.md § 2, FR-005):
+ * a publication that cleared the publish gate must record the basis that
+ * cleared it. Sources with no `publications[]` are skipped. Reports one
+ * `missing-required` finding per publication missing (or carrying an empty)
+ * `rightsBasis`, naming the owning Source and the offending entry -- the same
+ * finding kind `validateMissingRequired` uses for other required-core gaps.
+ */
+export function validatePublicationRightsBasis(model: CanonicalModel): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
+  for (const source of model.sources) {
+    for (const publication of source.publications ?? []) {
+      // Trim before the emptiness check: a whitespace-only rightsBasis is
+      // provenance-empty and must fail, matching the publish rights-gate which
+      // also trims (AUDIT-BARRAGE-codex-01).
+      if (publication.rightsBasis !== undefined && publication.rightsBasis.trim() !== '') {
+        continue;
+      }
+      findings.push({
+        kind: 'missing-required',
+        sourceId: source.sourceId,
+        detail: `${publicationLabel(source, publication)} missing required field "rightsBasis"`,
+      });
+    }
+  }
+  return findings;
 }

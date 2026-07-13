@@ -20,6 +20,8 @@
     "pdf:build": "tsx scripts/build-pdf.ts",
     "pdf:render-sample": "tsx scripts/render-sample-pdf.ts",
     "pdf:test": "vitest run tests/unit/pdf tests/integration/pdf",
+    "pdf:publish": "tsx scripts/publish-pdf.ts",
+    "publish:test": "vitest run tests/unit/publish tests/integration/publish",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

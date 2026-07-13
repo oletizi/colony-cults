@@ -5,6 +5,10 @@ status: approved-for-acquisition
 case: port-breton
 language: French
 creator: Valamont, P. de. Auteur du texte
+rights:
+  status: public-domain
+  basis: "Gallica/BnF per-item OAI dc:rights: domaine public (fetch-gate verified, rights: passed); 1889 French imprint (Impr. de Lafare frères, Nîmes); public domain by publication age; ark bpt6k5785971m."
+  determinedAt: "2026-07-12"
 titles:
   - text: La Vérité sur la colonie de Port-Breton et sur le Mis de Rays. Extrait de la sténographie du jugement du Mis de Rays et du journal "la Nouvelle France" / P. de Valamont
     role: archive
