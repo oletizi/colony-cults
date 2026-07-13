@@ -18,3 +18,7 @@
 {"id":"T019","tierLabel":"powerful","model":"opus","commitRange":"c0b897b","reviewClean":true}
 {"id":"T020","tierLabel":"balanced","model":"sonnet","commitRange":"ceae7a3","reviewClean":true}
 {"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"ceae7a3","reviewClean":true}
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"40aa074","reviewClean":true,"note":"verification task, controller-run"}
+{"id":"T022","tierLabel":"fast","model":"haiku","commitRange":"40aa074","reviewClean":true,"note":"verification task, controller-run"}
+{"id":"T023","tierLabel":"fast","model":"haiku","commitRange":"40aa074","reviewClean":true,"note":"verification task, controller-run"}
+{"id":"T024","tierLabel":"fast","model":"haiku","commitRange":"40aa074","reviewClean":true,"note":"verification task, controller-run"}
