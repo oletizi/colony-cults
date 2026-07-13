@@ -10,7 +10,7 @@
 
 ## Context
 
-The `corpus-coverage-audit` (spec 007) **measures** how complete the archive is against the full evidentiary record of the Port Breton / Marquis de Rays affair; it does not **close** the gap. Today the audit reads the gap as mostly `unknown`: search history is **empty**, `knownMemberCount` is `unknown` for every campaign, **13/13 sources are unclassified**, suspected leads are unresolved, and sources are unacquired across **multiple repositories** (Gallica *and* Trove). This program is the governed process that drives that measured gap down and keeps it measured. It reuses the shipped pipeline (`source-group-acquisition`: discover → inventory → verify → promote → acquire → reconcile) and the audit (`bib coverage`, search-log, evidence-class, reconcile). It is a research effort — its "output" is a more complete, better-measured corpus, not code — but it is structured with a spec and plan and executed as repeatable loops.
+The `corpus-coverage-audit` (spec 007) **measures** how complete the archive is against the full evidentiary record of the Port Breton / Marquis de Rays affair; it does not **close** the gap. Today the audit reads the gap as mostly `unknown` — a single word this program deliberately splits into two explicit states, `unexamined` (not yet researched) and `irreducible` (researched but genuinely unbounded): search history is **empty**, `knownMemberCount` is `unexamined` for every campaign, **13/13 sources are unclassified**, suspected leads are unresolved, and sources are unacquired across **multiple repositories** (Gallica *and* Trove). This program is the governed process that drives that measured gap down and keeps it measured. It reuses the shipped pipeline (`source-group-acquisition`: discover → inventory → verify → promote → acquire → reconcile) and the audit (`bib coverage`, search-log, evidence-class, reconcile). It is a research effort — its "output" is a more complete, better-measured corpus, not code — but it is structured with a spec and plan and executed as repeatable loops.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -94,31 +94,32 @@ The researcher assigns an evidence-class (book, pamphlet, prospectus, newspaper,
 
 ### User Story 6 - Establish known-extent where researchable (Priority: P3)
 
-The researcher sets a campaign's `knownMemberCount` (believed extent) where research supports a defensible number (e.g. a bounded set of trial documents), and otherwise records an explicit `unknown` with basis — so coverage is a real fraction where knowable and an honest `unknown` where not.
+The researcher sets a campaign's `knownMemberCount` (believed extent) where research supports a defensible number (e.g. a bounded set of trial documents), marks it `irreducible` (with basis) where research shows the extent is genuinely unbounded, and otherwise leaves it `unexamined` — so coverage is a real fraction where knowable, an honest `irreducible` where terminal, and a visible `unexamined` where the research is still open.
 
-**Why this priority**: Converts the denominator from blanket `unknown` to a measured figure where the historical record bounds it; lower priority because much of the corpus legitimately stays `unknown`.
+**Why this priority**: Converts the denominator from a blanket, overloaded `unknown` into three explicit states — a measured figure where the record bounds it, `irreducible` where it does not, and `unexamined` where no one has looked yet; lower priority because much of the corpus legitimately stays non-numeric, but it must stay *legibly* so.
 
-**Independent Test**: Set a campaign's known extent from documented research; `bib coverage` reports a numeric gap for it instead of `unknown`.
+**Independent Test**: Set a campaign's known extent from documented research; `bib coverage` reports a numeric gap for it instead of `unexamined`/`irreducible`.
 
 **Acceptance Scenarios**:
 
-1. **Given** a campaign whose extent research can bound, **When** the researcher records `knownMemberCount`, **Then** coverage shows a numeric gap (actual vs believed).
-2. **Given** a campaign whose extent is genuinely unknowable, **When** left `unknown`, **Then** coverage shows `unknown` (never `0`, blank, or a fabricated number).
+1. **Given** a campaign whose extent research can bound, **When** the researcher records `knownMemberCount` with its basis, **Then** coverage shows a numeric gap (actual vs believed).
+2. **Given** a campaign whose extent is genuinely unknowable, **When** the researcher records it as `irreducible` with a stated basis, **Then** coverage shows `irreducible` (never `0`, blank, a fabricated number, or bare `unknown`).
+3. **Given** a campaign whose extent has not yet been researched, **When** coverage runs, **Then** it shows `unexamined` — visibly distinct from `irreducible` — flagging open research, not a terminal state.
 
 ---
 
 ### User Story 7 - Declare measured closure (Priority: P3)
 
-The researcher determines when a repository × campaign is "searched for now" (after N consecutive dry search rounds), and when the program's overall gap is measured-closed: every surfaced lead resolved-or-acquired, every in-scope repository logged, and the remaining `unknown` documented as an irreducible residual.
+The researcher determines when a repository × campaign is "searched for now" (after N consecutive dry search rounds), and when the program's overall gap is measured-closed: every surfaced lead resolved-or-acquired, every in-scope repository logged, and every remaining not-fully-measured dimension marked `irreducible` (with basis) — with no `unexamined` dimension left.
 
 **Why this priority**: Gives the open-ended program a defensible, non-arbitrary stopping condition and prevents "endless search" or "false done."
 
-**Independent Test**: After the closure conditions hold for a campaign, `bib coverage` shows no unexamined leads, all repositories logged, and only documented `unknown` remaining; the program can assert measured-closure for that campaign.
+**Independent Test**: After the closure conditions hold for a campaign, `bib coverage` shows no `unexamined` dimension, all repositories logged, and only documented `irreducible` residual remaining; the program can assert measured-closure for that campaign.
 
 **Acceptance Scenarios**:
 
 1. **Given** a repository × campaign with N consecutive dry rounds, **When** evaluated, **Then** it is marked searched-for-now with the dry-round evidence, not silently dropped.
-2. **Given** all leads resolved/acquired and all repositories logged, **When** closure is evaluated, **Then** the residual is only documented `unknown` and the campaign is declared measured-closed — never asserted as zero/complete.
+2. **Given** all leads resolved/acquired and all repositories logged, **When** closure is evaluated, **Then** the residual is only documented `irreducible` (with basis) with no `unexamined` dimension left, and the campaign is declared measured-closed — never asserted as zero/complete.
 
 ### Edge Cases
 
@@ -138,11 +139,11 @@ The researcher determines when a repository × campaign is "searched for now" (a
 - **FR-003**: The program MUST be able to acquire an approved, rights-cleared source from **any** in-scope repository — Gallica via the shipped pipeline, other repositories via per-repository adapters. When a repository has no adapter, building one is in scope; acquisition MUST NOT be abandoned because a source is non-Gallica.
 - **FR-004**: The program MUST perform **forward discovery**: mine acquired sources' bibliographies/citations/footnotes/advertisements, and resolve `suspected`/`referenced` leads, into candidate sources taken through inventory → verify → promote.
 - **FR-005**: The program MUST assign an evidence-class to every source; the audit's `unclassified` bucket MUST reach empty.
-- **FR-006**: The program MUST set `knownMemberCount` where research supports a defensible number, and otherwise record an explicit `unknown` with basis — never `0`, blank, or a fabricated number.
+- **FR-006**: The program MUST record each campaign's extent as exactly one explicit state — a defensible **number** (with basis), **`unexamined`** (not yet researched; no basis required), or **`irreducible`** (researched but genuinely unbounded; basis required) — never a bare `unknown`, `0`, blank, or a fabricated number. `unexamined` (we have not looked) and `irreducible` (we looked; it is unknowable) MUST stay distinct and never collapse into one another.
 - **FR-007**: The program MUST determine per-item public-domain rights before any acquisition (per repository); a non-public-domain source MUST be refused for mirroring but retained in the bibliography as known-but-restricted.
 - **FR-008**: Discovery MUST fail loud on ambiguous/unverifiable leads and MUST NOT fabricate identifiers or invent candidates.
 - **FR-009**: After each loop iteration the program MUST re-measure with `bib coverage`; the program's state of record is the audit's measured output, not an asserted narrative.
-- **FR-010**: The program MUST define measured-closure — all surfaced leads resolved-or-acquired, all in-scope repositories logged, remaining `unknown` documented as irreducible residual (with basis). Closure is measured, never asserted as zero/complete.
+- **FR-010**: The program MUST define measured-closure — all surfaced leads resolved-or-acquired, all in-scope repositories logged, every remaining not-fully-measured dimension marked `irreducible` (with basis), and **no `unexamined` dimension left**. Closure is measured, never asserted as zero/complete; a campaign with any `unexamined` dimension cannot be declared measured-closed.
 - **FR-011**: The program MUST mark a repository × campaign "searched-for-now" after a defined number of consecutive dry search rounds, recording the dry-round evidence.
 - **FR-012**: The program MUST reuse the shipped `source-group-acquisition` pipeline (discover/inventory/verify/promote/acquire/reconcile) and MUST NOT use `bib migrate` (which rebuilds from stale legacy inputs).
 - **FR-013**: The program MUST track per-repository capability gaps (missing acquisition/discovery adapters, e.g. Trove) as first-class work items as they surface, without those gaps blocking progress on other repositories.
@@ -153,7 +154,7 @@ The researcher determines when a repository × campaign is "searched for now" (a
 
 - **Repository (as a research object)**: a source archive/catalogue searched for the corpus (Gallica, BnF, Trove/NLA, Internet Archive, HathiTrust, WorldCat, National Archives, State Library of Queensland, New Italy Museum, in-source bibliographies). Attributes: name, kind, search mechanism (automated adapter | manual), rights-determination approach, acquisition adapter (present | to-build).
 - **Search-log record**: one search event — repository × campaign, date, coverage descriptor, remaining-questions, and (implicitly) the dry/non-dry outcome. The evidence that turns `unknown` into measured.
-- **Campaign**: a research-defined collection (source-group, e.g. PB-P004 trial corpus, PB-P006 New Italy) — members, actual member count (derived), `knownMemberCount` (authored or `unknown`).
+- **Campaign**: a research-defined collection (source-group, e.g. PB-P004 trial corpus, PB-P006 New Italy) — members, actual member count (derived), `knownMemberCount` (a number, `unexamined`, or `irreducible` — never a bare `unknown`).
 - **Candidate**: a discovered but not-yet-inventoried lead — identifier/title/creator/date hints and the provenance of the lead (which search or which acquired source's bibliography surfaced it).
 - **Source / RepositoryRecord** (existing model): the intellectual work + its per-archive copies; Source lifecycle (`discovered`→`approved-for-acquisition`→`excluded`) and RepositoryRecord acquisition status (`wanted`→`to-collect`→`collecting`→`collected`→`archived`), plus the evidence-class facet.
 - **Suspected/Referenced lead**: an item believed to exist (basis recorded) but not yet identified — resolution state (unexamined → identified → inventoried, or excluded/unavailable with reason).
@@ -167,14 +168,14 @@ The researcher determines when a repository × campaign is "searched for now" (a
 - **SC-002**: 100% of sources carry an evidence-class (the audit's `unclassified` bucket is empty).
 - **SC-003**: Every source whose masters are in the object store shows an acquired RepositoryRecord status — zero acquired-but-unreconciled sources remain.
 - **SC-004**: Every `suspected`/`referenced` lead is resolved — identified-and-inventoried, or documented as excluded/unavailable with a stated basis; none remain unexamined.
-- **SC-005**: Every `unknown` in the coverage report is either replaced by a measured value or explicitly documented as an irreducible residual with basis — no dimension renders as a silent blank or a fabricated number.
+- **SC-005**: No dimension in the coverage report renders as a bare `unknown`, silent blank, `0`, or fabricated number. Every not-fully-measured dimension renders as one of two named states — **`unexamined`** (not yet researched) or **`irreducible`** (researched, unbounded, with a stated basis) — so "we haven't looked" is never indistinguishable from "we looked and it's unknowable".
 - **SC-006**: At least one non-Gallica source is acquired through a purpose-built adapter (proving the multi-repository claim end-to-end).
-- **SC-007**: The program can, at any time, produce a `bib coverage` report in which no dimension is silently empty — `unknown` is always explicit — and progress between two runs is demonstrable (searches added, sources reconciled/acquired, leads resolved, sources classified).
+- **SC-007**: The program can, at any time, produce a `bib coverage` report in which no dimension is silently empty — every not-fully-measured dimension names its state (`unexamined` or `irreducible`), never a bare `unknown` — and progress between two runs is demonstrable (searches added, sources reconciled/acquired, leads resolved, sources classified).
 
 ## Assumptions
 
 - Reuses the shipped `corpus-coverage-audit`, `source-group-acquisition`, `gallica-fetcher`, `canonical-source-metadata`, and `archive-object-store` features.
-- The historical corpus is **open** — it cannot be exhaustively enumerated — so "closed" means *measured*, with a documented `unknown` residual, not zero.
+- The historical corpus is **open** — it cannot be exhaustively enumerated — so "closed" means *measured*, with a documented `irreducible` residual (never a bare `unknown`), not zero.
 - Discovery mechanisms are nascent (one spiked BnF-SRU mechanism + operator-supplied ARKs); **manual search-and-log is a valid, first-class path** wherever no automated adapter exists.
 - Public-domain determination is per item and per repository; non-public-domain sources are tracked but not mirrored.
 - Non-Gallica acquisition/discovery adapters are built **as sources demand** (Trove first for PB-P005); they are tracked capability items, not up-front blockers.

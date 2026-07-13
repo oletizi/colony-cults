@@ -6,7 +6,7 @@
 
 ## Summary
 
-A governed, **non-coding research program** (with a small tooling tail) that closes the gap the `corpus-coverage-audit` measures. It runs an iterative, `bib coverage`-driven loop — search-and-log repositories → discover / inventory / verify / promote → acquire (any repository) → reconcile → re-measure → repeat — plus forward discovery (bibliographic mining + suspected/referenced resolution). It populates every audit dimension (search-log, known-extent, evidence-class, suspected/referenced) across the whole Port Breton case and all repositories, building per-repository acquisition/discovery adapters as sources demand. "Closed" is **measured, not zero**: a documented `unknown` residual is a valid terminal state for an open historical corpus. Approach: **reuse** the shipped `source-group-acquisition` pipeline and audit; add only the genuinely-missing capability (per-repository adapters, a search-and-log workflow, bibliographic mining), each behind a small, typed, composed unit.
+A governed, **non-coding research program** (with a small tooling tail) that closes the gap the `corpus-coverage-audit` measures. It runs an iterative, `bib coverage`-driven loop — search-and-log repositories → discover / inventory / verify / promote → acquire (any repository) → reconcile → re-measure → repeat — plus forward discovery (bibliographic mining + suspected/referenced resolution). It populates every audit dimension (search-log, known-extent, evidence-class, suspected/referenced) across the whole Port Breton case and all repositories, building per-repository acquisition/discovery adapters as sources demand. "Closed" is **measured, not zero**: a documented `irreducible` residual (never a bare `unknown`) is a valid terminal state for an open historical corpus. Approach: **reuse** the shipped `source-group-acquisition` pipeline and audit; add only the genuinely-missing capability (per-repository adapters, a search-and-log workflow, bibliographic mining), each behind a small, typed, composed unit.
 
 ## Technical Context
 
@@ -31,7 +31,7 @@ A governed, **non-coding research program** (with a small tooling tail) that clo
 *GATE: passes before Phase 0; re-checked after Phase 1. No violations — no Complexity Tracking needed.*
 
 - **I. Evidence Before Narrative** — PASS. The program's core is turning `unknown` into logged evidence; progress is the audit's measured output, never an asserted narrative.
-- **II. Preserve Disagreement & Uncertainty** — PASS. `unknown` is an explicit, valid terminal state; conflicts/uncertainty are recorded (search-log remaining-questions, documented residual), never smoothed.
+- **II. Preserve Disagreement & Uncertainty** — PASS. Uncertainty is named, not smoothed: an unmeasured extent is an explicit `unexamined` (open) or `irreducible` (valid terminal) state — never a bare `unknown`; conflicts are recorded (search-log remaining-questions, documented residual).
 - **III. Provenance Is Mandatory** — PASS. Every lead records its provenance (which search / which acquired source's bibliography); acquisitions carry full asset provenance via the shipped pipeline.
 - **IV. Respect Copyright (Fail Closed)** — PASS. Per-item public-domain determination gates every acquisition; non-PD / uncertain sources are cataloged but NOT mirrored.
 - **V. Fail Loud, No Fallbacks** — PASS. Discovery fails loud on ambiguous/unverifiable leads and never fabricates identifiers; a missing repository adapter is surfaced, not faked.
@@ -64,7 +64,7 @@ New/extended code is small and lives alongside the shipped bibliography + source
 src/
 ├── bibliography/            # SSOT + audit (shipped) — extended, not replaced
 │   ├── search-log.ts        # (shipped) search-log read/validate — extended with an authoring/append path
-│   └── coverage/            # (shipped) coverage model/report — consumed, unchanged
+│   └── coverage/            # (shipped) coverage model/report — extended: render the three-state extent (unexamined/irreducible), never a bare `unknown` (R9/T029)
 ├── sourcegroup/             # discover/inventory/verify/promote/acquire/reconcile (shipped) — reused
 │   ├── discover.ts          # (shipped) — extended: bibliographic-mining candidate source
 │   └── adapters/            # NEW — per-repository RepositoryAdapter implementations
@@ -75,7 +75,7 @@ src/
     └── bibliography.ts      # (shipped) bib sub-dispatch — add search-log authoring + mining verbs as needed
 ```
 
-**Structure Decision**: extend the shipped `bibliography` + `sourcegroup` trees; the only genuinely new code is `sourcegroup/adapters/` (the multi-repository seam) plus a search-log authoring path and a bibliographic-mining discovery source. The research *process* (the loop, the judgment) is not code and lives in the operator/agent workflow described in `quickstart.md`.
+**Structure Decision**: extend the shipped `bibliography` + `sourcegroup` trees; the only genuinely new code is `sourcegroup/adapters/` (the multi-repository seam) plus a search-log authoring path, a bibliographic-mining discovery source, and the three-state campaign-extent field with its distinct coverage rendering (R9/T029). The research *process* (the loop, the judgment) is not code and lives in the operator/agent workflow described in `quickstart.md`.
 
 ## Complexity Tracking
 

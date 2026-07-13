@@ -15,6 +15,7 @@ A research program with a small tooling tail. Tasks are of two kinds: **[code]**
 - [ ] T004 [code] Implement the Gallica adapter wrapping the shipped fetcher in `src/sourcegroup/adapters/gallica.ts`; unit tests for INV-2 (unverifiable → throw), INV-3 (rights gate), INV-6 (never `bib migrate`).
 - [ ] T005 [code] Add the append-safe **search-log authoring** path in `src/bibliography/search-log.ts` (write a `SearchLogRecord` without rewriting others' entries); unit test for INV-1 (a search always yields a committed record, incl. `dry`).
 - [ ] T006 [code] Add the evidence-class facet (open seed vocab from research R2) to the Source model + `bib` assignment path; soft-warn on unknown class.
+- [ ] T029 [code] [foundational for US6/US7] Add the three-state extent to the campaign/source-group model — `knownMemberCount: number | 'unexamined' | 'irreducible'`, with `extentBasis` required for a number and for `irreducible` and omitted for `unexamined` — and render the state distinctly in `bib coverage` (never a bare `unknown`); unit tests for the basis-required rule and the render (R9). Precedes T023/T025.
 
 ## Phase 3: User Story 1 — Search a repository and log the result (P1)
 
@@ -61,14 +62,14 @@ A research program with a small tooling tail. Tasks are of two kinds: **[code]**
 
 **Goal**: numeric denominator where defensible. **Independent test**: set a campaign extent from research; coverage shows a numeric gap.
 
-- [ ] T023 [US6] [research] Research + set `knownMemberCount` + `extentBasis` for campaigns whose extent is boundable (e.g. the trial corpus); leave others explicit `unknown` with basis (SC-005).
+- [ ] T023 [US6] [research] Research + set `knownMemberCount` + `extentBasis` for campaigns whose extent is boundable (e.g. the trial corpus); mark genuinely-unbounded extents `irreducible` with basis, and leave un-researched extents `unexamined` (SC-005) — never a bare `unknown`. Depends on T029.
 
 ## Phase 9: User Story 7 — Declare measured closure (P3)
 
-**Goal**: defensible stopping condition. **Independent test**: after closure conditions hold, `bib coverage` shows only documented `unknown` residual.
+**Goal**: defensible stopping condition. **Independent test**: after closure conditions hold, `bib coverage` shows only documented `irreducible` residual (no `unexamined` dimension left).
 
 - [ ] T024 [US7] [code] Track consecutive dry rounds per repository × campaign; mark searched-for-now at 2 (research R1); test INV against fixtures.
-- [ ] T025 [US7] [research] Per campaign, evaluate + record measured-closure (all leads resolved/acquired, all repos logged, residual documented); update `RESEARCH_LOG.md`.
+- [ ] T025 [US7] [research] Per campaign, evaluate + record measured-closure (all leads resolved/acquired, all repos logged, residual documented as `irreducible` with basis and no `unexamined` dimension left); update `RESEARCH_LOG.md`. Depends on T029.
 
 ## Phase 10: Polish & cross-cutting
 
@@ -78,7 +79,7 @@ A research program with a small tooling tail. Tasks are of two kinds: **[code]**
 
 ## Dependencies & order
 
-- Setup (T001–T002) → Foundational (T003–T006) → user-story phases.
+- Setup (T001–T002) → Foundational (T003–T006, T029) → user-story phases.
 - **P1 first** (US1 search-and-log, US2 reconcile) delivers the MVP: measured search history + immediate closure of already-acquired.
 - US3 depends on US1/US4 producing approved members; the Trove adapter (T015) unblocks T016.
 - Forward discovery (US4) feeds US3/US5 continuously — the loop iterates.
@@ -90,4 +91,4 @@ A research program with a small tooling tail. Tasks are of two kinds: **[code]**
 
 ## MVP scope
 
-**US1 + US2** (P1): search-and-log the primary repositories and reconcile the already-acquired sources — the audit's dominant `unknown` (empty search history) becomes measured and the understated acquisitions are closed. Everything else extends the loop.
+**US1 + US2** (P1): search-and-log the primary repositories and reconcile the already-acquired sources — the audit's dominant gap (empty search history) becomes measured and the understated acquisitions are closed. Everything else extends the loop.

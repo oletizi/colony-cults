@@ -19,12 +19,20 @@ Validation (reused): unknown repository/campaign fails loud. New: an **append-sa
 
 ## CampaignExtent (new fields on a campaign / source-group)
 
+A campaign's believed extent is **never the bare word `unknown`** — that overloads "we haven't looked" with "we looked and it's unbounded". It is exactly one of three explicit states (R9):
+
+| State | Meaning | `extentBasis` |
+|---|---|---|
+| `<number>` | a measured, bounded extent | **required** — the research basis for the number |
+| `unexamined` | not yet researched (baseline); no extent claim is made | not required — the honesty is in naming it un-researched |
+| `irreducible` | researched and genuinely unbounded/unknowable | **required** — why it cannot be bounded |
+
 | Field | Type | Notes |
 |---|---|---|
-| `knownMemberCount` | number \| `unknown` | believed extent; `unknown` is a valid, explicit value |
-| `extentBasis` | string | required when a number is set — the research basis; for `unknown`, why it is unknowable |
+| `knownMemberCount` | number \| `unexamined` \| `irreducible` | never a bare `unknown`, `0`, blank, or a fabricated number |
+| `extentBasis` | string | required for a number and for `irreducible`; omitted for `unexamined` |
 
-Coverage `gap` = `knownMemberCount − actualMemberCount` when numeric, else `unknown` (never `0`/blank).
+Coverage `gap` = `knownMemberCount − actualMemberCount` when numeric, else the state's own word (`unexamined` / `irreducible`) — never `0`, blank, or bare `unknown`.
 
 ## DiscoveryCandidate (new, pre-inventory)
 
@@ -59,6 +67,6 @@ Per-repository capability descriptor: `name`, `kind`, `searchMechanism` (`automa
 ## Invariants
 
 - A single intellectual **work is counted once** in coverage; multiple repository copies are separate RepositoryRecords (FR-015).
-- `unknown` is always **explicit** — never rendered as blank, `0`, or a fabricated number (FR-006).
+- A "no number yet" extent is always an **explicit named state** — `unexamined` (not yet researched) or `irreducible` (researched, unbounded, with basis) — never a bare `unknown`, blank, `0`, or a fabricated number (FR-006).
 - An identifier is **never fabricated**; an unverifiable candidate fails loud (FR-008).
 - Only `public-domain` rights permit mirroring; `restricted`/`uncertain` block it but keep the catalog entry (FR-007, Principle IV).
