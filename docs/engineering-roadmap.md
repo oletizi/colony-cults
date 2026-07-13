@@ -105,6 +105,14 @@ Scoped-down capture from a third-party "Corpus Coverage & Discovery Audit" propo
 - design: docs/superpowers/specs/2026-07-11-corpus-print-pdf-design.md
 - depends-on: impl:feature/corpus-browser
 
+## impl:feature/coverage-web-view
+- status: planned
+- spec: specs/008-coverage-web-view
+- analyze-clean: yes
+- design-approved: yes
+- design: docs/superpowers/specs/2026-07-12-coverage-web-view-design.md
+- depends-on: impl:feature/corpus-browser, impl:feature/corpus-coverage-audit
+A public research-status page in the corpus-browser Astro site that renders the coverage-audit `CoverageReport` projection — framing the corpus honestly as an in-progress research effort ("what we hold, what is still missing"). One `/coverage` route composes four small section components over the report's four parts: per-campaign coverage (members vs believed extent, gap or `unknown`), evidence-class distribution (counts), the unresolved-references register (grouped by campaign + an ungrouped bucket), and the repository × campaign search history. Built statically at build time by importing the pure `buildCoverageReport` projection over the committed bibliography (`bibliography/sources/*.yml` + `search-log.yml`) — no archive, no snapshot, no derived artifact committed. Honors the audit's core constraint: counts and the literal `unknown` only, NEVER a headline coverage percentage or completeness bar. Cross-links campaigns/register owners to existing `/sources/<id>` pages where one exists; one masthead nav link. UI is authored through `/frontend-design` (Constitution Principle I). Out of scope: per-campaign drill-down routes, filtering/sorting, client JS, any percentage/progress affordance, projection or schema changes.
 ## impl:feature/edition-publishing
 - status: shipped
 - analyze-clean: yes

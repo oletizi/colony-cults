@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coverage — mockup</title>
+<style>
+  :root {
+    --paper: #e4e3dd; --ink: #17150f; --vellum: #f3f0e7; --slate: #33404a;
+    --oxide: #9a3324; --rule: #c7c4b8; --faint: #7c7a70;
+    --serif: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --didone: "Playfair Display", "Didot", "Bodoni 72", Georgia, serif;
+    --grote: "Neue Haas Grotesk Text", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * , *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--grote); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--oxide); outline-offset: 2px; }
+
+  /* ---- masthead with the one global Coverage nav link ---- */
+  .masthead { display: flex; align-items: baseline; gap: 12px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--oxide); margin: 0 0 20px; }
+  .masthead__home { color: var(--oxide); text-decoration: none; border-bottom: 1px solid var(--rule); }
+  .masthead__home:hover { border-bottom-color: var(--oxide); }
+  .masthead__sep { color: var(--rule); margin: 0 7px; }
+  .masthead__tail { color: var(--oxide); }
+  .masthead__nav { margin-left: auto; }
+  .masthead__nav-link { color: var(--oxide); text-decoration: none; border-bottom: 1px solid transparent; } /* current page */
+
+  .coverage { max-width: 940px; margin: 0 auto; padding: 56px 28px 96px; }
+
+  /* ---- hero: thesis in the Didone voice, no number, no percentage ---- */
+  .cov__title { font-family: var(--didone); font-weight: 400; font-size: clamp(38px, 8vw, 84px); line-height: 0.99; letter-spacing: -0.015em; margin: 0; max-width: 15ch; }
+  .cov__stamp { width: 132px; height: 2px; background: var(--oxide); margin: 26px 0 22px; }
+  .cov__abstract { font-family: var(--grote); font-size: clamp(15px, 2.2vw, 18px); line-height: 1.62; color: var(--slate); max-width: 58ch; margin: 0; }
+  .cov__note { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: var(--faint); margin: 18px 0 0; }
+  .cov__note b { color: var(--oxide); font-weight: inherit; }
+
+  /* ---- section scaffold ---- */
+  .sec { margin-top: 56px; }
+  .sec__label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--faint); margin: 0 0 18px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); display: flex; }
+  .sec__count { margin-left: auto; color: var(--faint); }
+  .empty { font-family: var(--grote); font-size: 14px; color: var(--faint); font-style: italic; margin: 0; }
+
+  /* ---- the stamped gap: the page's signature. gaps + unknown are oxide marks ---- */
+  .gap { color: var(--oxide); }
+  .unknown { color: var(--oxide); font-variant: small-caps; letter-spacing: 0.06em; }
+  .held { color: var(--ink); }
+
+  /* ---- 1. campaigns ---- */
+  .camp { padding: 22px 24px 18px; border: 1px solid var(--rule); background: #fff; box-shadow: 0 1px 0 var(--rule), 0 18px 38px -32px rgba(23,21,15,0.4); margin-bottom: 16px; }
+  .camp__head { display: flex; align-items: baseline; gap: 14px; }
+  .camp__title { font-family: var(--didone); font-weight: 400; font-size: clamp(22px, 3.4vw, 30px); line-height: 1.06; margin: 0; }
+  .camp__id { margin-left: auto; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--faint); white-space: nowrap; }
+  .camp__extent { font-family: var(--mono); font-size: 13px; letter-spacing: 0.02em; color: var(--slate); margin: 16px 0 0; padding-top: 14px; border-top: 1px solid var(--rule); }
+  .camp__sep { color: var(--rule); margin: 0 8px; }
+  .camp__states { font-family: var(--mono); font-size: 12px; color: var(--faint); margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .camp__states b { color: var(--ink); font-weight: inherit; }
+
+  /* ---- 2. evidence classes ---- */
+  .evid { display: grid; grid-template-columns: 1fr auto; gap: 2px 24px; font-family: var(--mono); font-size: 13px; max-width: 460px; }
+  .evid__row { display: contents; }
+  .evid__class { padding: 7px 0; border-bottom: 1px dotted var(--rule); color: var(--slate); }
+  .evid__n { padding: 7px 0; border-bottom: 1px dotted var(--rule); text-align: right; color: var(--ink); }
+  .evid__class--none { color: var(--oxide); }
+
+  /* ---- 3. register ---- */
+  .reg__group { margin-bottom: 26px; }
+  .reg__group-h { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--slate); margin: 0 0 12px; }
+  .reg__group-h--none { color: var(--oxide); }
+  .reg__entry { padding: 12px 0; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 148px 1fr; gap: 4px 18px; }
+  .reg__tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .reg__tag--ref { color: var(--faint); }
+  .reg__tag--sus { color: var(--oxide); }
+  .reg__cited { font-family: var(--serif); font-size: 16px; color: var(--ink); margin: 0; }
+  .reg__basis { font-family: var(--grote); font-size: 13px; color: var(--slate); margin: 4px 0 0; }
+  .reg__owner { font-family: var(--mono); font-size: 11px; color: var(--faint); margin: 6px 0 0; }
+  .reg__owner a { border-bottom: 1px solid var(--rule); text-decoration: none; }
+  .reg__owner a:hover { border-bottom-color: var(--oxide); color: var(--oxide); }
+
+  /* ---- 4. search history ---- */
+  .hist { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+  .hist th { text-align: left; font-weight: inherit; color: var(--faint); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 16px 10px 0; border-bottom: 1px solid var(--rule); }
+  .hist td { padding: 12px 16px 12px 0; border-bottom: 1px solid var(--rule); vertical-align: top; color: var(--slate); }
+  .hist__repo { color: var(--ink); }
+  .hist__q { display: block; color: var(--ink); }
+  .hist__q::before { content: "›"; color: var(--oxide); margin-right: 7px; }
+  .hist__none { color: var(--faint); }
+  .rollup { font-family: var(--mono); font-size: 11px; color: var(--faint); margin: 16px 0 0; }
+
+  .colophon { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; color: var(--faint); }
+</style>
+</head>
+<body>
+<main class="coverage">
+  <header>
+    <p class="masthead">
+      <a class="masthead__home" href="/">Corpus</a>
+      <span class="masthead__sep" aria-hidden="true">·</span>
+      <span class="masthead__tail">research status</span>
+      <span class="masthead__nav"><a class="masthead__nav-link" href="/coverage" aria-current="page">Coverage</a></span>
+    </p>
+    <h1 class="cov__title">What we hold, and what we're still missing.</h1>
+    <div class="cov__stamp" aria-hidden="true"></div>
+    <p class="cov__abstract">A standing account of the corpus as a research effort in progress — the evidence gathered, the works cited but not yet located, and the repositories searched. Nothing here is a score; every gap is a count, or the word <span class="unknown">unknown</span>.</p>
+    <p class="cov__note">Marks in <b>oxide</b> are the gaps — cited-but-unfound works, suspected records, and counts we cannot yet close.</p>
+  </header>
+
+  <!-- 1. per-campaign coverage -->
+  <section class="sec">
+    <p class="sec__label">Campaign coverage <span class="sec__count">1 campaign</span></p>
+    <article class="camp">
+      <div class="camp__head">
+        <h2 class="camp__title">De Rays trial records</h2>
+        <span class="camp__id">PB-P004</span>
+      </div>
+      <p class="camp__extent"><span class="held">3 held</span><span class="camp__sep">·</span><span class="unknown">believed extent unknown</span><span class="camp__sep">·</span>gap <span class="gap">unknown</span></p>
+      <p class="camp__states"><span><b>2</b> approved for acquisition</span><span><b>1</b> discovered</span><span><b>1</b> excluded</span></p>
+    </article>
+    <article class="camp">
+      <div class="camp__head">
+        <h2 class="camp__title">Trove newspaper coverage</h2>
+        <span class="camp__id">PB-P013</span>
+      </div>
+      <p class="camp__extent"><span class="held">1 held</span><span class="camp__sep">·</span>4 believed<span class="camp__sep">·</span>gap <span class="gap">3</span></p>
+      <p class="camp__states"><span><b>1</b> archived</span></p>
+    </article>
+  </section>
+
+  <!-- 2. evidence-class distribution -->
+  <section class="sec">
+    <p class="sec__label">Evidence by class <span class="sec__count">11 works</span></p>
+    <div class="evid">
+      <div class="evid__row"><span class="evid__class">pamphlet</span><span class="evid__n">4</span></div>
+      <div class="evid__row"><span class="evid__class">newspaper</span><span class="evid__n">1</span></div>
+      <div class="evid__row"><span class="evid__class">trial-record</span><span class="evid__n">2</span></div>
+      <div class="evid__row"><span class="evid__class">prospectus</span><span class="evid__n">1</span></div>
+      <div class="evid__row"><span class="evid__class evid__class--none">unclassified</span><span class="evid__n">3</span></div>
+    </div>
+  </section>
+
+  <!-- 3. unresolved-references register -->
+  <section class="sec">
+    <p class="sec__label">Unresolved references <span class="sec__count">4 open</span></p>
+    <div class="reg__group">
+      <p class="reg__group-h">De Rays trial records · PB-P004</p>
+      <div class="reg__entry">
+        <span class="reg__tag reg__tag--sus">Suspected gap</span>
+        <div>
+          <p class="reg__cited">Appeal-court records for the de Rays trial</p>
+          <p class="reg__basis">Trial testimony references an appeal not yet located.</p>
+          <p class="reg__owner">owner PB-P004</p>
+        </div>
+      </div>
+      <div class="reg__entry">
+        <span class="reg__tag reg__tag--ref">Cited · unidentified</span>
+        <div>
+          <p class="reg__cited">“Rapport de l'expert maritime”</p>
+          <p class="reg__basis">Cited in the appeal brief; no holding located.</p>
+          <p class="reg__owner">owner <a href="/sources/PB-P008/">PB-P008</a></p>
+        </div>
+      </div>
+    </div>
+    <div class="reg__group">
+      <p class="reg__group-h reg__group-h--none">No campaign</p>
+      <div class="reg__entry">
+        <span class="reg__tag reg__tag--ref">Cited · unidentified</span>
+        <div>
+          <p class="reg__cited">“Prospectus de la Nouvelle-France”</p>
+          <p class="reg__basis">Advertised in the colony's promotional matter.</p>
+          <p class="reg__owner">owner <a href="/sources/PB-P007/">PB-P007</a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. search history -->
+  <section class="sec">
+    <p class="sec__label">Search history <span class="sec__count">3 searches</span></p>
+    <table class="hist">
+      <thead><tr><th>Repository</th><th>Campaign</th><th>Last searched</th><th>Open questions</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="hist__repo">State Library of Queensland</td>
+          <td>PB-P004</td>
+          <td>2026-07-03</td>
+          <td><span class="hist__q">Appeal-court records not online.</span></td>
+        </tr>
+        <tr>
+          <td class="hist__repo">Gallica / BnF</td>
+          <td>PB-P004</td>
+          <td>2026-07-05</td>
+          <td class="hist__none">— none open</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="rollup">By repository · State Library of Queensland last 2026-07-03 · Gallica / BnF last 2026-07-05</p>
+  </section>
+
+  <footer class="colophon">Coverage · derived from the bibliography at build · never a score, only counts and <span style="color:var(--oxide)">unknown</span></footer>
+</main>
+</body>
+</html>

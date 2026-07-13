@@ -1,0 +1,107 @@
+---
+/**
+ * T006 -- the evidence-by-class section of `/coverage`. A plain audit tally of
+ * how the corpus's works are classified: a two-column monospace grid of class
+ * name against count, in the archive's "Prospectus / Dossier" hand.
+ *
+ * The signature mark: the `unclassified` row is stamped in oxide (`--oxide`) --
+ * it is a gap of classification, not a class. Everything else stays quiet in
+ * `--slate`/`--ink`. Counts are plain integers; there is deliberately NEVER a
+ * percentage, ratio, or progress bar here (design non-negotiable) -- every
+ * number is a count, nothing is ever a score.
+ */
+import type { CoverageReport } from '@/bibliography/coverage/coverage-model';
+
+interface Props {
+  distribution: CoverageReport['evidenceClassDistribution'];
+}
+
+const { distribution } = Astro.props;
+
+const total = distribution.reduce((sum, row) => sum + row.count, 0);
+const totalLabel = `${total} ${total === 1 ? 'work' : 'works'}`;
+---
+
+<section class="sec">
+  <p class="sec__label">Evidence by class<span class="sec__count">{totalLabel}</span></p>
+  {distribution.length === 0 ? (
+    <p class="empty">No evidence classified yet.</p>
+  ) : (
+    <div class="evid">
+      {distribution.map((row) => (
+        <div class="evid__row">
+          <span class={`evid__class${row.class === 'unclassified' ? ' evid__class--none' : ''}`}>
+            {row.class}
+          </span>
+          <span class="evid__n">{row.count}</span>
+        </div>
+      ))}
+    </div>
+  )}
+</section>
+
+<style>
+  .sec {
+    margin-top: 56px;
+  }
+
+  .sec__label {
+    display: flex;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .sec__count {
+    margin-left: auto;
+    color: var(--faint);
+  }
+
+  .empty {
+    font-family: var(--grote);
+    font-size: 14px;
+    color: var(--faint);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* Two-column tally: class name against count. The dotted rules keep it an
+     audit sheet rather than a table of results. */
+  .evid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 24px;
+    font-family: var(--mono);
+    font-size: 13px;
+    max-width: 460px;
+  }
+
+  .evid__row {
+    display: contents;
+  }
+
+  .evid__class {
+    padding: 7px 0;
+    border-bottom: 1px dotted var(--rule);
+    color: var(--slate);
+    overflow-wrap: anywhere;
+  }
+
+  .evid__n {
+    padding: 7px 0;
+    border-bottom: 1px dotted var(--rule);
+    text-align: right;
+    color: var(--ink);
+  }
+
+  /* The stamped gap: `unclassified` is an absence of classification, marked in
+     the archive's oxide critical hand. */
+  .evid__class--none {
+    color: var(--oxide);
+  }
+</style>

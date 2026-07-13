@@ -1,0 +1,235 @@
+---
+/**
+ * T005 -- the `/coverage` page's first section: per source-group ("campaign")
+ * coverage roll-ups. Each card echoes the landing's `.entry` (white bg, hairline
+ * `--rule` border, subtle shadow) and carries the page's SIGNATURE, "the stamped
+ * gap": oxide (`--oxide`, the archive's critical-marks-only hand) is spent ONLY
+ * on missing evidence -- the literal `unknown`, and a `gap` that is `unknown` or
+ * a positive count. A `gap` of `0` is fully held and reads `--ink`, never oxide.
+ * Everything else -- held/believed counts, lifecycle chips -- stays quiet.
+ *
+ * NO percentage, ratio, or progress bar renders here (design non-negotiable):
+ * every gap is a count or the literal word `unknown`.
+ */
+import type { CampaignCoverage } from '@/bibliography/coverage/coverage-model';
+
+interface Props {
+  campaigns: CampaignCoverage[];
+  /**
+   * Resolves a source-group id to its display title and (optionally) a
+   * reading-page href. In US1 no href is supplied, so ids render as plain text;
+   * US2 supplies one later and it is honored if present. Source-groups usually
+   * have no reading page, so href is usually absent -- that is correct.
+   */
+  labelFor: (sourceId: string) => { title?: string; href?: string };
+}
+
+const { campaigns, labelFor } = Astro.props;
+
+/**
+ * Humanize a lifecycle-state key for display: authored states are hyphenated
+ * (`approved-for-acquisition`), the synthetic bucket is the bare word `unset`.
+ * Rendering only replaces the hyphens -- no relabeling, so the vocabulary the
+ * catalogue authored is exactly what the reader sees.
+ */
+const humanizeState = (state: string): string => state.replace(/-/g, ' ');
+
+const campaignNoun = campaigns.length === 1 ? 'campaign' : 'campaigns';
+
+// Resolve each card's display shell once (title + optional link) so the template
+// stays declarative and the id-vs-title fallback lives in one place.
+const cards = campaigns.map((coverage) => {
+  const resolved = labelFor(coverage.campaign);
+  return {
+    coverage,
+    title: resolved.title ?? coverage.campaign,
+    href: resolved.href,
+  };
+});
+---
+
+<section class="sec">
+  <p class="sec__label">Campaign coverage <span class="sec__count">{campaigns.length} {campaignNoun}</span></p>
+
+  {campaigns.length === 0 ? (
+    <p class="empty">No campaigns defined yet.</p>
+  ) : (
+    cards.map(({ coverage, title, href }) => (
+      <article class="camp">
+        <div class="camp__head">
+          <h2 class="camp__title">{title}</h2>
+          {href ? (
+            <a class="camp__id camp__id--link" href={href}>{coverage.campaign}</a>
+          ) : (
+            <span class="camp__id">{coverage.campaign}</span>
+          )}
+        </div>
+
+        <p class="camp__extent">
+          <span class="held">{coverage.actualMemberCount} held</span>
+          <span class="camp__sep" aria-hidden="true">·</span>
+          {coverage.knownMemberCount === 'unknown' ? (
+            <>believed extent <span class="unknown">unknown</span></>
+          ) : (
+            <>{coverage.knownMemberCount} believed</>
+          )}
+          <span class="camp__sep" aria-hidden="true">·</span>
+          gap {coverage.gap === 0 ? (
+            <span class="held">0</span>
+          ) : (
+            <span class="gap">{coverage.gap}</span>
+          )}
+        </p>
+
+        {coverage.membersByLifecycleState.length === 0 ? (
+          <p class="camp__empty">No members catalogued yet.</p>
+        ) : (
+          <p class="camp__states">
+            {coverage.membersByLifecycleState.map((bucket) => (
+              <span><b>{bucket.count}</b> {humanizeState(bucket.state)}</span>
+            ))}
+          </p>
+        )}
+      </article>
+    ))
+  )}
+</section>
+
+<style>
+  /* Section scaffold -- shared with the other coverage sections (mono label with
+     a right-aligned count over a hairline rule), matching the landing's
+     `.holdings__label`. */
+  .sec {
+    margin-top: 56px;
+  }
+
+  .sec__label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+  }
+
+  .sec__count {
+    margin-left: auto;
+    color: var(--faint);
+  }
+
+  .empty {
+    font-family: var(--grote);
+    font-size: 14px;
+    color: var(--faint);
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* The stamped gap: gaps + the literal `unknown` are the only oxide marks.
+     `.held` keeps a fully-held count (and a gap of 0) in quiet ink. */
+  .gap {
+    color: var(--oxide);
+  }
+
+  .unknown {
+    color: var(--oxide);
+    font-variant: small-caps;
+    letter-spacing: 0.06em;
+  }
+
+  .held {
+    color: var(--ink);
+  }
+
+  /* One card per campaign -- the landing `.entry` shell (white leaf, hairline
+     border, subtle lift). */
+  .camp {
+    padding: 22px 24px 18px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    box-shadow: 0 1px 0 var(--rule), 0 18px 38px -32px rgba(23, 21, 15, 0.4);
+    margin-bottom: 16px;
+  }
+
+  .camp__head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .camp__title {
+    font-family: var(--didone);
+    font-weight: 400;
+    font-size: clamp(22px, 3.4vw, 30px);
+    line-height: 1.06;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  .camp__id {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+    white-space: nowrap;
+  }
+
+  /* A link only when a target exists (US2): the site's hairline-ignites-to-oxide
+     affordance, matching the register owner links and the home wordmark. */
+  .camp__id--link {
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    transition: border-color 120ms ease, color 120ms ease;
+  }
+
+  .camp__id--link:hover,
+  .camp__id--link:focus-visible {
+    color: var(--oxide);
+    border-bottom-color: var(--oxide);
+  }
+
+  /* The extent rail -- the provenance-rail echo: mono, quiet slate, capped by a
+     hairline rule. Only the gap/unknown marks break to oxide. */
+  .camp__extent {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    color: var(--slate);
+    margin: 16px 0 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .camp__sep {
+    color: var(--rule);
+    margin: 0 8px;
+  }
+
+  /* Lifecycle chips: count in ink, state label in faint. */
+  .camp__states {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+    margin: 10px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+  }
+
+  .camp__states b {
+    color: var(--ink);
+    font-weight: inherit;
+  }
+
+  .camp__empty {
+    font-family: var(--grote);
+    font-size: 14px;
+    color: var(--faint);
+    font-style: italic;
+    margin: 10px 0 0;
+  }
+</style>
