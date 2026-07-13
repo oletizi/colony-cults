@@ -48,9 +48,10 @@ The `work` vs `work-bundle` distinction is the existing `kind`: `kind == 'source
 | Field | Type | Notes |
 |---|---|---|
 | `scope` | ScopeRef | REPLACES the retired `campaign` scalar. `{ kind, id }`, validated per ScopeRef resolution. |
-| `id`, `date`, `repository`, `scope`, `coverage` | (required) | `remainingQuestions`, `notes` optional (unchanged). |
+| `query` | string | the free-text "what was searched" descriptor — the incumbent field that was **named `scope`** in the shipped schema, renamed to `query` so the new `scope: ScopeRef` could take the `scope` name (implementation reconciliation; a spec-level collision the data-model above had missed). |
+| `id`, `date`, `repository`, `scope`, `query`, `coverage` | (required) | `remainingQuestions`, `notes` optional (unchanged). |
 
-The loader reads **only** `scope:`; a `campaign:` key is a **hard error** (fail loud) — no dual-schema. The one existing entry SRCH-0001 is rewritten `campaign: PB-P004` → `scope: { kind: work-bundle, id: PB-P004 }`.
+The loader reads **only** `scope:`; a `campaign:` key is a **hard error** (fail loud) — no dual-schema. The one existing entry SRCH-0001 is rewritten `campaign: PB-P004` → `scope: { kind: work-bundle, id: PB-P004 }` (and its old free-text `scope:` descriptor becomes `query:`).
 
 ## Coverage projections (existing — changed)
 
