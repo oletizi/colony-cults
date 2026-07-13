@@ -41,3 +41,17 @@
     - "Cour de Paris appeal-court archival case files not searched beyond the one published pleading (PB-P008)"
     - "Contemporary French press coverage of the trial beyond the colony's own newspaper not yet searched"
   notes: "Discovery mechanism: operator-supplied arks + BnF OAI resolution (spec 009 assumption). Logged retroactively from the dated repository-responses evidence (2026-07-11); not a fresh query."
+
+- id: SRCH-0002
+  date: 2026-07-13
+  repository: Gallica / BnF
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "Fresh search on SRCH-0001's two open threads: (1) Cour de Paris / trial court records beyond the one held pleading (PB-P008); (2) contemporary French press of the de Rays trial beyond the colony's own paper. Gallica full-text + BnF catalogue, cross-checked against the legal-history databases Criminocorpus and the Bibliographie numerique d'histoire du droit."
+  coverage: "Thread 1 (court records): found one NEW discrete trial-record work -- Vermont, 'Le proces du Marquis de Rays... Les Plaidoiries' (Marseille, 1884, 192 p.), the advocate Me Vermont's pleadings, distinct from PB-P008 -> cataloged as PB-P012 (status: discovered; bibliographic identification only, no digitized copy located on Gallica). The official court DECISIONS (Seine jugement 1884; Cour de Paris appeal arret 14 May 1884; cassation) are attested but live inside the legal serials (Gazette des Tribunaux, Gazette du Palais, Dalloz, Bulletin des arrets Cour de cassation en matiere criminelle -- all on Gallica), not as standalone monographs -> recorded as a suspected gap on PB-P004. Thread 2 (press): contemporary coverage is abundant and politically polarized (Le Figaro, Le Temps, La Presse, et al., all in Gallica's digitized press) -- an effectively IRREDUCIBLE open set, not exhaustively enumerable as discrete corpus members; treated as a documented residual, not left as a bare unexamined unknown."
+  remainingQuestions:
+    - "PB-P012 (Vermont 'Les Plaidoiries', 1884): identified bibliographically but no digitized/held copy located yet -- locate a holding + confirm per-item rights before promotion to approved-for-acquisition."
+    - "Official court decisions (Seine jugement 1884; Cour de Paris arret 14 May 1884; cassation): attested but not yet located as discrete items within the legal serials -- serial-issue inventory (Gazette des Tribunaux / Gazette du Palais / Dalloz / Bulletin des arrets) pending."
+    - "Physical Cour de Paris appeal-court case dossier (Archives de Paris / Archives nationales) not searched -- may hold no separately publishable digitized work."
+  notes: "Fresh interactive search pass (spec 009 US1). Press dimension characterized as irreducible rather than enumerated -- exhaustive press mirroring is neither feasible nor the corpus's aim. Supersedes SRCH-0001's two coarser open questions with the narrower, actionable questions above."
