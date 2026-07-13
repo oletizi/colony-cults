@@ -1,3 +1,76 @@
+## 2026-07-12: Ship corpus-print-pdf; publish 72 issues via CDN; design+define edition-publishing
+
+**Goal:** Pick up `impl:feature/corpus-print-pdf` from its runnable spec and take it through
+execute → ship; then (operator-driven) build an english-only reading edition, publish the
+corpus to B2/CDN, and design + spec the follow-on publishing feature.
+
+**Accomplished:**
+- **Shipped corpus-print-pdf (spec 007) end to end.** `/stack-control:execute` dispatched 31
+  tier-tagged tasks to fresh model-sized subagents (haiku/sonnet/opus); govern converged via
+  `--override` (barrage can't run here); `/stack-control:ship` merged **PR #32 → status:shipped**.
+  The Typst facing-page facsimile-edition generator (`src/pdf/`, template + vendored OFL fonts),
+  fail-loud, **99 tests**, byte-identical reproducibility.
+- **Live-iterated an english-only reading edition** (`--no-french` / `PDF_SHOW_FRENCH`): two-column
+  Old Standard TT (19th-c. Modern serif, via `/frontend-design`), book-style indented paragraphs
+  (paragraph gap measured to exactly equal the line gap), single line spacing, justified +
+  hyphenated (per-column `lang`), halved margins, and a **state-gated page-foreground column rule**
+  scoped to the text-column length (repeats per leaf; off versos/blanks/front-back matter).
+- **Fixed a real integrity bug the "use B2" push surfaced:** the colophon + B2 verification were
+  keyed on the *translation-text* sha256, not the image-master hash — carried the real
+  `imageSha256` through snapshot → colophon → verified B2 fetch (12/12 masters verified).
+- **Published all 72 buildable PB-P001 english-only issues** (48 B2-verified + 24 IIIF fallback) to
+  the public B2 bucket; **adopted the Cloudflare read-through CDN** (merged from main, TASK-12) and
+  warmed all 72 PDFs at the edge. Stood up a tailscale review server + a `/frontend-design`ed
+  chronological **index page** (oxblood provenance-rail-as-timeline, embedded Theano Didot masthead).
+- **Designed + specced the follow-on `impl:feature/edition-publishing`.** `/stack-control:design`
+  (brainstorm → design record → 4 decisions) → `/stack-control:define` (spec 008: specify + clarify,
+  4 more decisions): a governed `pdf:publish` pipeline over pre-built PDFs recording per-edition
+  `publications[]` on the Source SSOT, an affirmative fail-closed `Source.rights` gate, and
+  immutable snapshot-versioned artifacts. Spec authored + clarified; **plan → tasks → analyze remain**.
+
+**Didn't Work:**
+- The cross-model **govern barrage still can't complete in this env** (killed) — corpus-print-pdf
+  converged by `--override` after extensive live validation (established pattern).
+- The **B2 Class-B download cap** got exhausted repeatedly (render fetches + warming ~1.4 GB of PDFs)
+  → 403 on all public reads until the operator raised it; the CDN read-through cache is the durable
+  fix (HITs never touch B2). The ~24 "missing" B2 masters were likely the same cap mid-render, not
+  truly absent (TASK-15, re-check after reset).
+- **`run_in_background` bash jobs get killed by the harness** mid-run → relaunched long jobs as
+  detached host processes (`nohup`+`disown`; no `setsid` on macOS).
+- `edition-publishing` define stopped after clarify (operator ran session-end); not yet runnable.
+- 7 PB-P001 monographs + 1 trailing issue are untranslated → can't build editions (TASK-16).
+
+**Course Corrections:**
+- Operator steers reshaped the edition: *"favor the B2 cache"* exposed the image-vs-text sha256
+  conflation; *"do not optimize for my phone"* → reframed as a print-first edition (kept facing-page
+  binding parity); *"single space, not 1.5"* → measured Typst's leading and set it precisely.
+- Ship PR wasn't cleanly mergeable (main had advanced — coverage-audit, corpus-browser, CDN) →
+  merged main, resolved 3 conflicts (append-only journal kept both; two active-feature pointers took
+  main's newer values).
+
+**Insights:**
+- Typst `par.leading` is the inter-line **gap**, not the baseline advance — `leading:10pt` on 8pt
+  read as ~1.96× (double-spaced). Measure empirically; a paragraph gap = line gap needs `spacing`
+  tuned to the measured advance.
+- A `place`d rect **can't repeat across page breaks** and isn't margin-bounded → a **state-gated page
+  foreground** is the right primitive for a per-leaf column rule.
+- The overflow that looked typographic was **structural** — the facing-page parity + per-page rectos
+  spread an issue's ~7 leaves of text across ~40 pages; type density barely moved the count.
+- A **published PDF edition is a derivative WE made** — it belongs in `publications[]` on the Source,
+  distinct from `repositoryRecords[]` (other archives' copies).
+- Note: the auto-derived count below is only this branch's (`edition-publishing`) tail; the session's
+  bulk (corpus-print-pdf, ~30 commits) shipped to `main` via PR #32 this same session.
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 5
+  - define(edition-publishing): clarify spec 008 — 4 decisions integrated
+  - define(edition-publishing): author spec 008 — governed publish pipeline + SSOT record
+  - roadmap(edition-publishing): designing -> in-flight, design-approved
+  - design(edition-publishing): design record (approved)
+  - design(edition-publishing): capture roadmap item + open designing phase
+- Files changed: 5
+- Backlog touched: (none)
+
 ## 2026-07-08: define source-translation spec; ratify constitution; clear dependabot alerts
 
 **Goal:** Pick up and complete the `define` operation for `impl:feature/source-translation`.
@@ -138,3 +211,4 @@ workflow(graduate): impl:feature/source-group-acquisition merging -> validating
 workflow(start-implementing): impl:feature/corpus-print-pdf specifying -> implementing
 workflow(graduate): impl:feature/corpus-coverage-audit merging -> validating
 workflow(graduate): impl:feature/corpus-print-pdf merging -> validating
+workflow(graduate): impl:feature/edition-publishing merging -> validating

@@ -1,12 +1,15 @@
 sourceId: PB-P006
-kind: monograph
+kind: source-group
 case: port-breton
 language: English/Italian
 creator: various
 titles:
   - text: New Italy Museum and survivor materials
     role: canonical
-notes: "Years: various | Access: museum/archive | Public domain: mixed | Important for survivor families and Australian aftermath."
-repositoryRecords:
-  - sourceArchive: Gallica / BnF
-    status: to-collect
+knownMemberCount: unknown
+suspected:
+  - description: "Pre-1955 photographs of early New Italy settlement (settlers clearing land, building shelters, farming, wine-making)"
+    basis: "The New Italy Museum describes holding early-settler photographs. Australian photographs taken before 1955 are out of copyright (the pre-1969 photograph term, not revived by the 2005 extension), so 1880s-1900s settlement photographs are public domain and publishable once digitized with provenance."
+  - description: "Survivor accounts, letters, and personal writings of the de Rays expedition settlers"
+    basis: "The museum holds survivor accounts. Those written before 1955, or by authors dead more than 70 years, are public domain; mid-20th-century reminiscences may remain in copyright. Determine per item on acquisition."
+notes: "Custodian: New Italy Museum (Pacific Highway, Northern Rivers, NSW) — a volunteer-run community museum of the ~200 Marquis de Rays expedition survivor families. Reclassified from a monograph stub to a source-group: this is a heterogeneous holding, not a single work, and the former 'Public domain: mixed' resolves to distinct rights buckets. PUBLISHABLE (public domain, per-item on acquisition): pre-1955 settler photographs, and pre-1955 / author-dead-70y survivor writings (see the suspected[] acquisition targets). ALREADY CATALOGED elsewhere: the 1879-1881 de Rays promotional matter and 'Nouvelle France' maps the museum holds copies of are the same works as PB-P002 / P007 / P009-P011 — do not re-catalog. NOT OURS TO PUBLISH (museum or third-party copyright): museum exhibit text, website family stories, and modern photographs of the artifacts; the physical artifacts themselves (travelling trunk, Wagga quilt, farming implements, bocce balls, wine presses) carry no copyright as objects, but any photograph of them is the photographer's. The prior record wrongly listed the holding repository as Gallica / BnF (a template leftover) — corrected to the New Italy Museum; repositoryRecords removed, since a source-group holds none (members carry their own on acquisition). Publishing the public-domain buckets requires acquiring discrete, provenance-bearing items from the museum, each with its own per-item rights determination."

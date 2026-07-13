@@ -3,6 +3,10 @@ kind: monograph
 case: port-breton
 language: French
 creator: A. Baudouin
+rights:
+  status: public-domain
+  basis: "1883 French imprint (author A. Baudouin, fl. 1883); public domain by publication age under France's life+70 term (elapsed for any plausible death date of an author active in 1883). Basis is publication age; no BnF OAI domaine-public record on file."
+  determinedAt: "2026-07-12"
 titles:
   - text: L'aventure de Port-Breton et la colonie libre dite Nouvelle-France
     role: canonical

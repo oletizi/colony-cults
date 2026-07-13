@@ -1,0 +1,36 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"ef98107..1d37667","reviewClean":true,"note":"pdf:publish + publish:test npm scripts"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"ef98107..1d37667","reviewClean":true,"note":"src/pdf/publish + tests/{unit,integration}/publish skeleton"}
+{"id":"T003","tierLabel":"powerful","model":"opus","commitRange":"ef98107..1d37667","reviewClean":true,"note":"src/model/publication.ts publication view-model types"}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"1d37667..26997da","reviewClean":true,"note":"Source.rights + publications[] additive; index re-exports"}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commitRange":"1d37667..26997da","reviewClean":true,"note":"SOURCE_RIGHTS_STATUS_VALUES vocab + predicate + test"}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"1d37667..26997da","reviewClean":true,"note":"version.ts snapshotShort + resolveSnapshot (injected pin reader)"}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"1d37667..26997da","reviewClean":true,"note":"key.ts versioned/legacy keys + cdnUrl + resolveCdnBase"}
+{"id":"T006","tierLabel":"powerful","model":"opus","commitRange":"6c73483..d4340dd","reviewClean":true,"note":"load.ts SOURCE_KEYS + rights/publications validators + uniqueness"}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commitRange":"6c73483..d4340dd","reviewClean":true,"note":"serializeSource emits rights + publications[] (orderedPublication, idempotent)"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"6c73483..d4340dd","reviewClean":true,"note":"source-writer.ts writeSourceFile over serializeSource"}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"6c73483..d4340dd","reviewClean":true,"note":"publication validation checks + ValidationFindingKind extension"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"upload idempotency test (RED-first)"}
+{"id":"T013","tierLabel":"fast","model":"haiku","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"key/url unit test"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"record round-trip test"}
+{"id":"T016","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"resolve.ts enumerate + missing-PDF surfacing"}
+{"id":"T017","tierLabel":"powerful","model":"opus","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"upload.ts idempotent immutable uploader"}
+{"id":"T018","tierLabel":"powerful","model":"opus","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"record.ts manifest+publication build/upsert"}
+{"id":"T019","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"warm.ts non-fatal CDN warm"}
+{"id":"T022","tierLabel":"balanced","model":"sonnet","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"rights-gate refusal test (SC-003)"}
+{"id":"T023","tierLabel":"powerful","model":"opus","commitRange":"bc86ac4..7759927","reviewClean":true,"note":"rights-gate.ts affirmative fail-closed"}
+{"id":"T020","tierLabel":"powerful","model":"opus","commitRange":"459b430..5e9736f","reviewClean":true,"note":"publish.ts orchestration (dry-run/confirm, record-and-continue)"}
+{"id":"T024","tierLabel":"balanced","model":"sonnet","commitRange":"459b430..5e9736f","reviewClean":true,"note":"rights gate wired first in publish.ts (with T020)"}
+{"id":"T025","tierLabel":"balanced","model":"sonnet","commitRange":"459b430..5e9736f","reviewClean":true,"note":"PB-P001 affirmative rights public-domain"}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"2629383..71a0e27","reviewClean":true,"note":"end-to-end publish integration test (SC-001/SC-004)"}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commitRange":"2629383..71a0e27","reviewClean":true,"note":"scripts/publish-pdf.ts CLI verb + commit hook"}
+{"id":"T026","tierLabel":"balanced","model":"sonnet","commitRange":"0a2f06e..ca209f1","reviewClean":true,"note":"idempotency unit proof (0 new puts, unchanged SSOT)"}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commitRange":"0a2f06e..ca209f1","reviewClean":true,"note":"immutability unit proof (new version, prior untouched)"}
+{"id":"T028","tierLabel":"balanced","model":"sonnet","commitRange":"0a2f06e..ca209f1","reviewClean":true,"note":"record.ts idempotent-upsert invariants verified (no edit)"}
+{"id":"T029","tierLabel":"balanced","model":"sonnet","commitRange":"0a2f06e..ca209f1","reviewClean":true,"note":"upload.ts immutability guard verified (no edit)"}
+{"id":"T030","tierLabel":"balanced","model":"sonnet","commitRange":"023f53c..50e123a","reviewClean":true,"note":"reconcile.test.ts legacy-flat back-fill proof (SC-006)"}
+{"id":"T031","tierLabel":"powerful","model":"opus","commitRange":"023f53c..50e123a","reviewClean":true,"note":"runReconcile in publish.ts (no upload, legacy-flat)"}
+{"id":"T032","tierLabel":"fast","model":"haiku","commitRange":"023f53c..50e123a","reviewClean":true,"note":"--reconcile verb flag"}
+{"id":"T033","tierLabel":"fast","model":"haiku","commitRange":"8015ec5..e86477a","reviewClean":true,"note":"README pdf:publish section"}
+{"id":"T034","tierLabel":"balanced","model":"opus","commitRange":"8015ec5..e86477a","reviewClean":true,"note":"full-suite green + Constitution VII refactor of publish.ts into 4 modules (all <=500)"}
+{"id":"T035","tierLabel":"powerful","model":"n/a","commitRange":"","reviewClean":false,"note":"DEFERRED [~] operator live-prod acceptance (real B2/CDN + build); excluded from tasks-complete gate (audit-before-acceptance)"}
+{"id":"govern","tierLabel":"n/a","model":"barrage+override","commitRange":"","reviewClean":true,"note":"whole-feature govern: barrage killed (env), findings harvested+fixed-f992e09, converged via --override; terminal-outcome=graduated"}

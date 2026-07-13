@@ -16,11 +16,14 @@ import {
   fail,
   optionalString,
   requireArray,
+  requireNumber,
   requireObject,
   requireString,
 } from '@/bibliography/load-primitives';
-import { isSourceLifecycleStatus } from '@/bibliography/vocab';
+import { isSourceLifecycleStatus, isSourceRightsStatus } from '@/bibliography/vocab';
 import type { SourceLifecycleStatus } from '@/bibliography/vocab';
+import type { MachineAssistLabel } from '@/pdf/model';
+import type { Publication, PublicationManifestRef, SourceRights } from '@/model/publication';
 import type { Reference, Source, SuspectedGap, WorkIdentifier } from '@/model/source';
 
 /**
@@ -49,12 +52,39 @@ const SOURCE_KEYS = new Set([
   'identifiers',
   'case',
   'evidenceClass',
+  'rights',
   'references',
   'knownMemberCount',
   'suspected',
   'notes',
+  'publications',
   'repositoryRecords',
 ]);
+
+// Closed nested-key allow-lists for the specs/008 publish fields, mirroring the
+// per-nested-object `assertKnownKeys` discipline in `load-fields.ts`.
+const SOURCE_RIGHTS_KEYS = new Set(['status', 'basis', 'determinedAt']);
+const PUBLICATION_KEYS = new Set([
+  'variant',
+  'publishedAt',
+  'snapshot',
+  'snapshotShort',
+  'cdnBase',
+  'keyScheme',
+  'rightsBasis',
+  'machineAssist',
+  'manifest',
+]);
+const MACHINE_ASSIST_KEYS = new Set(['engine', 'model', 'retrieved']);
+const PUBLICATION_MANIFEST_KEYS = new Set(['manifestPath', 'issueCount']);
+
+function isPublicationVariant(value: string): value is Publication['variant'] {
+  return value === 'parallel' || value === 'english-only';
+}
+
+function isKeyScheme(value: string): value is Publication['keyScheme'] {
+  return value === 'versioned' || value === 'legacy-flat';
+}
 
 function isSourceKind(value: string): value is Source['kind'] {
   return value === 'periodical' || value === 'monograph' || value === 'source-group';
@@ -87,6 +117,125 @@ function parseYamlOrFail(text: string, filePath: string): unknown {
   } catch (error) {
     throw new Error(`loadSourceFile(${filePath}): malformed YAML: ${describeError(error)}`);
   }
+}
+
+/**
+ * Parse+validate the affirmative, work-level `rights` determination (specs/008,
+ * FR-002/FR-005). `status` is narrowed against the closed `SourceRightsStatus`
+ * vocab (`isSourceRightsStatus`) -- an unrecognized value fails loud, naming the
+ * source file and the offending value. `basis` is a required non-empty
+ * justification (recorded as `Publication.rightsBasis` on publish);
+ * `determinedAt` is an optional ISO date. This is the loader's STRUCTURAL check
+ * only -- the publish gate's affirmative-distributable decision (only
+ * `public-domain` clears today; T023) is not made here.
+ */
+function validateSourceRights(value: unknown, filePath: string): SourceRights {
+  const where = 'rights';
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, SOURCE_RIGHTS_KEYS, filePath, where);
+  const statusRaw = requireString(obj.status, filePath, `${where}.status`);
+  if (!isSourceRightsStatus(statusRaw)) {
+    fail(
+      filePath,
+      `${where}.status "${statusRaw}" is not in the closed SourceRights status ` +
+        `vocabulary (public-domain / openly-licensed / gov-reusable)`,
+    );
+  }
+  const basis = requireString(obj.basis, filePath, `${where}.basis`);
+  const determinedAt = optionalString(obj.determinedAt, filePath, `${where}.determinedAt`);
+  return determinedAt === undefined
+    ? { status: statusRaw, basis }
+    : { status: statusRaw, basis, determinedAt };
+}
+
+/**
+ * Parse one publication's `machineAssist` label (specs/008). Modeled optional on
+ * `Publication`, but REQUIRED for any translated variant; validated to the
+ * `MachineAssistLabel` type reused from `@/pdf/model` so the publication record
+ * and the PDF colophon stay consistent. `engine` + `retrieved` are required
+ * non-empty strings; `model` is a recorded id or `null` (absent -> `null`, the
+ * type's own "not recorded" value, not an invented fallback).
+ */
+function validateMachineAssist(
+  value: unknown,
+  filePath: string,
+  where: string,
+): MachineAssistLabel {
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, MACHINE_ASSIST_KEYS, filePath, where);
+  const engine = requireString(obj.engine, filePath, `${where}.engine`);
+  const retrieved = requireString(obj.retrieved, filePath, `${where}.retrieved`);
+  const model =
+    obj.model === undefined || obj.model === null
+      ? null
+      : requireString(obj.model, filePath, `${where}.model`);
+  return { engine, model, retrieved };
+}
+
+/**
+ * Parse a publication's lean `manifest` reference (specs/008 FR-006) -- the
+ * pointer to the per-issue integrity file whose contents live outside the source
+ * YAML. `manifestPath` is a required non-empty repo-relative path; `issueCount`
+ * is the derived published-issue count.
+ */
+function validatePublicationManifestRef(
+  value: unknown,
+  filePath: string,
+  where: string,
+): PublicationManifestRef {
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, PUBLICATION_MANIFEST_KEYS, filePath, where);
+  const manifestPath = requireString(obj.manifestPath, filePath, `${where}.manifestPath`);
+  const issueCount = requireNumber(obj.issueCount, filePath, `${where}.issueCount`);
+  return { manifestPath, issueCount };
+}
+
+/**
+ * Parse one authored `publications[]` entry (specs/008 § 2). Mirrors the
+ * per-element `repositoryRecords` validator: required `variant` (narrowed),
+ * `publishedAt`, `snapshot`, `snapshotShort`, `cdnBase`, `keyScheme` (narrowed),
+ * `rightsBasis`, and a `manifest` ref; `machineAssist` is optional and omitted
+ * from the returned object when absent. Any malformed shape fails loud (no
+ * silent drop).
+ */
+function validatePublication(value: unknown, filePath: string, index: number): Publication {
+  const where = `publications[${index}]`;
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, PUBLICATION_KEYS, filePath, where);
+
+  const variantRaw = requireString(obj.variant, filePath, `${where}.variant`);
+  if (!isPublicationVariant(variantRaw)) {
+    fail(filePath, `${where}.variant "${variantRaw}" must be "parallel" or "english-only"`);
+  }
+  const publishedAt = requireString(obj.publishedAt, filePath, `${where}.publishedAt`);
+  const snapshot = requireString(obj.snapshot, filePath, `${where}.snapshot`);
+  const snapshotShort = requireString(obj.snapshotShort, filePath, `${where}.snapshotShort`);
+  const cdnBase = requireString(obj.cdnBase, filePath, `${where}.cdnBase`);
+  const keySchemeRaw = requireString(obj.keyScheme, filePath, `${where}.keyScheme`);
+  if (!isKeyScheme(keySchemeRaw)) {
+    fail(filePath, `${where}.keyScheme "${keySchemeRaw}" must be "versioned" or "legacy-flat"`);
+  }
+  const rightsBasis = requireString(obj.rightsBasis, filePath, `${where}.rightsBasis`);
+  const manifest = validatePublicationManifestRef(obj.manifest, filePath, `${where}.manifest`);
+
+  const publication: Publication = {
+    variant: variantRaw,
+    publishedAt,
+    snapshot,
+    snapshotShort,
+    cdnBase,
+    keyScheme: keySchemeRaw,
+    rightsBasis,
+    manifest,
+  };
+  if (obj.machineAssist !== undefined) {
+    publication.machineAssist = validateMachineAssist(
+      obj.machineAssist,
+      filePath,
+      `${where}.machineAssist`,
+    );
+  }
+  return publication;
 }
 
 /**
@@ -173,6 +322,12 @@ export function loadSourceFile(filePath: string): LoadedSource {
           validateSuspectedGap(s, filePath, i),
         );
 
+  // Edition-publishing authored fields (specs/008), optional/additive. `rights`
+  // is the affirmative work-level publish-gate determination; absence fails
+  // closed at the gate (not here -- the loader only checks shape/vocab).
+  const rights =
+    obj.rights === undefined ? undefined : validateSourceRights(obj.rights, filePath);
+
   // Rule 3: Source-level identifiers, work-level only. A misplaced-but-known
   // type (e.g. a copy-level `ark`) does not throw -- it is recorded as an
   // IdentifierLeak for `bib validate` to report (contract rule 3).
@@ -222,6 +377,31 @@ export function loadSourceFile(filePath: string): LoadedSource {
     seenArchives.add(record.sourceArchive);
   }
 
+  // specs/008 § 2: each publication validated per-element (mirroring the
+  // repositoryRecords path), then `(variant, snapshotShort)` uniqueness enforced
+  // within the array -- a re-publish of the identical version is a no-op (one
+  // entry), a changed rebuild is a new entry with a new snapshotShort (FR-004/9).
+  const publications: Publication[] | undefined =
+    obj.publications === undefined
+      ? undefined
+      : requireArray(obj.publications, filePath, 'publications').map((p, i) =>
+          validatePublication(p, filePath, i),
+        );
+  if (publications !== undefined) {
+    const seenPublications = new Set<string>();
+    for (const publication of publications) {
+      const key = `${publication.variant} ${publication.snapshotShort}`;
+      if (seenPublications.has(key)) {
+        fail(
+          filePath,
+          `duplicate publication for (variant, snapshotShort) = ` +
+            `("${publication.variant}", "${publication.snapshotShort}")`,
+        );
+      }
+      seenPublications.add(key);
+    }
+  }
+
   const source: Source = {
     sourceId,
     titles,
@@ -233,10 +413,12 @@ export function loadSourceFile(filePath: string): LoadedSource {
     language,
     case: sourceCase,
     evidenceClass,
+    rights,
     references,
     knownMemberCount,
     suspected,
     notes,
+    publications,
   };
 
   return { source, records, identifierLeaks };
