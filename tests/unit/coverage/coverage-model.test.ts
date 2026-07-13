@@ -170,13 +170,15 @@ describe('T014/T016/T019 unresolved-references register (FR-012)', () => {
   });
 });
 
-describe('T025 search history (FR-013)', () => {
-  it('builds one matrix cell per (repository, campaign), union of open questions', () => {
+describe('T025/T019 search history (FR-013/FR-009): matrix keyed + labeled per resolved scope', () => {
+  it('builds one matrix cell per (repository, scope), each scope kind-labeled', () => {
     const report = buildCoverageReport(loadFixtureInput());
+    // Spec 010 (T019): the matrix scope axis is now the KIND-LABELED scope
+    // (`work-bundle PB-P001`), not the retired bare per-campaign id.
     expect(report.searchHistory.matrix).toEqual([
       {
         repository: 'Fixture Archive A',
-        campaign: 'PB-P001',
+        scope: 'work-bundle PB-P001',
         lastSearched: '2026-07-01',
         openQuestions: [
           'Whereabouts of the suspected private correspondence?',
@@ -185,15 +187,37 @@ describe('T025 search history (FR-013)', () => {
       },
       {
         repository: 'Fixture Archive B',
-        campaign: 'PB-P001',
+        scope: 'work-bundle PB-P001',
         lastSearched: '2026-07-05',
         openQuestions: ['Are there digitised versions available?'],
       },
       {
         repository: 'Fixture Archive C',
-        campaign: 'PB-P002',
+        scope: 'work-bundle PB-P002',
         lastSearched: '2026-07-08',
         openQuestions: [],
+      },
+    ]);
+  });
+
+  it('rolls up per resolved scope with search-evidence-based measured closure (FR-012)', () => {
+    const report = buildCoverageReport(loadFixtureInput());
+    expect(report.searchHistory.byScope).toEqual([
+      {
+        scope: 'work-bundle PB-P001',
+        lastSearched: '2026-07-05',
+        openQuestions: [
+          'Whereabouts of the suspected private correspondence?',
+          'Any additional unknown members not yet catalogued?',
+          'Are there digitised versions available?',
+        ],
+        measuredClosure: 'open',
+      },
+      {
+        scope: 'work-bundle PB-P002',
+        lastSearched: '2026-07-08',
+        openQuestions: [],
+        measuredClosure: 'closed',
       },
     ]);
   });

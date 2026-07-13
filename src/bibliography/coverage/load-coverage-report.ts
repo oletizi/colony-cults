@@ -4,6 +4,7 @@ import { resolveRepoRoot } from '@/cli/bib-sourcegroup';
 import type { CoverageReport } from '@/bibliography/coverage/coverage-model';
 import { buildCoverageReport } from '@/bibliography/coverage/coverage-model';
 import { loadAllSources } from '@/bibliography/load';
+import { loadScopesRegistry, threadIdSet } from '@/bibliography/scopes-registry';
 import { loadSearchLog } from '@/bibliography/search-log';
 
 /**
@@ -24,8 +25,10 @@ export function loadCoverageReport(repoRoot?: string): CoverageReport {
   const root = repoRoot ?? resolveRepoRoot();
   const sourcesDir = path.join(root, 'bibliography', 'sources');
   const searchLogPath = path.join(root, 'bibliography', 'search-log.yml');
+  const scopesPath = path.join(root, 'bibliography', 'scopes.yml');
 
   const sources = loadAllSources(sourcesDir);
   const searchLog = loadSearchLog(searchLogPath);
-  return buildCoverageReport({ sources, searchLog });
+  const threadIds = threadIdSet(loadScopesRegistry(scopesPath));
+  return buildCoverageReport({ sources, searchLog, threadIds });
 }
