@@ -58,19 +58,21 @@ const labelFor = (id: string): { title?: string; href?: string } => ({
 ---
 
 <BaseLayout
-  title="Coverage — what we hold, and what we're still missing"
-  description="A standing account of the corpus as research in progress: evidence gathered, works cited but not located, and repositories searched — never a score, only counts and unknown."
+  title="Coverage — what we're still missing"
+  description="A standing audit of the corpus's open questions: where campaigns fall short of their believed extent, which cited works aren't yet located, what stays unclassified, and where we've searched. Holdings themselves are catalogued on the source pages."
 >
   <main class="coverage">
     <header>
       <Masthead tail="research status" coverageCurrent />
-      <h1 class="cov__title">What we hold, and what we're still missing.</h1>
+      <h1 class="cov__title">What we're still missing.</h1>
       <div class="cov__stamp" aria-hidden="true"></div>
       <p class="cov__abstract">
-        A standing account of the corpus as a research effort in progress — the
-        evidence gathered, the works cited but not yet located, and the
-        repositories searched. Nothing here is a score; every gap is a count, or
-        the word <span class="unknown">unknown</span>.
+        A standing audit of the corpus's open questions — where a discovery
+        campaign falls short of its believed extent, which works are cited but
+        not yet located, what stays unclassified, and where we've searched. What
+        the corpus holds is catalogued on the landing and source pages; this view
+        tracks only what is still unresolved. Nothing here is a score; every gap
+        is a count, or the word <span class="unknown">unknown</span>.
       </p>
       <p class="cov__note">
         Marks in <span class="cov__note-oxide">oxide</span> are the gaps — cited-but-unfound
