@@ -1,24 +1,33 @@
-## 2026-07-13: <!-- session title -->
+## 2026-07-13: Reshape 009 research-first + first passes; design→ship spec 010 corpus-model-coherence
 
-**Goal:** <!-- compose: what we set out to do -->
+**Goal:** Resume `impl:feature/corpus-gap-closure` (009): analyze the spec, then actually *run* the research loop to find out whether the spec is sound — and when the loop proved a concrete tooling need, design/spec/build the fix through the stack-control front door.
 
 **Accomplished:**
-- <!-- compose -->
+- **Analyzed spec 009 (0 critical/0 high), then reshaped it research-first.** The operator flagged that we don't yet understand the tooling we'll need, so the plan/tasks were rewritten so tooling is pulled *just-in-time* when a pass proves the need — not pre-built. Also split the overloaded `unknown` extent into explicit `unexamined` vs `irreducible` across the spec.
+- **Ran the first real gap-closure passes on shipped `bib` verbs — zero new code:** US2 reconcile (PB-P003 + PB-P001 Gallica → `archived`, masters B2-verified); US5 classify (11 works by genre, `unclassified` 13→2); US1 first search-and-log (PB-P004 × Gallica/BnF, grounded in real OAI evidence); US4 resolved both PB-P006 New Italy Museum leads → identified; US3/US4 resolved PB-P002's BnF identifier. `bib validate` clean throughout. **6 findings captured to backlog (TASK-22…27).**
+- **Designed → specced → built → shipped spec 010 `corpus-model-coherence`** (the first tool the program pulled): decouple the overloaded source-group into a first-class **Scope** model (case/thread/work-bundle/work), clean-break `campaign:`→`scope:` cutover, works-only counting (`unclassified` bucket gone), fetchable-work approval, per-scope coverage, thread registry defined-but-unpopulated. Full front door: `/stack-control:design` (brainstorm + third-party review incorporated) → `define` (specify/plan/tasks, **24 tier-tagged tasks**) → `execute` (**24 tasks in fresh per-task subagents at haiku/sonnet/opus**, test-first, durable ledger) → `govern` (override + live-validation) → `ship` (**PR #37 merged → status:shipped**, phase `validating`).
+- **Live verification of 010:** `bib validate` clean · 485 tests green · `tsc` clean · all six invariants INV-1…6 + SC-001…006 · clean-breaks audit (FR-013) clean · `bib coverage` renders per-scope with `unclassified` 0.
 
 **Didn't Work:**
-- <!-- compose -->
+- The cross-model **govern barrage still times out in this env** — 010 shipped via validated-live + `govern --override` (established pattern; no adversarial cross-model review — `/code-review ultra` is the cloud path if wanted).
+- **speckit `check-prerequisites.sh`/setup scripts reject the long-lived branch name** — resolved the spec dir via `.specify/feature.json` throughout (recurring TF-09).
+- The **execute engine can't faithfully run 009's `[research]` tasks** (archival search/judgment) — trying to execute 009 is exactly what surfaced the research-first reshape.
 
 **Course Corrections:**
-- <!-- compose -->
+- Operator: *"don't hack metadata to unblock; clean breaks only — back-compat is inexcusable tech debt."* → Fixed the model at the root (decouple source-group's three roles) instead of an artificial catch-all group; recorded clean-breaks as a standing directive (memory + FR-013).
+- Operator: *"we don't understand the tooling yet; we'll find out as we do the research."* → 009 reshaped research-first with a just-in-time tooling register.
+- A third-party design review of 010 was incorporated wholesale (fetchable-work-only approval, ScopeRef as a fail-loud discriminated reference, stable `port-breton` case id, one-directional thread membership, closure≠acquisition, clean single-cutover not dual-schema).
 
 **Insights:**
-- <!-- compose -->
+- **Running the research surfaced the real model gaps that speccing never would** — on move one the actual prerequisite was the per-session archive clone, not code (the research-first bet paid off immediately).
+- One concept (source-group) doing three jobs was the single root of three separate blockers; decoupling at the root beat three patches.
+- `unknown` that can't distinguish *un-looked* from *unknowable* quietly breaks the "measured, not asserted" thesis — hence `unexamined`/`irreducible`.
 
-**Quantitative (auto-derived from git; verify before publishing):**
-- Commits: 0
-  - (no commits this session)
-- Files changed: 0
-- Backlog touched: (none)
+**Quantitative (verified from `git log 21a27e1..HEAD`):**
+- Commits: **36** (+ the PR #37 merge to `main`)
+- Files changed: **76** (+2887 / −343)
+- Backlog touched: **TASK-22…27 captured** — coverage-counts-containers, evidence-class-vocab-narrow, search-log-keyed-by-group-only, suspected-resolution-state, new-italy-museum-acquisition-path, standalone-source-approval-path
+- Shipped: **spec 010 corpus-model-coherence** (PR #37 → `status:shipped`, phase `validating`); **009 remains in-flight** (research program)
 
 ## 2026-07-12: Ship corpus-print-pdf; publish 72 issues via CDN; design+define edition-publishing
 
