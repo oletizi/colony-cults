@@ -38,7 +38,7 @@ const countLabel = `${matrix.length} ${matrix.length === 1 ? 'search' : 'searche
           <thead>
             <tr>
               <th>Repository</th>
-              <th>Campaign</th>
+              <th>Scope</th>
               <th>Last searched</th>
               <th>Open questions</th>
             </tr>
@@ -47,7 +47,7 @@ const countLabel = `${matrix.length} ${matrix.length === 1 ? 'search' : 'searche
             {matrix.map((cell) => (
               <tr>
                 <td class="hist__repo">{cell.repository}</td>
-                <td>{cell.campaign}</td>
+                <td>{cell.scope}</td>
                 <td>{cell.lastSearched}</td>
                 <td>
                   {cell.openQuestions.length === 0 ? (
