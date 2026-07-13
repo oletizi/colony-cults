@@ -6,11 +6,11 @@
 
 ## Summary
 
-A governed, **non-coding research program** (with a small tooling tail) that closes the gap the `corpus-coverage-audit` measures. It runs an iterative, `bib coverage`-driven loop — search-and-log repositories → discover / inventory / verify / promote → acquire (any repository) → reconcile → re-measure → repeat — plus forward discovery (bibliographic mining + suspected/referenced resolution). It populates every audit dimension (search-log, known-extent, evidence-class, suspected/referenced) across the whole Port Breton case and all repositories, building per-repository acquisition/discovery adapters as sources demand. "Closed" is **measured, not zero**: a documented `irreducible` residual (never a bare `unknown`) is a valid terminal state for an open historical corpus. Approach: **reuse** the shipped `source-group-acquisition` pipeline and audit; add only the genuinely-missing capability (per-repository adapters, a search-and-log workflow, bibliographic mining), each behind a small, typed, composed unit.
+A governed, **non-coding research program** (with a small tooling tail) that closes the gap the `corpus-coverage-audit` measures. It runs an iterative, `bib coverage`-driven loop — search-and-log repositories → discover / inventory / verify / promote → acquire (any repository) → reconcile → re-measure → repeat — plus forward discovery (bibliographic mining + suspected/referenced resolution). It populates every audit dimension (search-log, known-extent, evidence-class, suspected/referenced) across the whole Port Breton case and all repositories. "Closed" is **measured, not zero**: a documented `irreducible` residual (never a bare `unknown`) is a valid terminal state for an open historical corpus. Approach: the loop is **research-first**, run interactively on the **shipped** `source-group-acquisition` pipeline and audit; tooling is **pulled into existence by the research, not designed ahead of it** — each genuinely-missing capability (a search-log authoring path, per-repository adapters, bibliographic mining, the three-state extent) is built as a small, typed, composed unit **only when a loop pass proves the concrete need**, authored + run as its own small spec through the front door at that point (define → execute). We do not pre-build a speculative adapter/mining/extent layer ahead of the research that would tell us what is actually required (FR-013 / R7).
 
 ## Technical Context
 
-**Nature**: Primarily a **research program** executed as repeatable loops; the code tail is limited to per-repository adapters and search-and-log/discovery helpers that extend shipped tooling.
+**Nature**: Primarily a **research program** run as an interactive, `bib coverage`-driven loop — **not** dispatched to an autonomous code executor (archival search + historical judgment are not autonomously executable; faking them would violate FR-008 / Principle I & V). The code tail is a **just-in-time tooling register**: per-repository adapters and search-log / discovery / extent helpers that extend shipped tooling, each built as its own small spec when a loop pass proves the concrete need — never pre-built.
 
 **Language/Version**: TypeScript executed with `tsx` (per constitution); no `ts-node`.
 
@@ -58,24 +58,24 @@ specs/009-corpus-gap-closure/
 
 ### Source Code (repository root)
 
-New/extended code is small and lives alongside the shipped bibliography + source-group tooling:
+**No code is written up front.** The program runs on the shipped `bibliography` + `sourcegroup` trees as they are today (`bib coverage | reconcile | inventory | verify-member | promote | acquire | discover | validate`). The units below are the **tooling register** (tasks.md Phase 4): each is built — as a small, typed unit extending the shipped tree, in its own small spec — *only when a research pass proves the concrete need*, never before.
 
 ```text
-src/
-├── bibliography/            # SSOT + audit (shipped) — extended, not replaced
-│   ├── search-log.ts        # (shipped) search-log read/validate — extended with an authoring/append path
-│   └── coverage/            # (shipped) coverage model/report — extended: render the three-state extent (unexamined/irreducible), never a bare `unknown` (R9/T029)
-├── sourcegroup/             # discover/inventory/verify/promote/acquire/reconcile (shipped) — reused
-│   ├── discover.ts          # (shipped) — extended: bibliographic-mining candidate source
-│   └── adapters/            # NEW — per-repository RepositoryAdapter implementations
-│       ├── adapter.ts       #   the injected interface (search + resolve + acquire + rights)
-│       ├── gallica.ts       #   wraps the shipped Gallica fetcher (present capability)
-│       └── trove.ts         #   NEW — first non-Gallica adapter (PB-P005), then IA/HathiTrust/… as demanded
+src/                          # extended in-place, on demand — none of this exists as new code until pulled:
+├── bibliography/
+│   ├── search-log.ts         # (shipped) read/validate — + an authoring/append path IF hand-authoring proves repetitive (T005)
+│   └── coverage/             # (shipped) model/report — + render the three-state extent IF/when US6 records one (T029)
+├── sourcegroup/
+│   ├── discover.ts           # (shipped) — + a bibliographic-mining source IF manual mining proves repetitive (T018)
+│   └── adapters/             # built only once a SECOND repository proves a shared seam is warranted (not at n=1):
+│       ├── adapter.ts        #   the injected interface (T003)
+│       ├── gallica.ts        #   only if shipped `bib acquire` proves insufficient (T004)
+│       └── trove.ts          #   the first proven non-Gallica acquisition, PB-P005 (T015)
 └── cli/
-    └── bibliography.ts      # (shipped) bib sub-dispatch — add search-log authoring + mining verbs as needed
+    └── bibliography.ts       # (shipped) bib sub-dispatch — new verbs added with the units above, as demanded
 ```
 
-**Structure Decision**: extend the shipped `bibliography` + `sourcegroup` trees; the only genuinely new code is `sourcegroup/adapters/` (the multi-repository seam) plus a search-log authoring path, a bibliographic-mining discovery source, and the three-state campaign-extent field with its distinct coverage rendering (R9/T029). The research *process* (the loop, the judgment) is not code and lives in the operator/agent workflow described in `quickstart.md`.
+**Structure Decision**: the program is **research-first with just-in-time tooling** — the shipped `bibliography` + `sourcegroup` trees are used as-is; the genuinely-new units (search-log authoring, the `RepositoryAdapter` seam, per-repository adapters, bibliographic mining, the three-state extent + its coverage rendering) are the on-demand register, each built in its own small spec when a loop pass proves the need (R7: "built as sources demand, not pre-decomposed"; don't abstract a seam at n=1). Building them ahead of the research would design against a problem space we do not yet understand. The research *process* (the loop, the judgment) is not code and lives in the operator/agent workflow described in `quickstart.md`.
 
 ## Complexity Tracking
 
