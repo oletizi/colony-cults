@@ -1,4 +1,5 @@
 import type { LoadedSource } from '@/bibliography/load';
+import { isFetchableWork } from '@/bibliography/scope';
 import type { SearchLogEntry } from '@/bibliography/search-log';
 import { EVIDENCE_CLASS_VALUES } from '@/bibliography/vocab';
 import type { EvidenceClass, SourceLifecycleStatus } from '@/bibliography/vocab';
@@ -157,16 +158,25 @@ function buildCampaignCoverage(
 }
 
 /**
- * Corpus-wide evidence-class distribution (T028, FR-011). Every `Source` is
- * counted once, under its `evidenceClass` or the `'unclassified'` bucket when it
- * has none. Only non-empty buckets are emitted, ordered by the canonical vocab
- * order with `'unclassified'` last, so the output is deterministic.
+ * Corpus-wide evidence-class distribution (T028, FR-011; T014/T015, FR-008 /
+ * INV-4 / INV-COUNT, specs/010-corpus-model-coherence). Counts WORKS ONLY --
+ * a `kind: source-group` container (`isFetchableWork(source) === false`) is
+ * excluded entirely, never landing in `'unclassified'` and never counted as a
+ * work; see `@/bibliography/scope` (the single predicate every
+ * approval/acquisition/counting consumer calls, never re-derived inline).
+ * Every fetchable work is counted once, under its `evidenceClass` or the
+ * `'unclassified'` bucket when it has none. Only non-empty buckets are
+ * emitted, ordered by the canonical vocab order with `'unclassified'` last,
+ * so the output is deterministic.
  */
 function buildEvidenceDistribution(
   sources: readonly LoadedSource[],
 ): { class: EvidenceClass | 'unclassified'; count: number }[] {
   const counts = new Map<EvidenceClass | 'unclassified', number>();
   for (const loaded of sources) {
+    if (!isFetchableWork(loaded.source)) {
+      continue;
+    }
     const evidenceClass: EvidenceClass | 'unclassified' = loaded.source.evidenceClass ?? 'unclassified';
     counts.set(evidenceClass, (counts.get(evidenceClass) ?? 0) + 1);
   }

@@ -85,23 +85,31 @@ describe('T022 gap semantics (knownMemberCount vs derived actual)', () => {
   });
 });
 
-describe('T028 evidence-class distribution (FR-011)', () => {
-  it('counts every source by class, with absent -> unclassified', () => {
+describe('T028/T014/T015 evidence-class distribution (FR-011, FR-008/INV-4)', () => {
+  it('counts every WORK by class, with absent -> unclassified; source-groups excluded', () => {
     const report = buildCoverageReport(loadFixtureInput());
+    // PB-P001/PB-P002 are source-groups (containers) and are excluded entirely
+    // (FR-008/INV-4) -- only PB-P005 (a monograph with no evidenceClass) lands
+    // in unclassified.
     expect(report.evidenceClassDistribution).toEqual([
       { class: 'book', count: 1 },
       { class: 'pamphlet', count: 1 },
       { class: 'prospectus', count: 1 },
       { class: 'newspaper', count: 1 },
       { class: 'trial-record', count: 1 },
-      { class: 'unclassified', count: 3 },
+      { class: 'unclassified', count: 1 },
     ]);
   });
 
-  it('sums to the total source count', () => {
+  it('sums to the fetchable-work count, not the total source count (containers excluded)', () => {
     const report = buildCoverageReport(loadFixtureInput());
     const total = report.evidenceClassDistribution.reduce((sum, b) => sum + b.count, 0);
-    expect(total).toBe(loadFixtureInput().sources.length);
+    const workCount = loadFixtureInput().sources.filter(
+      (loaded) => loaded.source.kind !== 'source-group',
+    ).length;
+    expect(total).toBe(workCount);
+    // Sanity: the fixture has 2 source-groups (PB-P001, PB-P002) among 8 sources.
+    expect(total).toBe(loadFixtureInput().sources.length - 2);
   });
 });
 
