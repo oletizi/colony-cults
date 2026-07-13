@@ -4,6 +4,7 @@ import path from 'node:path';
 import { authoredToRepositoryRecord } from '@/bibliography/authored-record';
 import { loadSourceFile, sourceKind } from '@/bibliography/load';
 import { serializeSource } from '@/bibliography/migrate-serialize';
+import { isFetchableWork } from '@/bibliography/scope';
 import type { VerificationVerdict } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
@@ -163,6 +164,8 @@ function resolvePartOfGroup(source: Source, input: PromoteInput): string {
  * Fails loud (throws) and writes NOTHING on any of:
  * - malformed input,
  * - the member's SSOT file being missing/unreadable/malformed,
+ * - the target NOT being a fetchable work (`isFetchableWork`, FR-007,
+ *   INV-APPROVE, INV-3) -- a source-group (work-bundle) is rejected loud,
  * - the member not currently `status === 'discovered'` (FR-013 alternatives),
  * - an absent/unresolved `partOf`, or a `--group` mismatch (FR-011),
  * - an ambiguous copy with no `--archive` (FR-009a),
@@ -179,6 +182,20 @@ export async function runPromote(input: PromoteInput): Promise<PromoteResult> {
   }
 
   const { source, records } = loadSourceFile(filePath);
+
+  // Approval applies ONLY to a fetchable work (FR-007, INV-APPROVE, INV-3) --
+  // a work-bundle (`kind: 'source-group'`) is rejected loud here, on the
+  // single explicit `isFetchableWork` predicate, independent of its `status`
+  // or group membership. This is the container prohibition; it is checked
+  // BEFORE the `discovered` precondition below so a group is never
+  // misdiagnosed by an unrelated check.
+  if (!isFetchableWork(source)) {
+    throw new Error(
+      `runPromote(${input.sourceId}): "${input.sourceId}" is a source-group (work-bundle), ` +
+        `not a fetchable work -- a container is never approved-for-acquisition and can never ` +
+        `be promoted (FR-007, INV-3).`,
+    );
+  }
 
   // Precondition: only a discovered candidate is promotable (FR-013 -- an
   // alternative terminal outcome, not a chain).

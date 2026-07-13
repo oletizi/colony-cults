@@ -1,4 +1,5 @@
 import { loadAllSources } from '@/bibliography/load';
+import { isFetchableWork } from '@/bibliography/scope';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import type { ParsedArgs } from '@/cli/parse';
 import type { RepositoryRecord } from '@/model/repository-record';
@@ -20,10 +21,12 @@ import type { RepositoryRecord } from '@/model/repository-record';
  *
  * The shipped fetcher already carries its own source-group guardrail (FR-016)
  * -- that guardrail is NOT reimplemented here. Attempting to acquire a
- * source-group itself is instead refused by the `approved-for-acquisition`
- * precondition below, since a source-group's own Source status is never
- * `approved-for-acquisition` (that status belongs to the member lifecycle,
- * see `@/model/source`'s `Source.status`).
+ * source-group itself is refused explicitly by the `isFetchableWork` guard
+ * below (`@/bibliography/scope`, FR-007, INV-APPROVE, INV-3) -- the single
+ * predicate every approval/acquisition consumer calls, checked on `kind`
+ * rather than relying on the incidental fact that a source-group's own
+ * Source status is never `approved-for-acquisition` (that status belongs to
+ * the member lifecycle, see `@/model/source`'s `Source.status`).
  */
 
 /**
@@ -111,13 +114,14 @@ function assertWellFormed(input: AcquireInput): void {
  * approved, public-domain copy's ARK and hand it to the shipped fetcher.
  *
  * Preconditions (all fail loud, nothing fetched on failure):
- * 1. The member exists and its `status` is `approved-for-acquisition`
- *    (FR-017) -- this is also what refuses a source-group id passed here,
- *    since a group's own status is never this value.
- * 2. Exactly one RepositoryRecord is selected (infer-one / `--archive`,
+ * 1. The target is a fetchable work (`isFetchableWork`, FR-007, INV-APPROVE,
+ *    INV-3) -- a source-group (work-bundle) id passed here is rejected loud.
+ * 2. The member exists and its `status` is `approved-for-acquisition`
+ *    (FR-017).
+ * 3. Exactly one RepositoryRecord is selected (infer-one / `--archive`,
  *    `@/sourcegroup/record-select`'s `selectRepositoryRecord`).
- * 3. The selected record's `rights.status` is `public-domain` (FR-017).
- * 4. The selected record carries an `ark` copy identifier (nothing to fetch
+ * 4. The selected record's `rights.status` is `public-domain` (FR-017).
+ * 5. The selected record carries an `ark` copy identifier (nothing to fetch
  *    otherwise).
  *
  * On success, invokes the injected {@link FetchSourceFn} EXACTLY ONCE with
@@ -137,6 +141,19 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   }
 
   const { source, records: authoredRecords } = entry;
+
+  // Acquisition applies ONLY to a fetchable work (FR-007, INV-APPROVE,
+  // INV-3) -- a work-bundle (`kind: 'source-group'`) is rejected loud here,
+  // on the single explicit `isFetchableWork` predicate, independent of
+  // whatever `status` it happens to carry. Checked BEFORE the
+  // `approved-for-acquisition` precondition so a group is never
+  // misdiagnosed by an unrelated status check.
+  if (!isFetchableWork(source)) {
+    throw new Error(
+      `acquire: "${input.sourceId}" is a source-group (work-bundle), not a fetchable work -- ` +
+        `a container is never approved-for-acquisition and can never be acquired (FR-007, INV-3).`,
+    );
+  }
 
   if (source.status !== 'approved-for-acquisition') {
     throw new Error(
