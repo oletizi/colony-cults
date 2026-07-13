@@ -2,7 +2,7 @@ import { stringify } from 'yaml';
 
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import type { Publication } from '@/model/publication';
-import type { Source } from '@/model/source';
+import type { Reference, Source, SuspectedGap } from '@/model/source';
 
 /**
  * One migrated Source together with its authored Repository Records, ready to
@@ -115,6 +115,46 @@ function byPublication(a: Publication, b: Publication): number {
 }
 
 /**
+ * Build one `references[]` entry (a citation mined FROM the source) in a FIXED
+ * key order, omitting absent optionals so the output is deterministic. Preserves
+ * input order of the array (hand-authored, no natural sort key).
+ */
+function orderedReference(reference: Reference): Record<string, unknown> {
+  const out: Record<string, unknown> = { citedAs: reference.citedAs };
+  if (reference.citedKind !== undefined) {
+    out.citedKind = reference.citedKind;
+  }
+  if (reference.basis !== undefined) {
+    out.basis = reference.basis;
+  }
+  if (reference.resolvedTo !== undefined) {
+    out.resolvedTo = reference.resolvedTo;
+  }
+  if (reference.notes !== undefined) {
+    out.notes = reference.notes;
+  }
+  return out;
+}
+
+/**
+ * Build one `suspected[]` gap (a group-only inferred, uncited gap) in a FIXED
+ * key order, omitting absent optionals. Preserves input array order.
+ */
+function orderedSuspected(gap: SuspectedGap): Record<string, unknown> {
+  const out: Record<string, unknown> = {
+    description: gap.description,
+    basis: gap.basis,
+  };
+  if (gap.evidenceClass !== undefined) {
+    out.evidenceClass = gap.evidenceClass;
+  }
+  if (gap.notes !== undefined) {
+    out.notes = gap.notes;
+  }
+  return out;
+}
+
+/**
  * Deterministically serialize a {@link MigratedSource} to the SSOT YAML shape.
  * Keys are emitted in a fixed order and absent optional fields are omitted, so
  * re-serializing identical input yields byte-identical output (idempotency).
@@ -129,16 +169,21 @@ export function serializeSource(migrated: MigratedSource): string {
   if (source.partOf !== undefined) {
     out.partOf = source.partOf;
   }
-  // Field order: sourceId, kind, partOf, status, case, language, creator,
-  // rights, titles, identifiers, notes, repositoryRecords, publications --
-  // status sits right after partOf since both describe the Source's place in
-  // the group/lifecycle model, ahead of the more descriptive/bibliographic
-  // fields; publications sits last, downstream of repositoryRecords.
+  // Field order: sourceId, kind, partOf, status, case, evidenceClass, language,
+  // creator, rights, knownMemberCount, titles, identifiers, references,
+  // suspected, notes, repositoryRecords, publications -- status sits right after
+  // partOf since both describe the Source's place in the group/lifecycle model,
+  // ahead of the more descriptive/bibliographic fields; publications sits last,
+  // downstream of repositoryRecords. Every Source model field is emitted (when
+  // present) so a load -> serialize round-trip is lossless.
   if (source.status !== undefined) {
     out.status = source.status;
   }
   if (source.case !== undefined) {
     out.case = source.case;
+  }
+  if (source.evidenceClass !== undefined) {
+    out.evidenceClass = source.evidenceClass;
   }
   if (source.language !== undefined) {
     out.language = source.language;
@@ -159,6 +204,12 @@ export function serializeSource(migrated: MigratedSource): string {
     }
     out.rights = rights;
   }
+  // knownMemberCount + suspected are group-only fields (valid on
+  // kind: source-group); emitted when present so a source-group's believed
+  // extent and inferred gaps survive a load -> serialize round-trip.
+  if (source.knownMemberCount !== undefined) {
+    out.knownMemberCount = source.knownMemberCount;
+  }
   out.titles = source.titles.map((title) =>
     title.language !== undefined
       ? { text: title.text, role: title.role, language: title.language }
@@ -166,6 +217,12 @@ export function serializeSource(migrated: MigratedSource): string {
   );
   if (source.identifiers.length > 0) {
     out.identifiers = source.identifiers.map((id) => ({ type: id.type, value: id.value }));
+  }
+  if (source.references !== undefined && source.references.length > 0) {
+    out.references = source.references.map(orderedReference);
+  }
+  if (source.suspected !== undefined && source.suspected.length > 0) {
+    out.suspected = source.suspected.map(orderedSuspected);
   }
   if (source.notes !== undefined) {
     out.notes = source.notes;
