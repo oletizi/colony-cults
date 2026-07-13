@@ -5,6 +5,10 @@ status: approved-for-acquisition
 case: port-breton
 language: French
 creator: Las Cases, Emmanuel de (1854-1934). Auteur du texte
+rights:
+  status: public-domain
+  basis: "Gallica/BnF per-item OAI dc:rights: domaine public (fetch-gate verified, rights: passed); 1884 French imprint (V. Goupy et Jourdan, Paris); author Emmanuel de Las Cases d. 1934, France life+70 term elapsed; ark bpt6k1914256x."
+  determinedAt: "2026-07-12"
 titles:
   - text: Cour de Paris. Chambre des appels de police correctionnelle. Affaire de Port-Breton, plaidoirie de Me de Las Cases pour M. le marquis de Rays
     role: archive

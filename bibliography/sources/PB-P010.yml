@@ -5,6 +5,10 @@ status: approved-for-acquisition
 case: port-breton
 language: French
 creator: Du Breil de Rays, Charles (1832-1893). Auteur du texte
+rights:
+  status: public-domain
+  basis: "Gallica/BnF per-item OAI dc:rights: domaine public (fetch-gate verified, rights: passed); 1879 French imprint (impr. Morris, Paris); author Charles Du Breil de Rays d. 1893, France life+70 term elapsed; ark bpt6k5805671m."
+  determinedAt: "2026-07-12"
 titles:
   - text: "Colonie libre de Port-Breton : [au sujet de la circulaire ministérielle interdisant aux agences d'émigration d'engager des émigrants à destination de ladite colonie] / [signé : Ch. du Breil, marquis de Rays]"
     role: archive
