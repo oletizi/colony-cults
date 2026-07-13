@@ -9,3 +9,8 @@
 {"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"a6ff569","reviewClean":true}
 {"id":"T016","tierLabel":"balanced","model":"sonnet","commitRange":"a6ff569","reviewClean":true}
 {"id":"T017","tierLabel":"balanced","model":"sonnet","commitRange":"a6ff569","reviewClean":true}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"461c684","reviewClean":true}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"461c684","reviewClean":true}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"461c684","reviewClean":true}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"461c684","reviewClean":true}
+{"id":"T013","tierLabel":"fast","model":"haiku","commitRange":"461c684","reviewClean":true}
