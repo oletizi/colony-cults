@@ -107,6 +107,7 @@ Scoped-down capture from a third-party "Corpus Coverage & Discovery Audit" propo
 
 ## impl:feature/coverage-web-view
 - status: planned
+- spec: specs/008-coverage-web-view
 - analyze-clean: yes
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-12-coverage-web-view-design.md
