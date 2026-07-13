@@ -3,6 +3,10 @@ kind: periodical
 case: port-breton
 language: English
 creator: various
+rights:
+  status: public-domain
+  basis: "1880s Australian newspaper coverage via Trove (National Library of Australia). Australian newspapers and periodicals published before 1955 are out of copyright under the Copyright Act; Trove serves these digitized historical newspapers as public domain. English-language source (no translation)."
+  determinedAt: "2026-07-12"
 titles:
   - text: Australian newspaper coverage in Trove
     role: canonical

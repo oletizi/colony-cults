@@ -3,6 +3,10 @@ kind: source-group
 case: port-breton
 language: French
 creator: various
+rights:
+  status: public-domain
+  basis: "Class determination for this source-group of official French judicial records of the 1880s Marquis de Rays fraud prosecution; official court/administrative records of this period are public domain by age. Research container with no assets of its own — publishable members carry their own per-item determinations (e.g. PB-P007/P008, BnF domaine public)."
+  determinedAt: "2026-07-12"
 titles:
   - text: French trial and legal proceedings relating to the Marquis de Rays
     role: canonical

@@ -3,6 +3,10 @@ kind: monograph
 case: port-breton
 language: French
 creator: Paul de Groote
+rights:
+  status: public-domain
+  basis: "1879 French promotional imprint (author Paul de Groote, fl. 1879); public domain by publication age — under France's life+70 term the copyright is elapsed for any plausible death date of an author active in 1879 (protection would require dying after 1955). Basis is publication age; no BnF OAI domaine-public record on file."
+  determinedAt: "2026-07-12"
 titles:
   - text: "Nouvelle-France: Colonie libre de Port-Breton, Océanie"
     role: canonical
