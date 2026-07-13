@@ -2,3 +2,6 @@
 {"id":"T003","tierLabel":"powerful","model":"opus","commitRange":"b5e67b0","reviewClean":true,"note":"folded into scope-core TDD unit"}
 {"id":"T004","tierLabel":"powerful","model":"opus","commitRange":"b5e67b0","reviewClean":true}
 {"id":"T005","tierLabel":"fast","model":"haiku","commitRange":"e75cfd0","reviewClean":true}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commitRange":"443db17","reviewClean":true}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"443db17","reviewClean":true}
+{"id":"T009","tierLabel":"fast","model":"haiku","commitRange":"443db17","reviewClean":true,"note":"empty registry, tier fast (data file)"}
