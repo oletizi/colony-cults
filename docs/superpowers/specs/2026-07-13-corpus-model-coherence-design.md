@@ -66,8 +66,9 @@ Representation, kept un-fragmented: `work` and `work-bundle` scopes are derived
 from Sources already on disk (a work = a Source; a work-bundle = a
 `kind: source-group` Source). The only genuinely new artifact is a thin **thread
 registry** (`bibliography/scopes.yml`: id, name, description). A work is tagged
-into the threads it belongs to (many-to-many). `case` is implicit. Threads start
-empty and are populated as research warrants.
+into the threads it belongs to (many-to-many). `case` has the stable id
+`port-breton` (the existing case slug), so every persisted scope reference is
+resolvable. Threads start empty and are populated as research warrants.
 
 ### Rejected — Artificial "everything else" source-group
 
@@ -98,34 +99,66 @@ entity.
 
 ## Decisions
 
-1. **Scope is first-class**, with kinds `case | thread | work-bundle | work`.
-2. **Source-group is reinterpreted as the `work-bundle` scope kind** — no data
-   migration; existing on-disk data (source-groups, the SRCH-0001 search-log entry
-   keyed to PB-P004, the classified works, the reconciled statuses) stays valid.
-3. **Search-log** targets a `scope` reference `{kind, id}` (generalizing
-   `campaign`); the referent must resolve to a real scope or fail loud.
-4. **Coverage** counts **works only** in the evidence-class distribution
+Decisions 1–8 incorporate a third-party design review (2026-07-13); decisions 1,
+4, 5, 7, 8 and the fail-loud invariant in 1 promote former open-questions to
+settled model invariants (they are decidable now, not build minutiae).
+
+1. **Scope is a discriminated reference (`ScopeRef`), not one persisted entity:**
+   `{ kind: 'case' | 'thread' | 'work-bundle' | 'work', id }`. Resolution
+   invariants, each **validated / fail-loud**:
+   - `work` → a **fetchable, non-container** Source (`kind != source-group`);
+   - `work-bundle` → a `kind: source-group` Source;
+   - `thread` → an entry in `bibliography/scopes.yml`;
+   - `case` → the stable case slug `port-breton`.
+   A `ScopeRef` whose `id` does not resolve **under its declared `kind`** is
+   rejected loud — e.g. `{ kind: work, id: PB-P004 }` fails because PB-P004 is a
+   source-group. Kind/referent agreement is checked, never assumed.
+2. **Source-group is the `work-bundle` kind** — reinterpretation, no migration;
+   existing on-disk data (source-groups, the SRCH-0001 entry, the classified works,
+   the reconciled statuses) stays valid.
+3. **Search-log targets a `ScopeRef` via a clean one-time cutover, not dual-schema.**
+   There is exactly one hand-authored entry (SRCH-0001) and the search-log is
+   hand-authored by design, so there is no transition window to manage: the single
+   entry is rewritten by hand to the `scope:` shape and the loader/coverage read
+   **only** `scope:` from the start. `campaign:` is retired immediately — kept as a
+   permanent parallel representation it would recreate the very coherence problem
+   this feature fixes. **This cutover is a hand-edit of one entry, NOT a
+   `bib migrate`** (which is prohibited — it rebuilds the SSOT from stale legacy
+   inputs and corrupts curation; TASK-8 / Constitution VIII).
+4. **The case scope has a stable id now — `port-breton`** — so every persisted
+   `ScopeRef` is resolvable and a second case later needs no migration.
+5. **Approval is a property of a fetchable work Source only.**
+   `approved-for-acquisition` and the direct approve path apply to non-container
+   works; a work-bundle / `source-group` is not fetchable and remains
+   **un-approvable and un-acquirable** (the existing container prohibition is
+   preserved). Predicate: `isFetchableWork(source)` = the source is not a
+   work-bundle scope. Approval is independent of group membership; it is NOT
+   independent of being a real work.
+6. **Coverage** counts **works only** in the evidence-class distribution
    (`kind: source-group` excluded); search history + measured-closure report **per
    scope**, not just per source-group.
-5. **Approval** (`approved-for-acquisition`) is a property of **any source**, with
-   a direct approve path independent of group membership.
-6. **Threads** are the only new stored artifact — a thin registry
-   (`bibliography/scopes.yml`); works are tagged into threads (many-to-many);
-   threads start empty and are populated as research warrants (NOT populated by
-   this build).
+7. **Thread membership is authored in one direction — on the Source**
+   (`threads: [ids]`), reverse membership derived (the existing `partOf` precedent;
+   "no fact stored twice"). The thread registry (`bibliography/scopes.yml`) owns
+   thread **identity + description only**, never a member list. The `threads:`
+   Source field is defined by this feature but exercised only when thread
+   population begins (a later research pass) — not populated by this build.
+8. **Measured closure is explicit and evidence-based for every scope kind — never
+   inferred from acquisition.** Search-scope closure ("has the discovery surface
+   been adequately examined?") is not acquisition ("has a located asset been
+   preserved?"). A work can be acquired while questions remain (other editions,
+   other repository copies, missing issues, supplements, provenance, cited
+   references). A `work` scope has *simpler* closure criteria (all repository
+   copies of that work searched, each acquired-or-documented) but still closes on
+   **search evidence**, not on a single acquisition.
 
 ## Open questions
 
-- Exact `scopes.yml` shape (fields per thread; how `case` is represented if it ever
-  needs to be explicit).
-- Whether a work is tagged into threads via a field on the Source
-  (`threads: [ids]`) or a member list on the thread record — a build detail for the
-  spec.
-- Whether measured-closure (009 US7) needs any per-scope-kind difference (e.g. a
-  `work` scope is trivially closed once acquired), to be settled in the spec.
-- Backward-compat surface: confirm the search-log loader accepts both the legacy
-  `campaign:` key and the new `scope:` shape during transition (or a one-time,
-  non-lossy read-compat), decided at spec time.
+- Exact `bibliography/scopes.yml` field set beyond `id / name / description`.
+- Whether `bib coverage` needs per-scope-kind display differences (a `work`
+  scope's line vs a `thread` scope's rollup).
+- The precise spec-time definition + validation of the `threads:` Source field
+  (defined now, populated later) without requiring any thread to exist yet.
 
 ## Boundary (explicitly out of scope for this design)
 
@@ -150,3 +183,11 @@ entity.
 - Related: this is the first **tool-on-demand** the 009 program pulls into
   existence per its research-first plan (tasks.md Phase 4); it will be authored as
   its own Spec Kit spec via /stack-control:define and run via /stack-control:execute.
+- Third-party design review (2026-07-13) incorporated: tightened approval to
+  fetchable works only (D5), named Scope a discriminated `ScopeRef` with fail-loud
+  kind/referent invariants (D1), gave the case scope a stable id (D4), fixed thread
+  membership to one authored direction (D7), separated closure from acquisition
+  (D8), and made the `campaign`→`scope` change a clean one-time cutover rather than
+  permanent dual-schema (D3). Refinements beyond the review: the fail-loud
+  kind/referent check in D1, and the clean single-entry cutover (no transition
+  window) with an explicit "not `bib migrate`" guard in D3.
