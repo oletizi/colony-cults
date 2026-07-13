@@ -40,7 +40,7 @@ A CODE feature, **test-first** (`vitest`, RED→GREEN), TypeScript via `tsx`, `@
 **Goal**: a standalone work is approvable/acquirable; a container is not. **Independent test**: approve PB-P002 → eligible; approve/acquire a source-group → rejected loud.
 
 - [ ] T016 [P] [US3] [tier:balanced] Write failing vitest: the approve/acquire gate accepts a standalone work and **rejects a source-group loud** (INV-3 gate), independent of group membership — `tests/unit/bibliography/approve-gate.test.ts`.
-- [ ] T017 [US3] [tier:balanced] Gate the promote/approve + acquire path on `isFetchableWork(source)` (reject a work-bundle loud, preserving the container prohibition; FR-007); make T016 green. (Locate the shipped promote/acquire verb code first.)
+- [ ] T017 [US3] [tier:balanced] Gate the promote/approve + acquire path on `isFetchableWork(source)` (reject a work-bundle loud, preserving the container prohibition; FR-007) in `src/sourcegroup/promote.ts` and `src/sourcegroup/acquire.ts` (the approval/acquire logic lives under `src/sourcegroup/`); make T016 green.
 
 ## Phase 6: User Story 4 — Per-scope coverage reporting (P2)
 
