@@ -132,6 +132,7 @@ A governed pipeline to publish the rendered facsimile-edition PDFs (from corpus-
 
 ## impl:feature/corpus-model-coherence
 - status: planned
+- spec: specs/010-corpus-model-coherence
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-13-corpus-model-coherence-design.md
 corpus
