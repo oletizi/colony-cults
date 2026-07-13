@@ -507,3 +507,24 @@ First measured pass of the reshaped (research-first) corpus-gap-closure program.
 ### Notes
 
 Per-session archive clone lives at `session-558a1445-archive` (not the shared honey-pot path); `COLONY_ARCHIVE_ROOT` + B2 env exported per quickstart.
+
+## 2026-07-13 - Corpus gap-closure: evidence-class pass (US5)
+
+### Summary
+
+Classified the 11 individual works by genre (hand-edited `evidenceClass` on each source yml — no new tool needed). `unclassified` 13 → 2.
+
+### Completed
+
+- **T021 (partial)** — evidence-class assigned by document genre: newspaper ×2 (PB-P001 propaganda paper, PB-P005 Australian coverage), book ×3 (PB-P003 Baudouin, PB-S001 modern monograph, PB-S002 Phantom Paradise), prospectus ×2 (PB-P002 settler promotional, PB-P009 subscription-closing notice), pamphlet ×2 (PB-P010 rebuttal to ministerial circular, PB-P011 published lecture), trial-record ×2 (PB-P007 judgment-stenography extract, PB-P008 appeal pleading).
+- `bib regenerate` + `bib validate` clean.
+
+### Findings (captured to backlog)
+
+- **The coverage evidence-class distribution counts source-groups (containers) as works.** The remaining `unclassified 2` are the two source-groups PB-P004 (5 members, all already classified individually) and PB-P006 (empty). SC-002 ("unclassified → empty") cannot be honestly met by classifying a heterogeneous container — the coverage model should count works, not containers (or exclude containers from the distribution). Refines SC-002.
+- **The shipped evidence-class vocab is narrower than the spec's R2 seed** — `EVIDENCE_CLASS_VALUES` = book/pamphlet/prospectus/newspaper/trial-record/gov-report/map/correspondence/periodical-article. It lacks `survivor-account` / `photograph` / `memoir`, which PB-P006's suspected New Italy items will need once inventoried. Not blocking yet (P006 has no members); extend the (closed-but-extensible) vocab when those members land.
+- Genre-vs-grouping observation: PB-P009/P010/P011 are de Rays's own promotional/defence writings yet sit under PB-P004 ("trial and legal proceedings"). Classified by genre (prospectus/pamphlet), not by group; grouping left as-is.
+
+### Next actions
+
+- Begin US1 search-and-log (turn the empty search history into measured coverage), or resolve PB-P006 suspected leads (US4). Pull the search-log authoring tool only if hand-authoring records proves repetitive.
