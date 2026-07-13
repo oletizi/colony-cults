@@ -1,9 +1,10 @@
 ---
 id: TASK-20
 title: ssot-acquisition-status-not-advanced
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-13 04:57'
+updated_date: '2026-07-13 05:43'
 labels:
   - agent-found
   - 'type:gap'
@@ -37,3 +38,9 @@ The finding is CORRECT and verified. Resolution:
 
 The "no new code / operational campaign" premise of TASK-17 was invalidated by this discovery: a small amount of code (TASK-21) is genuinely required to honor the contract.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Closed: finding verified and resolved by TASK-21 (bib reconcile); PR #35 merged
+<!-- SECTION:NOTES:END -->
