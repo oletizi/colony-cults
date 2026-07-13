@@ -1,3 +1,25 @@
+## 2026-07-13: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 0
+  - (no commits this session)
+- Files changed: 0
+- Backlog touched: (none)
+
 ## 2026-07-12: Ship corpus-print-pdf; publish 72 issues via CDN; design+define edition-publishing
 
 **Goal:** Pick up `impl:feature/corpus-print-pdf` from its runnable spec and take it through
