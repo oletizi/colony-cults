@@ -5,15 +5,15 @@ language: French
 creator: Marquis de Rays / colonial enterprise
 rights:
   status: public-domain
-  basis: "1879-1882 newspaper imprint of a 19th-century French colonial enterprise; long out of any copyright term."
-  determinedAt: "2026-07-12"
+  basis: 1879-1882 newspaper imprint of a 19th-century French colonial enterprise; long out of any copyright term.
+  determinedAt: 2026-07-12
 titles:
   - text: La Nouvelle France
     role: canonical
 notes: "Years: 1879-1882 | Access: digital archive | Public domain: likely | Recruitment and propaganda newspaper for the colony. | SLQ record id: slq_alma99183978086302061; call number: RBS 919.5 004"
 repositoryRecords:
   - sourceArchive: Gallica / BnF
-    status: collecting
+    status: archived
     catalogUrl: https://gallica.bnf.fr/ark:/12148/cb328261098/date
     identifiers:
       - type: ark

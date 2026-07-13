@@ -474,3 +474,36 @@ Added a repo-local checklist for hand-reviewing the remaining `La Nouvelle Franc
 ### Notes
 
 The checklist is meant to reduce repeated orientation work when the remaining gaps are best handled by a human browser pass.
+
+## 2026-07-13 - Corpus gap-closure: baseline + Phase-2 reconcile (spec 009)
+
+### Summary
+
+First measured pass of the reshaped (research-first) corpus-gap-closure program. Captured the pre-program baseline, then reconciled the two already-acquired sources into the SSOT using only the shipped `bib reconcile` verb — zero new code.
+
+### Baseline (pre-program measured gap)
+
+- Campaign PB-P004: 5 members (approved-for-acquisition); believed extent `unknown`.
+- Campaign PB-P006: 0 members; extent `unknown`; 2 suspected New Italy Museum leads (photographs, survivor accounts) with rights basis recorded.
+- Evidence classes: 13 unclassified (all sources).
+- Search history: empty (no repository × campaign logged).
+
+### Completed
+
+- **T011** — `bib reconcile PB-P003` (Baudouin 1883 book) → `archived` (395/395 masters in object store).
+- **T012** — `bib reconcile PB-P001 --archive "Gallica / BnF"` (La Nouvelle France) → `archived` (985/985 masters). The State Library of Queensland copy correctly stays a separate `to-collect` RepositoryRecord (single-work-once holds).
+- `bib regenerate` resynced the generated `acquisition-tracker.csv` view; `bib validate` clean.
+
+### Findings (fed back to the spec's assumptions)
+
+- The real prerequisite was **not** more code but the **per-session archive clone** — `bib reconcile` reads page-image provenance from `COLONY_ARCHIVE_ROOT` (a clone of the private `colony-cults-archive` repo; masters in B2). With no clone it failed loud ("nothing acquired to reconcile"); with the clone it advanced cleanly. This is exactly the research-first thesis: the loop surfaced the actual need (env/clone setup, tasks.md T002), not a speculative tool.
+- **PB-P001 was fully archived, not partial** — the task predicted `collected`; provenance showed all 985 Gallica masters present, so `archived` is the honest result. The task's "partial" premise was stale; the tool did the provenance-driven right thing.
+- `bib reconcile` fails loud on an ambiguous multi-copy source (requires `--archive`) — correct, no silent guess.
+
+### Next actions
+
+- Continue the loop: classify the 13 sources (US5) and begin search-and-log (US1). Pull tooling (search-log authoring / evidence-class facet) only if hand-authoring proves repetitive.
+
+### Notes
+
+Per-session archive clone lives at `session-558a1445-archive` (not the shared honey-pot path); `COLONY_ARCHIVE_ROOT` + B2 env exported per quickstart.
