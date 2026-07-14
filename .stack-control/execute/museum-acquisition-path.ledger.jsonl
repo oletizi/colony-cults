@@ -3,3 +3,7 @@
 {"id":"T003","tierLabel":"fast","model":"haiku","commit":"267f134","reviewClean":true}
 {"id":"T004","tierLabel":"balanced","model":"sonnet","commit":"50b40e2","reviewClean":true}
 {"id":"T005","tierLabel":"balanced","model":"sonnet","commit":"9d0e1a4","reviewClean":true}
+{"id":"T008","tierLabel":"fast","model":"haiku","commit":"6065675","reviewClean":true}
+{"id":"T006","tierLabel":"fast","model":"haiku","commit":"64cf085","reviewClean":true}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commit":"1b13179","reviewClean":true}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commit":"440d706","reviewClean":true}
