@@ -6,12 +6,12 @@ language: French
 creator: Marquis de Rays / colonial enterprise
 rights:
   status: public-domain
-  basis: 1879-1882 newspaper imprint of a 19th-century French colonial enterprise; long out of any copyright term.
+  basis: 1879-1885 newspaper imprint of a 19th-century French colonial enterprise; long out of any copyright term.
   determinedAt: 2026-07-12
 titles:
   - text: La Nouvelle France
     role: canonical
-notes: "Years: 1879-1882 | Access: digital archive | Public domain: likely | Recruitment and propaganda newspaper for the colony. | SLQ record id: slq_alma99183978086302061; call number: RBS 919.5 004"
+notes: "Years: 1879-1885 (Gallica digitized run) | Access: digital archive | Public domain: likely | Recruitment and propaganda newspaper for the colony. | ISSUE COMPLETENESS (audit 2026-07-13): the census (data/census/PB-P001-la-nouvelle-france.json, from Gallica periodical ark cb328261098/date, built 2026-07-08) enumerates 78 digitized issues spanning 1879-07-15..1885-10-15, and ALL 78 are acquired (masters in B2) -> acquirable extent COMPLETE, gap 0 vs Gallica. IRREDUCIBLE RESIDUAL: 8 months in the 1880-81 crisis have no Gallica issue (1880-07, 1880-09, 1880-11, 1880-12, 1881-02, 1881-03, 1881-05, 1881-06) -> the paper likely suspended/reduced publication during the disaster, or those issues were never digitized by BnF; classifying each (never-published vs BnF-physical-only) needs the BnF PHYSICAL catalogue, not shipped Gallica tooling. | SLQ record id: slq_alma99183978086302061; call number: RBS 919.5 004"
 repositoryRecords:
   - sourceArchive: Gallica / BnF
     status: archived
