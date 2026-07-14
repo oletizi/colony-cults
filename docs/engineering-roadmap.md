@@ -137,3 +137,10 @@ A governed pipeline to publish the rendered facsimile-edition PDFs (from corpus-
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-13-corpus-model-coherence-design.md
 corpus
+
+## impl:feature/museum-acquisition-path
+- status: planned
+- design: docs/superpowers/specs/2026-07-13-museum-acquisition-path-design.md
+- depends-on: impl:feature/source-group-acquisition
+
+Spun out of 009's research loop (PB-P006 New Italy Museum). The museum's identified pre-1955 public-domain photographs + settler documents live in the online Musarch catalogue (newitaly.org.au/CAT/) with no acquisition path — not Gallica, not Trove, not IIIF — so the shipped 006 fetcher/promote pipeline cannot reach them. Captures the cluster surfaced attempting to inventory/acquire PB-P006: (TASK-26) a bespoke museum acquisition mechanism (fetch item detail page + image, record provenance, per-item rights); (TASK-27) a promotion path for standalone (non-grouped) sources to approved-for-acquisition, since promote/verify-member assume group members; (TASK-25) a first-class suspected[] resolution state (unexamined|identified|inventoried|excluded|unavailable) that bib coverage renders, so identified leads stop reading as open. Scope — and the research-first go/no-go on whether we commit to acquiring these items at all — is decided in design, not here.
