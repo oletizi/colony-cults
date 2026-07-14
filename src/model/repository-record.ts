@@ -1,7 +1,8 @@
 import type { ObjectStoreLocation } from '@/archive/provenance';
+import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { Asset } from '@/model/asset';
 import type { CopyLevelIdentifierType } from '@/model/identifiers';
-import type { Rights } from '@/model/rights';
+import type { Rights, RightsAssessment } from '@/model/rights';
 
 /**
  * A specific held copy of a {@link Source} at a given archive. Keyed by
@@ -19,10 +20,29 @@ export interface RepositoryRecord {
   identifiers?: CopyIdentifier[];
   /** Rights determination for this copy. */
   rights?: Rights;
+  /**
+   * The authoritative, operator-authored copy-level rights judgment (T004,
+   * `@/model/rights`). Distinct from `rights` (the automated Gallica
+   * OAIRecord gate result): `rightsAssessment` is repository-agnostic and is
+   * what the museum path (and any future non-OAI repository) records, since
+   * a museum record has no ark/OAIRecord to hang a `Rights` value off of.
+   * Only a recorded `rightsStatus === 'public-domain'` permits mirroring an
+   * asset for this copy -- enforced at `acquire` time (a later task; see
+   * contracts/repository-adapter.md INV-B), not here.
+   */
+  rightsAssessment?: RightsAssessment;
   /** Catalog / landing page URL at the holding archive. */
   catalogUrl?: string;
   /** Original URL the copy was retrieved from. */
   originalUrl?: string;
+  /**
+   * Catalogue/asset-page locator for this copy, e.g. a Musarch detail-page
+   * URL. NOT identity: copy identity is carried by `identifiers` (e.g. an
+   * `accession` `CopyIdentifier`), which is durable across a URL changing.
+   */
+  sourceUrl?: string;
+  /** Acquired representations of this copy (adapter `acquire` output). */
+  assets?: AcquiredAsset[];
   /** Retrieval timestamp (ISO). */
   retrievedAt?: string;
   /**
