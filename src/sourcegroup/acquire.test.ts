@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import type { Source } from '@/model/source';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import type { Rights } from '@/model/rights';
+import type { RepositoryAdapter } from '@/repository/adapter';
+import type { RepositoryRecord } from '@/model/repository-record';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import { runAcquire, type FetchSourceFn } from '@/sourcegroup/acquire';
 
@@ -59,6 +61,68 @@ function authoredRecord(
     rights: publicDomainRights(ARK),
     ...overrides,
   };
+}
+
+/** A New Italy Museum member (accession copy), approved-for-acquisition. */
+function museumMember(overrides: Partial<Source> = {}): Source {
+  return {
+    sourceId: 'PB-P200',
+    titles: [{ text: 'Pioneers Group Photo', role: 'canonical' }],
+    kind: 'monograph',
+    partOf: 'PB-G001',
+    status: 'approved-for-acquisition',
+    identifiers: [],
+    ...overrides,
+  };
+}
+
+/** A museum RepositoryRecord: carries an `accession` copy identifier. */
+function museumAuthoredRecord(
+  overrides: Partial<AuthoredRepositoryRecord> = {},
+): AuthoredRepositoryRecord {
+  return {
+    sourceArchive: 'New Italy Museum',
+    status: 'to-collect',
+    sourceUrl: 'https://newitaly.org.au/CAT/000844.htm',
+    identifiers: [{ type: 'accession', value: 'NIMI-0844' }],
+    rightsAssessment: {
+      rightsStatus: 'public-domain',
+      rightsBasis: 'Photograph created 1890; Australian pre-1955 term expired.',
+      assessedBy: 'operator',
+      assessedAt: '2026-07-14T00:00:00.000Z',
+    },
+    ...overrides,
+  };
+}
+
+/**
+ * A spy {@link RepositoryAdapter} for the museum path: records every `acquire`
+ * call so a dispatch test can assert an accession record routed HERE (and the
+ * Gallica fetcher was never touched). `resolve`/`collectRightsEvidence` throw
+ * -- the acquire dispatch path never calls them.
+ */
+function spyMuseumAdapter(): { adapter: RepositoryAdapter; calls: RepositoryRecord[] } {
+  const calls: RepositoryRecord[] = [];
+  const adapter: RepositoryAdapter = {
+    repository: 'new-italy-museum',
+    async resolve() {
+      throw new Error('spyMuseumAdapter.resolve: not used on the acquire dispatch path');
+    },
+    async collectRightsEvidence() {
+      throw new Error('spyMuseumAdapter.collectRightsEvidence: not used on the acquire dispatch path');
+    },
+    async acquire(record) {
+      calls.push(record);
+      return {
+        repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
+        assets: [],
+        metadataSnapshot: { raw: '', retrievedAt: '2026-07-14T00:00:00.000Z' },
+        complete: true,
+        reconciliationRequired: true,
+      };
+    },
+  };
+  return { adapter, calls };
 }
 
 async function seedSourcesDir(
@@ -305,6 +369,51 @@ describe('runAcquire', () => {
     Reflect.deleteProperty(bad, 'fetch');
 
     await expect(runAcquire(bad)).rejects.toThrow(/fetch/i);
+  });
+
+  it('T019: dispatches an accession record to the injected museum adapter (Gallica fetcher untouched)', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const { adapter, calls } = spyMuseumAdapter();
+
+    const result = await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P200',
+      fetch,
+      museumAdapter: adapter,
+    });
+
+    // Routed to the museum adapter, never the Gallica fetcher.
+    expect(calls).toHaveLength(1);
+    expect(calls[0].sourceArchive).toBe('New Italy Museum');
+    expect(fetch).not.toHaveBeenCalled();
+    // Observable result carries the accession (not an ark) for a museum copy.
+    expect(result).toEqual({
+      sourceId: 'PB-P200',
+      accession: 'NIMI-0844',
+      sourceArchive: 'New Italy Museum',
+    });
+  });
+
+  it('T019: dispatches an ark record to Gallica even when a museum adapter is also registered', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const { adapter, calls } = spyMuseumAdapter();
+
+    const result = await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P100',
+      fetch,
+      museumAdapter: adapter,
+    });
+
+    // Behavior unchanged: ark -> Gallica fetcher; the museum adapter is untouched.
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(calls).toHaveLength(0);
+    expect(result.ark).toBe(ARK);
+    expect(result.sourceArchive).toBe('Gallica / BnF');
   });
 
   it('scenario 4: the source-group itself (e.g. PB-P004) is refused before any fetch is attempted, relying on the approved-status precondition -- no guardrail is reimplemented here', async () => {

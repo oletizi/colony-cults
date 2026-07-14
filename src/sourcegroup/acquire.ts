@@ -4,41 +4,47 @@ import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { RepositoryAdapterRegistry } from '@/repository/registry';
 import { GallicaAdapter, type GallicaAcquisitionContext } from '@/repository/gallica/adapter';
 import type { ParsedArgs } from '@/cli/parse';
+import type { RepositoryAdapter } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { ArkResolver } from '@/sourcegroup/inventory';
 
 /**
  * Acquire an approved member's copy by dispatching through the
- * {@link RepositoryAdapterRegistry} to the {@link GallicaAdapter} (spec 011,
- * T012 cutover). The adapter wraps the SHIPPED `runFetchSource` fetcher
- * (`@/cli/fetch-source`) -- the exact page-image/OCR/provenance pipeline that
- * used to be driven inline here -- so this module owns NO fetch code and no
- * longer constructs the `fetch-source` `ParsedArgs` itself.
+ * {@link RepositoryAdapterRegistry} to the adapter chosen for the SELECTED
+ * record's copy-identifier type (spec 011, T019 cutover): an `ark` record
+ * routes to the {@link GallicaAdapter} (which wraps the SHIPPED `runFetchSource`
+ * fetcher, `@/cli/fetch-source`, unchanged), an `accession` record routes to
+ * the injected museum adapter ({@link NewItalyMuseumAdapter}). This module owns
+ * NO fetch code and constructs no `fetch-source` `ParsedArgs` itself.
  *
- * The fetcher is INJECTED (see {@link FetchSourceFn}) and threaded straight
- * into the `GallicaAdapter` this function builds, so tests never touch the
- * network or B2 -- production wiring (`src/cli/bib-sourcegroup.ts`) passes the
- * real `runFetchSource` unchanged.
+ * The Gallica fetcher is INJECTED (see {@link FetchSourceFn}) and threaded into
+ * the `GallicaAdapter` this function builds; the museum adapter is injected
+ * whole ({@link AcquireInput.museumAdapter}), so tests never touch the network
+ * or B2 -- production wiring (`src/cli/bib-sourcegroup.ts`) builds the registry
+ * with BOTH adapters (the real `runFetchSource`, a real `HttpClient` +
+ * `createMusarchExtractor` + `ObjectStore` for the museum path).
  *
- * The operator supplies only the member's source id -- NEVER an ARK directly
- * (FR-014); the ARK is always resolved from the selected RepositoryRecord (by
- * the adapter).
+ * The operator supplies only the member's source id -- NEVER a copy identifier
+ * directly (FR-014); the identifier is always resolved from the selected
+ * RepositoryRecord (by the adapter).
  *
  * Gate split (behavior-preserving cutover):
  *   - SOURCE-level gates stay HERE, in the caller, because they read the
  *     `Source` (source-group guardrail via `isFetchableWork`, FR-007/INV-3;
  *     `approved-for-acquisition`, FR-017) and the `RepositoryAdapter` contract
  *     hands `acquire` only a `RepositoryRecord`.
- *   - RECORD-level gates (public-domain, ark-present) now live INSIDE
- *     `GallicaAdapter.acquire` and are NOT duplicated here.
+ *   - RECORD-level gates (public-domain, identifier-present) live INSIDE the
+ *     selected adapter's `acquire` and are NOT duplicated here.
  *
- * Dispatch is by adapter NAME (`gallica`), not by
- * {@link RepositoryAdapterRegistry.selectForRecord}: the sourcegroup acquire
- * path is Gallica-only, and selecting by record identifier would refuse a
- * no-ark record on the registry's "no supported copy identifier" message
- * BEFORE the Gallica adapter's own "no ark identifier -- nothing to fetch"
- * gate could fire -- changing the pinned (T010) observable behavior. Selecting
- * the Gallica adapter by name preserves that pinned failure exactly.
+ * Dispatch is by the record's copy-identifier type via
+ * {@link RepositoryAdapterRegistry.selectForRecord} (T019 cutover from the
+ * T012 select-by-name). A DELIBERATE consequence: a record carrying NO
+ * dispatchable copy identifier now fails at the REGISTRY ("no supported copy
+ * identifier") rather than reaching the Gallica adapter's own "no ark
+ * identifier -- nothing to fetch" gate. Both are fail-loud and nothing is
+ * fetched; observable acquisition behavior for VALID records is unchanged
+ * (SC-003). See the pinned assertion updated in
+ * `src/repository/gallica/characterization.test.ts`.
  */
 
 /**
@@ -81,20 +87,36 @@ export interface AcquireInput {
   checkpointEvery?: number;
   /** The injected shipped fetcher (see {@link FetchSourceFn}). REQUIRED -- no fallback fetch path exists. */
   fetch: FetchSourceFn;
+  /**
+   * The injected museum adapter ({@link NewItalyMuseumAdapter}), registered
+   * ALONGSIDE the Gallica adapter so an `accession` record dispatches to it.
+   * OPTIONAL: omit it (the characterization/behavioral suites do) to build a
+   * Gallica-only registry -- an `ark` record then dispatches exactly as before.
+   * Production wiring (`src/cli/bib-sourcegroup.ts`) always injects it.
+   */
+  museumAdapter?: RepositoryAdapter;
 }
 
-/** Result of a successful acquisition: what was resolved and handed to the fetcher. */
+/** Result of a successful acquisition: what was resolved and handed to the adapter. */
 export interface AcquireResult {
   sourceId: string;
-  /** The ARK resolved from the selected RepositoryRecord. */
-  ark: string;
   /** The selected RepositoryRecord's holding archive. */
   sourceArchive: string;
+  /** The ARK, when the record dispatched to Gallica (absent for a museum copy). */
+  ark?: string;
+  /** The accession, when the record dispatched to the museum (absent for a Gallica copy). */
+  accession?: string;
 }
 
 /** The record's ark value (the first `ark`-typed copy identifier), if any. */
 function arkOf(record: RepositoryRecord): string | undefined {
   const identifier = (record.identifiers ?? []).find((id) => id.type === 'ark');
+  return identifier?.value;
+}
+
+/** The record's accession value (the first `accession`-typed copy identifier), if any. */
+function accessionOf(record: RepositoryRecord): string | undefined {
+  const identifier = (record.identifiers ?? []).find((id) => id.type === 'accession');
   return identifier?.value;
 }
 
@@ -115,15 +137,25 @@ const acquirePathNeverResolvesArks: ArkResolver = (_ark: string) => {
 };
 
 /**
- * Build the Gallica-only {@link RepositoryAdapterRegistry} for the acquire
- * path, injecting the shipped fetcher into the {@link GallicaAdapter}.
+ * Build the {@link RepositoryAdapterRegistry} for the acquire path: always the
+ * {@link GallicaAdapter} (wrapping the injected fetcher), plus the injected
+ * museum adapter when one was supplied (so an `accession` record dispatches to
+ * it). Gallica-only when `museumAdapter` is omitted -- an `ark` record then
+ * dispatches exactly as it did pre-cutover.
  */
-function buildGallicaRegistry(fetch: FetchSourceFn): RepositoryAdapterRegistry {
+function buildRegistry(
+  fetch: FetchSourceFn,
+  museumAdapter: RepositoryAdapter | undefined,
+): RepositoryAdapterRegistry {
   const gallica = new GallicaAdapter({
     fetch,
     resolveArk: acquirePathNeverResolvesArks,
   });
-  return new RepositoryAdapterRegistry([gallica]);
+  const adapters: RepositoryAdapter[] = [gallica];
+  if (museumAdapter !== undefined) {
+    adapters.push(museumAdapter);
+  }
+  return new RepositoryAdapterRegistry(adapters);
 }
 
 /** Fail loud on structurally malformed input before touching the filesystem. */
@@ -152,8 +184,9 @@ function assertWellFormed(input: AcquireInput): void {
 
 /**
  * Run the `acquire` command (US4, FR-014-017): resolve one member's approved,
- * public-domain copy and dispatch it through the registry to the
- * {@link GallicaAdapter}, which drives the shipped fetcher.
+ * public-domain copy and dispatch it through the registry to the adapter chosen
+ * for its copy-identifier type -- Gallica for an `ark`, the museum for an
+ * `accession` -- which drives that repository's fetch.
  *
  * Preconditions (all fail loud, nothing fetched on failure):
  * 1. The target is a fetchable work (`isFetchableWork`, FR-007, INV-APPROVE,
@@ -164,16 +197,17 @@ function assertWellFormed(input: AcquireInput): void {
  * 3. Exactly one RepositoryRecord is selected (infer-one / `--archive`,
  *    `@/sourcegroup/record-select`'s `selectRepositoryRecord`). Stays in this
  *    caller (the adapter contract acts on a single already-selected record).
- * 4. The selected record's `rights.status` is `public-domain` (FR-017).
- *    RECORD-level; enforced by `GallicaAdapter.acquire`.
- * 5. The selected record carries an `ark` copy identifier (nothing to fetch
- *    otherwise). RECORD-level; enforced by `GallicaAdapter.acquire`.
+ * 4. The selected record carries a dispatchable copy identifier (`ark` or
+ *    `accession`); otherwise `registry.selectForRecord` fails loud with "no
+ *    supported copy identifier" before any adapter is reached (T019).
+ * 5. The selected adapter's own RECORD-level gates pass (Gallica:
+ *    `rights.status === 'public-domain'`; museum:
+ *    `rightsAssessment.rightsStatus === 'public-domain'`). Enforced INSIDE the
+ *    adapter's `acquire`.
  *
- * On success, the adapter invokes the injected {@link FetchSourceFn} EXACTLY
- * ONCE with the pinned `fetch-source` `ParsedArgs`
- * (`verify`/`reconcileRemote`/`force` hardcoded false); this function then
- * adapts the adapter's `AcquisitionResult` back into the observable
- * {@link AcquireResult} (`sourceId`, `ark`, `sourceArchive`).
+ * On success this function adapts the adapter's `AcquisitionResult` back into
+ * the observable {@link AcquireResult}: `{ sourceId, ark, sourceArchive }` for
+ * a Gallica copy, `{ sourceId, accession, sourceArchive }` for a museum copy.
  */
 export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   assertWellFormed(input);
@@ -221,12 +255,15 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   }));
   const record = selectRepositoryRecord(candidateRecords, input.archive);
 
-  // Dispatch through the registry to the Gallica adapter, which enforces the
-  // RECORD-level gates (public-domain, ark-present) and drives the injected
-  // fetcher. Selecting by name (not `selectForRecord`) preserves the pinned
-  // "no ark identifier -- nothing to fetch" failure for a no-ark record.
-  const registry = buildGallicaRegistry(input.fetch);
-  const adapter = registry.selectByName('gallica');
+  // Dispatch by the selected record's copy-identifier type (T019): an `ark`
+  // record -> GallicaAdapter, an `accession` record -> the injected museum
+  // adapter. A record with no dispatchable identifier fails HERE, at the
+  // registry ("no supported copy identifier"), before any adapter is reached --
+  // the deliberate cutover consequence pinned in the characterization suite.
+  // The selected adapter enforces its own RECORD-level gates (public-domain,
+  // identifier-present) and drives its fetch.
+  const registry = buildRegistry(input.fetch, input.museumAdapter);
+  const adapter = registry.selectForRecord(record);
 
   const ctx: GallicaAcquisitionContext = {
     objectStore: input.objectStore,
@@ -236,16 +273,26 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   };
   await adapter.acquire(record, ctx);
 
-  // `adapter.acquire` succeeded, so the record carried an ark (its own gate
-  // would have thrown otherwise); read it back for the observable result. Not a
-  // re-gate -- a post-success invariant read that never blocks the fetch.
-  const ark = arkOf(record);
-  if (ark === undefined) {
-    throw new Error(
-      `acquire: internal invariant -- GallicaAdapter.acquire succeeded for ` +
-        `"${input.sourceId}" but the record carries no ark.`,
-    );
+  // `adapter.acquire` succeeded, so the record carried the identifier its
+  // dispatch keyed on (the registry would have thrown otherwise); read it back
+  // for the observable result. Not a re-gate -- a post-success invariant read.
+  if (adapter.repository === 'gallica') {
+    const ark = arkOf(record);
+    if (ark === undefined) {
+      throw new Error(
+        `acquire: internal invariant -- ${adapter.repository} acquire succeeded for ` +
+          `"${input.sourceId}" but the record carries no ark.`,
+      );
+    }
+    return { sourceId: input.sourceId, ark, sourceArchive: record.sourceArchive };
   }
 
-  return { sourceId: input.sourceId, ark, sourceArchive: record.sourceArchive };
+  const accession = accessionOf(record);
+  if (accession === undefined) {
+    throw new Error(
+      `acquire: internal invariant -- ${adapter.repository} acquire succeeded for ` +
+        `"${input.sourceId}" but the record carries no accession.`,
+    );
+  }
+  return { sourceId: input.sourceId, accession, sourceArchive: record.sourceArchive };
 }

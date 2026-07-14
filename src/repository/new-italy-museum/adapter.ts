@@ -17,10 +17,13 @@
  *     bytes are PUT to (the real B2 impl is `@/archive/s3-object-store`; it is
  *     never reimplemented here, only its interface is depended on).
  *
- * Seam note (T016 scope): this builds the STRAIGHTFORWARD acquire. Convergent /
- * idempotent behavior, remote-change fail-loud, and wiring into `runAcquire`
- * dispatch are a LATER task (T019); the fetch-then-parse-then-put shape here
- * leaves that a clean seam.
+ * Convergence (T019, FR-020/FR-021): `acquire` is idempotent and
+ * remote-change fail-loud. Detection is GENERIC -- by canonical object-store
+ * key + verified checksum -- never repository-specific: an already-present
+ * master with the recorded checksum is treated as already acquired (no
+ * re-download, no re-PUT), while a re-fetch whose bytes no longer match a
+ * recorded master checksum FAILS LOUD rather than silently replacing or
+ * auto-versioning the preserved master. See `acquire`'s doc comment.
  */
 
 import type {
@@ -142,6 +145,16 @@ function accessionOf(record: RepositoryRecord): string | undefined {
     (id) => id.type === 'accession',
   );
   return identifier?.value;
+}
+
+/**
+ * The master {@link AcquiredAsset} this record already records (the `primary`
+ * role this adapter writes on `acquire`), if any -- the convergence key for
+ * the idempotent/remote-change path (FR-020/FR-021). Absent on a first-time
+ * acquire (nothing recorded yet).
+ */
+function recordedMasterAsset(record: RepositoryRecord): AcquiredAsset | undefined {
+  return (record.assets ?? []).find((asset) => asset.role === 'primary');
 }
 
 /**
@@ -275,6 +288,20 @@ export class NewItalyMuseumAdapter implements RepositoryAdapter {
    * returns an EMPTY `assets` array -- it does NOT fabricate an asset. The
    * empty array is a distinct, documented signal (not a masked failure);
    * `reconciliationRequired` stays `true`.
+   *
+   * Idempotent / convergent (FR-020/FR-021, INV-E): the operation is staged
+   * download -> verify checksum -> commit (PUT + record), so a mid-failure
+   * leaves no half-written record. Convergence keys on the record's already-
+   * recorded `primary` master ({@link recordedMasterAsset}):
+   *   - if that master's object is present with its recorded checksum, this is
+   *     ALREADY ACQUIRED -- return the existing asset without a second download
+   *     or PUT (generic identity: canonical object key + verified checksum);
+   *   - otherwise the master is re-downloaded and re-verified. If the record
+   *     pins a master checksum and the freshly fetched bytes no longer match
+   *     it, this FAILS LOUD (the remote changed) -- it never overwrites a
+   *     preserved master, never auto-versions.
+   * A first-time acquire (no recorded master) downloads, and PUTs only when the
+   * object is not already present with the just-verified checksum.
    */
   async acquire(
     record: RepositoryRecord,
@@ -344,14 +371,52 @@ export class NewItalyMuseumAdapter implements RepositoryAdapter {
     const masterUrl = dom.masterImageUrl;
     const { extension, mediaType } = mediaFor(masterUrl);
 
+    // Convergence (FR-020): if this record already records a master and that
+    // object is present with the recorded checksum, it is already acquired --
+    // return it without re-downloading or re-PUTting (idempotent).
+    const recorded = recordedMasterAsset(record);
+    if (recorded !== undefined) {
+      const head = await this.objectStore.head(recorded.objectStoreKey);
+      if (head.exists && head.sha256 === recorded.checksum) {
+        return {
+          repositoryRecordId,
+          assets: [recorded],
+          metadataSnapshot,
+          complete: true,
+          reconciliationRequired: true,
+        };
+      }
+    }
+
+    // Stage: download the master to a buffer and verify its checksum BEFORE any
+    // write, so a mid-failure never leaves a half-written record.
     const bytes = await this.client.getBytes(masterUrl);
     const checksum = sha256OfBytes(bytes);
+
+    // Remote-change fail-loud (FR-021): the record pins a master checksum but
+    // the freshly fetched bytes differ -- the remote changed. Never silently
+    // replace the preserved master, never auto-version; write nothing.
+    if (recorded !== undefined && checksum !== recorded.checksum) {
+      throw new Error(
+        `NewItalyMuseumAdapter.acquire: the master at ${masterUrl} for "${record.sourceId}" at ` +
+          `"${record.sourceArchive}" now checksums ${checksum} but the record pins a preserved ` +
+          `master at ${recorded.checksum} -- the remote bytes changed; refusing to overwrite the ` +
+          'master or auto-version (FR-021).',
+      );
+    }
+
     const objectStoreKey = objectKeyForMaster(dom.accession, checksum, extension);
 
-    await this.objectStore.put(objectStoreKey, bytes, {
-      sha256: checksum,
-      contentType: mediaType,
-    });
+    // Commit: PUT only when the object is not already present with this exact
+    // verified checksum -- generic idempotency by canonical key + checksum, so a
+    // re-run over an already-mirrored master issues no duplicate PUT.
+    const existing = await this.objectStore.head(objectStoreKey);
+    if (!(existing.exists && existing.sha256 === checksum)) {
+      await this.objectStore.put(objectStoreKey, bytes, {
+        sha256: checksum,
+        contentType: mediaType,
+      });
+    }
 
     const asset: AcquiredAsset = {
       sourceUrl: masterUrl,

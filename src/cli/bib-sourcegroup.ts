@@ -26,6 +26,7 @@ import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
 import { gallicaArkIdentifierResolver } from '@/sourcegroup/gallica-ark-resolver';
 import { runAcquire } from '@/sourcegroup/acquire';
+import { buildMuseumAdapterForMember } from '@/cli/bib-acquire-museum';
 import { runReconcile } from '@/sourcegroup/reconcile';
 import { gatherProvenance } from '@/bibliography/derive';
 import { resolveArchiveRoot } from '@/archive/location';
@@ -307,6 +308,12 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
     // resolves it -- see `registerMemberArchiveLayout`'s doc comment.
     registerMemberArchiveLayout(sourcesDir, id);
 
+    // Register BOTH adapters (T019): the Gallica fetcher is always injected;
+    // the museum adapter is built only when THIS member's selected copy is an
+    // accession record (see `buildMuseumAdapterForMember`), so an ark acquire
+    // never pays the codex/B2 cost of the museum path.
+    const museumAdapter = await buildMuseumAdapterForMember(sourcesDir, id, archive);
+
     const result = await runAcquire({
       sourcesDir,
       sourceId: id,
@@ -317,10 +324,12 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
       checkpointEvery,
       // The shipped fetcher, injected unchanged (D-08): no new fetch code here.
       fetch: runFetchSource,
+      museumAdapter,
     });
     const mode = dryRun ? ' (dry-run)' : '';
+    const identifier = result.ark ?? result.accession ?? '(no copy identifier)';
     console.log(
-      `bib acquire${mode}: ${result.sourceId} -> fetched ${result.ark} ` +
+      `bib acquire${mode}: ${result.sourceId} -> fetched ${identifier} ` +
         `from "${result.sourceArchive}"`,
     );
     return 0;

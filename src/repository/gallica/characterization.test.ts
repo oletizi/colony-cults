@@ -198,10 +198,12 @@ describe('Gallica acquisition path — characterization (pre-cutover baseline)',
   });
 
   // ---------------------------------------------------------------------------
-  // 3. No-ark: a public-domain record with no ark identifier throws the
-  //    "nothing to fetch" error.
+  // 3. No-ark: a public-domain record with no ark identifier fails loud before
+  //    any fetch. T019 moved dispatch to the registry, so this now fails at
+  //    `selectForRecord` (registry-level) rather than the Gallica adapter's own
+  //    no-ark gate -- see the assertion's comment.
   // ---------------------------------------------------------------------------
-  it('PINS: a public-domain Gallica record carrying no ark identifier throws "nothing to fetch" with no fetch', async () => {
+  it('PINS: a public-domain Gallica record carrying no dispatchable copy identifier fails loud at the registry with no fetch', async () => {
     dir = await seedSourcesDir([
       { source: member(), records: [authoredRecord({ identifiers: [] })] },
     ]);
@@ -209,7 +211,8 @@ describe('Gallica acquisition path — characterization (pre-cutover baseline)',
 
     await expect(
       runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch }),
-    ).rejects.toThrow(/no ark identifier -- nothing to fetch/i);
+      // T019: dispatch moved to the registry; a no-identifier record now fails at selectForRecord (registry-level) rather than the adapter's no-ark gate -- deliberate cutover consequence, still fail-loud, SC-003 observable acquisition behavior for VALID records unchanged.
+    ).rejects.toThrow(/no supported copy identifier/i);
     expect(fetch).not.toHaveBeenCalled();
   });
 

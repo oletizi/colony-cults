@@ -6,6 +6,7 @@ import type {
   ObjectStore,
   PutOptions,
 } from '@/archive/object-store';
+import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { RepositoryLocator } from '@/repository/adapter';
 import type {
@@ -424,6 +425,123 @@ describe('NewItalyMuseumAdapter.acquire', () => {
 
     await expect(adapter.acquire(publicDomainRecord(), {})).rejects.toThrow(
       /no ObjectStore was injected/,
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // T019 (FR-020/FR-021): idempotent / convergent acquire + remote-change fail-loud.
+  // ---------------------------------------------------------------------------
+
+  const MASTER_KEY_844 = `archive/museum/new-italy-museum/nimi-0844/${EXPECTED_CHECKSUM}.jpg`;
+
+  /** The `primary` master asset a prior acquire would have recorded on the record. */
+  function recordedMaster(): AcquiredAsset {
+    return {
+      sourceUrl: MASTER_URL_844,
+      mediaType: 'image/jpeg',
+      objectStoreKey: MASTER_KEY_844,
+      checksum: EXPECTED_CHECKSUM,
+      byteLength: CANNED_BYTES.length,
+      provenancePath: `archive/museum/new-italy-museum/nimi-0844/${EXPECTED_CHECKSUM}.yml`,
+      role: 'primary',
+      representationChoice: 'full-res-image-anchor',
+    };
+  }
+
+  it('is idempotent: an already-recorded master present with the matching checksum is NOT re-downloaded or re-PUT', async () => {
+    const { client, byteUrls } = fakeClient({ text: FIXTURE_844, bytes: CANNED_BYTES });
+    const { store, puts } = fakeObjectStore();
+    // Seed the store as if a prior acquire already mirrored the master.
+    await store.put(MASTER_KEY_844, CANNED_BYTES, {
+      sha256: EXPECTED_CHECKSUM,
+      contentType: 'image/jpeg',
+    });
+
+    const adapter = new NewItalyMuseumAdapter({
+      client,
+      extractor: realExtractor(),
+      objectStore: store,
+      now: () => '2026-07-14T00:00:00.000Z',
+    });
+
+    const asset = recordedMaster();
+    const result = await adapter.acquire(publicDomainRecord({ assets: [asset] }), {});
+
+    // Returns the existing recorded asset, converged.
+    expect(result.assets).toEqual([asset]);
+    // The master was NOT re-downloaded (no getBytes) ...
+    expect(byteUrls).toEqual([]);
+    // ... and NO second PUT was issued (only the seed remains).
+    expect(puts).toHaveLength(1);
+  });
+
+  it('is idempotent even without a recorded asset: an object already present at the derived key with the matching checksum skips the PUT', async () => {
+    const { client } = fakeClient({ text: FIXTURE_844, bytes: CANNED_BYTES });
+    const { store, puts } = fakeObjectStore();
+    // The object already exists at the derived key (e.g. from a prior run whose
+    // record was not persisted), with our sha256 metadata.
+    await store.put(MASTER_KEY_844, CANNED_BYTES, {
+      sha256: EXPECTED_CHECKSUM,
+      contentType: 'image/jpeg',
+    });
+
+    const adapter = new NewItalyMuseumAdapter({
+      client,
+      extractor: realExtractor(),
+      objectStore: store,
+      now: () => '2026-07-14T00:00:00.000Z',
+    });
+
+    const result = await adapter.acquire(publicDomainRecord(), {});
+
+    expect(result.assets).toHaveLength(1);
+    expect(result.assets[0].objectStoreKey).toBe(MASTER_KEY_844);
+    // The object was already present with the matching checksum -> no duplicate PUT.
+    expect(puts).toHaveLength(1);
+  });
+
+  it('remote-change fail-loud: a re-fetch whose bytes differ from a recorded master checksum throws and writes nothing', async () => {
+    const CHANGED_BYTES = new TextEncoder().encode('DIFFERENT-master-bytes-after-remote-change');
+    const { client, byteUrls } = fakeClient({ text: FIXTURE_844, bytes: CHANGED_BYTES });
+    const { store, puts } = fakeObjectStore();
+    // Store does NOT already hold the recorded master (head miss forces a re-fetch).
+
+    const adapter = new NewItalyMuseumAdapter({
+      client,
+      extractor: realExtractor(),
+      objectStore: store,
+      now: () => '2026-07-14T00:00:00.000Z',
+    });
+
+    // The record pins the ORIGINAL master's checksum; the remote now serves
+    // different bytes.
+    const record = publicDomainRecord({ assets: [recordedMaster()] });
+    await expect(adapter.acquire(record, {})).rejects.toThrow(/changed|FR-021/i);
+
+    // The bytes were fetched (to compare) but NOTHING was written.
+    expect(byteUrls).toEqual([MASTER_URL_844]);
+    expect(puts).toHaveLength(0);
+  });
+
+  it('first-time acquire (no recorded master) still downloads, PUTs, and records provenance', async () => {
+    const { client, byteUrls } = fakeClient({ text: FIXTURE_844, bytes: CANNED_BYTES });
+    const { store, puts } = fakeObjectStore();
+
+    const adapter = new NewItalyMuseumAdapter({
+      client,
+      extractor: realExtractor(),
+      objectStore: store,
+      now: () => '2026-07-14T00:00:00.000Z',
+    });
+
+    const result = await adapter.acquire(publicDomainRecord(), {});
+
+    expect(byteUrls).toEqual([MASTER_URL_844]);
+    expect(puts).toHaveLength(1);
+    expect(puts[0].key).toBe(MASTER_KEY_844);
+    expect(result.assets).toHaveLength(1);
+    expect(result.assets[0].provenancePath).toBe(
+      `archive/museum/new-italy-museum/nimi-0844/${EXPECTED_CHECKSUM}.yml`,
     );
   });
 });
