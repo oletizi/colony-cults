@@ -141,6 +141,35 @@ export const SCOPE_KIND_VALUES = ['case', 'thread', 'work-bundle', 'work'] as co
 export type ScopeKind = (typeof SCOPE_KIND_VALUES)[number];
 
 /**
+ * Structural kind of a `Source` -- the role this work plays in the corpus:
+ * `periodical` (serial, multiple dated issues), `monograph` (monographic textual
+ * work, single dated/undated document), `archival-item` (discrete non-serial
+ * archival work like a photograph, letter, postcard, certificate), or
+ * `source-group` (non-fetchable research-defined container of member Sources).
+ * Orthogonal to `evidenceClass`, which classifies the EVIDENCE TYPE the work IS
+ * (not its structural role). A member's kind may be `periodical`/`monograph`/
+ * `archival-item` (never `source-group` -- groups do not nest); group membership
+ * does not change a member's own kind.
+ */
+export const SOURCE_STRUCTURAL_KIND_VALUES = [
+  'periodical',
+  'monograph',
+  'archival-item',
+  'source-group',
+] as const;
+export type SourceStructuralKind = (typeof SOURCE_STRUCTURAL_KIND_VALUES)[number];
+
+/**
+ * Membership test for the `SourceStructuralKind` vocabulary:
+ * `isSourceStructuralKind('monograph')` -> `true`;
+ * `isSourceStructuralKind('scroll')` -> `false`. Use wherever a `Source.kind`
+ * value is checked (see `@/bibliography/load`).
+ */
+export function isSourceStructuralKind(value: string): value is SourceStructuralKind {
+  return includesValue(SOURCE_STRUCTURAL_KIND_VALUES, value);
+}
+
+/**
  * Closed vocab field names, mapped to their allowed-value arrays. The
  * field-name-keyed `status` entry has always meant a `RepositoryRecord`'s
  * acquisition status (`validateVocab` in `@/bibliography/validate-checks`

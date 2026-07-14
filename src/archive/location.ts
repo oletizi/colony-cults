@@ -167,18 +167,20 @@ function deriveSlug(source: Source): string {
  * Derive a {@link SourceLayout} for a source-group member from its own data
  * (FR-016-adjacent) -- used to auto-register a runtime layout (via
  * {@link registerSourceLayout}) for a member that was never hand-added to the
- * static {@link SOURCE_LAYOUTS} registry. A member is always `monograph` or
- * `periodical`, never `source-group` (enforced by `Source.kind` elsewhere;
- * this function does not re-validate that).
+ * static {@link SOURCE_LAYOUTS} registry. A member is always `monograph`,
+ * `periodical`, or `archival-item`, never `source-group` (enforced by
+ * `Source.kind` elsewhere; this function does not re-validate that).
  *
  * - `case`: `source.case` if present, else `fallbackCase` (e.g. the owning
  *   group's `case`). Throws (fail loud) if NEITHER is available -- a layout
  *   with no case cannot be placed in the archive's `cases/<case>/` tree.
- * - `type`: `newspapers` for a `periodical` source, `books` otherwise.
+ * - `type`: `newspapers` for a `periodical` source, `books` otherwise
+ *   (including `archival-item`, which are discrete objects like monographs).
  * - `slug`: derived from the source's canonical (or first) title, lowercased
  *   with non-alphanumeric runs collapsed to `-`; falls back to the lowercased
  *   `sourceId` when the source has no usable title (see {@link deriveSlug}).
- * - `kind`: `periodical` for a periodical source, `monograph` otherwise.
+ * - `kind`: `periodical` for a periodical source, `monograph` otherwise
+ *   (archival items are laid out like monographs).
  */
 export function deriveSourceLayout(source: Source, fallbackCase?: string): SourceLayout {
   const resolvedCase = source.case ?? fallbackCase;

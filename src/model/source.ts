@@ -15,12 +15,17 @@ export interface Source {
   /** One or more titles; none is authoritative (FR-003). */
   titles: Title[];
   /**
-   * Determines whether a census is built. A `source-group` (FR-001) is a
-   * research-defined container of member Sources -- it is never fetchable and
-   * holds no repository records; its members are derived from their `partOf`
-   * edges, not listed here.
+   * Determines whether a census is built. The structural kind of this work:
+   * `periodical` (serial) / `monograph` (monographic textual work) /
+   * `archival-item` (discrete non-serial archival work, e.g. photograph, letter,
+   * postcard, certificate) / `source-group` (non-fetchable work bundle). A
+   * `source-group` (FR-001) is a research-defined container of member Sources
+   * -- it is never fetchable and holds no repository records; its members are
+   * derived from their `partOf` edges, not listed here. A member's `kind` may be
+   * any of `periodical`, `monograph`, or `archival-item` -- group membership does
+   * not change the member's own kind.
    */
-  kind: 'periodical' | 'monograph' | 'source-group';
+  kind: 'periodical' | 'monograph' | 'archival-item' | 'source-group';
   /**
    * The `sourceId` of the source-group this Source is a member of (FR-006).
    * Present only on members; absent on standalone sources and on the group
