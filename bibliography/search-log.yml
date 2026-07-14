@@ -67,3 +67,16 @@
   remainingQuestions:
     - "Physical holding location for the 1884 Marseille imprint not yet confirmed via WorldCat / CCFr; and no digitization exists to mirror -- acquisition blocked on availability, not on rights."
   notes: "Work-scoped holding search following the SRCH-0002 discovery. Negative result recorded as measured knowledge: a known trial-record work with no currently-locatable digital copy -- an irreducible-for-now holding gap, not an unexamined unknown."
+
+- id: SRCH-0004
+  date: 2026-07-13
+  repository: Gallica / BnF
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "Inventory the official court decisions (SRCH-0002 suspected gap): locate the Cour de Paris appeal arret (14 May 1884) and the tribunal de la Seine jugement (1884) in the digitized legal serials (Gazette des Tribunaux, Gazette du Palais, Dalloz/Sirey)."
+  coverage: "PARTIAL: the Gazette des Tribunaux (Paris) is confirmed digitized on Gallica (ark cb34447990d) as a date-browsable serial run -- so the appeal arret, dated 14 May 1884, should appear in the ~15-16 May 1884 issue. WebSearch/WebFetch cannot drill into Gallica's periodical date-browse (403 on the OAI/IIIF endpoints); pinpointing the exact issue + folios is a shipped-gallica-fetcher / IIIF task, not a general-web one. So the serial HOME is located; the specific issue is not yet pinpointed. (The PB-P012 holding question raised in SRCH-0002 has migrated to its own work-scope search, SRCH-0003.)"
+  remainingQuestions:
+    - "Pinpoint the Cour de Paris arret (14 May 1884) + the Seine jugement (1884) within the Gazette des Tribunaux run on Gallica (ark cb34447990d) -- date-browse via the shipped fetcher/IIIF; confirm 1884 falls within the digitized range."
+    - "Physical Cour de Paris appeal-court case dossier (Archives de Paris / Archives nationales) not searched -- may hold no separately publishable digitized work."
+  notes: "Narrows SRCH-0002's court-decisions question from 'attested but unlocated' to 'serial home confirmed digitized on Gallica; specific issue pinpointing pending (fetcher/IIIF)'. Supersedes the SRCH-0002 work-bundle open set; the PB-P012 holding line is now tracked under work PB-P012 (SRCH-0003), not duplicated here."
