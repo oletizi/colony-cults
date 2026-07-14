@@ -55,3 +55,15 @@
     - "Official court decisions (Seine jugement 1884; Cour de Paris arret 14 May 1884; cassation): attested but not yet located as discrete items within the legal serials -- serial-issue inventory (Gazette des Tribunaux / Gazette du Palais / Dalloz / Bulletin des arrets) pending."
     - "Physical Cour de Paris appeal-court case dossier (Archives de Paris / Archives nationales) not searched -- may hold no separately publishable digitized work."
   notes: "Fresh interactive search pass (spec 009 US1). Press dimension characterized as irreducible rather than enumerated -- exhaustive press mirroring is neither feasible nor the corpus's aim. Supersedes SRCH-0001's two coarser open questions with the narrower, actionable questions above."
+
+- id: SRCH-0003
+  date: 2026-07-13
+  repository: "Multi-catalog holding search (Gallica, archive.org, HathiTrust, Google Books; union catalogs WorldCat / CCFr)"
+  scope:
+    kind: work
+    id: PB-P012
+  query: "Locate a digitized, acquirable public-domain copy of PB-P012 (Vermont, 'Le proces du Marquis de Rays... Les Plaidoiries', Marseille, 1884)."
+  coverage: "NEGATIVE: no digitized copy found in any surveyed repository -- absent from Gallica, archive.org, HathiTrust, and Google Books. The work is attested only bibliographically (Criminocorpus; Bibliographie numerique d'histoire du droit) and appears to survive as a physical-only library holding. Not acquirable as a digital public-domain master at this time; PB-P012 stays 'discovered' (known, not held)."
+  remainingQuestions:
+    - "Physical holding location for the 1884 Marseille imprint not yet confirmed via WorldCat / CCFr; and no digitization exists to mirror -- acquisition blocked on availability, not on rights."
+  notes: "Work-scoped holding search following the SRCH-0002 discovery. Negative result recorded as measured knowledge: a known trial-record work with no currently-locatable digital copy -- an irreducible-for-now holding gap, not an unexamined unknown."
