@@ -9,7 +9,7 @@
  * is called without a try/catch, so a malformed bibliography fails the build
  * rather than shipping a placeholder. Ids are resolved to titles from the
  * bibliography and linked (T010) only where a reading page actually exists --
- * source-groups (campaign ids) have no reading page, so they render plain and
+ * source-groups (work-bundle ids) have no reading page, so they render plain and
  * never leave a dead link.
  */
 import path from 'node:path';
@@ -59,7 +59,7 @@ const labelFor = (id: string): { title?: string; href?: string } => ({
 
 <BaseLayout
   title="Coverage — what we're still missing"
-  description="A standing audit of the corpus's open questions: where campaigns fall short of their believed extent, which cited works aren't yet located, what stays unclassified, and where we've searched. Holdings themselves are catalogued on the source pages."
+  description="A standing audit of the corpus's open questions: where work-bundles fall short of their believed extent, which cited works aren't yet located, what stays unclassified, and where we've searched. Holdings themselves are catalogued on the source pages."
 >
   <main class="coverage">
     <header>
@@ -67,8 +67,8 @@ const labelFor = (id: string): { title?: string; href?: string } => ({
       <h1 class="cov__title">What we're still missing.</h1>
       <div class="cov__stamp" aria-hidden="true"></div>
       <p class="cov__abstract">
-        A standing audit of the corpus's open questions — where a discovery
-        campaign falls short of its believed extent, which works are cited but
+        A standing audit of the corpus's open questions — where a work-bundle
+        falls short of its believed extent, which works are cited but
         not yet located, what stays unclassified, and where we've searched. What
         the corpus holds is catalogued on the landing and source pages; this view
         tracks only what is still unresolved. Nothing here is a score; every gap
