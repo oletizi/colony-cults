@@ -50,6 +50,17 @@ export function verifyGrounded<T>(
     const field = extraction[key];
     const normalizedExcerpt = normalizeWhitespace(field.evidence.excerpt);
 
+    // An empty (or whitespace-only) excerpt is NOT grounding: `includes("")` is
+    // vacuously true, so an empty excerpt would let a fabricated value slip
+    // through the security teeth. Reject it explicitly (no fabrication, FR-008).
+    if (normalizedExcerpt.length === 0) {
+      throw new Error(
+        `verifyGrounded: field "${String(key)}" has an empty evidence excerpt — ` +
+          `an empty excerpt is not grounding (it cannot support any value). ` +
+          `excerpt=${JSON.stringify(field.evidence.excerpt)}`,
+      );
+    }
+
     if (!normalizedPage.includes(normalizedExcerpt)) {
       throw new Error(
         `verifyGrounded: field "${String(key)}" is not grounded — its evidence excerpt ` +

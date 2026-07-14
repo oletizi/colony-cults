@@ -65,6 +65,29 @@ describe('verifyGrounded', () => {
     expect(() => verifyGrounded(doc, extraction, ['date'])).not.toThrow();
   });
 
+  it('throws on an empty/whitespace-only excerpt (code-review #1: includes("") is vacuously true)', () => {
+    const doc = makeDoc(VALID_PAGE);
+    // A fabricated NON-rights-critical field with an empty excerpt must NOT
+    // slip through: an empty excerpt is not grounding.
+    const empty = makeExtraction();
+    empty.creator = {
+      value: 'Fabricated Photographer',
+      evidence: { excerpt: '', selector: '.artist-name' },
+      interpretation: 'primary creator',
+      provenance: PROVENANCE,
+    };
+    expect(() => verifyGrounded(doc, empty, ['date'])).toThrow(/empty evidence excerpt/i);
+
+    const whitespace = makeExtraction();
+    whitespace.creator = {
+      value: 'Fabricated Photographer',
+      evidence: { excerpt: '   \n\t  ', selector: '.artist-name' },
+      interpretation: 'primary creator',
+      provenance: PROVENANCE,
+    };
+    expect(() => verifyGrounded(doc, whitespace, ['date'])).toThrow(/empty evidence excerpt/i);
+  });
+
   it('INV-X1: throws when a field excerpt is fabricated (not present on the page)', () => {
     const doc = makeDoc(VALID_PAGE);
     const extraction = makeExtraction({
