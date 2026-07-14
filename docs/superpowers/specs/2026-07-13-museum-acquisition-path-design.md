@@ -78,15 +78,18 @@ museum is the **first non-Gallica acquisition** — the "2nd repository" conditi
 
 ### Item extraction from the Musarch catalogue
 
-- **### Chosen — `StructuredExtractor` over the existing engine seam.** Fetch the
-  item page + image with the existing rate-limit-safe HTTP client, then extract via
-  a **new `StructuredExtractor<T>` contract that wraps the already-shipped
+- **### Chosen — Layered hybrid: DOM-direct pull + LLM extraction + deterministic
+  verifier.** Fetch the item page + image with the existing rate-limit-safe HTTP
+  client. Read mechanical fields (asset URL, accession id) straight from the DOM
+  node (deterministic). Extract prose-embedded fields (date, creator, description)
+  via a **new `StructuredExtractor<T>` contract wrapping the already-shipped
   `createEngine`/`TranslationEngine` coding-agent seam** (`src/engine/*`,
-  `src/codex/*`, `src/claude/*`). No new agent-invocation code — the callout is
-  reused; the extractor adds schema-validated output, field-level grounding,
-  injection fencing, and model-assisted provenance (Decision 3). This reconciles
-  the operator steer (reuse the callout; no hand-rolled parser) with the reviewer's
-  correct point that `run(prompt,text)→string` is too loose for canonical ingest.
+  `src/codex/*`, `src/claude/*`) — no new callout code — returning grounded fields
+  a **deterministic verifier** then ratifies against the fetched bytes (Decision 3).
+  This keeps the operator's LLM choice (no hand-rolled template parser) while
+  ensuring non-deterministic output never becomes the source of truth for a
+  canonical, rights-critical field without deterministic grounding — the security,
+  reproducibility, and silent-drift arguments against *pure* LLM extraction.
 - **### Rejected — Bare `TranslationEngine.run` returning free text.** Reusing the
   translation seam *as-is* pushes fragile text-to-field parsing into the adapter.
   *Rejected*: keep the callout, add the structured contract on top.
@@ -127,17 +130,40 @@ museum is the **first non-Gallica acquisition** — the "2nd repository" conditi
    the choice was made; a thumbnail is never preserved as a master. Objects are
    never mis-typed as `monograph` to pass validation.
 
-3. **`StructuredExtractor<T>` wrapping the engine seam (review §2).** The extractor
-   calls `createEngine(...)` under the hood (reuse, not rebuild) and returns
-   `GroundedExtraction<T>` where each `GroundedField` carries `{ value, evidence:
-   { excerpt?, selector?, attribute? } }`. **Grounding gate (fail loud, no
-   fabrication — INV-2):** a field whose value cannot be tied to concrete page
-   evidence throws — never written. **Injection fencing:** fetched page content is
-   supplied strictly as data, never as instructions. **Missing vs explicit vs
-   inferred** are distinguished (an absent field is not a fabricated blank).
-   **Provenance:** every extracted metadata record stamps `model-assisted` +
-   engine + model + prompt-version + timestamp. Engine preflight failure → fail
-   loud, no fallback.
+3. **`StructuredExtractor<T>` over the engine seam, with a deterministic verifier
+   (review §2, sharpened).** The extraction is a layered hybrid — LLM stays the
+   chosen mechanism (no hand-rolled template parser), but non-deterministic output
+   is never the source of truth for a canonical field without deterministic
+   grounding. Three layers:
+   - **(a) DOM-direct deterministic pull for mechanical fields.** The asset
+     URL(s) (from the item's `<img>`/`<a href>`) and the Musarch `accession` id
+     (from its stable id pattern) are read straight from the DOM node — no LLM,
+     deterministic by construction. These are not prose; an LLM adds only risk.
+   - **(b) LLM extraction for prose-embedded fields** (date, creator, description,
+     stated credit). The extractor calls `createEngine(...)` under the hood (reuse,
+     not rebuild) and returns `GroundedExtraction<T>` where each `GroundedField`
+     carries `{ value, evidence: { excerpt, selector? } }` — a verbatim quote of
+     where the value was found. **Injection fencing:** fetched content is supplied
+     strictly as data, never as instructions. **Missing vs explicit vs inferred**
+     are distinguished (an absent field is not a fabricated blank).
+   - **(c) Deterministic verifier (the security teeth — fail loud, no fabrication,
+     INV-2).** A cheap, reproducible check — *not* a scraper — asserts each
+     `evidence.excerpt` is a verbatim substring of the fetched page bytes
+     (whitespace-normalized); for the **rights-critical date**, it additionally
+     asserts the excerpt contains the value's source form (`value: 1890` ⇒ excerpt
+     must contain `"1890"`). An excerpt that is not literally on the page throws —
+     the field is never written. This kills fabrication; the model cannot assert a
+     value unsupported by page text.
+   **Persisted evidence + reproducibility.** The verified `evidence.excerpt` is
+   stored in the record's provenance alongside `model-assisted` + engine + model +
+   prompt-version + timestamp — so the canonical record is **re-verifiable
+   deterministically without re-running the model**, defeating model-version drift.
+   **Mis-attribution backstop.** The verifier cannot catch a real excerpt attached
+   to the wrong object; the operator's rights confirmation (Decision 4) ratifies
+   the date against the shown excerpt-in-context, closing that residual. Engine
+   preflight failure → fail loud, no fallback. (Layered: verifier kills
+   hallucination, human kills mis-attribution, stored evidence restores
+   reproducibility.)
 
 4. **Rights = fail-closed, operator-recorded judgment; authority lives in the
    canonical record (review §4).** `collectRightsEvidence` gathers stated
@@ -244,8 +270,13 @@ museum is the **first non-Gallica acquisition** — the "2nd repository" conditi
   three-state extent, §10 Gallica regression tests. Accepted with synthesis: §2 —
   rejected the "deterministic parser preferred" recommendation (contradicts the
   operator's explicit reuse-the-callout / no-hand-rolled-parser decision) but
-  adopted the `StructuredExtractor` contract + field-level grounding + injection
-  fencing + model-assisted provenance over the reused engine seam. Accepted with
+  adopted a layered hybrid over the reused engine seam: DOM-direct pull for
+  mechanical fields + LLM extraction for prose + a **deterministic verifier** that
+  ratifies each field's evidence excerpt against the fetched bytes (excerpt must be
+  verbatim on the page; rights-critical date must contain its value), with the
+  excerpt persisted so the record is re-verifiable without re-running the model.
+  Resolved after an operator-invited argument on parser-vs-LLM: the real axis is
+  determinism where a field is canonical + rights-critical, not the parsing tool. Accepted with
   scope-down: §8 — structured resolution with evidence, but transition-history
   subsystem deferred (R4/R7).
 - Operator steers: Q1 mechanism (automate fetch + reuse coding-agent callout, no
