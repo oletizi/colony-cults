@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Scope closure — mockup</title>
+<style>
+  :root{--paper:#e4e3dd;--ink:#17150f;--slate:#33404a;--oxide:#9a3324;--rule:#c7c4b8;--faint:#7c7a70;
+    --grote:"Neue Haas Grotesk Text","Helvetica Neue",Arial,sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--grote);line-height:1.5}
+  .wrap{max-width:940px;margin:0 auto;padding:56px 28px}
+  .sec__label{display:flex;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--rule)}
+  .sec__count{margin-left:auto;color:var(--faint)}
+  /* matrix (existing) */
+  .hist{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+  .hist th{text-align:left;font-weight:400;color:var(--faint);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:0 16px 10px 0;border-bottom:1px solid var(--rule);white-space:nowrap}
+  .hist td{padding:12px 16px 12px 0;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--slate)}
+  .hist__repo{color:var(--ink)}
+  .hist__q{display:block;color:var(--ink)}
+  .hist__q::before{content:"›";color:var(--oxide);margin-right:7px}
+  /* NEW: scope closure ledger — mirrors the EvidenceDistribution two-col dotted pattern */
+  .hist__closure-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:26px 0 10px}
+  .closure{display:grid;grid-template-columns:1fr auto;gap:0 24px;font-family:var(--mono);font-size:12px;max-width:520px}
+  .closure__row{display:contents}
+  .closure__scope{padding:7px 0;border-bottom:1px dotted var(--rule);color:var(--slate)}
+  .closure__verdict{padding:7px 0;border-bottom:1px dotted var(--rule);text-align:right}
+  .closure__verdict--open{color:var(--oxide);font-variant:small-caps;letter-spacing:.06em}
+  .closure__verdict--closed{color:var(--faint)}
+</style></head>
+<body><div class="wrap">
+  <section>
+    <p class="sec__label">Search history<span class="sec__count">3 searches</span></p>
+    <table class="hist">
+      <thead><tr><th>Repository</th><th>Scope</th><th>Last searched</th><th>Open questions</th></tr></thead>
+      <tbody>
+        <tr><td class="hist__repo">Gallica / BnF</td><td>work-bundle PB-P004</td><td>2026-07-13</td>
+          <td><span class="hist__q">Pinpoint the Cour de Paris arrêt (14 May 1884) within the Gazette des Tribunaux run on Gallica.</span><span class="hist__q">Physical appeal-court dossier (Archives de Paris) not searched.</span></td></tr>
+        <tr><td class="hist__repo">Multi-catalog (Gallica, archive.org, HathiTrust, WorldCat / CCFr)</td><td>work PB-P012</td><td>2026-07-13</td>
+          <td><span class="hist__q">Physical holding for the 1884 Marseille imprint not yet confirmed.</span></td></tr>
+        <tr><td class="hist__repo">Gallica / BnF + digital libraries</td><td>work PB-P002</td><td>2026-07-13</td>
+          <td><span class="hist__q">Date discrepancy: this record says 1879; BnF dates the imprint 1880 — reconcile.</span></td></tr>
+      </tbody>
+    </table>
+
+    <p class="hist__closure-label">Scope closure</p>
+    <div class="closure">
+      <div class="closure__row"><span class="closure__scope">work-bundle PB-P004</span><span class="closure__verdict closure__verdict--open">open</span></div>
+      <div class="closure__row"><span class="closure__scope">work PB-P012</span><span class="closure__verdict closure__verdict--open">open</span></div>
+      <div class="closure__row"><span class="closure__scope">work PB-P002</span><span class="closure__verdict closure__verdict--open">open</span></div>
+      <!-- illustrative closed row to check the quiet treatment -->
+      <div class="closure__row"><span class="closure__scope">work PB-P001</span><span class="closure__verdict closure__verdict--closed">closed</span></div>
+    </div>
+  </section>
+</div></body></html>
