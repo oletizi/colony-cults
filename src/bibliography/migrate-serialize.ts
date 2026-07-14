@@ -2,7 +2,7 @@ import { stringify } from 'yaml';
 
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import type { Publication } from '@/model/publication';
-import type { LeadResolution, Reference, Source, SuspectedGap } from '@/model/source';
+import type { KnownExtent, LeadResolution, Reference, Source, SuspectedGap } from '@/model/source';
 
 /**
  * One migrated Source together with its authored Repository Records, ready to
@@ -192,6 +192,24 @@ function orderedResolution(resolution: LeadResolution): Record<string, unknown> 
 }
 
 /**
+ * Build one `knownExtent`'s on-disk object in a FIXED key order (`state`
+ * first, then its state-specific fields), mirroring {@link orderedResolution}.
+ * Each branch emits exactly the fields {@link KnownExtent} carries for that
+ * `state` -- nothing fabricated, nothing dropped, so a `knownExtent`
+ * round-trips unchanged through load -> serialize (specs/011 § KnownExtent).
+ */
+function orderedKnownExtent(extent: KnownExtent): Record<string, unknown> {
+  switch (extent.state) {
+    case 'measured':
+      return { state: extent.state, count: extent.count, basis: extent.basis };
+    case 'unexamined':
+      return { state: extent.state };
+    case 'irreducible':
+      return { state: extent.state, basis: extent.basis };
+  }
+}
+
+/**
  * Build one `suspected[]` gap (a group-only inferred, uncited gap) in a FIXED
  * key order, omitting absent optionals. Preserves input array order.
  */
@@ -228,7 +246,7 @@ export function serializeSource(migrated: MigratedSource): string {
     out.partOf = source.partOf;
   }
   // Field order: sourceId, kind, partOf, status, case, evidenceClass, language,
-  // creator, rights, knownMemberCount, titles, identifiers, references,
+  // creator, rights, knownExtent, titles, identifiers, references,
   // suspected, notes, repositoryRecords, publications -- status sits right after
   // partOf since both describe the Source's place in the group/lifecycle model,
   // ahead of the more descriptive/bibliographic fields; publications sits last,
@@ -262,11 +280,11 @@ export function serializeSource(migrated: MigratedSource): string {
     }
     out.rights = rights;
   }
-  // knownMemberCount + suspected are group-only fields (valid on
+  // knownExtent + suspected are group-only fields (valid on
   // kind: source-group); emitted when present so a source-group's believed
   // extent and inferred gaps survive a load -> serialize round-trip.
-  if (source.knownMemberCount !== undefined) {
-    out.knownMemberCount = source.knownMemberCount;
+  if (source.knownExtent !== undefined) {
+    out.knownExtent = orderedKnownExtent(source.knownExtent);
   }
   out.titles = source.titles.map((title) =>
     title.language !== undefined

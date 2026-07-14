@@ -11,9 +11,10 @@ import type { Source } from '@/model/source';
 /**
  * Regression: `serializeSource` must emit EVERY Source model field it can carry,
  * so a load -> serialize round-trip is lossless. Previously `evidenceClass`,
- * `references`, `knownMemberCount`, and `suspected` were silently dropped, which
- * would erase a source-group's believed extent + inferred-gap acquisition
- * targets (e.g. PB-P006) if it were ever re-serialized.
+ * `references`, `knownMemberCount` (now `knownExtent`, T025), and `suspected`
+ * were silently dropped, which would erase a source-group's believed extent +
+ * inferred-gap acquisition targets (e.g. PB-P006) if it were ever
+ * re-serialized.
  */
 describe('serializeSource round-trip of previously-dropped fields', () => {
   const source: Source = {
@@ -23,7 +24,7 @@ describe('serializeSource round-trip of previously-dropped fields', () => {
     evidenceClass: 'pamphlet',
     language: 'French',
     creator: 'various',
-    knownMemberCount: 'unknown',
+    knownExtent: { state: 'irreducible', basis: 'an unbounded, changing holding' },
     references: [
       {
         citedAs: 'Some advertised journal',
@@ -51,7 +52,7 @@ describe('serializeSource round-trip of previously-dropped fields', () => {
     identifiers: [],
   };
 
-  it('preserves evidenceClass, references, knownMemberCount, and suspected through load', () => {
+  it('preserves evidenceClass, references, knownExtent, and suspected through load', () => {
     const dir = mkdtempSync(join(tmpdir(), 'ssot-roundtrip-'));
     try {
       const path = join(dir, 'PB-P900.yml');
@@ -61,7 +62,10 @@ describe('serializeSource round-trip of previously-dropped fields', () => {
       const reloaded = loadSourceFile(path).source;
 
       expect(reloaded.evidenceClass).toBe('pamphlet');
-      expect(reloaded.knownMemberCount).toBe('unknown');
+      expect(reloaded.knownExtent).toEqual({
+        state: 'irreducible',
+        basis: 'an unbounded, changing holding',
+      });
       expect(reloaded.references).toHaveLength(1);
       expect(reloaded.references?.[0].citedAs).toBe('Some advertised journal');
       expect(reloaded.references?.[0].citedKind).toBe('journal');

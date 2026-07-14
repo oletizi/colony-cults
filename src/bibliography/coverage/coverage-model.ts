@@ -6,7 +6,7 @@ import { EVIDENCE_CLASS_VALUES } from '@/bibliography/vocab';
 import type { EvidenceClass, SourceLifecycleStatus } from '@/bibliography/vocab';
 import { buildRegister } from '@/bibliography/coverage/coverage-register';
 import { buildSearchHistory } from '@/bibliography/coverage/coverage-history';
-import type { LeadResolution } from '@/model/source';
+import type { KnownExtent, LeadResolution } from '@/model/source';
 
 /**
  * The `CoverageReport` and its sub-structures are the DERIVED projection over
@@ -36,10 +36,18 @@ export interface WorkBundleCoverage {
   membersByLifecycleState: { state: SourceLifecycleStatus | 'unset'; count: number }[];
   /** Count of actual member works, DERIVED from `partOf` edges (per work). */
   actualMemberCount: number;
-  /** The authored believed extent (denominator), or `'unknown'` when absent. */
-  knownMemberCount: number | 'unknown';
-  /** `knownMemberCount - actualMemberCount`, or the literal `'unknown'`. */
-  gap: number | 'unknown';
+  /**
+   * The authored believed extent (denominator), defaulted to
+   * `{ state: 'unexamined' }` when absent (specs/011 § KnownExtent) -- never
+   * a bare `'unknown'` literal.
+   */
+  knownExtent: KnownExtent;
+  /**
+   * `knownExtent.count - actualMemberCount` when `knownExtent.state ===
+   * 'measured'`; otherwise the extent's OWN state word (`'unexamined'` /
+   * `'irreducible'`) -- never a bare `'unknown'` literal.
+   */
+  gap: number | 'unexamined' | 'irreducible';
 }
 
 /**
@@ -174,9 +182,11 @@ function isWorkBundle(loaded: LoadedSource): boolean {
  * so a work held at N archives (N repository records) still contributes exactly
  * 1 (INV-3). Lifecycle buckets are keyed by each member's own `status`, with
  * `'unset'` collecting members that authored none, and are sorted by state name
- * for determinism. `knownMemberCount` is the group's authored belief (or
- * `'unknown'` when absent); `gap` is the difference when a number is known, else
- * the literal `'unknown'` (never `0` -- INV-2).
+ * for determinism. `knownExtent` is the group's authored belief (defaulted to
+ * `{ state: 'unexamined' }` when absent); `gap` is the numeric difference when
+ * `knownExtent.state === 'measured'`, else the extent's own state word
+ * (never a bare `'unknown'` literal, never `0` for an unmeasured extent --
+ * INV-2).
  */
 function buildWorkBundleCoverage(
   group: LoadedSource,
@@ -195,10 +205,10 @@ function buildWorkBundleCoverage(
     .sort((a, b) => a.state.localeCompare(b.state));
 
   const actualMemberCount = members.length;
-  const knownMemberCount = group.source.knownMemberCount ?? 'unknown';
-  const gap = typeof knownMemberCount === 'number' ? knownMemberCount - actualMemberCount : 'unknown';
+  const knownExtent: KnownExtent = group.source.knownExtent ?? { state: 'unexamined' };
+  const gap = knownExtent.state === 'measured' ? knownExtent.count - actualMemberCount : knownExtent.state;
 
-  return { workBundle, membersByLifecycleState, actualMemberCount, knownMemberCount, gap };
+  return { workBundle, membersByLifecycleState, actualMemberCount, knownExtent, gap };
 }
 
 /**

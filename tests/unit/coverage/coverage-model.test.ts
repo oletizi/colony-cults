@@ -61,26 +61,31 @@ describe('T008/T010 per-work-bundle lifecycle counts (per work, FR-014)', () => 
   });
 });
 
-describe('T022 gap semantics (knownMemberCount vs derived actual)', () => {
-  it('renders a numeric gap when knownMemberCount is a number', () => {
+describe('T025 gap semantics (knownExtent vs derived actual)', () => {
+  it('renders a numeric gap when knownExtent is measured', () => {
     const pb001 = workBundle('PB-P001');
-    expect(pb001.knownMemberCount).toBe(3);
+    expect(pb001.knownExtent).toEqual({
+      state: 'measured',
+      count: 3,
+      basis: 'three issues comprise the run',
+    });
     expect(pb001.gap).toBe(0); // 3 known - 3 actual
     expect(typeof pb001.gap).toBe('number');
   });
 
-  it('keeps a numeric gap of 0 distinct from the literal unknown', () => {
+  it('keeps a numeric gap of 0 distinct from an unexamined extent', () => {
     const pb002 = workBundle('PB-P002');
-    expect(pb002.knownMemberCount).toBe('unknown');
-    expect(pb002.gap).toBe('unknown');
-    // Distinctness: PB-P001 gap is the NUMBER 0, PB-P002 gap is the STRING 'unknown'.
-    expect(workBundle('PB-P001').gap).not.toBe('unknown');
+    expect(pb002.knownExtent).toEqual({ state: 'unexamined' });
+    expect(pb002.gap).toBe('unexamined');
+    // Distinctness: PB-P001 gap is the NUMBER 0, PB-P002 gap is the STRING 'unexamined'.
+    expect(workBundle('PB-P001').gap).not.toBe('unexamined');
   });
 
-  it('renders the unknown gap as the literal word, never 0 or a percentage', () => {
+  it('renders an unexamined gap as its state word, never 0, "unknown", or a percentage', () => {
     const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
-    expect(text).toContain('gap: unknown');
+    expect(text).toContain('gap: unexamined');
     expect(text).toContain('gap: 0'); // PB-P001's numeric zero gap
+    expect(text).not.toContain('gap: unknown');
     expect(text).not.toContain('%');
   });
 });

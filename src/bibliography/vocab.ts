@@ -174,6 +174,30 @@ export function isLeadResolutionState(value: string): value is LeadResolutionSta
 }
 
 /**
+ * The `state` discriminant of a `Source.knownExtent`
+ * (specs/011-museum-acquisition-path § KnownExtent): the believed extent of a
+ * source-group. `measured` (a finite hand-authored belief) / `unexamined`
+ * (not yet assessed) / `irreducible` (fundamentally unbounded/unknowable).
+ * This tuple validates ONLY that `state` is a recognized member; each
+ * state's own required fields (`count`/`basis`) are checked by
+ * `@/bibliography/load-coverage-fields`'s `validateKnownExtent`, not here --
+ * same split as `LEAD_RESOLUTION_STATE_VALUES` above.
+ */
+export const KNOWN_EXTENT_STATE_VALUES = ['measured', 'unexamined', 'irreducible'] as const;
+export type KnownExtentState = (typeof KNOWN_EXTENT_STATE_VALUES)[number];
+
+/**
+ * Membership test for the `KnownExtentState` vocabulary (specs/011):
+ * `isKnownExtentState('measured')` -> `true`;
+ * `isKnownExtentState('unknown')` -> `false` (the retired bare literal). Use
+ * wherever a `Source.knownExtent.state` value is checked (see
+ * `@/bibliography/load-coverage-fields`).
+ */
+export function isKnownExtentState(value: string): value is KnownExtentState {
+  return includesValue(KNOWN_EXTENT_STATE_VALUES, value);
+}
+
+/**
  * Structural kind of a `Source` -- the role this work plays in the corpus:
  * `periodical` (serial, multiple dated issues), `monograph` (monographic textual
  * work, single dated/undated document), `archival-item` (discrete non-serial

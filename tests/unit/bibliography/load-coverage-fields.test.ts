@@ -7,12 +7,16 @@ import { loadSourceFile } from '@/bibliography/load';
 
 /**
  * T005: the loader carries the coverage-feature authored fields
- * (`evidenceClass`, `references[]`, `knownMemberCount`, `suspected[]`) through
+ * (`evidenceClass`, `references[]`, `knownExtent`, `suspected[]`) through
  * onto the loaded {@link Source}. All are optional/additive -- existing sources
  * with none of them load exactly as before (see the regression cases at the
  * bottom). Cross-field/vocab/referential validation (citedKind-in-vocab,
  * resolvedTo-referential, group-only enforcement, non-negative-integer) is the
  * job of the later validation tasks, NOT this loader.
+ *
+ * T025: `knownMemberCount: number | 'unknown'` is REPLACED by a discriminated
+ * `knownExtent` (specs/011 § KnownExtent) -- see the
+ * `loader: knownExtent (T025 discriminated union)` describe block below.
  */
 
 let dir: string;
@@ -175,8 +179,8 @@ references:
   });
 });
 
-describe('loader: knownMemberCount + suspected[] (source-group)', () => {
-  it('carries a numeric knownMemberCount and a full suspected[] onto the loaded group', () => {
+describe('loader: knownExtent + suspected[] (source-group)', () => {
+  it('carries a measured knownExtent and a full suspected[] onto the loaded group', () => {
     const filePath = writeSource(
       'PB-P004.yml',
       `
@@ -186,7 +190,10 @@ case: port-breton
 titles:
   - text: "Fixture Source Group - Test Campaign"
     role: canonical
-knownMemberCount: 3
+knownExtent:
+  state: measured
+  count: 3
+  basis: "three issues comprise the run"
 suspected:
   - description: "appeal-court records for the de Rays trial"
     basis: "trial testimony references an appeal not yet located"
@@ -197,7 +204,11 @@ suspected:
     const { source } = loadSourceFile(filePath);
 
     expect(source.kind).toBe('source-group');
-    expect(source.knownMemberCount).toBe(3);
+    expect(source.knownExtent).toEqual({
+      state: 'measured',
+      count: 3,
+      basis: 'three issues comprise the run',
+    });
     expect(source.suspected).toEqual([
       {
         description: 'appeal-court records for the de Rays trial',
@@ -206,23 +217,6 @@ suspected:
         notes: 'not available online as of last search',
       },
     ]);
-  });
-
-  it("round-trips knownMemberCount: 'unknown' as the literal string (distinct from 0 / absent)", () => {
-    const filePath = writeSource(
-      'PB-P004.yml',
-      `
-sourceId: PB-P004
-kind: source-group
-titles:
-  - text: "Fixture Source Group - Test Campaign"
-    role: canonical
-knownMemberCount: unknown
-`,
-    );
-    const { source } = loadSourceFile(filePath);
-
-    expect(source.knownMemberCount).toBe('unknown');
   });
 
   it('carries a minimal suspected entry (only required description + basis)', () => {
@@ -281,7 +275,10 @@ suspected:
     expect(() => loadSourceFile(filePath)).toThrow(/suspected\[0\]\.basis/);
   });
 
-  it('throws when knownMemberCount is neither a number nor the literal "unknown"', () => {
+});
+
+describe('loader: knownExtent (T025 discriminated union)', () => {
+  it('parses a measured extent (count + basis)', () => {
     const filePath = writeSource(
       'PB-P004.yml',
       `
@@ -290,10 +287,171 @@ kind: source-group
 titles:
   - text: "Whatever"
     role: canonical
-knownMemberCount: lots
+knownExtent:
+  state: measured
+  count: 5
+  basis: "five issues per the publisher's masthead"
 `,
     );
-    expect(() => loadSourceFile(filePath)).toThrow(/knownMemberCount/);
+    const { source } = loadSourceFile(filePath);
+    expect(source.knownExtent).toEqual({
+      state: 'measured',
+      count: 5,
+      basis: "five issues per the publisher's masthead",
+    });
+  });
+
+  it('parses an unexamined extent (no extra fields)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: unexamined
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.knownExtent).toEqual({ state: 'unexamined' });
+  });
+
+  it('parses an irreducible extent (basis only)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: irreducible
+  basis: "a heterogeneous, changing holding with no stable finite boundary"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.knownExtent).toEqual({
+      state: 'irreducible',
+      basis: 'a heterogeneous, changing holding with no stable finite boundary',
+    });
+  });
+
+  it('throws when a measured extent is missing count', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: measured
+  basis: "some basis"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/knownExtent\.count/);
+  });
+
+  it('throws when a measured extent is missing basis', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: measured
+  count: 3
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/knownExtent\.basis/);
+  });
+
+  it('throws when an irreducible extent is missing basis', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: irreducible
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/knownExtent\.basis/);
+  });
+
+  it('throws on an unknown key within an unexamined extent (no silent drop)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: unexamined
+  count: 3
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/unknown key "count"/);
+  });
+
+  it('throws when knownExtent.state is not in the closed vocabulary', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: partial
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(
+      /knownExtent\.state "partial" is not in the KnownExtent state vocabulary/,
+    );
+  });
+
+  it('throws on the retired bare literal "unknown" (no back-compat)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent: unknown
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/knownExtent must be an object/);
+  });
+
+  it('throws on the retired old knownMemberCount key (no back-compat alias)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownMemberCount: 3
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/unknown key "knownMemberCount"/);
   });
 });
 
@@ -600,7 +758,7 @@ titles:
 
     expect(source.evidenceClass).toBeUndefined();
     expect(source.references).toBeUndefined();
-    expect(source.knownMemberCount).toBeUndefined();
+    expect(source.knownExtent).toBeUndefined();
     expect(source.suspected).toBeUndefined();
     // Existing fields untouched.
     expect(source.sourceId).toBe('PB-P001');

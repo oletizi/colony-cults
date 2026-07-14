@@ -82,13 +82,17 @@ export interface Source {
    * coverage report measures actual members (derived from `partOf` edges)
    * against. Valid ONLY on `kind: 'source-group'`; authoring it on any other
    * kind is an error (enforced by a later validation task, not the loader).
-   * Distinct from the *derived* actual count: this is the hand-authored belief
-   * about how many members SHOULD exist. The literal string `'unknown'` is
-   * first-class and deliberately distinct from an incomplete group and from a
-   * count of `0` -- `unknown != incomplete != 0`. Absent means the extent has
-   * not been asserted (treated as `'unknown'` by the report).
+   * A discriminated union (specs/011-museum-acquisition-path/data-model.md §
+   * KnownExtent), replacing the earlier scalar `knownMemberCount: number |
+   * 'unknown'` (removed, no back-compat): `measured` records a finite
+   * hand-authored belief (`count`) with its `basis`; `unexamined` means the
+   * extent has not yet been assessed; `irreducible` means the group's extent
+   * is fundamentally unbounded/unknowable (e.g. a heterogeneous, changing
+   * museum holding), with `basis` explaining why. Absent is treated as
+   * `{ state: 'unexamined' }` by the report -- never fabricated onto the
+   * loaded Source itself.
    */
-  knownMemberCount?: number | 'unknown';
+  knownExtent?: KnownExtent;
   /**
    * Inferred, uncited pre-discovery gaps in this source-group -- works
    * suspected to exist from publication pattern, testimony, or indirect
@@ -225,3 +229,24 @@ export type LeadResolution =
   | { state: 'inventoried'; sourceId: string; resolvedAt: string }
   | { state: 'excluded'; reason: string; resolvedAt: string }
   | { state: 'unavailable'; reason: string; resolvedAt: string };
+
+/**
+ * The believed extent of a {@link Source.knownExtent} (specs/011-museum-
+ * acquisition-path/data-model.md § KnownExtent). A discriminated union keyed
+ * on `state`: `measured` records a finite hand-authored belief (`count`) with
+ * its `basis` -- distinct from the *derived* actual member count, this is
+ * what SHOULD exist; `unexamined` means the extent has not yet been assessed
+ * (the initial/default disposition, same convention as `LeadResolution`);
+ * `irreducible` means the group's extent is fundamentally
+ * unbounded/unknowable (e.g. a heterogeneous, changing museum holding with no
+ * stable finite public-domain boundary), with `basis` explaining why. Illegal
+ * combinations (a `measured` extent with no `count`, an `irreducible` extent
+ * with no `basis`) are unrepresentable in the type, not merely rejected at
+ * runtime. Replaces the earlier scalar `knownMemberCount: number | 'unknown'`
+ * -- the bare literal `'unknown'` and the old scalar shape are REMOVED; a
+ * loaded Source carrying either fails loud (no back-compat alias).
+ */
+export type KnownExtent =
+  | { state: 'measured'; count: number; basis: string }
+  | { state: 'unexamined' }
+  | { state: 'irreducible'; basis: string };

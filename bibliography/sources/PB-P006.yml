@@ -6,7 +6,9 @@ creator: various
 titles:
   - text: New Italy Museum and survivor materials
     role: canonical
-knownMemberCount: unknown
+knownExtent:
+  state: irreducible
+  basis: "The New Italy Museum holding is a heterogeneous, changing collection of settler photographs and documents with no stable finite public-domain boundary; the identified public-domain acquisition candidates are named in the suspected[] leads, but the campaign's extent itself is unbounded."
 suspected:
   - description: "Pre-1955 photographs of early New Italy settlement (settlers clearing land, building shelters, farming, wine-making)"
     basis: "The New Italy Museum describes holding early-settler photographs. Australian photographs taken before 1955 are out of copyright (the pre-1969 photograph term, not revived by the 2005 extension), so 1880s-1900s settlement photographs are public domain and publishable once digitized with provenance."

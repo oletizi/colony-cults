@@ -108,17 +108,17 @@ describe('archival-item structural kind (T002)', () => {
   });
 
   describe('archival-item rejects source-group-only fields', () => {
-    it('rejects knownMemberCount on an archival-item (group-only field)', () => {
+    it('rejects knownExtent on an archival-item (group-only field)', () => {
       const archival = makeSource({
         kind: 'archival-item',
-        knownMemberCount: 1,
+        knownExtent: { state: 'measured', count: 1, basis: 'basis' },
       });
       const model = makeModel({ sources: [archival] });
 
       const findings = validateGroupOnlyFields(model);
       expect(findings).toHaveLength(1);
       expect(findings[0].kind).toBe('group-only-field');
-      expect(findings[0].detail).toContain('knownMemberCount');
+      expect(findings[0].detail).toContain('knownExtent');
       expect(findings[0].detail).toContain('archival-item');
     });
 
@@ -141,10 +141,10 @@ describe('archival-item structural kind (T002)', () => {
       expect(findings[0].detail).toContain('archival-item');
     });
 
-    it('rejects both knownMemberCount and suspected on an archival-item', () => {
+    it('rejects both knownExtent and suspected on an archival-item', () => {
       const archival = makeSource({
         kind: 'archival-item',
-        knownMemberCount: 5,
+        knownExtent: { state: 'measured', count: 5, basis: 'basis' },
         suspected: [
           {
             description: 'Missing related item',
@@ -157,7 +157,7 @@ describe('archival-item structural kind (T002)', () => {
       const findings = validateGroupOnlyFields(model);
       expect(findings).toHaveLength(2);
       const details = findings.map((f) => f.detail);
-      expect(details.some((d) => d.includes('knownMemberCount'))).toBe(true);
+      expect(details.some((d) => d.includes('knownExtent'))).toBe(true);
       expect(details.some((d) => d.includes('suspected'))).toBe(true);
     });
   });

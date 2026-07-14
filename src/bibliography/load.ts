@@ -6,7 +6,7 @@ import type { AuthoredRepositoryRecord, IdentifierLeak } from '@/bibliography/mo
 import { validateRecord, validateTitle, validateWorkIdentifier } from '@/bibliography/load-fields';
 import {
   optionalEvidenceClass,
-  validateKnownMemberCount,
+  validateKnownExtent,
   validateReference,
   validateSuspectedGap,
   validateThreads,
@@ -59,7 +59,7 @@ const SOURCE_KEYS = new Set([
   'evidenceClass',
   'rights',
   'references',
-  'knownMemberCount',
+  'knownExtent',
   'suspected',
   'notes',
   'publications',
@@ -316,10 +316,10 @@ export function loadSourceFile(filePath: string): LoadedSource {
       : requireArray(obj.references, filePath, 'references').map((r, i) =>
           validateReference(r, filePath, i),
         );
-  const knownMemberCount =
-    obj.knownMemberCount === undefined
+  const knownExtent =
+    obj.knownExtent === undefined
       ? undefined
-      : validateKnownMemberCount(obj.knownMemberCount, filePath, 'knownMemberCount');
+      : validateKnownExtent(obj.knownExtent, filePath, 'knownExtent');
   const suspected: SuspectedGap[] | undefined =
     obj.suspected === undefined
       ? undefined
@@ -425,7 +425,7 @@ export function loadSourceFile(filePath: string): LoadedSource {
     evidenceClass,
     rights,
     references,
-    knownMemberCount,
+    knownExtent,
     suspected,
     notes,
     publications,

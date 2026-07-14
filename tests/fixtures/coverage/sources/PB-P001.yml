@@ -6,7 +6,10 @@ creator: various
 titles:
   - text: Fixture Source Group A - Test Campaign
     role: canonical
-knownMemberCount: 3
+knownExtent:
+  state: measured
+  count: 3
+  basis: "three issues comprise the run"
 suspected:
   - description: "Suspected private correspondence regarding the campaign"
     basis: "Referenced indirectly in acquired members; location and archive status unknown"

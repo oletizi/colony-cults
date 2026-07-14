@@ -5,7 +5,7 @@ import type {
   CoverageSearchHistory,
   RegisterEntry,
 } from '@/bibliography/coverage/coverage-model';
-import type { LeadResolution } from '@/model/source';
+import type { KnownExtent, LeadResolution } from '@/model/source';
 
 /**
  * Render a {@link CoverageReport} as either deterministic machine JSON or
@@ -14,8 +14,9 @@ import type { LeadResolution } from '@/model/source';
  * uphold the assertable invariants:
  *
  * - INV-1: NEVER a headline coverage percentage -- this module emits no `%`.
- * - INV-2: an unknown gap/denominator renders as the literal `unknown`, never
- *   a blank, `0`, or a percentage.
+ * - INV-2: an unmeasured gap/denominator renders as its `KnownExtent` state
+ *   word (`unexamined` / `irreducible`), never a bare `unknown`, a blank,
+ *   `0`, or a percentage.
  *
  * Every section prints its per-row detail (per-work-bundle counts, evidence
  * distribution, the register with its ungrouped bucket + suspected sub-listing,
@@ -37,9 +38,19 @@ function renderJson(report: CoverageReport): string {
 
 const NONE = '(none)';
 
-/** Render a `number | 'unknown'` value: numbers as-is, the sentinel literally (INV-2). */
-function renderCountable(value: number | 'unknown'): string {
-  return typeof value === 'number' ? String(value) : value;
+/**
+ * Render a {@link KnownExtent}: the `measured` count as a plain number, else
+ * its own state word (`unexamined` or `irreducible`) -- never a bare
+ * `unknown` (INV-2). Basis prose is left to the distinct rendering (T026),
+ * not this minimal shape.
+ */
+function renderKnownExtent(extent: KnownExtent): string {
+  return extent.state === 'measured' ? String(extent.count) : extent.state;
+}
+
+/** Render a `WorkBundleCoverage.gap`: the number as-is, else its state word (INV-2). */
+function renderGap(gap: number | 'unexamined' | 'irreducible'): string {
+  return typeof gap === 'number' ? String(gap) : gap;
 }
 
 function renderPerWorkBundle(perWorkBundle: WorkBundleCoverage[], lines: string[]): void {
@@ -58,8 +69,8 @@ function renderPerWorkBundle(perWorkBundle: WorkBundleCoverage[], lines: string[
             .join(' | ');
     lines.push(`    members: ${members}   (actual works: ${workBundle.actualMemberCount})`);
     lines.push(
-      `    believed extent (knownMemberCount): ${renderCountable(workBundle.knownMemberCount)}` +
-        `        gap: ${renderCountable(workBundle.gap)}`,
+      `    believed extent (knownExtent): ${renderKnownExtent(workBundle.knownExtent)}` +
+        `        gap: ${renderGap(workBundle.gap)}`,
     );
   }
 }

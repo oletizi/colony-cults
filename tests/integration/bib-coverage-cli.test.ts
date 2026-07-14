@@ -82,13 +82,14 @@ describe('bib coverage CLI', () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 
-  it('surfaces explicit unknown and never a headline percentage (INV-1/INV-2)', async () => {
+  it('surfaces an explicit unexamined state and never a headline percentage (INV-1/INV-2)', async () => {
     const exitCode = await runCoverageCli([]);
     expect(exitCode).toBe(0);
     const printed = String(logSpy.mock.calls[0]?.[0]);
-    // The real corpus work-bundle (PB-P004) has no authored knownMemberCount -> unknown.
-    expect(printed).toContain('unknown');
-    expect(printed).toContain('gap: unknown');
+    // The real corpus work-bundle (PB-P004) has no authored knownExtent -> unexamined.
+    expect(printed).toContain('unexamined');
+    expect(printed).toContain('gap: unexamined');
+    expect(printed).not.toContain('gap: unknown');
     // INV-1: no coverage percentage anywhere in the human-readable report.
     expect(printed).not.toContain('%');
   });
@@ -99,14 +100,18 @@ describe('bib coverage CLI', () => {
     const printed = String(logSpy.mock.calls[0]?.[0]);
     expect(printed).not.toContain('%');
     const parsed = JSON.parse(printed) as {
-      perWorkBundle: { workBundle: string; actualMemberCount: number; gap: number | 'unknown' }[];
+      perWorkBundle: {
+        workBundle: string;
+        actualMemberCount: number;
+        gap: number | 'unexamined' | 'irreducible';
+      }[];
     };
     // Real corpus source-group PB-P004 has six members (per-work): 5
     // approved-for-acquisition (PB-P007-P011) + 1 discovered (PB-P012, the
-    // Vermont pleadings, SRCH-0002). Extent still unknown.
+    // Vermont pleadings, SRCH-0002). Extent still unexamined.
     const pb004 = parsed.perWorkBundle.find((c) => c.workBundle === 'PB-P004');
     expect(pb004?.actualMemberCount).toBe(6);
-    expect(pb004?.gap).toBe('unknown');
+    expect(pb004?.gap).toBe('unexamined');
   });
 
   it('writes nothing to disk (INV-4: git status unchanged by the run)', async () => {
