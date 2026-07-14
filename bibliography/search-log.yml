@@ -104,3 +104,15 @@
   remainingQuestions:
     - "Classify the 8 crisis-month gaps (1880-81) as never-published vs BnF-physical-only (published but undigitized) -- needs the BnF PHYSICAL catalogue / a non-Gallica holdings check. An irreducible residual with respect to Gallica."
   notes: "Second pass of the operator's archive-vs-SSOT audit. PB-P001's Gallica-acquirable extent is MEASURED complete (78/78, census-confirmed), not asserted; the residual is documented. Corrected PB-P001's stale year range (1879-1882 -> 1879-1885) while here."
+
+- id: SRCH-0007
+  date: 2026-07-13
+  repository: Trove / National Library of Australia
+  scope:
+    kind: work
+    id: PB-P005
+  query: "First non-Gallica search-and-log: what Australian newspaper coverage of the de Rays / Port-Breton / New Italy affair does Trove hold, and does acquiring it warrant building the Trove adapter the plan anticipated (T015)?"
+  coverage: "Trove holds ABUNDANT digitized, public-domain Australian reportage across many papers (SMH, Sydney Mail, The Tasmanian, et al.), 1880-1883+. Landmark exemplars located: 898535 (1 Jun 1880 'The New Colony at New Ireland'), 13481147 (25 Mar 1881 'Emigrants for Sydney'), 161883566 (16 Apr 1881 'The Marquis de Rays' Victims'), 199526344 (25 Jun 1881 'The New Ireland Fiasco'), 3420684 (3 Aug 1883 'The Marquis de Rays' Expedition'). FINDING: this is a topical PRESS RESIDUAL -- unbounded and not exhaustively acquirable, analogous to the French-press residual on PB-P004 -- NOT a discrete acquirable work. Research-first outcome: NO Trove adapter warranted (T015 disproven, not deferred) -- there is no repetitive discrete-acquisition target; any handful of exemplars is a manual n=1 fetch, not a seam. This is the just-in-time-tooling thesis working: the adapter was never pre-built, and the research shows it should not be."
+  remainingQuestions:
+    - "Operator curation: does the corpus want a few discrete Trove exemplars (e.g. the survivors'-arrival report) as evidentiary anchors? If so, acquire them manually (n=1) -- still no adapter."
+  notes: "PB-P005's model (kind: periodical, status: to-collect) reads as a single collectible run but is really a cross-paper topical slice; reframed in the source notes as an irreducible residual. The discrete Australian PRIMARY holdings live in PB-P006 (New Italy Museum photos + settler writings), not in Trove newspapers."
