@@ -7,3 +7,7 @@
 {"id":"T006","tierLabel":"fast","model":"haiku","commit":"64cf085","reviewClean":true}
 {"id":"T007","tierLabel":"balanced","model":"sonnet","commit":"1b13179","reviewClean":true}
 {"id":"T009","tierLabel":"balanced","model":"sonnet","commit":"440d706","reviewClean":true}
+{"id":"T010","tierLabel":"powerful","model":"opus","commit":"e970dc8","reviewClean":true}
+{"id":"T011","tierLabel":"powerful","model":"opus","commit":"590aff2","reviewClean":true}
+{"id":"T012","tierLabel":"powerful","model":"opus","commit":"9f19f75","reviewClean":true}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commit":"9f19f75","reviewClean":true,"note":"SC-003 unit-level confirmed via T010 chars green through adapter; full end-to-end archive-layout/checksum confirmation rides quickstart T021/T030 (T010 characterization gap needs real archive infra)"}
