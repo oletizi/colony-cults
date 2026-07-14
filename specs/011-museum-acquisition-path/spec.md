@@ -12,6 +12,14 @@
 
 Spec 009's research loop resolved PB-P006 (the New Italy Museum source-group) to `identified`: its two `suspected[]` leads name concrete public-domain acquisition candidates (*Survivors arrival in Sydney 1881*, *Landing site at Port Breton*, *Pioneers Group Photo 1890*, *School Group Photo New Italy 1903*; **excluded**: *1961 group photo*, post-1955). The museum's Musarch static catalogue (`newitaly.org.au/CAT/`) is item-level digitised — per-item detail pages plus images — but it is not Gallica/Trove/IIIF, so the shipped acquisition pipeline (hardwired to Gallica ARKs) cannot reach it. The museum is the **first non-Gallica repository** the corpus acquires from — the "second repository" condition spec 009 named for extracting a shared repository adapter. This feature builds that adapter, acquires the identified public-domain items, and makes the coverage audit reflect the resolution and extent knowledge 009 produced.
 
+## Clarifications
+
+### Session 2026-07-14
+
+- Q: How is the repository adapter selected when the operator runs the pipeline? → A: Deterministic + explicit hybrid — where a RepositoryRecord already exists (acquire/verify), dispatch by its copy-identifier type (ark→Gallica, accession→museum); where the operator supplies a raw locator (inventory), an explicit `--repository <name>` flag names the adapter. No locator-shape sniffing.
+- Q: Which coding-agent engine backs the museum prose extraction? → A: Default to the codex backend (model configurable via the existing engine config); claude remains available as the alternate backend.
+- Q: How does the operator record the authoritative public-domain rights judgment? → A: A dedicated rights-assessment step that surfaces the collected evidence (excerpt, date, credit) and writes the rights fields (status/basis/jurisdiction/assessed-by/assessed-at) on operator confirmation.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Acquire an identified museum public-domain item (Priority: P1)
@@ -100,12 +108,13 @@ A researcher sees a campaign's believed extent as an explicit state — a measur
 - **FR-002**: The acquisition result MUST report, per acquired asset: source URL, media type, object-store key, checksum, byte length, provenance path, and role/sequence within the item; and MUST report whether the acquisition is complete and whether reconciliation is required.
 - **FR-003**: The system MUST refactor the shipped Gallica acquisition path to implement the adapter contract (a Gallica adapter wrapping the existing fetcher) and MUST remove the hardwired ARK→fetch path — no dual path, no transitional shim, no back-compat alias. A reference to the removed shape MUST fail loud.
 - **FR-004**: The Gallica cutover MUST be gated by characterization tests proving behavior identical to the pre-cutover path: ARK inventory, public-domain verification, archive layout + provenance, object-store keys + checksums, source-group guardrails, and reconcile transitions.
+- **FR-023**: The adapter MUST be selected deterministically where a RepositoryRecord already exists — dispatched by its copy-identifier type (ARK → Gallica, accession → museum) — and MUST be named by an explicit `--repository <name>` flag where the operator supplies a raw locator (inventory). The system MUST NOT infer the adapter from the locator/URL shape (no sniffing); an unresolvable or ambiguous selection MUST fail loud.
 
 **Museum adapter + grounded extraction**
 
 - **FR-005**: The museum adapter MUST fetch item detail pages and images through the existing rate-limit-safe HTTP client (reused, not reimplemented).
 - **FR-006**: Mechanical fields (asset URL, accession identifier) MUST be read deterministically from the page structure, not via the language model.
-- **FR-007**: Prose-embedded fields (date, creator, description, stated credit) MUST be extracted via a structured-extraction contract that reuses the existing coding-agent engine seam (no new agent-invocation code); each extracted field MUST carry evidence (a verbatim page excerpt, optionally a locator).
+- **FR-007**: Prose-embedded fields (date, creator, description, stated credit) MUST be extracted via a structured-extraction contract that reuses the existing coding-agent engine seam (no new agent-invocation code); each extracted field MUST carry evidence (a verbatim page excerpt, optionally a locator). The extractor MUST default to the codex engine backend with the model configurable via the existing engine config, and MUST leave the claude backend available as the alternate.
 - **FR-008**: A deterministic verifier MUST assert each extracted field's evidence excerpt is a verbatim substring of the fetched page bytes (whitespace-normalized), and that a rights-critical date's excerpt contains the date value; a field that cannot be grounded MUST fail loud and MUST NOT be written (no fabricated identifier or date — Principle V, and 009 INV-2).
 - **FR-009**: Fetched page content MUST be supplied to the model strictly as data, never as instructions (prompt-injection fencing).
 - **FR-010**: The verified evidence excerpt MUST be persisted in provenance alongside a model-assisted marker + engine + model + prompt-version + timestamp, so the record is re-verifiable without re-running the model.
@@ -119,7 +128,7 @@ A researcher sees a campaign's believed extent as an explicit state — a measur
 
 **Rights (fail closed, operator-recorded)**
 
-- **FR-015**: The authoritative rights judgment MUST live on the canonical record (raw rights text, status, basis, jurisdiction, assessed-by = operator, assessed-at); the adapter proposes evidence but MUST NOT author the judgment.
+- **FR-015**: The authoritative rights judgment MUST live on the canonical record (raw rights text, status, basis, jurisdiction, assessed-by = operator, assessed-at); the adapter proposes evidence but MUST NOT author the judgment. The judgment MUST be recorded via a dedicated rights-assessment step that surfaces the collected evidence (excerpt, date, credit) and writes the rights fields on operator confirmation.
 - **FR-016**: Only a recorded public-domain state MUST permit mirroring; restricted/uncertain MUST block mirroring while keeping the catalog entry (Principle IV). The adapter MUST enforce the recorded state before acquiring.
 
 **Membership + audit surfaces**
@@ -159,7 +168,7 @@ A researcher sees a campaign's believed extent as an explicit state — a measur
 
 - The Musarch accession identifier is stable across catalogue rebuilds and serves as durable copy identity (confirmed at inventory time; a discovered instability surfaces as a fail-loud gap, not a silent guess).
 - The existing rate-limit-safe HTTP client, the object store (B2), and the shipped `bib reconcile` / group-member verify/promote verbs are reused as-is.
-- The coding-agent engine seam is available in the operator's environment; its absence fails loud (no fallback).
+- The coding-agent engine seam is available in the operator's environment (the codex backend by default; model configurable); its absence fails loud (no fallback).
 - The operator performs the rights judgment interactively against the surfaced evidence; the tool never auto-clears rights.
 - PB-P006's extent is expected to resolve to `irreducible` (a heterogeneous, unbounded holding) with basis, confirmed at inventory time; the render supports a bounded number if the public-domain candidates are instead enumerated.
 - Only Gallica and the New Italy Museum adapters are built now; the adapter contract generalizes but further repositories are captured-when-reached (009 FR-013), not pre-built.
