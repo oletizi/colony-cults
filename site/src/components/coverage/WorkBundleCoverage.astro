@@ -66,7 +66,7 @@ const cards = workBundles.map((coverage) => {
         </div>
 
         <p class="camp__extent">
-          <span class="held">{coverage.actualMemberCount} held</span>
+          <span class="held">{coverage.actualMemberCount} {coverage.actualMemberCount === 1 ? 'member' : 'members'}</span>
           <span class="camp__sep" aria-hidden="true">·</span>
           {coverage.knownMemberCount === 'unknown' ? (
             <>believed extent <span class="unknown">unknown</span></>
