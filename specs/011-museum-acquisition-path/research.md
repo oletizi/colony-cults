@@ -22,9 +22,9 @@ All Technical Context unknowns were resolved during the design phase (design rec
 
 ## R4 — Honest structural kind for museum objects
 
-- **Decision**: Add `kind: 'item'` (a discrete archival work) to `src/model/source.ts` (currently `periodical | monograph | source-group`). Source/asset boundary: one photo/letter = one Source; a multi-page work = one Source, multiple assets; multiple scans/thumb+full of one object = assets of one `RepositoryRecord`.
-- **Rationale**: A photograph is not a monograph; mis-typing to pass validation is the dishonest modeling spec 010 removed. `item` is the reviewer's term.
-- **Alternatives**: `artifact` / `object` (rejected — "object" collides with the museum's physical artifacts, which we do NOT mirror; `item` is the neutral discrete-work term). Re-use `monograph` (rejected — dishonest).
+- **Decision**: Add `kind: 'archival-item'` (a discrete non-serial archival work or object) to `src/model/source.ts` (currently `periodical | monograph | source-group`). Source/asset boundary: one photo/letter = one Source; a multi-page work = one Source, multiple assets; multiple scans/thumb+full of one object = assets of one `RepositoryRecord`.
+- **Rationale**: A photograph is not a monograph; mis-typing to pass validation is the dishonest modeling spec 010 removed. `archival-item` chosen over the design's `item` (2nd spec review): grep-safe and unambiguous in logs/errors/APIs, where bare `item` is generic.
+- **Alternatives**: `item` (rejected — too generic, ambiguous in logs/APIs); `artifact` / `object` (rejected — "object" collides with the museum's physical artifacts, which we do NOT mirror). Re-use `monograph` (rejected — dishonest).
 
 ## R5 — Museum copy identity
 
