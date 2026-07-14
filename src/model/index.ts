@@ -11,7 +11,7 @@ export type {
 } from '@/model/identifiers';
 export type { Census, CensusIssue } from '@/model/census';
 export type { Issue } from '@/model/issue';
-export type { Rights } from '@/model/rights';
+export type { Rights, RightsAssessment } from '@/model/rights';
 export type { Asset } from '@/model/asset';
 export type { Provenance } from '@/model/provenance';
 export type {
