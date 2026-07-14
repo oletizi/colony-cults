@@ -22,3 +22,5 @@
 {"id":"T024","tierLabel":"fast","model":"haiku","commit":"c523ff0","reviewClean":true}
 {"id":"T025","tierLabel":"balanced","model":"sonnet","commit":"288831f","reviewClean":true}
 {"id":"T027","tierLabel":"fast","model":"sonnet","commit":"288831f","reviewClean":true,"note":"absorbed into T025 (PB-P006 -> irreducible with researched basis)"}
+{"id":"T026","tierLabel":"balanced","model":"sonnet","commit":"e3148c1","reviewClean":true}
+{"id":"T029","tierLabel":"balanced","model":"sonnet","commit":"e3148c1","reviewClean":true,"note":"controller-verified: all feature files <=500 lines (store.ts 517 is pre-existing/untouched), tsc clean, 1269 pass"}
