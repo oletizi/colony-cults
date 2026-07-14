@@ -2,3 +2,4 @@
 {"id":"T002","tierLabel":"fast","model":"haiku","commit":"03b194a","reviewClean":true}
 {"id":"T003","tierLabel":"fast","model":"haiku","commit":"267f134","reviewClean":true}
 {"id":"T004","tierLabel":"balanced","model":"sonnet","commit":"50b40e2","reviewClean":true}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commit":"9d0e1a4","reviewClean":true}
