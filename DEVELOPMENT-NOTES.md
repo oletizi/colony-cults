@@ -1,18 +1,32 @@
-## 2026-07-14: <!-- session title -->
+## 2026-07-14: Close 009's Gallica dimension — campaign→work-bundle cutover, TASK-19 fail-loud, archive↔SSOT audit; all acquirable scopes measured
 
-**Goal:** <!-- compose: what we set out to do -->
+**Goal:** Continue the 009 research loop on shipped tooling — run the gap-closure passes, fix tooling defects *inline* as the research hits them (operator's steer this session), verify the corpus's acquisition state against the real archive, and reach a **defensible measured** state (measured, not asserted) across every scope.
 
 **Accomplished:**
-- <!-- compose -->
+- **Completed spec 010's `campaign`→`work-bundle` cutover** where 010 hadn't reached — the coverage member-count rollup, the reference register, and the entire coverage **web view** (010 only cut over the search-log/history side). Fixed a latent **blank-column bug** the merge exposed (`SearchHistory.astro` read the renamed `cell.campaign`). PRs **#39 + #40**.
+- **PB-P004 research passes (SRCH-0002..0004):** discovered a new trial-record work — Vermont *"Les Plaidoiries"* (1884) → **PB-P012** (physical-only, no digital copy anywhere: Gallica/archive.org/HathiTrust/Google Books); logged the official **court decisions** as serial-embedded (Gazette des Tribunaux located digitized on Gallica, `cb34447990d`, arrêt in the ~15 May 1884 issue); characterized the **French press** as an irreducible residual.
+- **Fixed TASK-19** (operator co-authored): `resolveArchiveRoot` now **fails loud** instead of silently defaulting to a shared sibling clone. Created my **own private per-session archive worktree** and pointed acquire/reconcile at it.
+- **Verified the "acquire the 5 approved works" ask was already satisfied** — reconcile confirms PB-P007–P011 masters in B2 (**290 pages**); the dry-run's "would fetch" was a full-fetch estimate, not a real gap.
+- **Archive↔SSOT audit (operator prompt).** Found **PB-P002 stale**: `to-collect` while already acquired under document ark `bpt6k58039518` (32pp) → reconciled to `archived` + corrected metadata. Full orphan/staleness sweep: **85 acquired arks → 8 sources, zero orphans, zero remaining staleness** — the coverage denominator is certified.
+- **PB-P001 issue-completeness:** **78/78** Gallica issues acquired (census-confirmed), gap 0; 8 crisis-months (1880–81) documented as **irreducible vs Gallica**.
+- **PB-P005 Trove** (first non-Gallica search): abundant Australian press → **irreducible residual**; research-first **disproved** the plan's anticipated Trove adapter (T015).
+- Net: **1,702 master page-images across 8 sources, all reconciled `archived`, no drift**; 3 PRs merged (#39/#40/#42) + 4 research/audit commits; SRCH-0002..0007 logged.
 
 **Didn't Work:**
-- <!-- compose -->
+- **First read of the acquisition state was wrong.** `bib acquire --dry-run` reports "would fetch N pages" even when masters are already in B2 (it estimates the full fetch, never checks object-store presence) — this made PB-P007–P011 look unacquired. `bib reconcile` is the reliable already-acquired check.
+- A real foreground `bib acquire` **timed out at 8 min (SIGTERM)** — long polite fetches must run detached (nohup+disown); moot here since the masters were already acquired.
+- I claimed **"1073 tests pass" after adding PB-P012 without re-running the full suite** — a hard-coded `bib-coverage-cli` assertion (PB-P004 count 5→6) broke and rode into `main` via PR #39, whose only CI gate is the Netlify deploy-preview (no unit-test gate). Caught + fixed next run (`3a6bd00`).
 
 **Course Corrections:**
-- <!-- compose -->
+- Operator: *"let's fix the tooling problems as we find them — more efficient while we have the context."* → shifted from capture-to-backlog to **fixing tooling inline** (the cutover, TASK-19). Saved as a feedback memory ([[fix-tooling-inline]]).
+- Operator: *"the tooling should fail loudly, not silently resolve to something that might be wrong"* + *"you need to maintain your own private worktree."* → TASK-19 fail-loud fix + a private per-session archive clone (never shared).
+- Operator: *"have you checked the archive repo to see what we've already acquired?"* → the prompt that surfaced PB-P002's staleness; I had nearly cataloged `bpt6k58039518` as a *new* de Rays item when it was PB-P002's own already-acquired digitization (de Groote's work, catalogued by Gallica under the promoter).
 
 **Insights:**
-- <!-- compose -->
+- **The SSOT and the archive can drift.** An acquired work (PB-P002) sat stale as `to-collect`. Auditing archive provenance against the SSOT is a **first-class gap-closure step** — it certifies the coverage denominator, without which every coverage number is suspect. ([[archive-acquisition-setup]])
+- **Research-first works in both directions.** PB-P006 (New Italy Museum) *proves* a tool is needed (museum acquisition path); PB-P005 (Trove) *disproves* the anticipated adapter (irreducible press). The research tells you where to build **and where not to** — you never pre-build.
+- **"Closed = measured, not zero" is now real for the Gallica dimension:** everything acquirable is acquired (1,702 masters, no drift) and every residual is named + classified (physical-only, serial-embedded, irreducible press, non-Gallica). Defensible closure, not asserted.
+- **Next real tooling frontier:** PB-P006 New Italy Museum acquisition path (TASK-26/27) — the one proven new-tooling need, spec-sized (design → define → execute). NB: **TASK-19 is resolved this session** but the backlog still reads `To Do` — an operator status transition.
 
 **Quantitative (auto-derived from git; verify before publishing):**
 - Commits: 16
