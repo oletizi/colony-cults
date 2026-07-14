@@ -33,7 +33,7 @@ Museum items are group members (`partOf → PB-P006`); the existing group-member
 
 ## `bib coverage` (extended render)
 
-- Renders each suspected lead's `resolution.status` distinctly (resolved ≠ open); renders the three-state `knownMemberCount` with basis; a bare `unknown` never appears (it fails loud at load).
+- Renders each suspected lead's `resolution.status` distinctly (resolved ≠ open); renders the discriminated `knownExtent` state (`measured`/`unexamined`/`irreducible`) with basis; a bare `unknown` never appears (it fails loud at load).
 
 ## `bib reconcile` (unchanged)
 

@@ -40,7 +40,7 @@ All Technical Context unknowns were resolved during the design phase (design rec
 
 ## R7 — Coverage model: resolution + three-state extent
 
-- **Decision**: Add `resolution` (vocab `unexamined | identified | inventoried | excluded | unavailable` + structured payload) to `suspected[]`; extend `SUSPECTED_KEYS` (`src/bibliography/load-coverage-fields.ts:30`). Replace `knownMemberCount: number | 'unknown'` with `number | 'unexamined' | 'irreducible'` (`validateKnownMemberCount`, same file `:121-133`); `extentBasis` required for a number and `irreducible`. Render both distinctly (`coverage-render.ts`). Remove the bare `'unknown'` literal (fail loud).
+- **Decision**: Add `resolution` to `suspected[]` as a **discriminated union** keyed on `state` (`unexamined` / `identified{candidate,resolvedAt}` / `inventoried{sourceId,resolvedAt}` / `excluded{reason,resolvedAt}` / `unavailable{reason,resolvedAt}`); extend `SUSPECTED_KEYS` (`src/bibliography/load-coverage-fields.ts:30`). Replace the scalar `knownMemberCount: number | 'unknown'` (`validateKnownMemberCount`, same file `:121-133`) with a **discriminated `knownExtent` union** (`measured{count,basis}` / `unexamined` / `irreducible{basis}`). Render both distinctly (`coverage-render.ts`). Remove the bare `'unknown'` literal + old scalar (fail loud). Discriminated unions per the 2nd spec review — invalid combinations unrepresentable (Principle VII).
 - **Rationale**: 009 already specified these (`data-model.md`); PB-P006 proves them. Closes SC-004 and the bare-`unknown` gap.
 - **Alternatives**: free-text notes (status quo — rejected, invisible to the audit); full transition-history subsystem (deferred at n=1).
 

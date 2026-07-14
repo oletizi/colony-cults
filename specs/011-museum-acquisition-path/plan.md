@@ -6,7 +6,7 @@
 
 ## Summary
 
-Build the corpus's first non-Gallica acquisition path. Extract spec 009's `RepositoryAdapter` seam as a **full cutover** (Gallica refactored into a `GallicaAdapter` wrapping the shipped fetcher; the hardwired `ark → fetch-source` path removed), then add a `NewItalyMuseumAdapter` that fetches the Musarch catalogue via the existing rate-limit-safe HTTP client and extracts item metadata with a **layered hybrid**: DOM-direct pull for mechanical fields (asset URL, accession id) + a `StructuredExtractor` over the reused `createEngine` engine seam (codex default) for prose fields + a deterministic verifier that grounds every extracted value in the fetched bytes. Rights are fail-closed and operator-recorded on the `RepositoryRecord` via a dedicated rights-assessment step. Add the honest `item` structural kind, the `accession` copy-identifier, `SuspectedLead.resolution`, and the three-state `knownMemberCount`, with coverage rendering both. Acquisition is convergent/idempotent and reconciles into the SSOT. Success is measured (masters+provenance in B2, reconciled; Gallica characterization tests green), never asserted.
+Build the corpus's first non-Gallica acquisition path. Extract spec 009's `RepositoryAdapter` seam as a **full cutover** (Gallica refactored into a `GallicaAdapter` wrapping the shipped fetcher; the hardwired `ark → fetch-source` path removed), then add a `NewItalyMuseumAdapter` that fetches the Musarch catalogue via the existing rate-limit-safe HTTP client and extracts item metadata with a **layered hybrid**: DOM-direct pull for mechanical fields (asset URL, accession id) + a `StructuredExtractor` over the reused `createEngine` engine seam (codex default) for prose fields + a deterministic verifier that grounds every extracted value in the fetched bytes. Rights are fail-closed and operator-recorded on the `RepositoryRecord` via a dedicated rights-assessment step. Add the honest `archival-item` structural kind, the `accession` copy-identifier, the `SuspectedLead.resolution` discriminated union, and the `knownExtent` discriminated union, with coverage rendering both. Acquisition is convergent/idempotent and reconciles into the SSOT. Success is measured (masters+provenance in B2, reconciled; Gallica characterization tests green), never asserted.
 
 ## Technical Context
 
@@ -88,7 +88,7 @@ src/
 │   └── rights.ts                   #   + rightsStatus/basis/jurisdiction/assessedBy/assessedAt
 ├── rights/                         # REUSE + add the rights-assessment step
 ├── bibliography/                   # REUSE + extend
-│   ├── load-coverage-fields.ts     #   + resolution key; three-state knownMemberCount
+│   ├── load-coverage-fields.ts     #   + resolution union; knownExtent union (removes scalar knownMemberCount + 'unknown')
 │   ├── vocab.ts                    #   + resolution vocab; extent states
 │   └── coverage/coverage-render.ts #   render resolution + three-state extent
 ├── engine/ · codex/ · claude/      # REUSE unchanged (createEngine seam)
