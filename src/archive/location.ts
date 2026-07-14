@@ -3,9 +3,6 @@ import path from 'node:path';
 import { assertValidArk } from '@/gallica/ark';
 import type { Source } from '@/model/source';
 
-/** Fixed sibling directory name of the private archive (FR-006). */
-const ARCHIVE_DIR_NAME = 'colony-cults-archive';
-
 /**
  * The archive-relative layout for a source. There is no fallback: an unknown
  * source ID throws (the layout is authoritative metadata, not a default).
@@ -209,18 +206,22 @@ export interface IssueLocation {
 }
 
 /**
- * Resolve the private archive root, with an explicit resolution precedence
- * (FR-014) so dev/test can target a dedicated worktree instead of the fixed
- * sibling clone:
+ * Resolve the private archive root from an EXPLICIT source only, in precedence
+ * order -- never a silent shared default (TASK-19). The archive is a per-session
+ * private worktree; a machine-global shared sibling clone would funnel
+ * concurrent sessions into one working tree and corrupt it (the TASK-17
+ * corruption class: non-ff pushes, add/add conflicts, `--checkpoint` sweeping
+ * another session's files). B2 is the shared asset store; the working tree is not.
  *
  *   1. `override`, if provided and non-empty -- an explicit, caller-supplied
- *      archive root (e.g. threaded through from a CLI flag).
+ *      archive root (e.g. threaded through from a CLI `--archive-root` flag).
  *   2. `env.COLONY_ARCHIVE_ROOT`, if set and non-empty.
- *   3. The fixed sibling `../colony-cults-archive` relative to `repoRoot`
- *      (FR-006), unchanged default behavior for existing callers.
+ *   3. Neither set -> FAIL LOUD. There is no fallback (per the no-fallback rule
+ *      and the per-session-archive-clone policy): silently resolving a
+ *      might-be-wrong shared path is exactly the bug being removed.
  *
- * Always returns an absolute path. `env` defaults to `process.env` so
- * existing callers (`resolveArchiveRoot(repoRoot)`) keep working unchanged.
+ * Returns an absolute path, or throws a descriptive Error naming both ways to
+ * supply a root. `env` defaults to `process.env`.
  */
 export function resolveArchiveRoot(
   repoRoot: string,
@@ -237,7 +238,14 @@ export function resolveArchiveRoot(
   if (envRoot !== undefined && envRoot.trim().length > 0) {
     return path.resolve(envRoot);
   }
-  return path.resolve(repoRoot, '..', ARCHIVE_DIR_NAME);
+  throw new Error(
+    'resolveArchiveRoot: no archive root configured. Pass --archive-root <path> ' +
+      'or set COLONY_ARCHIVE_ROOT to your own private per-session archive worktree. ' +
+      'Refusing to default to a shared sibling clone (../colony-cults-archive): a shared ' +
+      'archive working tree funnels concurrent sessions into one tree and corrupts it ' +
+      '(TASK-19; per-session-archive-clone policy). B2 is the shared asset store, not the ' +
+      'working tree.',
+  );
 }
 
 /**

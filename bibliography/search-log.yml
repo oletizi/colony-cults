@@ -55,3 +55,40 @@
     - "Official court decisions (Seine jugement 1884; Cour de Paris arret 14 May 1884; cassation): attested but not yet located as discrete items within the legal serials -- serial-issue inventory (Gazette des Tribunaux / Gazette du Palais / Dalloz / Bulletin des arrets) pending."
     - "Physical Cour de Paris appeal-court case dossier (Archives de Paris / Archives nationales) not searched -- may hold no separately publishable digitized work."
   notes: "Fresh interactive search pass (spec 009 US1). Press dimension characterized as irreducible rather than enumerated -- exhaustive press mirroring is neither feasible nor the corpus's aim. Supersedes SRCH-0001's two coarser open questions with the narrower, actionable questions above."
+
+- id: SRCH-0003
+  date: 2026-07-13
+  repository: "Multi-catalog holding search (Gallica, archive.org, HathiTrust, Google Books; union catalogs WorldCat / CCFr)"
+  scope:
+    kind: work
+    id: PB-P012
+  query: "Locate a digitized, acquirable public-domain copy of PB-P012 (Vermont, 'Le proces du Marquis de Rays... Les Plaidoiries', Marseille, 1884)."
+  coverage: "NEGATIVE: no digitized copy found in any surveyed repository -- absent from Gallica, archive.org, HathiTrust, and Google Books. The work is attested only bibliographically (Criminocorpus; Bibliographie numerique d'histoire du droit) and appears to survive as a physical-only library holding. Not acquirable as a digital public-domain master at this time; PB-P012 stays 'discovered' (known, not held)."
+  remainingQuestions:
+    - "Physical holding location for the 1884 Marseille imprint not yet confirmed via WorldCat / CCFr; and no digitization exists to mirror -- acquisition blocked on availability, not on rights."
+  notes: "Work-scoped holding search following the SRCH-0002 discovery. Negative result recorded as measured knowledge: a known trial-record work with no currently-locatable digital copy -- an irreducible-for-now holding gap, not an unexamined unknown."
+
+- id: SRCH-0004
+  date: 2026-07-13
+  repository: Gallica / BnF
+  scope:
+    kind: work-bundle
+    id: PB-P004
+  query: "Inventory the official court decisions (SRCH-0002 suspected gap): locate the Cour de Paris appeal arret (14 May 1884) and the tribunal de la Seine jugement (1884) in the digitized legal serials (Gazette des Tribunaux, Gazette du Palais, Dalloz/Sirey)."
+  coverage: "PARTIAL: the Gazette des Tribunaux (Paris) is confirmed digitized on Gallica (ark cb34447990d) as a date-browsable serial run -- so the appeal arret, dated 14 May 1884, should appear in the ~15-16 May 1884 issue. WebSearch/WebFetch cannot drill into Gallica's periodical date-browse (403 on the OAI/IIIF endpoints); pinpointing the exact issue + folios is a shipped-gallica-fetcher / IIIF task, not a general-web one. So the serial HOME is located; the specific issue is not yet pinpointed. (The PB-P012 holding question raised in SRCH-0002 has migrated to its own work-scope search, SRCH-0003.)"
+  remainingQuestions:
+    - "Pinpoint the Cour de Paris arret (14 May 1884) + the Seine jugement (1884) within the Gazette des Tribunaux run on Gallica (ark cb34447990d) -- date-browse via the shipped fetcher/IIIF; confirm 1884 falls within the digitized range."
+    - "Physical Cour de Paris appeal-court case dossier (Archives de Paris / Archives nationales) not searched -- may hold no separately publishable digitized work."
+  notes: "Narrows SRCH-0002's court-decisions question from 'attested but unlocated' to 'serial home confirmed digitized on Gallica; specific issue pinpointing pending (fetcher/IIIF)'. Supersedes the SRCH-0002 work-bundle open set; the PB-P012 holding line is now tracked under work PB-P012 (SRCH-0003), not duplicated here."
+
+- id: SRCH-0005
+  date: 2026-07-13
+  repository: "Gallica / BnF + digital libraries (archive.org, HathiTrust, Google Books) + the local archive repo"
+  scope:
+    kind: work
+    id: PB-P002
+  query: "Resolve PB-P002's open 'digitization/acquirability not yet confirmed' question: is P. de Groote's 'Nouvelle-France: Colonie libre de Port-Breton, Oceanie' digitized/acquirable, beyond the BnF CATALOGUE ark cb34944911d?"
+  coverage: "RESOLVED -> already acquired. Gallica search surfaced the digitized DOCUMENT ark bpt6k58039518 ('Colonie libre de Port-Breton : Nouvelle France en Oceanie / [signe: Ch. du Breil, marquis de Rays]' -- the same de Groote work, catalogued by Gallica under the colony's promoter). Auditing the private archive repo against the SSOT (operator prompt) then showed PB-P002 is ALREADY ACQUIRED: 32 page-images (domaine public) under that ark, masters in B2. The SSOT had been left STALE at status: to-collect with only the catalogue ark. Ran `bib reconcile PB-P002` -> archived (32/32 masters in object store); corrected the record to carry the document ark bpt6k58039518 + a truthful note. De Groote's work is NOT absent from open repositories (contra a first read) -- it is on Gallica and held. Corpus-wide audit: PB-P002 was the only to-collect-but-acquired staleness; PB-P001 (Gallica archived; SLQ copy legitimately to-collect) and PB-P005 (Trove, 0 in archive) are correct."
+  remainingQuestions:
+    - "PB-P002 date discrepancy: this record says 1879; BnF/Gallica date the imprint 1880 -- reconcile the year."
+  notes: "Found by the operator's 'check the archive repo for what we've already acquired' prompt. The lesson: reconcile the SSOT against the archive's committed provenance, not just against external catalogues -- an acquired work can sit stale as to-collect."

@@ -150,9 +150,21 @@ describe('buildTranslateCliDeps (Task 7)', () => {
       options: { engine: 'codex' },
     };
 
-    const deps = await buildTranslateCliDeps(args);
-
-    expect(deps.engine.name).toBe('codex-cli');
+    // buildTranslateCliDeps resolves the archive root fail-loud (TASK-19): it
+    // requires an explicit COLONY_ARCHIVE_ROOT (or --archive-root) and no longer
+    // defaults to a shared sibling clone. Set + restore it around the call.
+    const prevArchiveRoot = process.env.COLONY_ARCHIVE_ROOT;
+    process.env.COLONY_ARCHIVE_ROOT = '/tmp/translate-cli-test-archive';
+    try {
+      const deps = await buildTranslateCliDeps(args);
+      expect(deps.engine.name).toBe('codex-cli');
+    } finally {
+      if (prevArchiveRoot === undefined) {
+        delete process.env.COLONY_ARCHIVE_ROOT;
+      } else {
+        process.env.COLONY_ARCHIVE_ROOT = prevArchiveRoot;
+      }
+    }
   });
 });
 

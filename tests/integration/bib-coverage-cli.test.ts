@@ -101,9 +101,11 @@ describe('bib coverage CLI', () => {
     const parsed = JSON.parse(printed) as {
       perWorkBundle: { workBundle: string; actualMemberCount: number; gap: number | 'unknown' }[];
     };
-    // Real corpus source-group PB-P004 has five members (per-work), extent unknown.
+    // Real corpus source-group PB-P004 has six members (per-work): 5
+    // approved-for-acquisition (PB-P007-P011) + 1 discovered (PB-P012, the
+    // Vermont pleadings, SRCH-0002). Extent still unknown.
     const pb004 = parsed.perWorkBundle.find((c) => c.workBundle === 'PB-P004');
-    expect(pb004?.actualMemberCount).toBe(5);
+    expect(pb004?.actualMemberCount).toBe(6);
     expect(pb004?.gap).toBe('unknown');
   });
 
