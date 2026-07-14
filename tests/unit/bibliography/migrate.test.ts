@@ -213,7 +213,9 @@ describe('migrate', () => {
     ].join('\n');
     const repo = seedRepo(badTracker);
 
-    await expect(migrate({ repoRoot: repo, write: false })).rejects.toThrow(/status/i);
+    await expect(
+      migrate({ repoRoot: repo, archiveRoot: path.join(repo, 'archive'), write: false }),
+    ).rejects.toThrow(/status/i);
   });
 
   it('folds the public representations when the archive root is ABSENT', async () => {
@@ -347,7 +349,7 @@ describe('migrate: source-group preservation across a re-run (R-003)', () => {
     mkdirSync(sourcesDir, { recursive: true });
     writeFileSync(path.join(sourcesDir, 'PB-P004.yml'), EXISTING_PB_P004_GROUP_YML);
 
-    await migrate({ repoRoot: repo, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: path.join(repo, 'archive'), write: true });
 
     const loaded = loadSourceFile(sourcePath(repo, 'PB-P004'));
     expect(loaded.source.kind).toBe('source-group');
@@ -364,10 +366,10 @@ describe('migrate: source-group preservation across a re-run (R-003)', () => {
     mkdirSync(sourcesDir, { recursive: true });
     writeFileSync(path.join(sourcesDir, 'PB-P004.yml'), EXISTING_PB_P004_GROUP_YML);
 
-    await migrate({ repoRoot: repo, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: path.join(repo, 'archive'), write: true });
     const first = readFileSync(sourcePath(repo, 'PB-P004'), 'utf-8');
 
-    await migrate({ repoRoot: repo, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: path.join(repo, 'archive'), write: true });
     const second = readFileSync(sourcePath(repo, 'PB-P004'), 'utf-8');
 
     expect(second).toBe(first);
@@ -380,7 +382,7 @@ describe('migrate: source-group preservation across a re-run (R-003)', () => {
     mkdirSync(sourcesDir, { recursive: true });
     writeFileSync(path.join(sourcesDir, 'PB-P004.yml'), EXISTING_PB_P004_GROUP_YML);
 
-    await migrate({ repoRoot: repo, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: path.join(repo, 'archive'), write: true });
 
     const loaded = loadSourceFile(sourcePath(repo, 'PB-X001'));
     expect(loaded.source.kind).toBe('monograph');

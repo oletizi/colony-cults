@@ -3,11 +3,11 @@ import path from 'node:path';
 import { resolveArchiveRoot } from '@/archive/location';
 
 /**
- * resolveArchiveRoot (FR-014): dev/test must be able to target a dedicated
- * worktree instead of the fixed sibling clone. Precedence:
+ * resolveArchiveRoot (FR-014, TASK-19): the archive root comes from an EXPLICIT
+ * source only -- never a silent shared default. Precedence:
  *   1. explicit override argument
  *   2. COLONY_ARCHIVE_ROOT env var
- *   3. fixed sibling `../colony-cults-archive`
+ *   3. neither set -> FAIL LOUD (no fallback to a shared sibling clone)
  */
 describe('resolveArchiveRoot override precedence', () => {
   const repoRoot = '/Users/example/work/archive-object-store';
@@ -36,10 +36,18 @@ describe('resolveArchiveRoot override precedence', () => {
     expect(result).toBe(path.resolve('/Users/example/work/env-archive'));
   });
 
-  it('falls back to the fixed sibling ../colony-cults-archive when neither override nor env is set', () => {
-    const result = resolveArchiveRoot(repoRoot, undefined, {});
-
-    expect(result).toBe(path.resolve(repoRoot, '..', 'colony-cults-archive'));
+  it('fails loud (no shared-sibling fallback) when neither override nor env is set (TASK-19)', () => {
+    expect(() => resolveArchiveRoot(repoRoot, undefined, {})).toThrow(
+      /no archive root configured/,
+    );
+    // The refusal names both explicit ways to supply a root.
+    expect(() => resolveArchiveRoot(repoRoot, undefined, {})).toThrow(
+      /--archive-root|COLONY_ARCHIVE_ROOT/,
+    );
+    // An empty/whitespace override or env value is treated as "not set" -> also fails loud.
+    expect(() =>
+      resolveArchiveRoot(repoRoot, '   ', { COLONY_ARCHIVE_ROOT: '  ' }),
+    ).toThrow(/no archive root configured/);
   });
 
   it('still throws on an empty repoRoot regardless of override/env', () => {
