@@ -140,6 +140,7 @@ corpus
 
 ## impl:feature/museum-acquisition-path
 - status: planned
+- analyze-clean: yes
 - spec: specs/011-museum-acquisition-path
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-13-museum-acquisition-path-design.md
