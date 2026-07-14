@@ -15,6 +15,7 @@ export interface FetchedDocument {
 export interface GroundedField<V> {
   value: V;
   evidence: { excerpt: string; selector?: string };  // verbatim quote of where value was found
+  interpretation: string;                            // model claim: WHICH value this is (e.g. "item creation date" vs "donation date"); operator-verified, never authoritative
   provenance: {                                       // stamped per extraction
     modelAssisted: true; engine: string; model: string; promptVersion: string; at: string;
   };
@@ -49,3 +50,7 @@ export function verifyGrounded<T>(doc: FetchedDocument, x: GroundedExtraction<T>
 - **INV-X2**: a real excerpt whose text does not contain a rights-critical `date` value → throws.
 - **INV-X3**: identical `(doc, extraction)` inputs verify identically across runs (no model in the verifier).
 - **INV-X4**: engine-absent → `extract` throws with a descriptive error.
+
+## Semantic correctness (beyond grounding)
+
+Substring grounding proves a value is *on the page*, not that it has the *intended meaning* — an item page may carry creation, donation, catalogue-entry, and restoration dates, all genuine substrings. The deterministic verifier confirms textual grounding only. Each field's `interpretation` (the model's claim of which value it is) MUST be confirmed by the operator at the rights-assessment step before a rights-critical field (the date) contributes to a rights judgment. The `interpretation` is a model claim, never authoritative.

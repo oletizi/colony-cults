@@ -5,11 +5,11 @@ Extends the shipped `bib` source-group verbs (`src/cli/bib-sourcegroup.ts`). No 
 ## `bib inventory` (extended)
 
 ```
-bib inventory <locator> --group <sourceGroupId> --repository <name> [--kind item] [--dry-run]
+bib inventory <locator> --group <sourceGroupId> --repository <name> [--kind archival-item] [--dry-run]
 ```
 
-- `--repository <name>` (**required when the locator is a raw URL/accession**, i.e. non-ARK): names the adapter (`new-italy-museum`). For an ARK locator the repository is unambiguous.
-- Resolves via `adapter.resolve(locator)`; creates a member Source (`partOf` the group, `status: discovered`), defaulting `kind: item` for museum items. Fails loud on an unverifiable locator (no fabricated id).
+- `--repository <name>` (**required when the locator is a raw URL/accession**, i.e. non-ARK): names the adapter (`new-italy-museum`). For an ARK locator the repository is unambiguous. The registry returns exactly one adapter or fails loud (INV-D).
+- Resolves via `adapter.resolve(locator)`; creates a member Source (`partOf` the group, `status: discovered`), defaulting `kind: archival-item` for museum items. Fails loud on an unverifiable locator (no fabricated id).
 
 ## `bib rights-assess` (new)
 
@@ -17,7 +17,7 @@ bib inventory <locator> --group <sourceGroupId> --repository <name> [--kind item
 bib rights-assess <sourceId> [--archive <root>]
 ```
 
-- Runs `adapter.collectRightsEvidence`, surfaces the grounded evidence (excerpt, date, credit), and on operator confirmation writes `rights.{rightsRaw,rightsStatus,rightsBasis,rightsJurisdiction,assessedBy:operator,assessedAt}` to the RepositoryRecord. Never auto-clears rights.
+- Runs `adapter.collectRightsEvidence`, surfaces the grounded evidence (excerpt, date + its model `interpretation`, credit), and requires the operator to **confirm the date's interpretation/meaning** (not just its presence) before it contributes to the judgment. On confirmation writes `rights.{rightsRaw,rightsStatus,rightsBasis,rightsJurisdiction,assessedBy:operator,assessedAt}` to the RepositoryRecord. Never auto-clears rights.
 
 ## `bib acquire` (cut over)
 

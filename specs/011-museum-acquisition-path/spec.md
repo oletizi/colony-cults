@@ -20,6 +20,17 @@ Spec 009's research loop resolved PB-P006 (the New Italy Museum source-group) to
 - Q: Which coding-agent engine backs the museum prose extraction? → A: Default to the codex backend (model configurable via the existing engine config); claude remains available as the alternate backend.
 - Q: How does the operator record the authoritative public-domain rights judgment? → A: A dedicated rights-assessment step that surfaces the collected evidence (excerpt, date, credit) and writes the rights fields (status/basis/jurisdiction/assessed-by/assessed-at) on operator confirmation.
 
+### Session 2026-07-14 (second spec review — corrections adopted)
+
+- Structural kind named **`archival-item`** (was unnamed in FR-012 / `item` in the design record) — grep-safe, disambiguated in logs/errors/APIs.
+- `knownExtent` and `SuspectedLead.resolution` modeled as **discriminated unions** (invalid combinations unrepresentable; Principle VII).
+- Remote-content change → **fail-loud only** (dropped "or preserve a new version"; versioning deferred, Out of Scope).
+- Explicit **transaction/commit boundary** on extraction/acquisition failure (FR-020, US1 scenario 2).
+- `GroundedField.interpretation` added (semantic role of the value; operator verifies at rights-assessment) — closes the substring-grounding mis-attribution gap.
+- Rights fields explicitly **copy-level on the RepositoryRecord** (FR-015).
+- Adapter registry: **exactly one adapter or fail**, with enumerated failure cases (FR-023).
+- Already-acquired detection expressed **generically** (object key + verified checksum), not via Gallica-fetcher internals (FR-020).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Acquire an identified museum public-domain item (Priority: P1)
@@ -33,7 +44,7 @@ A researcher takes an identified PB-P006 lead (e.g. *Pioneers Group Photo 1890*)
 **Acceptance Scenarios**:
 
 1. **Given** an identified PB-P006 candidate whose rights the operator has recorded as public-domain, **When** the researcher acquires it, **Then** the image master and full provenance (retrieval date, original URL, checksum, format, crediting the New Italy Museum) are written to the object store and the canonical record reconciles to `archived`.
-2. **Given** the item's date lives in prose on the catalogue page, **When** the tool extracts it, **Then** the extracted date is accompanied by a verbatim page excerpt that is deterministically verified to appear on the fetched page and to contain the date value; an ungrounded field aborts the acquisition (nothing is written).
+2. **Given** the item's date lives in prose on the catalogue page, **When** the tool extracts it, **Then** the extracted date carries a verbatim page excerpt deterministically verified to appear on the page and to contain the date value, plus a model-stated interpretation the operator confirms at rights-assessment; **and** if extraction or grounding fails, no extracted metadata, rights evidence, master asset, acquisition provenance, or acquisition-state transition is committed — the pre-existing inventory Source and RepositoryRecord remain unchanged.
 3. **Given** the operator has NOT recorded a public-domain rights judgment (rights absent, restricted, or uncertain), **When** acquisition is attempted, **Then** it is refused and the item stays cataloged but unmirrored.
 4. **Given** a museum item is a discrete photograph, **When** it is inventoried, **Then** it is represented as a first-class archival work (not mis-typed as a monograph) belonging to the PB-P006 source-group.
 5. **Given** an already-acquired item, **When** acquisition is re-run, **Then** it continues from recorded state without duplicating objects or overwriting content whose checksum matches.
@@ -108,50 +119,50 @@ A researcher sees a campaign's believed extent as an explicit state — a measur
 - **FR-002**: The acquisition result MUST report, per acquired asset: source URL, media type, object-store key, checksum, byte length, provenance path, and role/sequence within the item; and MUST report whether the acquisition is complete and whether reconciliation is required.
 - **FR-003**: The system MUST refactor the shipped Gallica acquisition path to implement the adapter contract (a Gallica adapter wrapping the existing fetcher) and MUST remove the hardwired ARK→fetch path — no dual path, no transitional shim, no back-compat alias. A reference to the removed shape MUST fail loud.
 - **FR-004**: The Gallica cutover MUST be gated by characterization tests proving behavior identical to the pre-cutover path: ARK inventory, public-domain verification, archive layout + provenance, object-store keys + checksums, source-group guardrails, and reconcile transitions.
-- **FR-023**: The adapter MUST be selected deterministically where a RepositoryRecord already exists — dispatched by its copy-identifier type (ARK → Gallica, accession → museum) — and MUST be named by an explicit `--repository <name>` flag where the operator supplies a raw locator (inventory). The system MUST NOT infer the adapter from the locator/URL shape (no sniffing); an unresolvable or ambiguous selection MUST fail loud.
+- **FR-023**: The adapter registry MUST return exactly one adapter or fail loud. Where a RepositoryRecord already exists, dispatch by its copy-identifier type (ARK → Gallica, accession → museum); where the operator supplies a raw locator (inventory), require an explicit `--repository <name>` flag. The registry MUST fail loud when: a record has no supported identifier; a record has multiple identifier types mapping to different adapters; or more than one RepositoryRecord is eligible and none is explicitly selected. The system MUST NOT infer the adapter from the locator/URL shape (no sniffing).
 
 **Museum adapter + grounded extraction**
 
 - **FR-005**: The museum adapter MUST fetch item detail pages and images through the existing rate-limit-safe HTTP client (reused, not reimplemented).
 - **FR-006**: Mechanical fields (asset URL, accession identifier) MUST be read deterministically from the page structure, not via the language model.
 - **FR-007**: Prose-embedded fields (date, creator, description, stated credit) MUST be extracted via a structured-extraction contract that reuses the existing coding-agent engine seam (no new agent-invocation code); each extracted field MUST carry evidence (a verbatim page excerpt, optionally a locator). The extractor MUST default to the codex engine backend with the model configurable via the existing engine config, and MUST leave the claude backend available as the alternate.
-- **FR-008**: A deterministic verifier MUST assert each extracted field's evidence excerpt is a verbatim substring of the fetched page bytes (whitespace-normalized), and that a rights-critical date's excerpt contains the date value; a field that cannot be grounded MUST fail loud and MUST NOT be written (no fabricated identifier or date — Principle V, and 009 INV-2).
+- **FR-008**: Each extracted prose field MUST carry a model-stated `interpretation` (which of several possible values it is — e.g. item-creation date vs donation vs catalogue-entry date). A deterministic verifier MUST assert each field's evidence excerpt is a verbatim substring of the fetched page bytes (whitespace-normalized), and that a rights-critical date's excerpt contains the date value; a field that cannot be grounded MUST fail loud and MUST NOT be written (no fabricated identifier or date — Principle V, 009 INV-2). Textual grounding alone does NOT establish semantic correctness — the operator MUST confirm the grounded date's `interpretation` at the rights-assessment step before it contributes to a rights judgment (the `interpretation` is a model claim, verified by the human, never authoritative).
 - **FR-009**: Fetched page content MUST be supplied to the model strictly as data, never as instructions (prompt-injection fencing).
 - **FR-010**: The verified evidence excerpt MUST be persisted in provenance alongside a model-assisted marker + engine + model + prompt-version + timestamp, so the record is re-verifiable without re-running the model.
 - **FR-011**: When the coding-agent engine is unavailable, extraction MUST fail loud with a descriptive error — no fallback.
 
 **Honest model for museum objects**
 
-- **FR-012**: The Source model MUST gain a structural kind for a discrete archival work (photograph, letter, postcard, certificate) that is neither serial nor monographic; a museum object MUST NOT be mis-typed as a monograph to pass validation.
+- **FR-012**: The Source model MUST gain the structural kind `archival-item` — a discrete non-serial archival work or object (photograph, letter, postcard, certificate). The full structural-kind vocabulary is then: `periodical` (a serial publication), `monograph` (a monographic textual work), `archival-item` (a discrete non-serial archival work), `source-group` (a non-fetchable work bundle). A museum object MUST NOT be mis-typed as a `monograph` to pass validation. `archival-item` MUST remain orthogonal to `evidenceClass` (e.g. `kind: archival-item` + `evidenceClass: photograph`).
 - **FR-013**: The system MUST represent the Source/asset boundary: one photograph or letter is one Source; a multi-page work (e.g. a diary) is one Source with multiple assets; multiple scans/views/thumbnail+full of one object are assets of one canonical record, never separate Sources.
 - **FR-014**: The museum copy identity MUST be the Musarch accession identifier (a new copy-identifier type), with catalogue-page and asset URLs recorded as locators, not identity.
 
 **Rights (fail closed, operator-recorded)**
 
-- **FR-015**: The authoritative rights judgment MUST live on the canonical record (raw rights text, status, basis, jurisdiction, assessed-by = operator, assessed-at); the adapter proposes evidence but MUST NOT author the judgment. The judgment MUST be recorded via a dedicated rights-assessment step that surfaces the collected evidence (excerpt, date, credit) and writes the rights fields on operator confirmation.
+- **FR-015**: The authoritative rights judgment MUST live on the **RepositoryRecord** — rights to mirror a particular museum-held representation are copy-level facts, never placed on the archive-independent Source (raw rights text, status, basis, jurisdiction, assessed-by = operator, assessed-at). The adapter proposes evidence but MUST NOT author the judgment. The judgment MUST be recorded via a dedicated rights-assessment step that surfaces the collected evidence (excerpt, date, interpretation, credit) and writes the rights fields on operator confirmation.
 - **FR-016**: Only a recorded public-domain state MUST permit mirroring; restricted/uncertain MUST block mirroring while keeping the catalog entry (Principle IV). The adapter MUST enforce the recorded state before acquiring.
 
 **Membership + audit surfaces**
 
 - **FR-017**: Inventoried museum items MUST become members of the PB-P006 source-group (via the existing group-membership edge) and flow through the existing group-member verify/promote path; no standalone-source promotion path is added.
-- **FR-018**: A suspected lead MUST support a resolution state (unexamined | identified | inventoried | excluded | unavailable) with a structured payload — identified references a repository candidate, inventoried references the resulting Source, excluded/unavailable require a reason, plus a resolved-at timestamp — and the coverage audit MUST render the state distinctly so resolved leads do not read as open. PB-P006's two leads MUST be migrated from free-text notes into the field.
-- **FR-019**: A campaign's known extent MUST be exactly one of: a measured number (basis required), `unexamined` (no basis), or `irreducible` (basis required); the bare `unknown` literal MUST be removed and fail loud; the coverage audit MUST render each state distinctly.
+- **FR-018**: A suspected lead's resolution MUST be modeled as a discriminated union keyed on `state`, with state-specific payloads so invalid combinations are unrepresentable: `unexamined` {}; `identified` { candidate ref, resolvedAt }; `inventoried` { resulting Source id, resolvedAt }; `excluded` { reason, resolvedAt }; `unavailable` { reason, resolvedAt }. The coverage audit MUST render the state distinctly so resolved leads do not read as open. PB-P006's two leads MUST be migrated from free-text notes into the field.
+- **FR-019**: A campaign's known extent MUST be modeled as a discriminated union `knownExtent` keyed on `state` (invalid combinations unrepresentable): `measured` { count, basis }; `unexamined` {}; `irreducible` { basis }. The prior scalar `knownMemberCount` + separate optional `extentBasis`, and the bare `unknown` literal, MUST be removed; loading the old shape or a bare `unknown` fails loud. The coverage audit MUST render each state distinctly with its basis. (Supersedes 009's scalar three-state sketch — never built.)
 
 **Acquisition integrity**
 
-- **FR-020**: Acquisition MUST be convergent and idempotent: resolve the canonical record → confirm recorded rights → fetch current repository metadata → compare identity + expected asset metadata → write missing assets → verify object-store checksums → write provenance/manifest → reconcile. A retry MUST continue from recorded state (reusing the fetcher's already-checksummed-asset skip) without duplicating objects.
-- **FR-021**: If remote content has changed since inventory, acquisition MUST fail loud or preserve a new version — it MUST NEVER silently replace a previously preserved master.
+- **FR-020**: Acquisition MUST be convergent and idempotent with an explicit commit boundary: (1) read the canonical Source + RepositoryRecord; (2) verify the operator-recorded rights; (3) fetch metadata + candidate assets into temporary storage; (4) verify identity, extraction grounding, and checksums; (5) commit masters + provenance; (6) return the AcquisitionResult; (7) reconcile canonical state. An adapter MUST detect an already-acquired asset **generically** — by canonical object-store key and verified checksum — NOT by any repository-specific fetcher control flow. A retry MUST be driven by persisted object-store checksums + provenance (not in-memory state) and MUST NOT duplicate objects.
+- **FR-021**: If an already-recorded asset's remote bytes no longer match its recorded identity or checksum, acquisition MUST fail loud and write nothing for that changed asset — it MUST NEVER silently replace a previously preserved master, and MUST NOT auto-create a new version (no versioning workflow is defined in this feature; see Out of Scope). The operator reviews the change and explicitly versions it through a later defined workflow.
 - **FR-022**: A single intellectual work MUST be counted once in coverage; multiple repository copies are separate repository records (SSOT).
 
 ### Key Entities *(include if feature involves data)*
 
 - **RepositoryAdapter**: the injected contract (resolve / collect-rights-evidence / acquire) any repository implements; capability, not vendor identity. Implementations: **GallicaAdapter** (wraps the shipped fetcher) and **NewItalyMuseumAdapter**.
 - **ResolvedRepositoryItem / AcquisitionResult / AcquiredAsset**: typed I/O of the adapter — the resolved item, and the per-asset result (URL, media type, object-store key, checksum, byte length, provenance path, role/sequence, complete, reconciliation-required).
-- **StructuredExtractor / GroundedField**: the extraction contract over the reused engine seam; a grounded field is `{ value, evidence: { excerpt, locator? } }` deterministically verified against the page.
-- **Source**: intellectual work; gains a discrete-archival-work structural kind; members belong to the PB-P006 source-group.
-- **RepositoryRecord**: a held copy; gains the accession copy-identifier and the authoritative rights fields; carries assets.
-- **SuspectedLead**: a research lead; gains a resolution state + structured payload.
-- **KnownExtent**: a campaign's believed extent as the three-state value (number | unexamined | irreducible) with basis rules.
+- **StructuredExtractor / GroundedField**: the extraction contract over the reused engine seam; a grounded field is `{ value, evidence: { excerpt, locator? }, interpretation }` deterministically verified against the page (the `interpretation` is a model claim the operator verifies at rights-assessment).
+- **Source**: intellectual work; gains the `archival-item` structural kind; museum members belong to the PB-P006 source-group.
+- **RepositoryRecord**: a held copy; gains the `accession` copy-identifier, the authoritative copy-level rights fields, and its assets.
+- **SuspectedLead.resolution**: a discriminated union keyed on `state` (unexamined / identified / inventoried / excluded / unavailable), each with its state-specific payload.
+- **KnownExtent**: a discriminated union keyed on `state` — `measured { count, basis }` / `unexamined {}` / `irreducible { basis }`; invalid combinations unrepresentable.
 
 ## Success Criteria *(mandatory)*
 
@@ -179,5 +190,6 @@ A researcher sees a campaign's believed extent as an explicit state — a measur
 
 - Standalone (non-grouped) source promotion to approved-for-acquisition (TASK-27) and standalone-source-has-no-group (TASK-24) — orthogonal, surfaced by PB-P002; the museum items are group members.
 - A full lead-resolution transition-history/audit-log subsystem (deferred at n=1); the current state + reason + timestamp is recorded.
+- An asset **versioning workflow**: on a remote-content change, acquisition fails loud now (FR-021); a defined version model (new keys/identity/provenance for a changed representation) is future work, not this feature.
 - Adapters for repositories other than Gallica and the New Italy Museum (IIIF helper, Trove, HathiTrust, etc.) — captured-when-reached.
 - OCR/translation of acquired items; requesting non-catalogue originals from the museum.

@@ -37,8 +37,8 @@ export interface AcquisitionResult {
 - **INV-A (resolve, no fabrication)**: `resolve` throws on an unverifiable candidate; no ARK/accession is ever invented (009 INV-2, Principle V).
 - **INV-B (rights fail-closed)**: `acquire` is unreachable unless the record's `rights.rightsStatus === 'public-domain'` was operator-recorded; `collectRightsEvidence` never sets it (Principle IV; 009 INV-3).
 - **INV-C (typed result)**: `acquire` returns an `AcquisitionResult`; callers never infer success from side effects. After acquire+reconcile the record is `collected`/`archived` and coverage reflects it (009 INV-4).
-- **INV-D (dispatch)**: adapter selection is deterministic by copy-identifier type where a record exists, else explicit `--repository`; ambiguous → throw (no sniffing).
-- **INV-E (idempotent)**: re-`acquire` continues from recorded state; no duplicate object; a remote content change → throw or new version, never silent replace.
+- **INV-D (dispatch)**: the registry returns **exactly one adapter or throws**. Deterministic by copy-identifier type where a record exists (`ark`→Gallica, `accession`→museum), else explicit `--repository`. Throws when: a record has no supported identifier; a record has multiple identifier types mapping to different adapters; or >1 eligible record and none explicitly selected. No locator-shape sniffing.
+- **INV-E (idempotent)**: an adapter detects an already-acquired asset **generically** — by canonical object-store key + verified checksum (not repository-specific fetcher control flow). Re-`acquire` continues from persisted state; no duplicate object. A remote content change (recorded asset's bytes no longer match its recorded identity/checksum) → **throw and write nothing for that asset**; never silent replace, never auto-version (versioning is a future defined workflow).
 - **INV-F (never `bib migrate`)**: the loop never invokes `bib migrate` (009 INV-6).
 
 ## GallicaAdapter (the cutover)

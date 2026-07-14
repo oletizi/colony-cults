@@ -8,9 +8,11 @@ Extends the shipped model (`src/model/*`, `src/bibliography/*`). New/changed sha
 
 | Field | Change | Notes |
 |---|---|---|
-| `kind` | `periodical \| monograph \| source-group` → **`+ 'item'`** | `item` = a discrete archival work (photograph, letter, postcard, certificate); neither serial nor monographic. A museum member is `kind: 'item'`, `partOf: 'PB-P006'`. |
+| `kind` | `periodical \| monograph \| source-group` → **`+ 'archival-item'`** | `archival-item` = a discrete non-serial archival work or object (photograph, letter, postcard, certificate); neither serial nor monographic. A museum member is `kind: 'archival-item'`, `partOf: 'PB-P006'`. |
 
-**Validation**: `item` is a valid member kind; a museum object MUST NOT be authored as `monograph`. `partOf`/`knownMemberCount`/`suspected` remain valid only on `source-group` (unchanged rule).
+Vocabulary invariant: `periodical` (serial) · `monograph` (monographic textual work) · `archival-item` (discrete non-serial archival work) · `source-group` (non-fetchable work bundle). `archival-item` is orthogonal to `evidenceClass` (e.g. `kind: archival-item` + `evidenceClass: photograph`).
+
+**Validation**: `archival-item` is a valid member kind; a museum object MUST NOT be authored as `monograph`. `partOf`/`knownExtent`/`suspected` remain valid only on `source-group` (unchanged rule).
 
 ## CopyLevelIdentifierType (extended)
 
@@ -55,31 +57,33 @@ One preserved representation of a `RepositoryRecord`. Multiple assets per record
 | `sequence` | `number?` | order within the item |
 | `representationChoice` | `string?` | how "best representation" was chosen (e.g. `max-resolution`) |
 
-## SuspectedLead (extended)
+## SuspectedLead.resolution (extended) — discriminated union
 
-`src/bibliography/load-coverage-fields.ts` — `SUSPECTED_KEYS` gains `resolution`.
+`src/bibliography/load-coverage-fields.ts` — `SUSPECTED_KEYS` gains `resolution`, modeled as a discriminated union keyed on `state` (state-specific payloads; invalid combinations unrepresentable):
 
-| Field | Type | Notes |
-|---|---|---|
-| `resolution.status` | `unexamined \| identified \| inventoried \| excluded \| unavailable` | default `unexamined` |
-| `resolution.candidate` | `string?` | required-ish when `identified` — a repository candidate reference |
-| `resolution.sourceId` | `string?` | required when `inventoried` — the resulting Source id |
-| `resolution.reason` | `string?` | **required** when `excluded` / `unavailable` |
-| `resolution.resolvedAt` | timestamp? | when the state was recorded |
+```ts
+type LeadResolution =
+  | { state: 'unexamined' }
+  | { state: 'identified';  candidate: RepositoryCandidateRef; resolvedAt: string }
+  | { state: 'inventoried'; sourceId: string;                  resolvedAt: string }
+  | { state: 'excluded';    reason: string;                    resolvedAt: string }
+  | { state: 'unavailable'; reason: string;                    resolvedAt: string };
+```
 
-**Migration**: PB-P006's two leads move from free-text `RESOLVED -> identified` in `notes` into `resolution.status: identified` with a candidate reference.
+**Migration**: PB-P006's two leads move from free-text `RESOLVED -> identified` in `notes` into `{ state: 'identified', candidate, resolvedAt }`.
 
-## KnownExtent (three-state) — replaces bare `unknown`
+## KnownExtent (discriminated union) — replaces bare `unknown` + scalar `knownMemberCount`
 
-`src/bibliography/load-coverage-fields.ts:121-133` (`validateKnownMemberCount`).
+`src/bibliography/load-coverage-fields.ts:121-133` (`validateKnownMemberCount`). The scalar `knownMemberCount` + optional `extentBasis` is replaced by a discriminated `knownExtent`:
 
-| Value | Meaning | `extentBasis` |
-|---|---|---|
-| `<number>` | measured, bounded | **required** |
-| `unexamined` | not yet researched | not required |
-| `irreducible` | researched, unbounded | **required** |
+```ts
+type KnownExtent =
+  | { state: 'measured';    count: number; basis: string }
+  | { state: 'unexamined' }
+  | { state: 'irreducible'; basis: string };
+```
 
-The literal `'unknown'` is **removed**; loading it fails loud. PB-P006's extent is set to its explicit state (leaning `irreducible` with basis) at inventory.
+The literal `'unknown'` and the old scalar shape are **removed**; loading either fails loud. PB-P006's extent is set to its explicit state (leaning `{ state: 'irreducible', basis }`) at inventory. (Supersedes 009's scalar three-state sketch, never built.)
 
 ## Coverage render (behavior)
 

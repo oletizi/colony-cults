@@ -82,7 +82,7 @@ src/
 │   ├── verify-member.ts / promote.ts  # unchanged group-member path (museum items are members)
 │   └── reconcile.ts                #   unchanged
 ├── model/                          # REUSE + extend
-│   ├── source.ts                   #   + kind 'item'
+│   ├── source.ts                   #   + kind 'archival-item'
 │   ├── identifiers.ts              #   + 'accession' CopyLevelIdentifierType
 │   ├── repository-record.ts        #   + authoritative rights fields + assets
 │   └── rights.ts                   #   + rightsStatus/basis/jurisdiction/assessedBy/assessedAt
