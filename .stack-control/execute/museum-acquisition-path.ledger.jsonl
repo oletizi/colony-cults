@@ -11,3 +11,4 @@
 {"id":"T011","tierLabel":"powerful","model":"opus","commit":"590aff2","reviewClean":true}
 {"id":"T012","tierLabel":"powerful","model":"opus","commit":"9f19f75","reviewClean":true}
 {"id":"T013","tierLabel":"balanced","model":"sonnet","commit":"9f19f75","reviewClean":true,"note":"SC-003 unit-level confirmed via T010 chars green through adapter; full end-to-end archive-layout/checksum confirmation rides quickstart T021/T030 (T010 characterization gap needs real archive infra)"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commit":"7ff16ea","reviewClean":true}

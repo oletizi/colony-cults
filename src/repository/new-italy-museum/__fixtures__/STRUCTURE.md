@@ -1,6 +1,6 @@
 # Musarch item-page structure (ground truth)
 
-Captured from real New Italy Museum catalogue pages (`newitaly.org.au/CAT/NNNNNN.htm`, Musarch software export) 2026-07-14. Fixtures: `musarch-000844.html` (Pioneers Group Photo 1890 — has an image), `musarch-000855.html` (Survivors arrival in Sydney 1881 — artist's impression, NO downloadable image).
+Captured from real New Italy Museum catalogue pages (`newitaly.org.au/CAT/NNNNNN.htm`, Musarch software export) 2026-07-14. Fixtures: `musarch-000844.html` (Pioneers Group Photo 1890 — photograph, has an image), `musarch-000855.html` (Survivors arrival in Sydney 1881 — an *artist's impression*; it DOES carry an `image_anchor`, so it is not image-less — the artist-impression nature matters for the per-item rights judgment, not for image presence). NOTE: the genuinely image-less ("HTML-description-only") case is real per the spec but is exercised via a synthetic minimal fixture in the tests, since both captured real items carry images.
 
 ## Item URL pattern
 `https://newitaly.org.au/CAT/NNNNNN.htm` (six-digit id). Item pages found via `objindexbycat.htm` / `objindexbyname.htm`.
