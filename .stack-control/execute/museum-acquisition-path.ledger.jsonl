@@ -16,3 +16,4 @@
 {"id":"T016","tierLabel":"powerful","model":"opus","commit":"b473ad3","reviewClean":true}
 {"id":"T017","tierLabel":"balanced","model":"sonnet","commit":"2f65e28","reviewClean":true,"note":"also closed sourceUrl-persistence + loader isSourceKind gaps"}
 {"id":"T018","tierLabel":"balanced","model":"sonnet","commit":"2628a2c","reviewClean":true}
+{"id":"T019","tierLabel":"powerful","model":"opus","commit":"c1745ca","reviewClean":true}
