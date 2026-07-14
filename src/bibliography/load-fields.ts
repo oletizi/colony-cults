@@ -17,7 +17,7 @@ import type {
   VerificationCheckResult,
   VerificationVerdict,
 } from '@/model/repository-record';
-import type { Rights } from '@/model/rights';
+import type { Rights, RightsAssessment } from '@/model/rights';
 import type { Title, WorkIdentifier } from '@/model/source';
 
 /**
@@ -42,6 +42,7 @@ const RECORD_KEYS = new Set([
   'retrievedAt',
   'identifiers',
   'rights',
+  'rightsAssessment',
   'census',
   'metadataSnapshot',
   'verification',
@@ -49,6 +50,14 @@ const RECORD_KEYS = new Set([
 const TITLE_KEYS = new Set(['text', 'role', 'language']);
 const IDENTIFIER_KEYS = new Set(['type', 'value']);
 const RIGHTS_KEYS = new Set(['ark', 'status', 'rawResponse', 'dcRights', 'raw']);
+const RIGHTS_ASSESSMENT_KEYS = new Set([
+  'rightsRaw',
+  'rightsStatus',
+  'rightsBasis',
+  'rightsJurisdiction',
+  'assessedBy',
+  'assessedAt',
+]);
 const METADATA_SNAPSHOT_KEYS = new Set(['path', 'retrievedAt', 'endpoint', 'normalizationVersion']);
 const VERIFICATION_KEYS = new Set(['result', 'verifiedAt', 'checks', 'snapshotRef']);
 const VERIFICATION_CHECKS_KEYS = new Set([
@@ -70,6 +79,10 @@ function isTitleRole(value: string): value is Title['role'] {
 
 function isRightsStatus(value: string): value is Rights['status'] {
   return value === 'public-domain' || value === 'other';
+}
+
+function isRightsAssessmentStatus(value: string): value is RightsAssessment['rightsStatus'] {
+  return value === 'public-domain' || value === 'restricted' || value === 'uncertain';
 }
 
 function isVerificationCheckResult(value: string): value is VerificationCheckResult {
@@ -187,6 +200,57 @@ export function validateRights(value: unknown, filePath: string, where: string):
   return raw === undefined
     ? { ark, status: statusRaw, rawResponse, dcRights }
     : { ark, status: statusRaw, rawResponse, dcRights, raw };
+}
+
+/**
+ * Parse an authored `rightsAssessment` (T018, `bib rights-assess`) -- the
+ * authoritative, operator-authored copy-level rights judgment. `rightsStatus`
+ * is narrowed against the closed `public-domain | restricted | uncertain`
+ * vocab; `rightsBasis` is required and non-empty (an assessment can never
+ * exist without a basis, mirroring `bib rights-assess`'s own fail-loud rule);
+ * `assessedBy` is validated as the literal `"operator"` -- a model/automated
+ * value on disk is a load-time error, not silently accepted.
+ */
+export function validateRightsAssessment(
+  value: unknown,
+  filePath: string,
+  where: string,
+): RightsAssessment {
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, RIGHTS_ASSESSMENT_KEYS, filePath, where);
+  const rightsStatusRaw = requireString(obj.rightsStatus, filePath, `${where}.rightsStatus`);
+  if (!isRightsAssessmentStatus(rightsStatusRaw)) {
+    fail(
+      filePath,
+      `${where}.rightsStatus "${rightsStatusRaw}" must be "public-domain", "restricted", or "uncertain"`,
+    );
+  }
+  const rightsBasis = requireString(obj.rightsBasis, filePath, `${where}.rightsBasis`);
+  const assessedByRaw = requireString(obj.assessedBy, filePath, `${where}.assessedBy`);
+  if (assessedByRaw !== 'operator') {
+    fail(filePath, `${where}.assessedBy "${assessedByRaw}" must be "operator"`);
+  }
+  const assessedAt = requireString(obj.assessedAt, filePath, `${where}.assessedAt`);
+  const rightsRaw = optionalString(obj.rightsRaw, filePath, `${where}.rightsRaw`);
+  const rightsJurisdiction = optionalString(
+    obj.rightsJurisdiction,
+    filePath,
+    `${where}.rightsJurisdiction`,
+  );
+
+  const assessment: RightsAssessment = {
+    rightsStatus: rightsStatusRaw,
+    rightsBasis,
+    assessedBy: assessedByRaw,
+    assessedAt,
+  };
+  if (rightsRaw !== undefined) {
+    assessment.rightsRaw = rightsRaw;
+  }
+  if (rightsJurisdiction !== undefined) {
+    assessment.rightsJurisdiction = rightsJurisdiction;
+  }
+  return assessment;
 }
 
 /**
@@ -328,6 +392,11 @@ export function validateRecord(value: unknown, filePath: string, index: number):
   const rights =
     obj.rights === undefined ? undefined : validateRights(obj.rights, filePath, `${where}.rights`);
 
+  const rightsAssessment =
+    obj.rightsAssessment === undefined
+      ? undefined
+      : validateRightsAssessment(obj.rightsAssessment, filePath, `${where}.rightsAssessment`);
+
   const metadataSnapshot =
     obj.metadataSnapshot === undefined
       ? undefined
@@ -347,6 +416,7 @@ export function validateRecord(value: unknown, filePath: string, index: number):
     retrievedAt,
     identifiers: obj.identifiers === undefined ? undefined : identifiers,
     rights,
+    rightsAssessment,
     census,
     metadataSnapshot,
     verification,

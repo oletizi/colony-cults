@@ -41,6 +41,20 @@ function orderedRecord(record: AuthoredRepositoryRecord): Record<string, unknown
   if (record.rights !== undefined) {
     out.rights = record.rights;
   }
+  if (record.rightsAssessment !== undefined) {
+    const assessment: Record<string, unknown> = {};
+    if (record.rightsAssessment.rightsRaw !== undefined) {
+      assessment.rightsRaw = record.rightsAssessment.rightsRaw;
+    }
+    assessment.rightsStatus = record.rightsAssessment.rightsStatus;
+    assessment.rightsBasis = record.rightsAssessment.rightsBasis;
+    if (record.rightsAssessment.rightsJurisdiction !== undefined) {
+      assessment.rightsJurisdiction = record.rightsAssessment.rightsJurisdiction;
+    }
+    assessment.assessedBy = record.rightsAssessment.assessedBy;
+    assessment.assessedAt = record.rightsAssessment.assessedAt;
+    out.rightsAssessment = assessment;
+  }
   if (record.census !== undefined) {
     out.census = record.census;
   }

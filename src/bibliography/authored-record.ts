@@ -49,6 +49,9 @@ export function authoredToRepositoryRecord(
   if (authored.rights !== undefined) {
     record.rights = authored.rights;
   }
+  if (authored.rightsAssessment !== undefined) {
+    record.rightsAssessment = authored.rightsAssessment;
+  }
   if (authored.metadataSnapshot !== undefined) {
     record.metadataSnapshot = authored.metadataSnapshot;
   }

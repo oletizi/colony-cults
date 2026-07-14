@@ -4,7 +4,7 @@ import type {
   RepositoryRecord,
   VerificationVerdict,
 } from '@/model/repository-record';
-import type { Rights } from '@/model/rights';
+import type { Rights, RightsAssessment } from '@/model/rights';
 import type { Source } from '@/model/source';
 
 /**
@@ -85,6 +85,14 @@ export interface AuthoredRepositoryRecord {
   identifiers?: CopyIdentifier[];
   /** Rights determination for this copy. */
   rights?: Rights;
+  /**
+   * The authoritative, operator-authored copy-level rights judgment (T018,
+   * `bib rights-assess`). Distinct from `rights` (the automated Gallica
+   * OAIRecord gate result) -- see `@/model/rights`'s `RightsAssessment` doc
+   * comment for the full rationale. Additive optional field -- absent until
+   * an operator has run `bib rights-assess --status ...` on this copy.
+   */
+  rightsAssessment?: RightsAssessment;
   /** Path to the census JSON this record's issues derive from (serials only). */
   census?: string;
   /** Reference to the immutable raw-response snapshot (D-07). Additive optional. */
