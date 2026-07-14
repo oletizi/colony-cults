@@ -6,6 +6,7 @@ import { EVIDENCE_CLASS_VALUES } from '@/bibliography/vocab';
 import type { EvidenceClass, SourceLifecycleStatus } from '@/bibliography/vocab';
 import { buildRegister } from '@/bibliography/coverage/coverage-register';
 import { buildSearchHistory } from '@/bibliography/coverage/coverage-history';
+import type { LeadResolution } from '@/model/source';
 
 /**
  * The `CoverageReport` and its sub-structures are the DERIVED projection over
@@ -57,6 +58,16 @@ export interface RegisterEntry {
   basis?: string;
   /** The `sourceId` (references) or source-group id (suspected) this entry belongs to. */
   owner: string;
+  /**
+   * The lead's disposition (suspected gaps only; specs/011 § SuspectedLead.
+   * resolution), carried through VERBATIM from `SuspectedGap.resolution`.
+   * Absent here means the underlying gap authored no `resolution` -- the
+   * renderer (`@/bibliography/coverage/coverage-render`), not this builder,
+   * treats an absent resolution as `unexamined` for display; this field is
+   * never fabricated into an explicit `{ state: 'unexamined' }` object so the
+   * model stays a faithful mirror of what was authored.
+   */
+  resolution?: LeadResolution;
 }
 
 /** One repository-axis rollup row: a repository treated as a research object. */

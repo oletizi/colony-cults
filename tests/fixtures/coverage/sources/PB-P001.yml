@@ -12,3 +12,27 @@ suspected:
     basis: "Referenced indirectly in acquired members; location and archive status unknown"
     evidenceClass: correspondence
     notes: "May exist in family archives"
+  - description: "Suspected court filing referenced by a witness deposition"
+    basis: "A candidate repository record was located but not yet inventoried as a Source"
+    resolution:
+      state: identified
+      candidate: "Archive C, folder 12, item 4 (uninventoried)"
+      resolvedAt: "2026-07-02"
+  - description: "Suspected companion pamphlet to the prospectus"
+    basis: "Located and inventoried during acquisition triage"
+    resolution:
+      state: inventoried
+      sourceId: PB-P008
+      resolvedAt: "2026-07-03"
+  - description: "Suspected second printing of the prospectus"
+    basis: "Investigated; determined not to be a distinct work"
+    resolution:
+      state: excluded
+      reason: "Turned out to be a reprint of PB-P008, not a distinct work"
+      resolvedAt: "2026-07-04"
+  - description: "Suspected diary of a campaign participant"
+    basis: "Testimony references a diary that could not be located at any queried archive"
+    resolution:
+      state: unavailable
+      reason: "Family declined to make the diary available for research"
+      resolvedAt: "2026-07-05"

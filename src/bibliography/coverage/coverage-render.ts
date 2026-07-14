@@ -5,6 +5,7 @@ import type {
   CoverageSearchHistory,
   RegisterEntry,
 } from '@/bibliography/coverage/coverage-model';
+import type { LeadResolution } from '@/model/source';
 
 /**
  * Render a {@link CoverageReport} as either deterministic machine JSON or
@@ -87,9 +88,52 @@ function renderReferenceEntry(entry: RegisterEntry): string {
   return `- ${entry.citedAs ?? ''}${basisSuffix(entry)}  [cited in ${entry.owner}]`;
 }
 
-/** A suspected gap: what is inferred to exist and (always) why. */
+/**
+ * A suspected entry's disposition, defaulted to `unexamined` for DISPLAY ONLY
+ * when no `resolution` was authored (T023, specs/011 § SuspectedLead.
+ * resolution) -- this default lives here, not on the model, so an
+ * un-annotated lead keeps rendering exactly as before while the underlying
+ * `RegisterEntry.resolution` stays faithfully absent.
+ */
+function resolutionOf(entry: RegisterEntry): LeadResolution {
+  return entry.resolution ?? { state: 'unexamined' };
+}
+
+/** True for a suspected entry still awaiting disposition (SC-004: only `unexamined` counts as open). */
+function isOpenSuspected(entry: RegisterEntry): boolean {
+  return resolutionOf(entry).state === 'unexamined';
+}
+
+/**
+ * The resolution suffix for one suspected entry, distinct per state (SC-004):
+ * `unexamined` renders nothing (today's plain open bullet); `identified`
+ * names its candidate; `inventoried` references the Source it resolved to;
+ * `excluded`/`unavailable` show their reason. Exhaustive over
+ * `LeadResolution['state']` -- a new state is a compile error here, not a
+ * silent fall-through.
+ */
+function resolutionSuffix(resolution: LeadResolution): string {
+  switch (resolution.state) {
+    case 'unexamined':
+      return '';
+    case 'identified':
+      return `  [identified: candidate ${resolution.candidate} (${resolution.resolvedAt})]`;
+    case 'inventoried':
+      return `  [resolved: inventoried as ${resolution.sourceId} (${resolution.resolvedAt})]`;
+    case 'excluded':
+      return `  [resolved: excluded -- ${resolution.reason} (${resolution.resolvedAt})]`;
+    case 'unavailable':
+      return `  [resolved: unavailable -- ${resolution.reason} (${resolution.resolvedAt})]`;
+    default: {
+      const exhaustive: never = resolution;
+      throw new Error(`unhandled LeadResolution state: ${JSON.stringify(exhaustive)}`);
+    }
+  }
+}
+
+/** A suspected gap: what is inferred to exist, why, and its resolution state (SC-004). */
 function renderSuspectedEntry(entry: RegisterEntry): string {
-  return `- ${entry.description ?? ''}${basisSuffix(entry)}`;
+  return `- ${entry.description ?? ''}${basisSuffix(entry)}${resolutionSuffix(resolutionOf(entry))}`;
 }
 
 /** References (only) grouped by work-bundle, then the ungrouped "[no work-bundle]" bucket. */
@@ -122,7 +166,14 @@ function renderReferences(register: CoverageRegister, lines: string[]): void {
   }
 }
 
-/** The suspected-gaps sub-listing, grouped by work-bundle (only those that have any). */
+/**
+ * The suspected-gaps sub-listing, grouped by work-bundle (only those that
+ * have any). Each bucket heading is annotated `(open: N / total: M)` (SC-004)
+ * -- `open` counts ONLY `unexamined` (including un-annotated) leads; a lead
+ * resolved to `identified`/`inventoried`/`excluded`/`unavailable` is
+ * dispositioned and never counted as open, so a resolved lead cannot inflate
+ * the open count even though it still renders as a bullet with its state.
+ */
 function renderSuspected(register: CoverageRegister, lines: string[]): void {
   lines.push('  suspected:');
   const withSuspected = register.byWorkBundle
@@ -137,7 +188,8 @@ function renderSuspected(register: CoverageRegister, lines: string[]): void {
     return;
   }
   for (const bucket of withSuspected) {
-    lines.push(`    ${bucket.workBundle}:`);
+    const openCount = bucket.entries.filter(isOpenSuspected).length;
+    lines.push(`    ${bucket.workBundle}:  (open: ${openCount} / total: ${bucket.entries.length})`);
     for (const entry of bucket.entries) {
       lines.push(`      ${renderSuspectedEntry(entry)}`);
     }

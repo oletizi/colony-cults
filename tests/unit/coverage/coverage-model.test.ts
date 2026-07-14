@@ -153,20 +153,118 @@ describe('T014/T016/T019 unresolved-references register (FR-012)', () => {
     const report = buildCoverageReport(loadFixtureInput());
     const pb001 = report.register.byWorkBundle.find((b) => b.workBundle === 'PB-P001');
     const suspected = pb001?.entries.filter((e) => e.kind === 'suspected') ?? [];
-    expect(suspected).toEqual([
-      {
-        kind: 'suspected',
-        description: 'Suspected private correspondence regarding the campaign',
-        basis: 'Referenced indirectly in acquired members; location and archive status unknown',
-        owner: 'PB-P001',
-      },
-    ]);
+    expect(suspected).toContainEqual({
+      kind: 'suspected',
+      description: 'Suspected private correspondence regarding the campaign',
+      basis: 'Referenced indirectly in acquired members; location and archive status unknown',
+      owner: 'PB-P001',
+    });
   });
 
   it('leaves a work-bundle with no unresolved refs or suspected gaps empty', () => {
     const report = buildCoverageReport(loadFixtureInput());
     const pb002 = report.register.byWorkBundle.find((b) => b.workBundle === 'PB-P002');
     expect(pb002?.entries).toEqual([]);
+  });
+});
+
+describe('T023 suspected-lead resolution (specs/011 SC-004)', () => {
+  function suspectedByDescription(description: string) {
+    const report = buildCoverageReport(loadFixtureInput());
+    const pb001 = report.register.byWorkBundle.find((b) => b.workBundle === 'PB-P001');
+    const entry = pb001?.entries.find(
+      (e) => e.kind === 'suspected' && e.description === description,
+    );
+    if (entry === undefined) {
+      throw new Error(`fixture is missing expected suspected entry "${description}"`);
+    }
+    return entry;
+  }
+
+  it('carries an absent resolution through unchanged (renders as unexamined, today\'s behavior)', () => {
+    const entry = suspectedByDescription('Suspected private correspondence regarding the campaign');
+    expect(entry.resolution).toBeUndefined();
+  });
+
+  it('carries an identified resolution through with its candidate', () => {
+    const entry = suspectedByDescription('Suspected court filing referenced by a witness deposition');
+    expect(entry.resolution).toEqual({
+      state: 'identified',
+      candidate: 'Archive C, folder 12, item 4 (uninventoried)',
+      resolvedAt: '2026-07-02',
+    });
+  });
+
+  it('carries an inventoried resolution through with its sourceId', () => {
+    const entry = suspectedByDescription('Suspected companion pamphlet to the prospectus');
+    expect(entry.resolution).toEqual({
+      state: 'inventoried',
+      sourceId: 'PB-P008',
+      resolvedAt: '2026-07-03',
+    });
+  });
+
+  it('carries an excluded resolution through with its reason', () => {
+    const entry = suspectedByDescription('Suspected second printing of the prospectus');
+    expect(entry.resolution).toEqual({
+      state: 'excluded',
+      reason: 'Turned out to be a reprint of PB-P008, not a distinct work',
+      resolvedAt: '2026-07-04',
+    });
+  });
+
+  it('carries an unavailable resolution through with its reason', () => {
+    const entry = suspectedByDescription('Suspected diary of a campaign participant');
+    expect(entry.resolution).toEqual({
+      state: 'unavailable',
+      reason: 'Family declined to make the diary available for research',
+      resolvedAt: '2026-07-05',
+    });
+  });
+
+  it('renders an unexamined (or absent-resolution) lead as a plain open bullet, unchanged', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    const line = text
+      .split('\n')
+      .find((l) => l.includes('Suspected private correspondence regarding the campaign'));
+    expect(line).toBe(
+      '      - Suspected private correspondence regarding the campaign' +
+        ' (basis: Referenced indirectly in acquired members; location and archive status unknown)',
+    );
+  });
+
+  it('renders an identified lead distinctly, referencing its candidate, not as an open bullet', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    expect(text).toContain(
+      '- Suspected court filing referenced by a witness deposition' +
+        ' (basis: A candidate repository record was located but not yet inventoried as a Source)' +
+        '  [identified: candidate Archive C, folder 12, item 4 (uninventoried) (2026-07-02)]',
+    );
+  });
+
+  it('renders an inventoried lead referencing its resolved Source id', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    expect(text).toContain('[resolved: inventoried as PB-P008 (2026-07-03)]');
+  });
+
+  it('renders an excluded lead showing its reason', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    expect(text).toContain(
+      '[resolved: excluded -- Turned out to be a reprint of PB-P008, not a distinct work (2026-07-04)]',
+    );
+  });
+
+  it('renders an unavailable lead showing its reason', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    expect(text).toContain(
+      '[resolved: unavailable -- Family declined to make the diary available for research (2026-07-05)]',
+    );
+  });
+
+  it('counts ONLY the unexamined lead as open, not the four resolved leads (SC-004)', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    // PB-P001 has 5 suspected leads: 1 unexamined (open), 4 resolved (not open).
+    expect(text).toContain('PB-P001:  (open: 1 / total: 5)');
   });
 });
 
