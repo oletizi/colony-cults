@@ -217,6 +217,21 @@ describe('NewItalyMuseumAdapter.resolve', () => {
     expect(textUrls).toEqual([PAGE_URL_844]);
   });
 
+  it('resolves without an injected ObjectStore -- resolve never touches object storage', async () => {
+    const { client } = fakeClient({ text: FIXTURE_844 });
+    const adapter = new NewItalyMuseumAdapter({
+      client,
+      extractor: realExtractor(),
+    });
+
+    const item = await adapter.resolve(
+      { repository: 'new-italy-museum', value: PAGE_URL_844 },
+      {},
+    );
+
+    expect(item.identifiers).toEqual([{ type: 'accession', value: 'NIMI-0844' }]);
+  });
+
   it('throws (fail loud) when the accession is absent -- never fabricates an identifier', async () => {
     const { client } = fakeClient({ text: SYNTHETIC_NO_ACCESSION });
     const { store } = fakeObjectStore();
@@ -398,5 +413,17 @@ describe('NewItalyMuseumAdapter.acquire', () => {
 
     const record = publicDomainRecord({ sourceUrl: undefined });
     await expect(adapter.acquire(record, {})).rejects.toThrow(/sourceUrl/i);
+  });
+
+  it('throws a clear error when no ObjectStore was injected (resolve-only construction)', async () => {
+    const { client } = fakeClient({ text: FIXTURE_844, bytes: CANNED_BYTES });
+    const adapter = new NewItalyMuseumAdapter({
+      client,
+      extractor: realExtractor(),
+    });
+
+    await expect(adapter.acquire(publicDomainRecord(), {})).rejects.toThrow(
+      /no ObjectStore was injected/,
+    );
   });
 });

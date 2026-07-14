@@ -442,6 +442,49 @@ titles:
     expect(serialized).not.toMatch(/partOf/);
   });
 
+  it(
+    'loads a kind: archival-item member (specs/011-museum-acquisition-path) with a ' +
+      'repositoryRecords sourceUrl, and round-trips both through serialize -> load',
+    () => {
+      const filePath = writeSource(
+        'PB-P050.yml',
+        `
+sourceId: PB-P050
+kind: archival-item
+partOf: PB-P004
+titles:
+  - text: "Pioneers Group Photo 1890"
+    role: archive
+repositoryRecords:
+  - sourceArchive: "New Italy Museum"
+    status: wanted
+    sourceUrl: "https://newitaly.org.au/CAT/000844.htm"
+    identifiers:
+      - type: accession
+        value: "NIMI-0844"
+`,
+      );
+
+      const { source, records } = loadSourceFile(filePath);
+      expect(source.kind).toBe('archival-item');
+      expect(source.partOf).toBe('PB-P004');
+      expect(records).toHaveLength(1);
+      expect(records[0].sourceUrl).toBe('https://newitaly.org.au/CAT/000844.htm');
+      expect(records[0].identifiers).toEqual([{ type: 'accession', value: 'NIMI-0844' }]);
+
+      // Idempotent round trip: re-serializing the loaded record reproduces the
+      // sourceUrl (and kind: archival-item), and reloading it yields the same values.
+      const serialized = serializeSource({ source, records });
+      expect(serialized).toMatch(/kind:\s*archival-item/);
+      expect(serialized).toMatch(/sourceUrl:\s*https:\/\/newitaly\.org\.au\/CAT\/000844\.htm/);
+
+      writeFileSync(filePath, serialized, 'utf-8');
+      const reloaded = loadSourceFile(filePath);
+      expect(reloaded.source.kind).toBe('archival-item');
+      expect(reloaded.records[0].sourceUrl).toBe('https://newitaly.org.au/CAT/000844.htm');
+    },
+  );
+
   it('loads a member stub carrying status: discovered (US3)', () => {
     const filePath = writeSource(
       'PB-P037.yml',
@@ -576,7 +619,9 @@ titles:
     role: canonical
 `,
     );
-    expect(() => loadSourceFile(filePath)).toThrow(/must be "periodical", "monograph", or "source-group"/);
+    expect(() => loadSourceFile(filePath)).toThrow(
+      /must be "periodical", "monograph", "archival-item", or "source-group"/,
+    );
   });
 });
 

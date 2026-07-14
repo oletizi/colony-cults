@@ -37,6 +37,9 @@ export function authoredToRepositoryRecord(
   if (authored.originalUrl !== undefined) {
     record.originalUrl = authored.originalUrl;
   }
+  if (authored.sourceUrl !== undefined) {
+    record.sourceUrl = authored.sourceUrl;
+  }
   if (authored.retrievedAt !== undefined) {
     record.retrievedAt = authored.retrievedAt;
   }

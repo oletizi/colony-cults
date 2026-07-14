@@ -29,6 +29,9 @@ function orderedRecord(record: AuthoredRepositoryRecord): Record<string, unknown
   if (record.originalUrl !== undefined) {
     out.originalUrl = record.originalUrl;
   }
+  if (record.sourceUrl !== undefined) {
+    out.sourceUrl = record.sourceUrl;
+  }
   if (record.retrievedAt !== undefined) {
     out.retrievedAt = record.retrievedAt;
   }

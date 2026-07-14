@@ -14,8 +14,6 @@
  * returns a non-zero code; no fallbacks.
  */
 
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseArgs as nodeParseArgs } from 'node:util';
 
 import { loadAllSources } from '@/bibliography/load';
@@ -23,12 +21,10 @@ import { describeError } from '@/bibliography/load-primitives';
 import { deriveSourceLayout, registerSourceLayout } from '@/archive/location';
 import { runFetchSource } from '@/cli/fetch';
 import { parseCheckpointEvery } from '@/cli/parse';
+import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
-import {
-  gallicaArkIdentifierResolver,
-  gallicaArkMetadataResolver,
-} from '@/sourcegroup/gallica-ark-resolver';
+import { gallicaArkIdentifierResolver } from '@/sourcegroup/gallica-ark-resolver';
 import { runAcquire } from '@/sourcegroup/acquire';
 import { runReconcile } from '@/sourcegroup/reconcile';
 import { gatherProvenance } from '@/bibliography/derive';
@@ -37,36 +33,25 @@ import { BnfSruDiscoveryMechanism } from '@/sourcegroup/discovery/bnf-sru';
 import { DiscoveryDispatcher } from '@/sourcegroup/discovery/discovery';
 import type { DiscoveryCandidate } from '@/sourcegroup/discovery/discovery';
 import { runExcludeMember } from '@/sourcegroup/exclude-member';
-import { runInventory } from '@/sourcegroup/inventory';
 import { runPromote } from '@/sourcegroup/promote';
 import { buildExistingMembers, runVerifyMember } from '@/sourcegroup/verify-member-command';
 
-/**
- * Resolve the repo root from THIS module's location -- `src/cli/` is two
- * levels below the repo root -- so a `bib` subaction behaves the same
- * regardless of the caller's `process.cwd()`. Shared by every handler here
- * and (re-imported) by `src/cli/bibliography.ts`.
- */
-export function resolveRepoRoot(): string {
-  const here = fileURLToPath(import.meta.url);
-  return path.resolve(path.dirname(here), '..', '..');
-}
+// `bib inventory` (T017-T020) is wired in its own module, `@/cli/bib-inventory`
+// -- see that module's header for why -- and re-exported here so THIS
+// module's existing external importers (e.g. `@/cli/bibliography`) are
+// unaffected.
+export {
+  runInventoryCli,
+  parseInventoryArgs,
+  type InventoryCliArgs,
+} from '@/cli/bib-inventory';
 
-/** The one-file-per-source SSOT directory under the repo root. */
-function sourcesDirOf(repoRoot: string): string {
-  return path.join(repoRoot, 'bibliography', 'sources');
-}
-
-/** Narrow the `--kind` flag to the member-kind union (never `source-group`). */
-function asMemberKind(value: string | undefined): 'monograph' | 'periodical' | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-  if (value === 'monograph' || value === 'periodical') {
-    return value;
-  }
-  throw new Error(`--kind must be "monograph" or "periodical" (got "${value}")`);
-}
+// `resolveRepoRoot` moved to `@/cli/bib-sourcegroup-paths` (shared with
+// `@/cli/bib-inventory`, avoiding a circular import) but stays re-exported
+// here for this module's existing external importers
+// (`@/cli/bib-coverage`, `@/bibliography/coverage/load-coverage-report`,
+// `@/cli/bibliography`).
+export { resolveRepoRoot };
 
 /** Parse `--limit` into a positive integer (no silent fallback to a default). */
 function parseLimit(raw: string | undefined): number | undefined {
@@ -78,92 +63,6 @@ function parseLimit(raw: string | undefined): number | undefined {
     throw new Error(`--limit must be a positive integer (got "${raw}")`);
   }
   return n;
-}
-
-/** `bib inventory <ark> --group <id> [--kind] [--archive] [--dry-run]`. */
-export async function runInventoryCli(rest: string[]): Promise<number> {
-  let ark: string | undefined;
-  let group: string | undefined;
-  let kind: 'monograph' | 'periodical' | undefined;
-  let archive: string | undefined;
-  let dryRun = false;
-  try {
-    const { values, positionals } = nodeParseArgs({
-      args: rest,
-      options: {
-        group: { type: 'string' },
-        kind: { type: 'string' },
-        archive: { type: 'string' },
-        'dry-run': { type: 'boolean', default: false },
-      },
-      allowPositionals: true,
-      strict: true,
-    });
-    ark = positionals[0];
-    group = values.group;
-    kind = asMemberKind(values.kind);
-    archive = values.archive;
-    dryRun = Boolean(values['dry-run']);
-  } catch (error) {
-    console.error(`bib inventory: ${describeError(error)}`);
-    return 2;
-  }
-
-  if (ark === undefined) {
-    console.error('bib inventory: missing required argument <ark>');
-    return 2;
-  }
-  if (group === undefined) {
-    console.error('bib inventory: missing required flag --group <group-id>');
-    return 2;
-  }
-
-  const repoRoot = resolveRepoRoot();
-  const sourcesDir = sourcesDirOf(repoRoot);
-  // GALLICA (not the BnF general-catalogue SRU): the acquisition targets are
-  // Gallica digital documents (`bpt6k` arks), which the catalogue SRU does
-  // not index -- see @/sourcegroup/gallica-ark-resolver.
-  const resolveArk = gallicaArkMetadataResolver(new GallicaHttpClient(new HttpClient()));
-
-  try {
-    if (dryRun) {
-      const metadata = await resolveArk(ark);
-      if (metadata === null) {
-        throw new Error(`ark "${ark}" could not be resolved -- nothing would be created`);
-      }
-      const sourceArchive = archive ?? metadata.archive;
-      console.log(`bib inventory (dry-run): would create a member of "${group}" from ${ark}; wrote nothing`);
-      console.log(`  kind: ${kind ?? 'monograph'}`);
-      console.log(`  sourceArchive: ${sourceArchive ?? '(none -- pass --archive <name>)'}`);
-      for (const title of metadata.titles) {
-        console.log(`  title (${title.role}): ${title.text}`);
-      }
-      if (metadata.rightsRaw !== undefined) {
-        console.log(`  rightsRaw: ${metadata.rightsRaw}`);
-      }
-      return 0;
-    }
-
-    const result = await runInventory({
-      ark,
-      groupId: group,
-      kind,
-      archive,
-      sourcesDir,
-      baseDir: repoRoot,
-      resolveArk,
-    });
-    console.log(`bib inventory: created ${result.sourceId} (status: discovered, record: wanted)`);
-    console.log(`  sourceArchive: ${result.record.sourceArchive}`);
-    console.log(`  snapshot: ${result.snapshot.path}`);
-    if (!result.acquirable) {
-      console.log('  note: rights are not public-domain -- not yet acquirable (US1 scenario 5)');
-    }
-    return 0;
-  } catch (error) {
-    console.error(`bib inventory: ${describeError(error)}`);
-    return 1;
-  }
 }
 
 /** `bib verify-member <id> [--archive] [--json]`. */

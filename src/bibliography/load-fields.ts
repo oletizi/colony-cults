@@ -38,6 +38,7 @@ const RECORD_KEYS = new Set([
   'status',
   'catalogUrl',
   'originalUrl',
+  'sourceUrl',
   'retrievedAt',
   'identifiers',
   'rights',
@@ -299,6 +300,7 @@ export function validateRecord(value: unknown, filePath: string, index: number):
   const status = requireString(obj.status, filePath, `${where}.status`);
   const catalogUrl = optionalString(obj.catalogUrl, filePath, `${where}.catalogUrl`);
   const originalUrl = optionalString(obj.originalUrl, filePath, `${where}.originalUrl`);
+  const sourceUrl = optionalString(obj.sourceUrl, filePath, `${where}.sourceUrl`);
   const retrievedAt = optionalString(obj.retrievedAt, filePath, `${where}.retrievedAt`);
   const census = optionalString(obj.census, filePath, `${where}.census`);
 
@@ -341,6 +343,7 @@ export function validateRecord(value: unknown, filePath: string, index: number):
     status,
     catalogUrl,
     originalUrl,
+    sourceUrl,
     retrievedAt,
     identifiers: obj.identifiers === undefined ? undefined : identifiers,
     rights,

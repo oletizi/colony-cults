@@ -66,8 +66,14 @@ export interface NewItalyMuseumAdapterDeps {
   client: MusarchHttpClient;
   /** Grounded prose extractor over `MuseumItemFields`. REQUIRED. */
   extractor: StructuredExtractor<MuseumItemFields>;
-  /** Injected object store the master bytes are PUT to (B2 in prod). REQUIRED. */
-  objectStore: ObjectStore;
+  /**
+   * Injected object store the master bytes are PUT to (B2 in prod). Required
+   * only for `acquire` (which throws a clear, fail-loud error if it is
+   * absent when actually needed to PUT bytes) -- NOT for `resolve`, so a
+   * resolve-only caller (e.g. `bib inventory --repository`) can construct
+   * this adapter without B2 credentials.
+   */
+  objectStore?: ObjectStore;
   /** Clock for metadata-snapshot timestamps; defaults to wall clock. */
   now?: () => string;
 }
@@ -147,7 +153,7 @@ export class NewItalyMuseumAdapter implements RepositoryAdapter {
 
   private readonly client: MusarchHttpClient;
   private readonly extractor: StructuredExtractor<MuseumItemFields>;
-  private readonly objectStore: ObjectStore;
+  private readonly objectStore: ObjectStore | undefined;
   private readonly now: () => string;
 
   constructor(deps: NewItalyMuseumAdapterDeps) {
@@ -160,8 +166,10 @@ export class NewItalyMuseumAdapter implements RepositoryAdapter {
     if (deps.extractor === null || typeof deps.extractor !== 'object') {
       throw new Error('NewItalyMuseumAdapter: deps.extractor is required (the prose extractor).');
     }
-    if (deps.objectStore === null || typeof deps.objectStore !== 'object') {
-      throw new Error('NewItalyMuseumAdapter: deps.objectStore is required (the object store).');
+    if (deps.objectStore !== undefined && typeof deps.objectStore !== 'object') {
+      throw new Error(
+        'NewItalyMuseumAdapter: deps.objectStore, when given, must be an object (the object store).',
+      );
     }
     this.client = deps.client;
     this.extractor = deps.extractor;
@@ -323,6 +331,14 @@ export class NewItalyMuseumAdapter implements RepositoryAdapter {
         complete: true,
         reconciliationRequired: true,
       };
+    }
+
+    if (this.objectStore === undefined) {
+      throw new Error(
+        `NewItalyMuseumAdapter.acquire: no ObjectStore was injected -- this adapter instance ` +
+          `was constructed resolve-only (e.g. via "bib inventory") and cannot acquire assets ` +
+          `for "${record.sourceId}" at "${record.sourceArchive}".`,
+      );
     }
 
     const masterUrl = dom.masterImageUrl;

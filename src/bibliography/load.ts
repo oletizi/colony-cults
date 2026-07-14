@@ -21,7 +21,11 @@ import {
   requireObject,
   requireString,
 } from '@/bibliography/load-primitives';
-import { isSourceLifecycleStatus, isSourceRightsStatus } from '@/bibliography/vocab';
+import {
+  isSourceLifecycleStatus,
+  isSourceRightsStatus,
+  isSourceStructuralKind,
+} from '@/bibliography/vocab';
 import type { SourceLifecycleStatus } from '@/bibliography/vocab';
 import type { MachineAssistLabel } from '@/pdf/model';
 import type { Publication, PublicationManifestRef, SourceRights } from '@/model/publication';
@@ -86,10 +90,6 @@ function isPublicationVariant(value: string): value is Publication['variant'] {
 
 function isKeyScheme(value: string): value is Publication['keyScheme'] {
   return value === 'versioned' || value === 'legacy-flat';
-}
-
-function isSourceKind(value: string): value is Source['kind'] {
-  return value === 'periodical' || value === 'monograph' || value === 'source-group';
 }
 
 /**
@@ -272,8 +272,11 @@ export function loadSourceFile(filePath: string): LoadedSource {
   const titles = titlesArr.map((t, i) => validateTitle(t, filePath, i));
 
   const kindRaw = requireString(obj.kind, filePath, 'kind');
-  if (!isSourceKind(kindRaw)) {
-    fail(filePath, `kind "${kindRaw}" must be "periodical", "monograph", or "source-group"`);
+  if (!isSourceStructuralKind(kindRaw)) {
+    fail(
+      filePath,
+      `kind "${kindRaw}" must be "periodical", "monograph", "archival-item", or "source-group"`,
+    );
   }
 
   // The member -> source-group edge (FR-006). Absent stays undefined -- no

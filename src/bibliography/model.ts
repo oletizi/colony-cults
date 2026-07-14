@@ -72,6 +72,13 @@ export interface AuthoredRepositoryRecord {
   catalogUrl?: string;
   /** Original URL the copy was retrieved from. */
   originalUrl?: string;
+  /**
+   * Catalogue/asset-page locator for this copy, e.g. a Musarch detail-page
+   * URL (specs/011-museum-acquisition-path). NOT identity: copy identity is
+   * carried by `identifiers` (e.g. an `accession` `CopyIdentifier`). Mirrors
+   * `RepositoryRecord.sourceUrl` (`@/model/repository-record`).
+   */
+  sourceUrl?: string;
   /** Retrieval timestamp (ISO). */
   retrievedAt?: string;
   /** Copy-level identifiers (ark/IIIF manifest/scan DOI). */
