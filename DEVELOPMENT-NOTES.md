@@ -1,3 +1,40 @@
+## 2026-07-14: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 16
+  - research(009): PB-P005 Trove — irreducible press residual, NO adapter warranted (SRCH-0007)
+  - research(009): PB-P001 issue-completeness — measured complete vs Gallica (78/78), 8-month crisis residual documented (SRCH-0006)
+  - Merge pull request #42 from oletizi/feature/corpus-gap-closure
+  - research(009): PB-P002 was already acquired — reconcile stale to-collect (archive audit, SRCH-0005)
+  - fix(archive): TASK-19 — resolveArchiveRoot fails loud, no silent shared default
+  - fix(test): correct PB-P004 member-count assertion 5->6 after PB-P012 discovery
+  - research(009): PB-P004 court-decisions inventory SRCH-0004 — Gazette des Tribunaux serial home located on Gallica
+  - research(009): PB-P012 holding search SRCH-0003 — no digital copy located (negative result recorded)
+  - Merge pull request #40 from oletizi/feature/corpus-gap-closure
+  - fix(coverage): scrub residual "campaign" vocab in coverage web view after #39 merge
+  - Merge pull request #39 from oletizi/feature/corpus-gap-closure
+  - research(009): PB-P004 search pass SRCH-0002 — discover Vermont pleadings, log court-decisions + irreducible press
+  - fix(coverage): complete 010 campaign->work-bundle cutover in coverage projection + web view
+  - Merge pull request #37 from oletizi/feature/corpus-gap-closure
+  - Merge pull request #36 from oletizi/feature/coverage-copy
+  - copy(coverage): reframe /coverage hero as the gaps audit, not a holdings view
+- Files changed: 24
+- Backlog touched: TASK-17, TASK-19
+
 ## 2026-07-13: Reshape 009 research-first + first passes; design→ship spec 010 corpus-model-coherence
 
 **Goal:** Resume `impl:feature/corpus-gap-closure` (009): analyze the spec, then actually *run* the research loop to find out whether the spec is sound — and when the loop proved a concrete tooling need, design/spec/build the fix through the stack-control front door.

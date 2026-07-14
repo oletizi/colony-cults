@@ -11,3 +11,9 @@
 ## session-end 2026-07-13
 - speckit check-prerequisites.sh / setup scripts reject the long-lived feature branch name; the spec dir must be resolved via .specify/feature.json throughout (recurring TF-09 pattern across analyze/plan/tasks).
 - cross-model govern audit-barrage times out in this environment (cannot convene the model fleet); shipped spec 010 via comprehensive validated-live + 'govern --override' (established env constraint).
+
+## session-end 2026-07-14
+- bib acquire foreground fetch of a periodical/monograph (polite, rate-limited) exceeds the 8-min Bash tool timeout (SIGTERM); long real fetches must run detached (nohup+disown).
+- bib acquire --dry-run reports would-fetch-N-pages even when masters are already in B2 (it estimates the full fetch, does not check object-store presence); this misled the initial read that PB-P007-P011 were unacquired. bib reconcile is the reliable already-acquired check.
+- SSOT/archive drift: PB-P002 sat at status to-collect while its masters were acquired in B2, found only by auditing the archive provenance against the SSOT. Consider a bib audit verb that flags to-collect-but-acquired staleness corpus-wide.
+- bib-coverage-cli integration test hard-codes live-corpus counts (PB-P004 actualMemberCount); any real corpus edit breaks it, and the PR CI gate is only the Netlify deploy-preview (no unit-test gate), so a broken assertion can merge until the next local run catches it.
