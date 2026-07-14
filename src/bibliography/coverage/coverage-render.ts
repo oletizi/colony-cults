@@ -39,13 +39,26 @@ function renderJson(report: CoverageReport): string {
 const NONE = '(none)';
 
 /**
- * Render a {@link KnownExtent}: the `measured` count as a plain number, else
- * its own state word (`unexamined` or `irreducible`) -- never a bare
- * `unknown` (INV-2). Basis prose is left to the distinct rendering (T026),
- * not this minimal shape.
+ * Render a {@link KnownExtent}, distinct per state (FR-019) and ALWAYS
+ * showing the research basis when the state carries one: `measured` shows
+ * its count plus basis; `irreducible` shows its state word plus basis;
+ * `unexamined` carries no basis, so it renders as just its state word --
+ * never a bare `unknown` (INV-2). Exhaustive over `KnownExtent['state']` --
+ * a new state is a compile error here, not a silent fall-through.
  */
 function renderKnownExtent(extent: KnownExtent): string {
-  return extent.state === 'measured' ? String(extent.count) : extent.state;
+  switch (extent.state) {
+    case 'measured':
+      return `measured: ${extent.count} (basis: ${extent.basis})`;
+    case 'unexamined':
+      return extent.state;
+    case 'irreducible':
+      return `${extent.state} (basis: ${extent.basis})`;
+    default: {
+      const exhaustive: never = extent;
+      throw new Error(`unhandled KnownExtent state: ${JSON.stringify(exhaustive)}`);
+    }
+  }
 }
 
 /** Render a `WorkBundleCoverage.gap`: the number as-is, else its state word (INV-2). */

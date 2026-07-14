@@ -90,6 +90,46 @@ describe('T025 gap semantics (knownExtent vs derived actual)', () => {
   });
 });
 
+describe('T026 believed-extent BASIS surfaced distinctly per KnownExtent state (FR-019)', () => {
+  it('renders a measured extent with its count AND basis', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    // PB-P001 is fixture-authored measured: 3, basis "three issues comprise the run".
+    expect(text).toContain(
+      'believed extent (knownExtent): measured: 3 (basis: three issues comprise the run)',
+    );
+  });
+
+  it('renders an unexamined extent with no basis suffix, and never a bare "unknown"', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    // PB-P002 is fixture-authored unexamined (no basis field to show).
+    expect(text).toContain('believed extent (knownExtent): unexamined        gap: unexamined');
+    expect(text).not.toContain('unexamined (basis:');
+    expect(text).not.toContain('knownExtent): unknown');
+  });
+
+  it('renders an irreducible extent with its basis', () => {
+    const report = buildCoverageReport(loadFixtureInput());
+    const irreducibleReport = {
+      ...report,
+      perWorkBundle: [
+        {
+          workBundle: 'SYN-P001',
+          membersByLifecycleState: [],
+          actualMemberCount: 0,
+          knownExtent: { state: 'irreducible' as const, basis: 'the run is a continuous, unbounded serial' },
+          gap: 'irreducible' as const,
+        },
+        ...report.perWorkBundle,
+      ],
+    };
+    const text = renderCoverage(irreducibleReport, { json: false });
+    expect(text).toContain(
+      'believed extent (knownExtent): irreducible (basis: the run is a continuous, unbounded serial)' +
+        '        gap: irreducible',
+    );
+  });
+});
+
 describe('T028/T014/T015 evidence-class distribution (FR-011, FR-008/INV-4)', () => {
   it('counts every WORK by class, with absent -> unclassified; source-groups excluded', () => {
     const report = buildCoverageReport(loadFixtureInput());
