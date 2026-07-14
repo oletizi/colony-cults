@@ -234,7 +234,13 @@ export async function runRightsAssessCli(rest: string[]): Promise<number> {
   try {
     const selected = selectRecord(sourcesDir, sourceId, archive);
     const registry = await registryForRecord(selected);
-    const result = await reviewRightsEvidence({ sourcesDir, sourceId, archive, registry });
+    const result = await reviewRightsEvidence({
+      sourcesDir,
+      sourceId,
+      archive,
+      baseDir: repoRoot,
+      registry,
+    });
     printEvidence(result.sourceId, result.sourceArchive, result.evidence);
     return 0;
   } catch (error) {

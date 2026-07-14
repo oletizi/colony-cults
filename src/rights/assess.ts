@@ -3,11 +3,12 @@
  * acquisition-path). Two independent operations share the record-selection
  * plumbing, split purely on caller intent (never on record state):
  *
- *  - {@link reviewRightsEvidence} (no `--status`): resolves the selected
- *    copy through its dispatched `RepositoryAdapter` and surfaces the
- *    adapter-PROPOSED `RightsEvidence` (the grounded `date` + its
- *    interpretation + evidence excerpt, any `rightsRaw`/credit) for the
- *    operator to review. Writes NOTHING (FR-008).
+ *  - {@link reviewRightsEvidence} (no `--status`): reuses the grounded
+ *    metadata `bib inventory` already persisted for the selected copy (its
+ *    `metadataSnapshot`) and surfaces the adapter-PROPOSED `RightsEvidence`
+ *    (the grounded `date` + its interpretation + evidence excerpt, any
+ *    `rightsRaw`/credit) for the operator to review -- no page re-fetch, no
+ *    re-run of the extraction engine. Writes NOTHING (FR-008).
  *  - {@link recordRightsAssessment} (`--status <...> --basis "<...>"`):
  *    writes the OPERATOR's authoritative `RightsAssessment` onto the
  *    selected `RepositoryRecord` and persists it to the SSOT. The adapter
@@ -29,13 +30,16 @@ import path from 'node:path';
 
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import { authoredToRepositoryRecord } from '@/bibliography/authored-record';
+import { describeError } from '@/bibliography/load-primitives';
 import { loadSourceFile } from '@/bibliography/load';
 import { serializeSource } from '@/bibliography/migrate-serialize';
-import type { RightsEvidence } from '@/repository/adapter';
+import type { ResolvedRepositoryItem, RightsEvidence } from '@/repository/adapter';
 import type { RepositoryAdapterRegistry } from '@/repository/registry';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { RightsAssessment } from '@/model/rights';
 import type { Source } from '@/model/source';
+import type { GroundedExtraction, GroundedField, MuseumItemFields } from '@/extraction/structured-extractor';
+import { readSnapshot } from '@/sourcegroup/snapshot';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 
 /** Identity of the copy a review/write operation acted on. */
@@ -80,6 +84,120 @@ function selectAuthored(
   return { selectedIndex, selected };
 }
 
+// --- Metadata-snapshot reuse (review mode never re-resolves) ---------------
+//
+// `bib inventory --repository` already ran the adapter's `resolve` once --
+// fetching the item page AND running the (expensive, non-deterministic)
+// codex LLM extraction -- and persisted the resulting `GroundedExtraction`
+// verbatim as a metadata snapshot (`@/sourcegroup/snapshot`'s `writeSnapshot`,
+// called with `raw: JSON.stringify(item.metadata)`, see
+// `@/sourcegroup/museum-inventory`). Review mode reuses that persisted
+// snapshot instead of calling `adapter.resolve` a second time: it fetches
+// nothing and runs no engine call. These helpers parse the snapshot's raw
+// JSON back into a `GroundedExtraction<MuseumItemFields>` with fail-loud
+// validation of its shape (never a blind `as`-cast of parsed JSON).
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function requireObject(value: unknown, context: string): Record<string, unknown> {
+  if (!isPlainObject(value)) {
+    throw new Error(`${context} must be a JSON object.`);
+  }
+  return value;
+}
+
+function requireString(value: unknown, context: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`${context} must be a non-empty string.`);
+  }
+  return value;
+}
+
+function optionalString(value: unknown, context: string): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return requireString(value, context);
+}
+
+/** Validate one parsed `GroundedField<string>` (the museum schema's fields are all string-valued). */
+function validateGroundedField(value: unknown, context: string): GroundedField<string> {
+  const obj = requireObject(value, context);
+  const fieldValue = requireString(obj.value, `${context}.value`);
+  const evidenceObj = requireObject(obj.evidence, `${context}.evidence`);
+  const excerpt = requireString(evidenceObj.excerpt, `${context}.evidence.excerpt`);
+  const selector = optionalString(evidenceObj.selector, `${context}.evidence.selector`);
+  const interpretation = requireString(obj.interpretation, `${context}.interpretation`);
+  const provenanceObj = requireObject(obj.provenance, `${context}.provenance`);
+  if (provenanceObj.modelAssisted !== true) {
+    throw new Error(`${context}.provenance.modelAssisted must be exactly \`true\`.`);
+  }
+  const engine = requireString(provenanceObj.engine, `${context}.provenance.engine`);
+  const model = requireString(provenanceObj.model, `${context}.provenance.model`);
+  const promptVersion = requireString(provenanceObj.promptVersion, `${context}.provenance.promptVersion`);
+  const at = requireString(provenanceObj.at, `${context}.provenance.at`);
+  return {
+    value: fieldValue,
+    evidence: selector === undefined ? { excerpt } : { excerpt, selector },
+    interpretation,
+    provenance: { modelAssisted: true, engine, model, promptVersion, at },
+  };
+}
+
+/**
+ * Validate parsed JSON as a `GroundedExtraction<MuseumItemFields>`: `date` is
+ * required (rights-critical, `MUSEUM_ITEM_SCHEMA.rightsCriticalFields`);
+ * `creator`/`description`/`statedCredit` are validated only when present
+ * (mirrors the extractor's "missing fields are returned absent, never
+ * fabricated" contract, `@/extraction/structured-extractor`).
+ */
+function validateGroundedExtraction(
+  parsed: unknown,
+  context: string,
+): GroundedExtraction<MuseumItemFields> {
+  const obj = requireObject(parsed, context);
+  const extraction: GroundedExtraction<MuseumItemFields> = {
+    date: validateGroundedField(obj.date, `${context}.date`),
+  };
+  if (obj.creator !== undefined) {
+    extraction.creator = validateGroundedField(obj.creator, `${context}.creator`);
+  }
+  if (obj.description !== undefined) {
+    extraction.description = validateGroundedField(obj.description, `${context}.description`);
+  }
+  if (obj.statedCredit !== undefined) {
+    extraction.statedCredit = validateGroundedField(obj.statedCredit, `${context}.statedCredit`);
+  }
+  return extraction;
+}
+
+/** Parse + validate a snapshot's raw JSON body (fail loud on malformed JSON or shape). */
+function parseGroundedMetadataSnapshot(
+  raw: string,
+  context: string,
+): GroundedExtraction<MuseumItemFields> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`${context}: malformed JSON metadata snapshot (${describeError(error)}).`);
+  }
+  return validateGroundedExtraction(parsed, context);
+}
+
+/**
+ * The record's/its owning `Source`'s display title, for the minimal
+ * `ResolvedRepositoryItem` review mode builds. `Source.titles` is guaranteed
+ * non-empty by `loadSourceFile` (rule 2) before it ever reaches here; prefers
+ * the `canonical` title when one exists, otherwise the first authored title.
+ */
+function titleFor(source: Source): string {
+  const canonical = source.titles.find((title) => title.role === 'canonical');
+  return (canonical ?? source.titles[0]).text;
+}
+
 /** Input to {@link reviewRightsEvidence}. */
 export interface ReviewRightsEvidenceInput {
   /** Directory holding the one-file-per-source SSOT (`bibliography/sources`). */
@@ -88,6 +206,13 @@ export interface ReviewRightsEvidenceInput {
   sourceId: string;
   /** `--archive`: selects one copy when the member has more than one record. */
   archive?: string;
+  /**
+   * The repo root the metadata-snapshot store's `bibliography/` subpath is
+   * relative to (same value as `runMuseumInventory`'s `baseDir`) -- used to
+   * read back the record's persisted metadata snapshot instead of
+   * re-resolving through the adapter.
+   */
+  baseDir: string;
   /** Injected `RepositoryAdapterRegistry` (INV-D: dispatch by copy identifier, never a locator sniff). */
   registry: RepositoryAdapterRegistry;
 }
@@ -108,6 +233,12 @@ function assertReviewInputWellFormed(input: ReviewRightsEvidenceInput): void {
   if (typeof input.sourceId !== 'string' || input.sourceId.trim().length === 0) {
     throw new Error('reviewRightsEvidence: input.sourceId is required.');
   }
+  if (typeof input.baseDir !== 'string' || input.baseDir.trim().length === 0) {
+    throw new Error(
+      'reviewRightsEvidence: input.baseDir (the repo root the metadata-snapshot store is ' +
+        'relative to) is required.',
+    );
+  }
   if (input.registry === null || typeof input.registry !== 'object') {
     throw new Error(
       'reviewRightsEvidence: input.registry (the injected RepositoryAdapterRegistry) is required.',
@@ -122,30 +253,71 @@ function assertReviewInputWellFormed(input: ReviewRightsEvidenceInput): void {
  * the interpretation before recording a judgment via
  * {@link recordRightsAssessment}. Writes NOTHING to the SSOT.
  *
+ * REUSES the grounded metadata `bib inventory` already extracted and
+ * persisted at acquisition time, rather than calling `adapter.resolve`
+ * again: `resolve` both re-fetches the item page AND re-runs the expensive,
+ * non-deterministic codex LLM extraction, and `collectRightsEvidence` only
+ * ever reads `item.metadata` -- it needs no network/engine call at all. This
+ * function loads the record's persisted `metadataSnapshot` (the exact
+ * `JSON.stringify(item.metadata)` `bib inventory` wrote,
+ * `@/sourcegroup/museum-inventory`), validates its shape, and builds a
+ * minimal `ResolvedRepositoryItem` from the RECORD (its accession
+ * identifier, `sourceUrl`, owning `Source`'s title) plus that parsed
+ * metadata -- so `adapter.collectRightsEvidence` runs against real grounded
+ * data with zero fetches and zero engine calls.
+ *
  * Dispatches the adapter via `registry.selectForRecord` (never a locator-
- * shape sniff, INV-D) and resolves the copy from its recorded `sourceUrl`
- * -- fails loud when that is absent, since there is then nothing to
- * resolve.
+ * shape sniff, INV-D; dispatch itself is a pure lookup, no I/O). Fails loud
+ * -- directing the operator to re-inventory -- when the record carries no
+ * `sourceUrl` or no persisted `metadataSnapshot` (e.g. an older record
+ * inventoried before snapshots existed): this function never silently falls
+ * back to re-resolving, since that would reintroduce the duplicate-fetch/
+ * duplicate-extraction cost this reuse path exists to avoid.
  */
 export async function reviewRightsEvidence(
   input: ReviewRightsEvidenceInput,
 ): Promise<ReviewRightsEvidenceResult> {
   assertReviewInputWellFormed(input);
 
-  const { records } = loadRecordFile(input.sourcesDir, input.sourceId);
+  const { source, records } = loadRecordFile(input.sourcesDir, input.sourceId);
   const { selected } = selectAuthored(input.sourceId, records, input.archive);
 
   const adapter = input.registry.selectForRecord(selected);
+  const copyLabel = `${input.sourceId} @ ${selected.sourceArchive}`;
 
   const sourceUrl = selected.sourceUrl;
   if (sourceUrl === undefined || sourceUrl.trim().length === 0) {
     throw new Error(
-      `reviewRightsEvidence(${input.sourceId} @ ${selected.sourceArchive}): the record carries ` +
-        'no sourceUrl -- nothing to resolve for rights evidence.',
+      `reviewRightsEvidence(${copyLabel}): the record carries no sourceUrl -- nothing to review ` +
+        'rights evidence for.',
     );
   }
 
-  const item = await adapter.resolve({ repository: adapter.repository, value: sourceUrl }, {});
+  const snapshotRef = selected.metadataSnapshot;
+  if (snapshotRef === undefined) {
+    throw new Error(
+      `reviewRightsEvidence(${copyLabel}): the record carries no persisted metadata snapshot -- ` +
+        're-run "bib inventory --repository <name> ..." for this copy to create one. Review mode ' +
+        'reuses the grounded metadata inventory already extracted rather than re-fetching the page ' +
+        'and re-running the extraction engine, so there is no fallback re-resolve path here.',
+    );
+  }
+
+  const snapshotRecord = await readSnapshot(input.baseDir, snapshotRef.path);
+  const metadata = parseGroundedMetadataSnapshot(
+    snapshotRecord.raw,
+    `reviewRightsEvidence(${copyLabel}): metadataSnapshot "${snapshotRef.path}"`,
+  );
+
+  const item: ResolvedRepositoryItem = {
+    repository: adapter.repository,
+    identifiers: selected.identifiers ?? [],
+    sourceUrl,
+    title: titleFor(source),
+    assetLocators: [],
+    metadata,
+  };
+
   const evidence = await adapter.collectRightsEvidence(item);
 
   return { sourceId: input.sourceId, sourceArchive: selected.sourceArchive, evidence };
