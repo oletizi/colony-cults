@@ -6,16 +6,19 @@ language: French
 creator: Paul de Groote
 rights:
   status: public-domain
-  basis: "1879 French promotional imprint (author Paul de Groote, fl. 1879); public domain by publication age — under France's life+70 term the copyright is elapsed for any plausible death date of an author active in 1879 (protection would require dying after 1955). Basis is publication age; no BnF OAI domaine-public record on file."
-  determinedAt: "2026-07-12"
+  basis: 1879 French promotional imprint (author Paul de Groote, fl. 1879); public domain by publication age — under France's life+70 term the copyright is elapsed for any plausible death date of an author active in 1879 (protection would require dying after 1955). Basis is publication age; the acquired Gallica provenance (ark bpt6k58039518) also carries a BnF OAI dc:rights "domaine public" record.
+  determinedAt: 2026-07-12
 titles:
   - text: "Nouvelle-France: Colonie libre de Port-Breton, Océanie"
     role: canonical
-notes: "Years: 1879 | Access: digital/public domain | Public domain: likely | Promotional account useful for claims made to prospective settlers. | Identifier resolved via bib discover (bnf-catalogue-sru), 2026-07-13: BnF catalogue notice ark:/12148/cb34944911d, 'Nouvelle-France, colonie libre de Port-Breton, Océanie... par P. de Groote'. BnF dates it 1880 (this record said 1879 — 1879/1880 discrepancy, reconcile on acquisition). NB this is the CATALOGUE ark (cb...), not a Gallica digitized-document ark (bpt6k...); digitization/acquirability not yet confirmed."
+notes: "Years: 1879 | Access: digital/public domain | Public domain: likely | Promotional account useful for claims made to prospective settlers. | DIGITIZATION CONFIRMED + ALREADY ACQUIRED (2026-07-13): the Gallica digitized document is ark bpt6k58039518 (32 page-images, domaine public), masters in B2, reconciled -> archived. Found by auditing the archive repo against the SSOT -- the record had been left at to-collect / 'digitization unconfirmed' with only the BnF CATALOGUE ark cb34944911d. Gallica attributes the digitized copy to '[signe: Ch. du Breil, marquis de Rays]' (the colony's promoter/subject); the work itself is P. de Groote's promotional account. BnF dates it 1880 (this record says 1879 -- a 1879/1880 discrepancy still to resolve)."
 repositoryRecords:
   - sourceArchive: Gallica / BnF
-    status: to-collect
+    status: archived
+    originalUrl: https://gallica.bnf.fr/ark:/12148/bpt6k58039518
     catalogUrl: https://catalogue.bnf.fr/ark:/12148/cb34944911d
     identifiers:
+      - type: ark
+        value: ark:/12148/bpt6k58039518
       - type: ark
         value: ark:/12148/cb34944911d
