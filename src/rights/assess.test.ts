@@ -89,6 +89,7 @@ function fakeMuseumAdapter(): {
         repository: 'new-italy-museum',
         identifiers: [{ type: 'accession', value: ACCESSION }],
         sourceUrl: locator.value,
+        title: 'Pioneers group portrait',
         assetLocators: [],
         metadata: {
           date: {

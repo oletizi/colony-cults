@@ -105,23 +105,25 @@ function archiveNameFor(repository: RepositoryName, override: string | undefined
 
 /**
  * Derive the new member's required (non-fabricated) title from the resolved
- * item's grounded `description` field -- a Musarch item page has no distinct
- * "title" field of its own; its short prose description (e.g. "Pioneers
- * Group Photo 1890") IS the item's title in practice. Fails loud (creating
- * nothing) when the extractor grounded no description: `Source.titles`
- * cannot be empty (load.ts rule 2) and no placeholder title is ever
- * fabricated.
+ * item's DETERMINISTIC `title` field (`ResolvedRepositoryItem.title` --
+ * mechanically derived by the adapter, e.g. the New Italy Museum's
+ * `#objectdesc` DOM span, NEVER the optional LLM-grounded
+ * `metadata.description`). A Musarch item page has no distinct "title" field
+ * of its own; its short prose description (e.g. "Pioneers Group Photo 1890")
+ * IS the item's title in practice. Every adapter's `resolve` contract
+ * guarantees `title` is a non-empty string whenever `resolve` succeeds at
+ * all (see `ResolvedRepositoryItem.title`'s doc comment), so this no longer
+ * depends on the LLM extractor having grounded an optional field -- it only
+ * fails loud (creating nothing) if a resolved item somehow carries a blank
+ * title, which `Source.titles` (load.ts rule 2) can never accept.
  */
 function titleFromResolvedItem(item: ResolvedRepositoryItem): Title[] {
-  // `description` is an OPTIONAL field of `MuseumItemFields` (unlike the
-  // required, rights-critical `date`), so its grounded `.value` is itself
-  // `string | undefined` -- both must be checked before use.
-  const text = item.metadata.description?.value;
-  if (text === undefined || text.trim().length === 0) {
+  const text = item.title.trim();
+  if (text.length === 0) {
     throw new Error(
-      `runMuseumInventory: the resolved item at "${item.sourceUrl}" carries no grounded ` +
-        'description to derive a required title from -- Source.titles cannot be empty ' +
-        'and no placeholder title is ever fabricated',
+      `runMuseumInventory: the resolved item at "${item.sourceUrl}" carries an empty ` +
+        'deterministic title -- Source.titles cannot be empty and no placeholder title is ' +
+        'ever fabricated',
     );
   }
   return [{ text, role: 'archive' }];

@@ -88,6 +88,10 @@ function resolvedItem(overrides: Partial<ResolvedRepositoryItem> = {}): Resolved
     repository: 'new-italy-museum',
     identifiers: [{ type: 'accession', value: 'NIMI-0844' }],
     sourceUrl: PAGE_URL,
+    // The deterministic DOM-direct title (mirrors `parseMusarchItem`'s
+    // `#objectdesc`), distinct from the optional LLM-grounded
+    // `metadata.description` set below.
+    title: 'Pioneers Group Photo 1890',
     assetLocators: [{ url: `${PAGE_URL.replace('.htm', '')}-master.jpg`, role: 'primary' }],
     metadata: groundedExtraction(),
     ...overrides,
@@ -327,11 +331,11 @@ describe('runMuseumInventory', () => {
     expect(await readdir(sourcesDir)).toEqual(['PB-S006.yml']);
   });
 
-  it('fails loud and creates nothing when the resolved item carries no description to derive a title from', async () => {
+  it('fails loud and creates nothing when the resolved item carries an empty deterministic title', async () => {
     baseDir = await seedRepo({ 'PB-S006.yml': GROUP_YML });
     const sourcesDir = join(baseDir, 'bibliography', 'sources');
     const { adapter } = fakeAdapter({
-      item: resolvedItem({ metadata: groundedExtraction({ description: undefined }) }),
+      item: resolvedItem({ title: '   ' }),
     });
 
     await expect(
@@ -343,9 +347,34 @@ describe('runMuseumInventory', () => {
         baseDir,
         registry: fakeRegistry(adapter),
       }),
-    ).rejects.toThrow(/carries no grounded description/);
+    ).rejects.toThrow(/carries an empty deterministic title/);
 
     expect(await readdir(sourcesDir)).toEqual(['PB-S006.yml']);
+  });
+
+  it('inventories successfully from the deterministic title when the LLM extractor omits description entirely', async () => {
+    baseDir = await seedRepo({ 'PB-S006.yml': GROUP_YML });
+    const sourcesDir = join(baseDir, 'bibliography', 'sources');
+    // The LLM-grounded `metadata.description` is absent (an extractor that
+    // chose not to ground it), but the adapter's deterministic DOM-direct
+    // `title` (e.g. Musarch's `#objectdesc`) is always present on a
+    // successfully resolved item -- inventory must still succeed from it.
+    const { adapter } = fakeAdapter({
+      item: resolvedItem({ metadata: groundedExtraction({ description: undefined }) }),
+    });
+
+    const result = await runMuseumInventory({
+      locator: PAGE_URL,
+      repository: 'new-italy-museum',
+      groupId: 'PB-S006',
+      sourcesDir,
+      baseDir,
+      registry: fakeRegistry(adapter),
+    });
+
+    expect(result.source.titles).toEqual([
+      { text: 'Pioneers Group Photo 1890', role: 'archive' },
+    ]);
   });
 
   it('re-inventory (running inventory again) appends a NEW distinct snapshot, leaving the first untouched', async () => {

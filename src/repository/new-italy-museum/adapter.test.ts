@@ -207,6 +207,9 @@ describe('NewItalyMuseumAdapter.resolve', () => {
     expect(item.repository).toBe('new-italy-museum');
     expect(item.identifiers).toEqual([{ type: 'accession', value: 'NIMI-0844' }]);
     expect(item.sourceUrl).toBe(PAGE_URL_844);
+    // The deterministic DOM-direct title (`#objectdesc`), distinct from and
+    // always present regardless of the optional LLM-grounded metadata below.
+    expect(item.title).toBe('Pioneers Group Photo 1890');
     expect(item.assetLocators).toHaveLength(1);
     expect(item.assetLocators[0].url).toBe(MASTER_URL_844);
     // The selected locator is the full-res master, never the tn_ thumbnail.
@@ -265,6 +268,12 @@ describe('NewItalyMuseumAdapter.resolve', () => {
     );
     expect(item.assetLocators).toEqual([]);
     expect(item.identifiers).toEqual([{ type: 'accession', value: 'NIMI-0999' }]);
+    // The deterministic DOM-direct title is present even though the injected
+    // `fakeExtractor` grounded no `metadata.description` at all -- this is the
+    // exact scenario the required `title` field exists to cover: a valid item
+    // must not depend on the optional LLM extraction for its title.
+    expect(item.title).toBe('Survivors arrival in Sydney 1881');
+    expect(item.metadata.description).toBeUndefined();
   });
 });
 

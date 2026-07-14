@@ -75,6 +75,19 @@ export interface ResolvedRepositoryItem {
   identifiers: CopyIdentifier[];
   /** Detail-page URL at the repository. */
   sourceUrl: string;
+  /**
+   * A deterministic, mechanically-derived display title for the item -- e.g.
+   * the New Italy Museum's `#objectdesc` DOM span (`parseMusarchItem`'s
+   * `description`), or Gallica's `dc:title`. This is DISTINCT from the
+   * OPTIONAL, LLM-grounded `metadata.description`/`metadata.creator` fields:
+   * `title` is derived mechanically (never a model call) and, by each
+   * adapter's `resolve` contract, is always a non-empty string when
+   * `resolve` succeeds at all -- it never depends on an extractor grounding
+   * an optional field. Callers that need a required, non-fabricated title
+   * for a new `Source` (e.g. `@/sourcegroup/museum-inventory`) MUST derive
+   * from this field, not from the optional grounded `metadata`.
+   */
+  title: string;
   /** Downloadable asset locators. */
   assetLocators: AssetLocator[];
   /** Grounded prose metadata extracted from the repository document. */

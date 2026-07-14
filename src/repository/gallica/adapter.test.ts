@@ -239,6 +239,8 @@ describe('GallicaAdapter', () => {
       expect(item.repository).toBe('gallica');
       expect(item.identifiers).toEqual([{ type: 'ark', value: ARK }]);
       expect(item.sourceUrl).toBe('https://gallica.bnf.fr/ark:/12148/bpt6k1234567');
+      // The deterministic display title: the first `dc:title` value.
+      expect(item.title).toBe('Le Petit Journal');
       expect(item.assetLocators).toEqual([]);
       // Grounded date: real value + verbatim excerpt from the OAIRecord response.
       expect(item.metadata.date.value).toBe('1889');
@@ -258,6 +260,13 @@ describe('GallicaAdapter', () => {
       const { adapter } = makeAdapter({ resolveArk });
 
       await expect(adapter.resolve(locator, ctx)).rejects.toThrow(/no dc:date/i);
+    });
+
+    it('fails loud rather than fabricating a required deterministic title when dc:title is absent', async () => {
+      const resolveArk: ArkResolver = vi.fn(async () => arkMetadata({ titles: [] }));
+      const { adapter } = makeAdapter({ resolveArk });
+
+      await expect(adapter.resolve(locator, ctx)).rejects.toThrow(/no dc:title/i);
     });
 
     it('fails loud on an empty locator value', async () => {

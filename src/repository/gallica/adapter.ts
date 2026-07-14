@@ -304,6 +304,20 @@ export class GallicaAdapter implements RepositoryAdapter {
       );
     }
 
+    // The deterministic display title: the first `dc:title` the OAIRecord
+    // reports (`ArkMetadata.titles`, mechanically mapped by
+    // `gallicaArkMetadataResolver` -- never an LLM extraction). Distinct from
+    // the optional, LLM-grounded `metadata.creator`/`metadata.description`
+    // fields below. Fails loud rather than fabricating a title when Gallica
+    // reports no `dc:title` at all, mirroring the `dc:date` gate above.
+    const firstTitle = metadata.titles[0]?.text.trim();
+    if (firstTitle === undefined || firstTitle.length === 0) {
+      throw new Error(
+        `GallicaAdapter.resolve: Gallica OAIRecord for ark "${ark}" carries no dc:title ` +
+          '-- cannot produce the required deterministic `title` field without fabricating it.',
+      );
+    }
+
     const groundedMetadata: GroundedExtraction<MuseumItemFields> = {
       date: groundedFromDc(
         metadata.date,
@@ -326,6 +340,7 @@ export class GallicaAdapter implements RepositoryAdapter {
       // The documented canonical Gallica landing/detail URL for the ark (single
       // source of truth shared with the fetcher's provenance `catalog_url`).
       sourceUrl: issueLandingUrl(ark),
+      title: firstTitle,
       // See the doc comment: no honest page enumeration exists at this layer.
       assetLocators: [],
       metadata: groundedMetadata,

@@ -43,6 +43,7 @@ const fakeRepositoryAdapter: RepositoryAdapter = {
         },
       ] as CopyIdentifier[],
       sourceUrl: `https://example.com/item/${locator.value}`,
+      title: 'Fake Item',
       assetLocators: [
         {
           url: 'https://example.com/asset/1.jpg',
@@ -128,6 +129,7 @@ describe('RepositoryAdapter', () => {
       repository: 'gallica',
       identifiers: [{ type: 'ark', value: 'ark:/12345/test' }],
       sourceUrl: 'https://example.com/test',
+      title: 'Fake Item',
       assetLocators: [{ url: 'https://example.com/asset' }],
       metadata: {} as GroundedExtraction<MuseumItemFields>,
     };

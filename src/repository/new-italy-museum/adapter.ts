@@ -230,6 +230,12 @@ export class NewItalyMuseumAdapter implements RepositoryAdapter {
       repository: this.repository,
       identifiers: [{ type: 'accession', value: dom.accession }],
       sourceUrl: pageUrl,
+      // The deterministic DOM-direct title (`#objectdesc`, falling back to
+      // `<meta name="Description">` -- see `parseMusarchItem`'s doc comment).
+      // `parseMusarchItem` throws if both are empty, so `dom.description` is
+      // always a non-empty string here -- distinct from the OPTIONAL,
+      // LLM-grounded `metadata.description` below.
+      title: dom.description,
       assetLocators,
       metadata,
     };
