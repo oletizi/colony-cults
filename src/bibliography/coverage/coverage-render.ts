@@ -1,5 +1,5 @@
 import type {
-  CampaignCoverage,
+  WorkBundleCoverage,
   CoverageRegister,
   CoverageReport,
   CoverageSearchHistory,
@@ -16,7 +16,7 @@ import type {
  * - INV-2: an unknown gap/denominator renders as the literal `unknown`, never
  *   a blank, `0`, or a percentage.
  *
- * Every section prints its per-row detail (per-campaign counts, evidence
+ * Every section prints its per-row detail (per-work-bundle counts, evidence
  * distribution, the register with its ungrouped bucket + suspected sub-listing,
  * and the search-history matrix + repository rollup), and empty sections print
  * `(none)` cleanly.
@@ -41,24 +41,24 @@ function renderCountable(value: number | 'unknown'): string {
   return typeof value === 'number' ? String(value) : value;
 }
 
-function renderPerCampaign(perCampaign: CampaignCoverage[], lines: string[]): void {
-  lines.push('Per-campaign counts:');
-  if (perCampaign.length === 0) {
+function renderPerWorkBundle(perWorkBundle: WorkBundleCoverage[], lines: string[]): void {
+  lines.push('Per-work-bundle counts:');
+  if (perWorkBundle.length === 0) {
     lines.push(`  ${NONE}`);
     return;
   }
-  for (const campaign of perCampaign) {
-    lines.push(`  Campaign ${campaign.campaign}`);
+  for (const workBundle of perWorkBundle) {
+    lines.push(`  work-bundle ${workBundle.workBundle}`);
     const members =
-      campaign.membersByLifecycleState.length === 0
+      workBundle.membersByLifecycleState.length === 0
         ? NONE
-        : campaign.membersByLifecycleState
+        : workBundle.membersByLifecycleState
             .map((bucket) => `${bucket.state} ${bucket.count}`)
             .join(' | ');
-    lines.push(`    members: ${members}   (actual works: ${campaign.actualMemberCount})`);
+    lines.push(`    members: ${members}   (actual works: ${workBundle.actualMemberCount})`);
     lines.push(
-      `    believed extent (knownMemberCount): ${renderCountable(campaign.knownMemberCount)}` +
-        `        gap: ${renderCountable(campaign.gap)}`,
+      `    believed extent (knownMemberCount): ${renderCountable(workBundle.knownMemberCount)}` +
+        `        gap: ${renderCountable(workBundle.gap)}`,
     );
   }
 }
@@ -92,15 +92,15 @@ function renderSuspectedEntry(entry: RegisterEntry): string {
   return `- ${entry.description ?? ''}${basisSuffix(entry)}`;
 }
 
-/** References (only) grouped by campaign, then the ungrouped "[no campaign]" bucket. */
+/** References (only) grouped by work-bundle, then the ungrouped "[no work-bundle]" bucket. */
 function renderReferences(register: CoverageRegister, lines: string[]): void {
   lines.push('Unresolved references:');
 
-  if (register.byCampaign.length === 0) {
+  if (register.byWorkBundle.length === 0) {
     lines.push(`  ${NONE}`);
   } else {
-    for (const bucket of register.byCampaign) {
-      lines.push(`  ${bucket.campaign}:`);
+    for (const bucket of register.byWorkBundle) {
+      lines.push(`  ${bucket.workBundle}:`);
       const references = bucket.entries.filter((entry) => entry.kind === 'reference');
       if (references.length === 0) {
         lines.push(`    ${NONE}`);
@@ -112,7 +112,7 @@ function renderReferences(register: CoverageRegister, lines: string[]): void {
     }
   }
 
-  lines.push('  [no campaign]:');
+  lines.push('  [no work-bundle]:');
   if (register.ungrouped.length === 0) {
     lines.push(`    ${NONE}`);
   } else {
@@ -122,12 +122,12 @@ function renderReferences(register: CoverageRegister, lines: string[]): void {
   }
 }
 
-/** The suspected-gaps sub-listing, grouped by campaign (only campaigns that have any). */
+/** The suspected-gaps sub-listing, grouped by work-bundle (only those that have any). */
 function renderSuspected(register: CoverageRegister, lines: string[]): void {
   lines.push('  suspected:');
-  const withSuspected = register.byCampaign
+  const withSuspected = register.byWorkBundle
     .map((bucket) => ({
-      campaign: bucket.campaign,
+      workBundle: bucket.workBundle,
       entries: bucket.entries.filter((entry) => entry.kind === 'suspected'),
     }))
     .filter((bucket) => bucket.entries.length > 0);
@@ -137,7 +137,7 @@ function renderSuspected(register: CoverageRegister, lines: string[]): void {
     return;
   }
   for (const bucket of withSuspected) {
-    lines.push(`    ${bucket.campaign}:`);
+    lines.push(`    ${bucket.workBundle}:`);
     for (const entry of bucket.entries) {
       lines.push(`      ${renderSuspectedEntry(entry)}`);
     }
@@ -189,7 +189,7 @@ function renderSearchHistory(history: CoverageSearchHistory, lines: string[]): v
 /** The human-readable shell: every section header, cleanly empty when there is no data. */
 function renderText(report: CoverageReport): string {
   const lines: string[] = [];
-  renderPerCampaign(report.perCampaign, lines);
+  renderPerWorkBundle(report.perWorkBundle, lines);
   renderEvidenceClasses(report.evidenceClassDistribution, lines);
   renderRegister(report.register, lines);
   renderSearchHistory(report.searchHistory, lines);

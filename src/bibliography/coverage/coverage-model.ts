@@ -25,9 +25,9 @@ import { buildSearchHistory } from '@/bibliography/coverage/coverage-history';
  * per RepositoryRecord: a work held at N archives contributes 1 to lifecycle
  * counts (data-model.md § Per-work counting rule, INV-3).
  */
-export interface CampaignCoverage {
-  /** The source-group `sourceId` this roll-up is for. */
-  campaign: string;
+export interface WorkBundleCoverage {
+  /** The source-group (`work-bundle`) `sourceId` this roll-up is for. */
+  workBundle: string;
   /**
    * Member works bucketed by their own lifecycle state; `'unset'` collects
    * members with no authored `status`. Per work, not per copy.
@@ -91,11 +91,11 @@ export interface ScopeCoverage {
   measuredClosure: 'closed' | 'open';
 }
 
-/** The unresolved-references register, grouped by campaign + an ungrouped bucket. */
+/** The unresolved-references register, grouped by work-bundle + an ungrouped bucket. */
 export interface CoverageRegister {
-  /** Unresolved references + suspected gaps grouped by owning campaign. */
-  byCampaign: { campaign: string; entries: RegisterEntry[] }[];
-  /** References on sources with no `partOf` ("no campaign"). */
+  /** Unresolved references + suspected gaps grouped by owning work-bundle. */
+  byWorkBundle: { workBundle: string; entries: RegisterEntry[] }[];
+  /** References on sources with no `partOf` ("no work-bundle"). */
   ungrouped: RegisterEntry[];
 }
 
@@ -115,8 +115,8 @@ export interface CoverageSearchHistory {
  * byte-deterministic (contract INV / Deterministic requirement).
  */
 export interface CoverageReport {
-  /** One entry per source-group. */
-  perCampaign: CampaignCoverage[];
+  /** One entry per source-group (work-bundle). */
+  perWorkBundle: WorkBundleCoverage[];
   /** Corpus-wide evidence-class counts, plus an `'unclassified'` bucket. */
   evidenceClassDistribution: { class: EvidenceClass | 'unclassified'; count: number }[];
   /** The unresolved-references register. */
@@ -151,8 +151,8 @@ export interface CoverageInput {
   threadIds?: ReadonlySet<string>;
 }
 
-/** True for a loaded source that is a source-group (a campaign). */
-function isCampaign(loaded: LoadedSource): boolean {
+/** True for a loaded source that is a source-group (a work-bundle). */
+function isWorkBundle(loaded: LoadedSource): boolean {
   return loaded.source.kind === 'source-group';
 }
 
@@ -167,12 +167,12 @@ function isCampaign(loaded: LoadedSource): boolean {
  * `'unknown'` when absent); `gap` is the difference when a number is known, else
  * the literal `'unknown'` (never `0` -- INV-2).
  */
-function buildCampaignCoverage(
+function buildWorkBundleCoverage(
   group: LoadedSource,
   sources: readonly LoadedSource[],
-): CampaignCoverage {
-  const campaign = group.source.sourceId;
-  const members = sources.filter((loaded) => loaded.source.partOf === campaign);
+): WorkBundleCoverage {
+  const workBundle = group.source.sourceId;
+  const members = sources.filter((loaded) => loaded.source.partOf === workBundle);
 
   const counts = new Map<SourceLifecycleStatus | 'unset', number>();
   for (const member of members) {
@@ -187,7 +187,7 @@ function buildCampaignCoverage(
   const knownMemberCount = group.source.knownMemberCount ?? 'unknown';
   const gap = typeof knownMemberCount === 'number' ? knownMemberCount - actualMemberCount : 'unknown';
 
-  return { campaign, membersByLifecycleState, actualMemberCount, knownMemberCount, gap };
+  return { workBundle, membersByLifecycleState, actualMemberCount, knownMemberCount, gap };
 }
 
 /**
@@ -248,7 +248,7 @@ function resolveSearchScopes(input: CoverageInput): void {
  * ref never silently survives into the report. An empty corpus + empty search
  * log still yields an all-empty report (no scope to resolve, no throw).
  *
- * Orchestrates the per-section builders -- per-campaign counts + evidence
+ * Orchestrates the per-section builders -- per-work-bundle counts + evidence
  * distribution here, the register in `@/bibliography/coverage/coverage-register`
  * and the search history in `@/bibliography/coverage/coverage-history` -- into
  * the fixed key order the `--json` renderer relies on for byte determinism.
@@ -256,14 +256,14 @@ function resolveSearchScopes(input: CoverageInput): void {
 export function buildCoverageReport(input: CoverageInput): CoverageReport {
   resolveSearchScopes(input);
 
-  const campaigns = input.sources.filter(isCampaign);
+  const workBundles = input.sources.filter(isWorkBundle);
 
-  const perCampaign: CampaignCoverage[] = campaigns.map((group) =>
-    buildCampaignCoverage(group, input.sources),
+  const perWorkBundle: WorkBundleCoverage[] = workBundles.map((group) =>
+    buildWorkBundleCoverage(group, input.sources),
   );
   const evidenceClassDistribution = buildEvidenceDistribution(input.sources);
-  const register: CoverageRegister = buildRegister(input.sources, campaigns);
+  const register: CoverageRegister = buildRegister(input.sources, workBundles);
   const searchHistory: CoverageSearchHistory = buildSearchHistory(input.searchLog);
 
-  return { perCampaign, evidenceClassDistribution, register, searchHistory };
+  return { perWorkBundle, evidenceClassDistribution, register, searchHistory };
 }

@@ -22,7 +22,7 @@ import { resolveConfig } from '@/browser/config';
 
 import BaseLayout from '@site/layouts/BaseLayout.astro';
 import Masthead from '@site/components/Masthead.astro';
-import CampaignCoverage from '@site/components/coverage/CampaignCoverage.astro';
+import WorkBundleCoverage from '@site/components/coverage/WorkBundleCoverage.astro';
 import EvidenceDistribution from '@site/components/coverage/EvidenceDistribution.astro';
 import ReferenceRegister from '@site/components/coverage/ReferenceRegister.astro';
 import SearchHistory from '@site/components/coverage/SearchHistory.astro';
@@ -48,7 +48,7 @@ for (const loaded of loadAllSources(path.join(repoRoot, 'bibliography', 'sources
 }
 
 // Reading pages are exactly the corpus-browser sources. Link only to those (T010)
-// -- source-group / campaign ids are not in this set, so they render plain.
+// -- source-group / work-bundle ids are not in this set, so they render plain.
 const linkable = new Set(loadCorpus(resolveConfig()).corpus.sources.map((s) => s.sourceId));
 
 const labelFor = (id: string): { title?: string; href?: string } => ({
@@ -80,7 +80,7 @@ const labelFor = (id: string): { title?: string; href?: string } => ({
       </p>
     </header>
 
-    <CampaignCoverage campaigns={report.perCampaign} labelFor={labelFor} />
+    <WorkBundleCoverage workBundles={report.perWorkBundle} labelFor={labelFor} />
     <EvidenceDistribution distribution={report.evidenceClassDistribution} />
     <ReferenceRegister register={report.register} labelFor={labelFor} />
     <SearchHistory history={report.searchHistory} />

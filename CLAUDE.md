@@ -1,5 +1,5 @@
 <!-- SPECKIT START -->
-Active plan: specs/010-corpus-model-coherence/plan.md
+Active plan: specs/009-corpus-gap-closure/plan.md
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the active plan above.
 <!-- SPECKIT END -->

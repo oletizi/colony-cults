@@ -10,4 +10,8 @@ rights:
 titles:
   - text: French trial and legal proceedings relating to the Marquis de Rays
     role: canonical
+suspected:
+  - description: "The official French court decisions in the de Rays fraud prosecution: the first-instance jugement (tribunal correctionnel de la Seine, 8e chambre, 1884) and the Cour de Paris appeal arret (Chambre des appels de police correctionnelle, 14 May 1884), plus the Cour de cassation decision confirming conviction."
+    basis: "Distinct from the published PLEADINGS the bundle already holds/knows (PB-P008 Las Cases pleading; PB-P012 Vermont plaidoiries): these are the courts' own decisions. The chronology (Seine 1884 conviction -> Paris appeal rejected 14 May 1884 -> cassation) is attested in the secondary literature and press. Such decisions are recorded in the contemporary legal serials -- Gazette des Tribunaux, Gazette du Palais (jurisprudence et legislation), Recueil Dalloz, and the Bulletin des arrets de la Cour de cassation rendus en matiere criminelle (all digitized on Gallica) -- rather than as standalone monographs; locating the specific de Rays issues/entries within those serial runs is the open inventory step (SRCH-0002)."
+    evidenceClass: trial-record
 notes: "Years: 1880s | Access: archives/public domain | Public domain: likely | Core source for the fraud prosecution and official findings."

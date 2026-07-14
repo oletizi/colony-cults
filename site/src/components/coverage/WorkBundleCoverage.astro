@@ -1,6 +1,6 @@
 ---
 /**
- * T005 -- the `/coverage` page's first section: per source-group ("campaign")
+ * T005 -- the `/coverage` page's first section: per source-group ("work-bundle")
  * coverage roll-ups. Each card echoes the landing's `.entry` (white bg, hairline
  * `--rule` border, subtle shadow) and carries the page's SIGNATURE, "the stamped
  * gap": oxide (`--oxide`, the archive's critical-marks-only hand) is spent ONLY
@@ -11,10 +11,10 @@
  * NO percentage, ratio, or progress bar renders here (design non-negotiable):
  * every gap is a count or the literal word `unknown`.
  */
-import type { CampaignCoverage } from '@/bibliography/coverage/coverage-model';
+import type { WorkBundleCoverage } from '@/bibliography/coverage/coverage-model';
 
 interface Props {
-  campaigns: CampaignCoverage[];
+  workBundles: WorkBundleCoverage[];
   /**
    * Resolves a source-group id to its display title and (optionally) a
    * reading-page href. In US1 no href is supplied, so ids render as plain text;
@@ -24,7 +24,7 @@ interface Props {
   labelFor: (sourceId: string) => { title?: string; href?: string };
 }
 
-const { campaigns, labelFor } = Astro.props;
+const { workBundles, labelFor } = Astro.props;
 
 /**
  * Humanize a lifecycle-state key for display: authored states are hyphenated
@@ -34,34 +34,34 @@ const { campaigns, labelFor } = Astro.props;
  */
 const humanizeState = (state: string): string => state.replace(/-/g, ' ');
 
-const campaignNoun = campaigns.length === 1 ? 'campaign' : 'campaigns';
+const workBundleNoun = workBundles.length === 1 ? 'work-bundle' : 'work-bundles';
 
 // Resolve each card's display shell once (title + optional link) so the template
 // stays declarative and the id-vs-title fallback lives in one place.
-const cards = campaigns.map((coverage) => {
-  const resolved = labelFor(coverage.campaign);
+const cards = workBundles.map((coverage) => {
+  const resolved = labelFor(coverage.workBundle);
   return {
     coverage,
-    title: resolved.title ?? coverage.campaign,
+    title: resolved.title ?? coverage.workBundle,
     href: resolved.href,
   };
 });
 ---
 
 <section class="sec">
-  <p class="sec__label">Campaign coverage <span class="sec__count">{campaigns.length} {campaignNoun}</span></p>
+  <p class="sec__label">Work-bundle coverage <span class="sec__count">{workBundles.length} {workBundleNoun}</span></p>
 
-  {campaigns.length === 0 ? (
-    <p class="empty">No campaigns defined yet.</p>
+  {workBundles.length === 0 ? (
+    <p class="empty">No work-bundles defined yet.</p>
   ) : (
     cards.map(({ coverage, title, href }) => (
       <article class="camp">
         <div class="camp__head">
           <h2 class="camp__title">{title}</h2>
           {href ? (
-            <a class="camp__id camp__id--link" href={href}>{coverage.campaign}</a>
+            <a class="camp__id camp__id--link" href={href}>{coverage.workBundle}</a>
           ) : (
-            <span class="camp__id">{coverage.campaign}</span>
+            <span class="camp__id">{coverage.workBundle}</span>
           )}
         </div>
 
@@ -144,7 +144,7 @@ const cards = campaigns.map((coverage) => {
     color: var(--ink);
   }
 
-  /* One card per campaign -- the landing `.entry` shell (white leaf, hairline
+  /* One card per work-bundle -- the landing `.entry` shell (white leaf, hairline
      border, subtle lift). */
   .camp {
     padding: 22px 24px 18px;

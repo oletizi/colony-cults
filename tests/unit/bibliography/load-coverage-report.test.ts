@@ -35,16 +35,16 @@ afterEach(() => {
 });
 
 describe('loadCoverageReport: happy path over the committed bibliography', () => {
-  it('returns a well-formed CoverageReport including the live PB-P004 campaign', () => {
+  it('returns a well-formed CoverageReport including the live PB-P004 work-bundle', () => {
     const report = loadCoverageReport();
 
-    expect(report).toHaveProperty('perCampaign');
+    expect(report).toHaveProperty('perWorkBundle');
     expect(report).toHaveProperty('evidenceClassDistribution');
     expect(report).toHaveProperty('register');
     expect(report).toHaveProperty('searchHistory');
-    expect(Array.isArray(report.perCampaign)).toBe(true);
+    expect(Array.isArray(report.perWorkBundle)).toBe(true);
 
-    const pb004 = report.perCampaign.find((campaign) => campaign.campaign === 'PB-P004');
+    const pb004 = report.perWorkBundle.find((wb) => wb.workBundle === 'PB-P004');
     expect(pb004).toBeDefined();
   });
 });

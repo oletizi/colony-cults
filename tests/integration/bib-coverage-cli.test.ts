@@ -51,7 +51,7 @@ describe('bib coverage CLI', () => {
     expect(logSpy).toHaveBeenCalledTimes(1);
     const printed = String(logSpy.mock.calls[0]?.[0]);
     expect(printed.length).toBeGreaterThan(0);
-    expect(printed).toContain('Per-campaign counts:');
+    expect(printed).toContain('Per-work-bundle counts:');
   });
 
   it('prints valid, non-empty JSON with --json and exits 0', async () => {
@@ -61,7 +61,7 @@ describe('bib coverage CLI', () => {
     const printed = String(logSpy.mock.calls[0]?.[0]);
     const parsed: unknown = JSON.parse(printed);
     expect(parsed).toMatchObject({
-      perCampaign: expect.any(Array),
+      perWorkBundle: expect.any(Array),
       evidenceClassDistribution: expect.any(Array),
       register: expect.any(Object),
       searchHistory: expect.any(Object),
@@ -86,7 +86,7 @@ describe('bib coverage CLI', () => {
     const exitCode = await runCoverageCli([]);
     expect(exitCode).toBe(0);
     const printed = String(logSpy.mock.calls[0]?.[0]);
-    // The real corpus campaign (PB-P004) has no authored knownMemberCount -> unknown.
+    // The real corpus work-bundle (PB-P004) has no authored knownMemberCount -> unknown.
     expect(printed).toContain('unknown');
     expect(printed).toContain('gap: unknown');
     // INV-1: no coverage percentage anywhere in the human-readable report.
@@ -99,10 +99,10 @@ describe('bib coverage CLI', () => {
     const printed = String(logSpy.mock.calls[0]?.[0]);
     expect(printed).not.toContain('%');
     const parsed = JSON.parse(printed) as {
-      perCampaign: { campaign: string; actualMemberCount: number; gap: number | 'unknown' }[];
+      perWorkBundle: { workBundle: string; actualMemberCount: number; gap: number | 'unknown' }[];
     };
     // Real corpus source-group PB-P004 has five members (per-work), extent unknown.
-    const pb004 = parsed.perCampaign.find((c) => c.campaign === 'PB-P004');
+    const pb004 = parsed.perWorkBundle.find((c) => c.workBundle === 'PB-P004');
     expect(pb004?.actualMemberCount).toBe(5);
     expect(pb004?.gap).toBe('unknown');
   });

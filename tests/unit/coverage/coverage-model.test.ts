@@ -2,14 +2,14 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { buildCoverageReport } from '@/bibliography/coverage/coverage-model';
-import type { CampaignCoverage, CoverageInput } from '@/bibliography/coverage/coverage-model';
+import type { WorkBundleCoverage, CoverageInput } from '@/bibliography/coverage/coverage-model';
 import { renderCoverage } from '@/bibliography/coverage/coverage-render';
 import { loadAllSources } from '@/bibliography/load';
 import { loadSearchLog } from '@/bibliography/search-log';
 
 /**
  * The per-section computation over the `tests/fixtures/coverage` fixture
- * (T008/T010 per-campaign + per-work counting, T014/T016/T019 register,
+ * (T008/T010 per-work-bundle + per-work counting, T014/T016/T019 register,
  * T028 distribution, T025 search history, T022 gap semantics, T012
  * determinism). The fixture is loaded via the REAL loaders so these tests
  * exercise the same shapes the CLI passes in.
@@ -23,17 +23,17 @@ function loadFixtureInput(): CoverageInput {
   return { sources, searchLog };
 }
 
-function campaign(id: string): CampaignCoverage {
-  const found = buildCoverageReport(loadFixtureInput()).perCampaign.find((c) => c.campaign === id);
+function workBundle(id: string): WorkBundleCoverage {
+  const found = buildCoverageReport(loadFixtureInput()).perWorkBundle.find((c) => c.workBundle === id);
   if (found === undefined) {
-    throw new Error(`fixture is missing expected campaign ${id}`);
+    throw new Error(`fixture is missing expected work-bundle ${id}`);
   }
   return found;
 }
 
-describe('T008/T010 per-campaign lifecycle counts (per work, FR-014)', () => {
+describe('T008/T010 per-work-bundle lifecycle counts (per work, FR-014)', () => {
   it('buckets PB-P001 members by their own lifecycle state', () => {
-    const pb001 = campaign('PB-P001');
+    const pb001 = workBundle('PB-P001');
     // PB-P003 discovered, PB-P004 approved-for-acquisition, PB-P005 excluded.
     expect(pb001.membersByLifecycleState).toEqual([
       { state: 'approved-for-acquisition', count: 1 },
@@ -43,7 +43,7 @@ describe('T008/T010 per-campaign lifecycle counts (per work, FR-014)', () => {
   });
 
   it('counts a multi-archive member (PB-P004, two repositoryRecords) exactly ONCE (INV-3)', () => {
-    const pb001 = campaign('PB-P001');
+    const pb001 = workBundle('PB-P001');
     // actualMemberCount is a WORK count: 3 member Sources, not 4 copies.
     expect(pb001.actualMemberCount).toBe(3);
     const approved = pb001.membersByLifecycleState.find(
@@ -56,25 +56,25 @@ describe('T008/T010 per-campaign lifecycle counts (per work, FR-014)', () => {
   });
 
   it('sorts lifecycle buckets deterministically by state name', () => {
-    const states = campaign('PB-P001').membersByLifecycleState.map((b) => b.state);
+    const states = workBundle('PB-P001').membersByLifecycleState.map((b) => b.state);
     expect(states).toEqual([...states].sort((a, b) => a.localeCompare(b)));
   });
 });
 
 describe('T022 gap semantics (knownMemberCount vs derived actual)', () => {
   it('renders a numeric gap when knownMemberCount is a number', () => {
-    const pb001 = campaign('PB-P001');
+    const pb001 = workBundle('PB-P001');
     expect(pb001.knownMemberCount).toBe(3);
     expect(pb001.gap).toBe(0); // 3 known - 3 actual
     expect(typeof pb001.gap).toBe('number');
   });
 
   it('keeps a numeric gap of 0 distinct from the literal unknown', () => {
-    const pb002 = campaign('PB-P002');
+    const pb002 = workBundle('PB-P002');
     expect(pb002.knownMemberCount).toBe('unknown');
     expect(pb002.gap).toBe('unknown');
     // Distinctness: PB-P001 gap is the NUMBER 0, PB-P002 gap is the STRING 'unknown'.
-    expect(campaign('PB-P001').gap).not.toBe('unknown');
+    expect(workBundle('PB-P001').gap).not.toBe('unknown');
   });
 
   it('renders the unknown gap as the literal word, never 0 or a percentage', () => {
@@ -114,9 +114,9 @@ describe('T028/T014/T015 evidence-class distribution (FR-011, FR-008/INV-4)', ()
 });
 
 describe('T014/T016/T019 unresolved-references register (FR-012)', () => {
-  it('groups an unresolved member reference under its campaign', () => {
+  it('groups an unresolved member reference under its work-bundle', () => {
     const report = buildCoverageReport(loadFixtureInput());
-    const pb001 = report.register.byCampaign.find((b) => b.campaign === 'PB-P001');
+    const pb001 = report.register.byWorkBundle.find((b) => b.workBundle === 'PB-P001');
     const references = pb001?.entries.filter((e) => e.kind === 'reference') ?? [];
     expect(references).toContainEqual({
       kind: 'reference',
@@ -129,7 +129,7 @@ describe('T014/T016/T019 unresolved-references register (FR-012)', () => {
   it('omits a RESOLVED reference (has resolvedTo) from the register', () => {
     const report = buildCoverageReport(loadFixtureInput());
     const everyEntry = [
-      ...report.register.byCampaign.flatMap((b) => b.entries),
+      ...report.register.byWorkBundle.flatMap((b) => b.entries),
       ...report.register.ungrouped,
     ];
     // PB-P004 + PB-P007 both cite the resolved "Prospectus"/"Campaign Prospectus" (resolvedTo PB-P008).
@@ -149,9 +149,9 @@ describe('T014/T016/T019 unresolved-references register (FR-012)', () => {
     ]);
   });
 
-  it('surfaces a suspected gap under its campaign with basis', () => {
+  it('surfaces a suspected gap under its work-bundle with basis', () => {
     const report = buildCoverageReport(loadFixtureInput());
-    const pb001 = report.register.byCampaign.find((b) => b.campaign === 'PB-P001');
+    const pb001 = report.register.byWorkBundle.find((b) => b.workBundle === 'PB-P001');
     const suspected = pb001?.entries.filter((e) => e.kind === 'suspected') ?? [];
     expect(suspected).toEqual([
       {
@@ -163,9 +163,9 @@ describe('T014/T016/T019 unresolved-references register (FR-012)', () => {
     ]);
   });
 
-  it('leaves a campaign with no unresolved refs or suspected gaps empty', () => {
+  it('leaves a work-bundle with no unresolved refs or suspected gaps empty', () => {
     const report = buildCoverageReport(loadFixtureInput());
-    const pb002 = report.register.byCampaign.find((b) => b.campaign === 'PB-P002');
+    const pb002 = report.register.byWorkBundle.find((b) => b.workBundle === 'PB-P002');
     expect(pb002?.entries).toEqual([]);
   });
 });
@@ -222,7 +222,7 @@ describe('T025/T019 search history (FR-013/FR-009): matrix keyed + labeled per r
     ]);
   });
 
-  it('rolls up each repository across all its campaigns', () => {
+  it('rolls up each repository across all its work-bundles', () => {
     const report = buildCoverageReport(loadFixtureInput());
     expect(report.searchHistory.byRepository).toEqual([
       {

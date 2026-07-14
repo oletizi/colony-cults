@@ -3,11 +3,11 @@
  * T007 -- the unresolved-references section of `/coverage`. The archive's
  * standing account of the works it knows it does NOT hold: references cited in
  * the corpus but not yet located, and suspected gaps inferred from the record.
- * Rendered in the "Prospectus / Dossier" hand, grouped by owning campaign with a
- * final "No campaign" bucket for references on sources outside any group.
+ * Rendered in the "Prospectus / Dossier" hand, grouped by owning work-bundle with
+ * a final "No work-bundle" bucket for references on sources outside any group.
  *
  * The signature mark: absence is stamped in oxide (`--oxide`). A `suspected gap`
- * tag and the `No campaign` bucket heading -- the places a gap could hide -- burn
+ * tag and the `No work-bundle` bucket heading -- the places a gap could hide -- burn
  * oxide; a plain cited-but-unidentified reference stays quiet in `--faint`. The
  * cited work itself speaks in the warm `--serif` source voice; its basis and
  * owner stay in the cool apparatus voices. Owners link only when a target exists
@@ -17,33 +17,33 @@ import type { CoverageRegister } from '@/bibliography/coverage/coverage-model';
 
 interface Props {
   register: CoverageRegister;
-  /** Resolve a source/campaign id to its display title and (optional) href. */
+  /** Resolve a source/work-bundle id to its display title and (optional) href. */
   labelFor: (sourceId: string) => { title?: string; href?: string };
 }
 
 const { register, labelFor } = Astro.props;
 
-// "N open" -- every unresolved entry across both axes, campaign-grouped + loose.
+// "N open" -- every unresolved entry across both axes, work-bundle-grouped + loose.
 const totalOpen =
-  register.byCampaign.reduce((sum, group) => sum + group.entries.length, 0) +
+  register.byWorkBundle.reduce((sum, group) => sum + group.entries.length, 0) +
   register.ungrouped.length;
 
-// One flat list of renderable groups: campaign groups (title, then · id) that
-// actually carry entries, then the ungrouped bucket under the oxide "No campaign"
+// One flat list of renderable groups: work-bundle groups (title, then · id) that
+// actually carry entries, then the ungrouped bucket under the oxide "No work-bundle"
 // heading -- omitted entirely when empty so no bare heading is left behind.
 const groups = [
-  ...register.byCampaign
+  ...register.byWorkBundle
     .filter((group) => group.entries.length > 0)
     .map((group) => {
-      const title = labelFor(group.campaign).title;
+      const title = labelFor(group.workBundle).title;
       return {
-        heading: title === undefined ? group.campaign : `${title} · ${group.campaign}`,
+        heading: title === undefined ? group.workBundle : `${title} · ${group.workBundle}`,
         isNone: false,
         entries: group.entries,
       };
     }),
   ...(register.ungrouped.length > 0
-    ? [{ heading: 'No campaign', isNone: true, entries: register.ungrouped }]
+    ? [{ heading: 'No work-bundle', isNone: true, entries: register.ungrouped }]
     : []),
 ];
 ---

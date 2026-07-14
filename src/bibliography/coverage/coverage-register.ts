@@ -11,8 +11,8 @@ import type { CoverageRegister, RegisterEntry } from '@/bibliography/coverage/co
  *   omitted.
  * - Every `suspected[]` entry on a source-group contributes one
  *   `kind: 'suspected'` entry, owned by the group.
- * - References + suspected are grouped by campaign (a member via `partOf`, or the
- *   group `Source` itself). References on a `Source` with NO campaign (no
+ * - References + suspected are grouped by work-bundle (a member via `partOf`, or
+ *   the group `Source` itself). References on a `Source` with NO work-bundle (no
  *   `partOf` and not itself a group) fall into the explicit `ungrouped` bucket so
  *   no known gap is silently dropped.
  */
@@ -45,34 +45,34 @@ function suspectedEntries(group: LoadedSource): RegisterEntry[] {
   }));
 }
 
-/** True when `loaded` belongs to campaign `campaignId` (a member, or the group itself). */
-function belongsToCampaign(loaded: LoadedSource, campaignId: string): boolean {
-  return loaded.source.partOf === campaignId || loaded.source.sourceId === campaignId;
+/** True when `loaded` belongs to work-bundle `workBundleId` (a member, or the group itself). */
+function belongsToWorkBundle(loaded: LoadedSource, workBundleId: string): boolean {
+  return loaded.source.partOf === workBundleId || loaded.source.sourceId === workBundleId;
 }
 
-/** True when `loaded` has no campaign at all (no `partOf` and not itself a group). */
-function hasNoCampaign(loaded: LoadedSource): boolean {
+/** True when `loaded` has no work-bundle at all (no `partOf` and not itself a group). */
+function hasNoWorkBundle(loaded: LoadedSource): boolean {
   return loaded.source.partOf === undefined && loaded.source.kind !== 'source-group';
 }
 
 /**
  * Build the {@link CoverageRegister}. `sources` is iterated in its given
- * (sorted) order throughout, so the output is deterministic. Within a campaign,
+ * (sorted) order throughout, so the output is deterministic. Within a work-bundle,
  * unresolved references (in source order) precede the group's suspected gaps.
  */
 export function buildRegister(
   sources: readonly LoadedSource[],
-  campaigns: readonly LoadedSource[],
+  workBundles: readonly LoadedSource[],
 ): CoverageRegister {
-  const byCampaign = campaigns.map((group) => {
-    const campaignId = group.source.sourceId;
-    const members = sources.filter((loaded) => belongsToCampaign(loaded, campaignId));
+  const byWorkBundle = workBundles.map((group) => {
+    const workBundleId = group.source.sourceId;
+    const members = sources.filter((loaded) => belongsToWorkBundle(loaded, workBundleId));
     const references = members.flatMap(unresolvedReferenceEntries);
     const suspected = suspectedEntries(group);
-    return { campaign: campaignId, entries: [...references, ...suspected] };
+    return { workBundle: workBundleId, entries: [...references, ...suspected] };
   });
 
-  const ungrouped = sources.filter(hasNoCampaign).flatMap(unresolvedReferenceEntries);
+  const ungrouped = sources.filter(hasNoWorkBundle).flatMap(unresolvedReferenceEntries);
 
-  return { byCampaign, ungrouped };
+  return { byWorkBundle, ungrouped };
 }
