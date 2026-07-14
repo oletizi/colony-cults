@@ -11,3 +11,4 @@ export type {
   AcquisitionResult,
   RepositoryAdapter,
 } from '@/repository/adapter';
+export { RepositoryAdapterRegistry } from '@/repository/registry';
