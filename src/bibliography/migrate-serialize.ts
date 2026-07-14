@@ -2,7 +2,7 @@ import { stringify } from 'yaml';
 
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import type { Publication } from '@/model/publication';
-import type { Reference, Source, SuspectedGap } from '@/model/source';
+import type { LeadResolution, Reference, Source, SuspectedGap } from '@/model/source';
 
 /**
  * One migrated Source together with its authored Repository Records, ready to
@@ -154,6 +154,44 @@ function orderedReference(reference: Reference): Record<string, unknown> {
 }
 
 /**
+ * Build one `resolution`'s on-disk object in a FIXED key order (`state` first,
+ * then its state-specific fields), mirroring {@link orderedRecord}'s pattern.
+ * Each branch emits exactly the fields {@link LeadResolution} carries for that
+ * `state` -- nothing fabricated, nothing dropped, so a resolution round-trips
+ * unchanged through load -> serialize (specs/011 § SuspectedLead.resolution).
+ */
+function orderedResolution(resolution: LeadResolution): Record<string, unknown> {
+  switch (resolution.state) {
+    case 'unexamined':
+      return { state: resolution.state };
+    case 'identified':
+      return {
+        state: resolution.state,
+        candidate: resolution.candidate,
+        resolvedAt: resolution.resolvedAt,
+      };
+    case 'inventoried':
+      return {
+        state: resolution.state,
+        sourceId: resolution.sourceId,
+        resolvedAt: resolution.resolvedAt,
+      };
+    case 'excluded':
+      return {
+        state: resolution.state,
+        reason: resolution.reason,
+        resolvedAt: resolution.resolvedAt,
+      };
+    case 'unavailable':
+      return {
+        state: resolution.state,
+        reason: resolution.reason,
+        resolvedAt: resolution.resolvedAt,
+      };
+  }
+}
+
+/**
  * Build one `suspected[]` gap (a group-only inferred, uncited gap) in a FIXED
  * key order, omitting absent optionals. Preserves input array order.
  */
@@ -167,6 +205,9 @@ function orderedSuspected(gap: SuspectedGap): Record<string, unknown> {
   }
   if (gap.notes !== undefined) {
     out.notes = gap.notes;
+  }
+  if (gap.resolution !== undefined) {
+    out.resolution = orderedResolution(gap.resolution);
   }
   return out;
 }

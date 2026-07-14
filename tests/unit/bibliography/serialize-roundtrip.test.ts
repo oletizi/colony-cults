@@ -37,6 +37,15 @@ describe('serializeSource round-trip of previously-dropped fields', () => {
         description: 'a suspected pre-discovery gap',
         basis: 'inferred from survivor testimony',
       },
+      {
+        description: 'a suspected work with a recorded resolution',
+        basis: 'trial testimony references an appeal not yet located',
+        resolution: {
+          state: 'identified',
+          candidate: 'Trove: The Vagabond, 3 May 1883',
+          resolvedAt: '2026-07-01',
+        },
+      },
     ],
     titles: [{ text: 'Test source-group', role: 'canonical' }],
     identifiers: [],
@@ -56,9 +65,15 @@ describe('serializeSource round-trip of previously-dropped fields', () => {
       expect(reloaded.references).toHaveLength(1);
       expect(reloaded.references?.[0].citedAs).toBe('Some advertised journal');
       expect(reloaded.references?.[0].citedKind).toBe('journal');
-      expect(reloaded.suspected).toHaveLength(1);
+      expect(reloaded.suspected).toHaveLength(2);
       expect(reloaded.suspected?.[0].description).toBe('a suspected pre-discovery gap');
       expect(reloaded.suspected?.[0].basis).toBe('inferred from survivor testimony');
+      expect(reloaded.suspected?.[0].resolution).toBeUndefined();
+      expect(reloaded.suspected?.[1].resolution).toEqual({
+        state: 'identified',
+        candidate: 'Trove: The Vagabond, 3 May 1883',
+        resolvedAt: '2026-07-01',
+      });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

@@ -195,4 +195,33 @@ export interface SuspectedGap {
   evidenceClass?: EvidenceClass;
   /** Free-text notes. */
   notes?: string;
+  /**
+   * The disposition of this lead (specs/011 § SuspectedLead.resolution), as a
+   * discriminated union keyed on `state` -- illegal combinations (e.g. an
+   * `identified` lead with no `candidate`) are unrepresentable in the type,
+   * not merely rejected at runtime. Absent means the lead has not been
+   * dispositioned; by convention that is treated as `unexamined`, but an
+   * absent `resolution` is never fabricated into an explicit `{ state:
+   * 'unexamined' }` object on load -- see `@/bibliography/load-coverage-fields`.
+   */
+  resolution?: LeadResolution;
 }
+
+/**
+ * The disposition of a {@link SuspectedGap} lead (specs/011 § SuspectedLead.
+ * resolution). A discriminated union keyed on `state`: each state carries
+ * exactly the fields it needs, so e.g. an `excluded` lead without a `reason`
+ * cannot be constructed -- illegal states are unrepresentable, not just
+ * rejected by the loader. `unexamined` is the initial/default disposition (no
+ * extra fields); `identified` records a candidate repository reference found
+ * but not yet inventoried as a Source; `inventoried` records the `sourceId`
+ * the lead resolved to once a Source was authored for it; `excluded` and
+ * `unavailable` are both terminal-with-reason dead ends (excluded: judged not
+ * worth pursuing; unavailable: pursued but could not be obtained).
+ */
+export type LeadResolution =
+  | { state: 'unexamined' }
+  | { state: 'identified'; candidate: string; resolvedAt: string }
+  | { state: 'inventoried'; sourceId: string; resolvedAt: string }
+  | { state: 'excluded'; reason: string; resolvedAt: string }
+  | { state: 'unavailable'; reason: string; resolvedAt: string };

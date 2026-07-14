@@ -141,6 +141,39 @@ export const SCOPE_KIND_VALUES = ['case', 'thread', 'work-bundle', 'work'] as co
 export type ScopeKind = (typeof SCOPE_KIND_VALUES)[number];
 
 /**
+ * The `state` discriminant of a `SuspectedGap.resolution`
+ * (specs/011-museum-acquisition-path § SuspectedLead.resolution): the
+ * disposition of an inferred, uncited lead. `unexamined` (no disposition
+ * recorded yet) -> `identified` (a candidate repository reference found) ->
+ * `inventoried` (resolved to a `sourceId`), or a terminal `excluded`
+ * (judged not worth pursuing) / `unavailable` (pursued but not obtainable).
+ * This tuple validates ONLY that `state` is a recognized member; each
+ * state's own required fields (`candidate`/`sourceId`/`reason`/`resolvedAt`)
+ * are checked by `@/bibliography/load-coverage-fields`'s `validateResolution`,
+ * not here -- a discriminated union's per-branch shape does not fit this
+ * module's flat closed-vocab tuples.
+ */
+export const LEAD_RESOLUTION_STATE_VALUES = [
+  'unexamined',
+  'identified',
+  'inventoried',
+  'excluded',
+  'unavailable',
+] as const;
+export type LeadResolutionState = (typeof LEAD_RESOLUTION_STATE_VALUES)[number];
+
+/**
+ * Membership test for the `LeadResolutionState` vocabulary (specs/011):
+ * `isLeadResolutionState('identified')` -> `true`;
+ * `isLeadResolutionState('resolved')` -> `false`. Use wherever a
+ * `SuspectedGap.resolution.state` value is checked (see
+ * `@/bibliography/load-coverage-fields`).
+ */
+export function isLeadResolutionState(value: string): value is LeadResolutionState {
+  return includesValue(LEAD_RESOLUTION_STATE_VALUES, value);
+}
+
+/**
  * Structural kind of a `Source` -- the role this work plays in the corpus:
  * `periodical` (serial, multiple dated issues), `monograph` (monographic textual
  * work, single dated/undated document), `archival-item` (discrete non-serial

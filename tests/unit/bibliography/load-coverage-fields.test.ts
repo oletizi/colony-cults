@@ -297,6 +297,291 @@ knownMemberCount: lots
   });
 });
 
+describe('loader: suspected[].resolution (T022 discriminated union)', () => {
+  it('parses an unexamined resolution (no extra fields)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: unexamined
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toEqual({ state: 'unexamined' });
+  });
+
+  it('parses an identified resolution (candidate + resolvedAt)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: identified
+      candidate: "Trove: The Vagabond, 3 May 1883"
+      resolvedAt: "2026-07-01"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toEqual({
+      state: 'identified',
+      candidate: 'Trove: The Vagabond, 3 May 1883',
+      resolvedAt: '2026-07-01',
+    });
+  });
+
+  it('parses an inventoried resolution (sourceId + resolvedAt)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: inventoried
+      sourceId: PB-P010
+      resolvedAt: "2026-07-02"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toEqual({
+      state: 'inventoried',
+      sourceId: 'PB-P010',
+      resolvedAt: '2026-07-02',
+    });
+  });
+
+  it('parses an excluded resolution (reason + resolvedAt)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: excluded
+      reason: "duplicate of an already-acquired issue"
+      resolvedAt: "2026-07-03"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toEqual({
+      state: 'excluded',
+      reason: 'duplicate of an already-acquired issue',
+      resolvedAt: '2026-07-03',
+    });
+  });
+
+  it('parses an unavailable resolution (reason + resolvedAt)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: unavailable
+      reason: "archive declined digitization request"
+      resolvedAt: "2026-07-04"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toEqual({
+      state: 'unavailable',
+      reason: 'archive declined digitization request',
+      resolvedAt: '2026-07-04',
+    });
+  });
+
+  it('omits resolution entirely when absent (not fabricated as unexamined)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toBeUndefined();
+  });
+
+  it('throws when resolution.state is not in the closed vocabulary', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: resolved
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(
+      /resolution\.state "resolved" is not in the LeadResolution state vocabulary/,
+    );
+  });
+
+  it('throws when an identified resolution is missing candidate', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: identified
+      resolvedAt: "2026-07-01"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/resolution\.candidate/);
+  });
+
+  it('throws when an identified resolution is missing resolvedAt', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: identified
+      candidate: "Trove: The Vagabond, 3 May 1883"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/resolution\.resolvedAt/);
+  });
+
+  it('throws when an inventoried resolution is missing sourceId', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: inventoried
+      resolvedAt: "2026-07-02"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/resolution\.sourceId/);
+  });
+
+  it('throws when an excluded resolution is missing reason', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: excluded
+      resolvedAt: "2026-07-03"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/resolution\.reason/);
+  });
+
+  it('throws when an unavailable resolution is missing reason', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: unavailable
+      resolvedAt: "2026-07-04"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/resolution\.reason/);
+  });
+
+  it('throws on an unknown key within an unexamined resolution (no silent drop)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: unexamined
+      candidate: "should not be here"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/unknown key "candidate"/);
+  });
+});
+
 describe('loader: coverage fields are optional/additive (regression)', () => {
   it('loads a source carrying none of the new fields exactly as before', () => {
     const filePath = writeSource(
