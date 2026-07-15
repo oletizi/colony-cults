@@ -7,7 +7,9 @@ import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import type { Rights } from '@/model/rights';
 import type { RepositoryAdapter } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
+import type { AcquiredAsset } from '@/model/acquired-asset';
 import { serializeSource } from '@/bibliography/migrate-serialize';
+import { loadAllSources } from '@/bibliography/load';
 import { runAcquire, type FetchSourceFn } from '@/sourcegroup/acquire';
 
 /**
@@ -123,6 +125,49 @@ function spyMuseumAdapter(): { adapter: RepositoryAdapter; calls: RepositoryReco
     },
   };
   return { adapter, calls };
+}
+
+/** A sample master mirrored to B2, as the museum adapter would return it. */
+function sampleAsset(overrides: Partial<AcquiredAsset> = {}): AcquiredAsset {
+  return {
+    sourceUrl: 'https://newitaly.org.au/CAT/000844.htm',
+    mediaType: 'image/jpeg',
+    objectStoreKey: 'archive/cases/new-italy/museum/nimi-0844/NIMI-0844.jpg',
+    checksum: 'c'.repeat(64),
+    byteLength: 987654,
+    provenancePath: 'archive/cases/new-italy/museum/nimi-0844/NIMI-0844.provenance.json',
+    role: 'front',
+    sequence: 1,
+    representationChoice: 'max-resolution',
+    ...overrides,
+  };
+}
+
+/**
+ * A museum {@link RepositoryAdapter} whose `acquire` mirrors a master and
+ * returns it as a non-empty `assets` array (unlike {@link spyMuseumAdapter},
+ * whose `acquire` returns none) -- so a test can assert `runAcquire` persists
+ * the acquired asset back onto the SSOT record (TASK-30).
+ */
+function acquiringMuseumAdapter(assets: AcquiredAsset[]): RepositoryAdapter {
+  return {
+    repository: 'new-italy-museum',
+    async resolve() {
+      throw new Error('acquiringMuseumAdapter.resolve: not used on the acquire dispatch path');
+    },
+    async collectRightsEvidence() {
+      throw new Error('acquiringMuseumAdapter.collectRightsEvidence: not used on the acquire dispatch path');
+    },
+    async acquire(record) {
+      return {
+        repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
+        assets,
+        metadataSnapshot: { raw: '', retrievedAt: '2026-07-14T00:00:00.000Z' },
+        complete: true,
+        reconciliationRequired: true,
+      };
+    },
+  };
 }
 
 async function seedSourcesDir(
@@ -395,6 +440,48 @@ describe('runAcquire', () => {
       accession: 'NIMI-0844',
       sourceArchive: 'New Italy Museum',
     });
+  });
+
+  it('TASK-30: persists the museum acquire\'s AcquiredAsset onto the SSOT record and round-trips it through load', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const asset = sampleAsset();
+    const adapter = acquiringMuseumAdapter([asset]);
+
+    await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P200',
+      fetch,
+      museumAdapter: adapter,
+    });
+
+    // Re-load the SSOT: the acquired master is now recorded on the copy, and
+    // survives serialize -> load unchanged (round-trip wiring).
+    const loaded = loadAllSources(dir);
+    const entry = loaded.find((l) => l.source.sourceId === 'PB-P200');
+    if (entry === undefined) {
+      throw new Error('test: PB-P200 not found after acquire');
+    }
+    const record = entry.records.find((r) => r.sourceArchive === 'New Italy Museum');
+    if (record === undefined) {
+      throw new Error('test: PB-P200 has no New Italy Museum record after acquire');
+    }
+    expect(record.assets).toEqual([asset]);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('TASK-30: a Gallica acquire (adapter returns no assets) records NO assets on the SSOT record', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+
+    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch });
+
+    const loaded = loadAllSources(dir);
+    const entry = loaded.find((l) => l.source.sourceId === 'PB-P100');
+    const record = entry?.records.find((r) => r.sourceArchive === 'Gallica / BnF');
+    expect(record?.assets).toBeUndefined();
   });
 
   it('T019: dispatches an ark record to Gallica even when a museum adapter is also registered', async () => {

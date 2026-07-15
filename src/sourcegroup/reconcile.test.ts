@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import type { Source } from '@/model/source';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import type { AssetProvenance } from '@/bibliography/provenance-read';
+import type { AcquiredAsset } from '@/model/acquired-asset';
+import type { ObjectStore, ObjectHead } from '@/archive/object-store';
 import { writeFile } from 'node:fs/promises';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import { loadAllSources } from '@/bibliography/load';
@@ -66,6 +68,65 @@ function authoredRecord(
     status: 'to-collect',
     identifiers: [{ type: 'ark', value: ARK }],
     ...overrides,
+  };
+}
+
+const MUSEUM_ARCHIVE = 'New Italy Museum';
+const OBJ_KEY = 'archive/cases/new-italy/museum/nimi-0844/NIMI-0844.jpg';
+const CHECKSUM = 'c'.repeat(64);
+
+/** A recorded {@link AcquiredAsset} the museum acquire persisted (TASK-30). */
+function acquiredAsset(overrides: Partial<AcquiredAsset> = {}): AcquiredAsset {
+  return {
+    sourceUrl: 'https://newitaly.org.au/CAT/000844.htm',
+    mediaType: 'image/jpeg',
+    objectStoreKey: OBJ_KEY,
+    checksum: CHECKSUM,
+    byteLength: 987654,
+    provenancePath: 'archive/cases/new-italy/museum/nimi-0844/NIMI-0844.provenance.json',
+    ...overrides,
+  };
+}
+
+/** A museum copy: carries recorded object-store `assets` (no archive provenance). */
+function museumRecord(
+  overrides: Partial<AuthoredRepositoryRecord> = {},
+): AuthoredRepositoryRecord {
+  return {
+    sourceArchive: MUSEUM_ARCHIVE,
+    status: 'to-collect',
+    identifiers: [{ type: 'accession', value: 'NIMI-0844' }],
+    assets: [acquiredAsset()],
+    ...overrides,
+  };
+}
+
+/**
+ * A fake {@link ObjectStore} whose `head` answers from an in-memory map keyed
+ * by object-store key: `'missing'` -> `{ exists: false }`, a `{ sha256 }` ->
+ * `{ exists: true, sha256 }`. `put`/`get`/`attachSha256Metadata` throw -- the
+ * reconcile museum path never calls them.
+ */
+function fakeObjectStore(entries: Record<string, { sha256?: string } | 'missing'>): ObjectStore {
+  return {
+    async head(key: string): Promise<ObjectHead> {
+      const entry = entries[key];
+      if (entry === undefined || entry === 'missing') {
+        return { exists: false };
+      }
+      return entry.sha256 === undefined
+        ? { exists: true }
+        : { exists: true, sha256: entry.sha256 };
+    },
+    async put() {
+      throw new Error('fakeObjectStore.put: not used on the reconcile museum path');
+    },
+    async get() {
+      throw new Error('fakeObjectStore.get: not used on the reconcile museum path');
+    },
+    async attachSha256Metadata() {
+      throw new Error('fakeObjectStore.attachSha256Metadata: not used on the reconcile museum path');
+    },
   };
 }
 
@@ -282,6 +343,111 @@ describe('runReconcile', () => {
     Reflect.deleteProperty(bad, 'archiveRoot');
 
     await expect(runReconcile(bad)).rejects.toThrow(/archiveRoot/i);
+    expect(gather).not.toHaveBeenCalled();
+  });
+
+  // --- Museum (pure-B2) path (TASK-30): reconcile against the object store ---
+
+  it('TASK-30: advances a museum record to archived when its recorded asset heads present with a matching checksum', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [museumRecord()] }]);
+    const store = fakeObjectStore({ [OBJ_KEY]: { sha256: CHECKSUM } });
+
+    const result = await runReconcile({
+      sourcesDir: dir,
+      sourceId: 'PB-P100',
+      objectStore: store,
+    });
+
+    expect(result.status).toBe('archived');
+    expect(result.sourceArchive).toBe(MUSEUM_ARCHIVE);
+    expect(result.pageCount).toBe(1);
+    expect(result.storedCount).toBe(1);
+    expect(result.changed).toBe(true);
+    expect(await statusOf(dir, 'PB-P100', MUSEUM_ARCHIVE)).toBe('archived');
+  });
+
+  it('TASK-30: does NOT advance a museum record when the recorded object is missing from the store', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [museumRecord()] }]);
+    const store = fakeObjectStore({}); // key absent -> head { exists: false }
+
+    const result = await runReconcile({
+      sourcesDir: dir,
+      sourceId: 'PB-P100',
+      objectStore: store,
+    });
+
+    expect(result.status).toBe('to-collect'); // unchanged, never overstated
+    expect(result.pageCount).toBe(1);
+    expect(result.storedCount).toBe(0);
+    expect(result.changed).toBe(false);
+    expect(await statusOf(dir, 'PB-P100', MUSEUM_ARCHIVE)).toBe('to-collect');
+  });
+
+  it('TASK-30: does NOT advance when only some of several recorded assets are backed', async () => {
+    const secondKey = 'archive/cases/new-italy/museum/nimi-0844/NIMI-0844-reverse.jpg';
+    const secondSum = 'e'.repeat(64);
+    dir = await seedSourcesDir([
+      {
+        source: member(),
+        records: [
+          museumRecord({
+            assets: [
+              acquiredAsset(),
+              acquiredAsset({ objectStoreKey: secondKey, checksum: secondSum, role: 'reverse' }),
+            ],
+          }),
+        ],
+      },
+    ]);
+    // Only the first master is present in the store; the reverse is missing.
+    const store = fakeObjectStore({ [OBJ_KEY]: { sha256: CHECKSUM } });
+
+    const result = await runReconcile({
+      sourcesDir: dir,
+      sourceId: 'PB-P100',
+      objectStore: store,
+    });
+
+    expect(result.status).toBe('to-collect');
+    expect(result.pageCount).toBe(2);
+    expect(result.storedCount).toBe(1);
+    expect(result.changed).toBe(false);
+  });
+
+  it('TASK-30: fails loud (writes nothing) on a checksum MISMATCH for a museum asset', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [museumRecord()] }]);
+    const store = fakeObjectStore({ [OBJ_KEY]: { sha256: 'd'.repeat(64) } });
+
+    await expect(
+      runReconcile({ sourcesDir: dir, sourceId: 'PB-P100', objectStore: store }),
+    ).rejects.toThrow(/checksum MISMATCH/i);
+    // The record is left untouched -- a wrong master is an error, not an advance.
+    expect(await statusOf(dir, 'PB-P100', MUSEUM_ARCHIVE)).toBe('to-collect');
+  });
+
+  it('TASK-30: fails loud when a museum record is reconciled without an injected object store', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [museumRecord()] }]);
+
+    await expect(
+      runReconcile({ sourcesDir: dir, sourceId: 'PB-P100' }),
+    ).rejects.toThrow(/objectStore is required/i);
+    expect(await statusOf(dir, 'PB-P100', MUSEUM_ARCHIVE)).toBe('to-collect');
+  });
+
+  it('TASK-30: the museum path needs no archiveRoot/gather (its truth is B2 + the recorded asset)', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [museumRecord()] }]);
+    const gather: GatherProvenanceFn = vi.fn(async () => []);
+    const store = fakeObjectStore({ [OBJ_KEY]: { sha256: CHECKSUM } });
+
+    // No archiveRoot passed at all; gather is injected but must never be called.
+    const result = await runReconcile({
+      sourcesDir: dir,
+      sourceId: 'PB-P100',
+      objectStore: store,
+      gather,
+    });
+
+    expect(result.status).toBe('archived');
     expect(gather).not.toHaveBeenCalled();
   });
 });

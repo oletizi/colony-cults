@@ -1,4 +1,5 @@
 import { loadAllSources } from '@/bibliography/load';
+import { writeSourceFile } from '@/bibliography/source-writer';
 import { isFetchableWork } from '@/bibliography/scope';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { RepositoryAdapterRegistry } from '@/repository/registry';
@@ -271,7 +272,27 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
     checkpoint: input.checkpoint,
     checkpointEvery: input.checkpointEvery,
   };
-  await adapter.acquire(record, ctx);
+  const acquisition = await adapter.acquire(record, ctx);
+
+  // Persist the adapter's mirrored masters back onto the SELECTED record's
+  // `assets` field in the SSOT (TASK-30, spec 011 T005/T030). The museum
+  // adapter mirrors its master to B2 and returns a non-empty `assets` array; a
+  // plain `acquire` otherwise leaves the corpus with NO record of the master,
+  // so `bib reconcile` (which for a museum copy verifies these object-store
+  // keys) has nothing to reconcile and the SSOT drifts from B2. The Gallica
+  // adapter returns `assets: []` (its masters are recorded as per-page archive
+  // provenance, reconciled by the archive-provenance path), so nothing is
+  // written and the Gallica acquire is byte-for-byte unchanged. `dryRun`
+  // acquires persist nothing either -- the adapter returns no assets when it
+  // mirrored none.
+  if (acquisition.assets.length > 0) {
+    const updatedRecords = authoredRecords.map((authored) =>
+      authored.sourceArchive === record.sourceArchive
+        ? { ...authored, assets: acquisition.assets }
+        : authored,
+    );
+    writeSourceFile(input.sourcesDir, { source, records: updatedRecords });
+  }
 
   // `adapter.acquire` succeeded, so the record carried the identifier its
   // dispatch keyed on (the registry would have thrown otherwise); read it back

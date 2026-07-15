@@ -27,9 +27,13 @@ import { HttpClient } from '@/gallica/http-client';
 import { gallicaArkIdentifierResolver } from '@/sourcegroup/gallica-ark-resolver';
 import { runAcquire } from '@/sourcegroup/acquire';
 import { buildMuseumAdapterForMember } from '@/cli/bib-acquire-museum';
-import { runReconcile } from '@/sourcegroup/reconcile';
+import { runReconcile, type ReconcileResult } from '@/sourcegroup/reconcile';
+import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { gatherProvenance } from '@/bibliography/derive';
 import { resolveArchiveRoot } from '@/archive/location';
+import { S3ObjectStore } from '@/archive/s3-object-store';
+import { resolveObjectStoreConfig } from '@/archive/b2-config';
+import type { RepositoryRecord } from '@/model/repository-record';
 import { BnfSruDiscoveryMechanism } from '@/sourcegroup/discovery/bnf-sru';
 import { DiscoveryDispatcher } from '@/sourcegroup/discovery/discovery';
 import type { DiscoveryCandidate } from '@/sourcegroup/discovery/discovery';
@@ -369,14 +373,50 @@ export function parseReconcileArgs(rest: string[]): ReconcileCliArgs {
 }
 
 /**
+ * True when `id`'s SELECTED copy carries recorded object-store `assets` -- the
+ * museum/B2 case, reconciled by verifying those assets against the object store
+ * rather than from archive provenance (TASK-30). Resilient like
+ * `buildMuseumAdapterForMember`: any load/select failure yields `false`, so the
+ * archive-provenance path runs and surfaces the real precondition error with
+ * its own message rather than this peek double-reporting it.
+ */
+function selectedCopyHasRecordedAssets(
+  sourcesDir: string,
+  id: string,
+  archive: string | undefined,
+): boolean {
+  try {
+    const loaded = loadAllSources(sourcesDir);
+    const entry = loaded.find((e) => e.source.sourceId === id);
+    if (entry === undefined) {
+      return false;
+    }
+    const candidates: RepositoryRecord[] = entry.records.map((authored) => ({
+      ...authored,
+      sourceId: entry.source.sourceId,
+    }));
+    const record = selectRepositoryRecord(candidates, archive);
+    return record.assets !== undefined && record.assets.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * `bib reconcile <id> [--archive <sourceArchive>] [--archive-root <path>]`
- * (TASK-21): fold the archive's per-page object_store provenance into the
- * member's SSOT `repositoryRecords[].status`, closing the spec/impl gap
- * TASK-20 found (contract cli-commands.md line 64). Idempotent; re-runnable on
- * members acquired out-of-band. Registers the member's archive layout first
- * (same overlay `bib acquire` needs) so `gatherProvenance`'s `sourceLayout`
- * resolves a source-group member, then delegates to the tested
- * `runReconcile`, injecting the real `gatherProvenance`.
+ * (TASK-21, TASK-30): fold each copy's acquisition truth into the member's SSOT
+ * `repositoryRecords[].status`, closing the spec/impl gaps TASK-20 (Gallica)
+ * and TASK-30 (museum) found. Two paths, chosen by the selected copy's shape:
+ *
+ * - a museum copy (recorded object-store `assets`) is reconciled against the
+ *   real `S3ObjectStore` -- no archive root or layout needed (its truth is B2 +
+ *   the recorded asset, not any file under `COLONY_ARCHIVE_ROOT`);
+ * - a Gallica copy is reconciled from the archive's per-page provenance, so it
+ *   still resolves the archive root and registers the member's archive layout
+ *   BEFORE gathering (`gatherProvenance`'s `sourceLayout` throws for an
+ *   unregistered source-group member -- same overlay `bib acquire` needs).
+ *
+ * Idempotent; re-runnable on members acquired out-of-band.
  */
 export async function runReconcileCli(rest: string[]): Promise<number> {
   let parsed: ReconcileCliArgs;
@@ -395,21 +435,34 @@ export async function runReconcileCli(rest: string[]): Promise<number> {
 
   const repoRoot = resolveRepoRoot();
   const sourcesDir = sourcesDirOf(repoRoot);
-  const archiveRoot = resolveArchiveRoot(repoRoot, archiveRootOverride);
+  const isMuseumCopy = selectedCopyHasRecordedAssets(sourcesDir, id, archive);
   try {
-    // Register this member's archive layout BEFORE gathering provenance --
-    // `gatherProvenance` resolves the source's slug via the synchronous,
-    // sourceId-only `sourceLayout(sourceId)`, which throws for a source-group
-    // member absent this runtime overlay (same reason `bib acquire` registers).
-    registerMemberArchiveLayout(sourcesDir, id);
-
-    const result = await runReconcile({
-      sourcesDir,
-      archiveRoot,
-      sourceId: id,
-      archive,
-      gather: gatherProvenance,
-    });
+    let result: ReconcileResult;
+    if (isMuseumCopy) {
+      // Pure-B2 path: verify recorded assets against the real object store. No
+      // archive root, no `gatherProvenance`, no layout overlay -- fail loud if
+      // the store config is absent rather than silently reconciling nothing.
+      result = await runReconcile({
+        sourcesDir,
+        sourceId: id,
+        archive,
+        objectStore: new S3ObjectStore(resolveObjectStoreConfig()),
+      });
+    } else {
+      // Archive-provenance (Gallica) path: resolve the archive root and register
+      // this member's layout BEFORE gathering -- `gatherProvenance` resolves the
+      // source's slug via the synchronous, sourceId-only `sourceLayout(sourceId)`,
+      // which throws for a source-group member absent this runtime overlay.
+      const archiveRoot = resolveArchiveRoot(repoRoot, archiveRootOverride);
+      registerMemberArchiveLayout(sourcesDir, id);
+      result = await runReconcile({
+        sourcesDir,
+        archiveRoot,
+        sourceId: id,
+        archive,
+        gather: gatherProvenance,
+      });
+    }
     const verb = result.changed ? 'reconciled' : 'already reconciled';
     console.log(
       `bib reconcile: ${verb} ${result.sourceId} at "${result.sourceArchive}" -> ` +

@@ -9,6 +9,7 @@ import {
   requireObject,
   requireString,
 } from '@/bibliography/load-primitives';
+import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { CopyLevelIdentifierType, WorkLevelIdentifierType } from '@/model/identifiers';
 import { classifyIdentifier } from '@/model/identifiers';
 import type {
@@ -43,9 +44,21 @@ const RECORD_KEYS = new Set([
   'identifiers',
   'rights',
   'rightsAssessment',
+  'assets',
   'census',
   'metadataSnapshot',
   'verification',
+]);
+const ACQUIRED_ASSET_KEYS = new Set([
+  'sourceUrl',
+  'mediaType',
+  'objectStoreKey',
+  'checksum',
+  'byteLength',
+  'provenancePath',
+  'role',
+  'sequence',
+  'representationChoice',
 ]);
 const TITLE_KEYS = new Set(['text', 'role', 'language']);
 const IDENTIFIER_KEYS = new Set(['type', 'value']);
@@ -349,6 +362,54 @@ export function validateVerification(
   return { result: resultRaw, verifiedAt, checks, snapshotRef };
 }
 
+/**
+ * Parse one authored `assets[]` entry (spec 011, T005/T030) -- an
+ * {@link AcquiredAsset} an adapter `acquire` mirrored directly to the object
+ * store. Every non-optional field is required and fails loud when absent or
+ * mistyped (no silent drop, no fabrication); `role`/`representationChoice` are
+ * optional strings and `sequence` an optional number, omitted from the result
+ * when absent so a load -> serialize round-trip is lossless.
+ */
+export function validateAcquiredAsset(
+  value: unknown,
+  filePath: string,
+  where: string,
+): AcquiredAsset {
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, ACQUIRED_ASSET_KEYS, filePath, where);
+  const sourceUrl = requireString(obj.sourceUrl, filePath, `${where}.sourceUrl`);
+  const mediaType = requireString(obj.mediaType, filePath, `${where}.mediaType`);
+  const objectStoreKey = requireString(obj.objectStoreKey, filePath, `${where}.objectStoreKey`);
+  const checksum = requireString(obj.checksum, filePath, `${where}.checksum`);
+  const byteLength = requireNumber(obj.byteLength, filePath, `${where}.byteLength`);
+  const provenancePath = requireString(obj.provenancePath, filePath, `${where}.provenancePath`);
+
+  const asset: AcquiredAsset = {
+    sourceUrl,
+    mediaType,
+    objectStoreKey,
+    checksum,
+    byteLength,
+    provenancePath,
+  };
+  const role = optionalString(obj.role, filePath, `${where}.role`);
+  if (role !== undefined) {
+    asset.role = role;
+  }
+  if (obj.sequence !== undefined) {
+    asset.sequence = requireNumber(obj.sequence, filePath, `${where}.sequence`);
+  }
+  const representationChoice = optionalString(
+    obj.representationChoice,
+    filePath,
+    `${where}.representationChoice`,
+  );
+  if (representationChoice !== undefined) {
+    asset.representationChoice = representationChoice;
+  }
+  return asset;
+}
+
 /** {@link validateRecord}'s result: the authored record plus any identifier leaks found on it. */
 export interface ValidatedRecord {
   record: AuthoredRepositoryRecord;
@@ -397,6 +458,13 @@ export function validateRecord(value: unknown, filePath: string, index: number):
       ? undefined
       : validateRightsAssessment(obj.rightsAssessment, filePath, `${where}.rightsAssessment`);
 
+  const assets: AcquiredAsset[] | undefined =
+    obj.assets === undefined
+      ? undefined
+      : requireArray(obj.assets, filePath, `${where}.assets`).map((a, i) =>
+          validateAcquiredAsset(a, filePath, `${where}.assets[${i}]`),
+        );
+
   const metadataSnapshot =
     obj.metadataSnapshot === undefined
       ? undefined
@@ -417,6 +485,7 @@ export function validateRecord(value: unknown, filePath: string, index: number):
     identifiers: obj.identifiers === undefined ? undefined : identifiers,
     rights,
     rightsAssessment,
+    assets,
     census,
     metadataSnapshot,
     verification,

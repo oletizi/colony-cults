@@ -3,6 +3,8 @@ import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { writeSourceFile } from '@/bibliography/source-writer';
 import type { AssetProvenance } from '@/bibliography/provenance-read';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
+import type { ObjectStore } from '@/archive/object-store';
+import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { RepositoryRecord } from '@/model/repository-record';
 
 /**
@@ -46,14 +48,31 @@ export type GatherProvenanceFn = (
 export interface ReconcileInput {
   /** Directory holding the one-file-per-source SSOT (`bibliography/sources`). */
   sourcesDir: string;
-  /** Archive root the provenance is gathered from (`COLONY_ARCHIVE_ROOT`). */
-  archiveRoot: string;
+  /**
+   * Archive root the Gallica per-page provenance is gathered from
+   * (`COLONY_ARCHIVE_ROOT`). REQUIRED for the archive-provenance (Gallica)
+   * path; NOT required for the pure-B2 museum path (a record carrying
+   * `assets`), whose truth is the object store + the recorded asset, not any
+   * file under the archive root. Optional here so a museum reconcile never has
+   * to configure a private archive worktree.
+   */
+  archiveRoot?: string;
   /** The member's Colony Cults id, e.g. `PB-P007`. */
   sourceId: string;
   /** Selects one RepositoryRecord when the member has more than one; infer-one otherwise. */
   archive?: string;
-  /** Injected provenance gatherer (see {@link GatherProvenanceFn}). REQUIRED. */
-  gather: GatherProvenanceFn;
+  /**
+   * Injected provenance gatherer (see {@link GatherProvenanceFn}). REQUIRED for
+   * the archive-provenance (Gallica) path; unused on the museum path.
+   */
+  gather?: GatherProvenanceFn;
+  /**
+   * Injected object store (`@/archive/object-store`). REQUIRED for the museum
+   * path (a record carrying `assets`), which verifies each recorded asset's
+   * `objectStoreKey` heads present with a matching checksum; unused on the
+   * Gallica path. Injected so tests pass a fake that never touches B2.
+   */
+  objectStore?: ObjectStore;
 }
 
 /** Result of a reconcile: which record advanced and to what. */
@@ -61,11 +80,23 @@ export interface ReconcileResult {
   sourceId: string;
   /** The selected record's holding archive. */
   sourceArchive: string;
-  /** The derived acquisition status the record now carries. */
-  status: 'collected' | 'archived';
-  /** Count of page-image masters found in the archive for this copy. */
+  /**
+   * The acquisition status the record now carries. `archived` when every
+   * master is backed; otherwise the not-overstated status (`collected` on the
+   * Gallica path, or the record's unchanged authored status when a museum
+   * asset is still missing from the store).
+   */
+  status: string;
+  /**
+   * Count of masters considered for this copy: page-image masters found in the
+   * archive (Gallica path), or recorded {@link AcquiredAsset}s (museum path).
+   */
   pageCount: number;
-  /** How many of those masters carry an object-store handle. */
+  /**
+   * How many of those masters are backed: carry an object-store handle
+   * (Gallica), or head present-and-checksum-matching in the object store
+   * (museum).
+   */
   storedCount: number;
   /** True when the authored status actually advanced (false on an idempotent re-run). */
   changed: boolean;
@@ -79,27 +110,145 @@ function assertWellFormed(input: ReconcileInput): void {
   if (typeof input.sourcesDir !== 'string' || input.sourcesDir.trim().length === 0) {
     throw new Error('reconcile: input.sourcesDir is required.');
   }
-  if (typeof input.archiveRoot !== 'string' || input.archiveRoot.trim().length === 0) {
-    throw new Error('reconcile: input.archiveRoot is required.');
-  }
   if (typeof input.sourceId !== 'string' || input.sourceId.trim().length === 0) {
     throw new Error('reconcile: input.sourceId is required.');
   }
-  if (typeof input.gather !== 'function') {
-    throw new Error('reconcile: input.gather is required (the injected provenance gatherer).');
-  }
+  // `archiveRoot`/`gather` (Gallica) and `objectStore` (museum) are validated
+  // per-path AFTER record selection -- which path applies is a function of the
+  // selected record's `assets`, unknowable here (see `runReconcile`).
+}
+
+/** The number of masters backed + the derived status for one reconcile path. */
+interface PathOutcome {
+  /** Total masters considered (page images, or recorded assets). */
+  pageCount: number;
+  /** How many of those are backed (object-store handle, or head-verified). */
+  storedCount: number;
+  /**
+   * The status the record should carry. `undefined` means "do not change the
+   * authored status" -- the museum path uses this when a recorded asset is
+   * still missing from the store, so reconcile never overstates progress.
+   */
+  status: string | undefined;
 }
 
 /**
- * Reconcile one member's RepositoryRecord acquisition status from the
- * archive's per-page provenance:
+ * Gallica (archive-provenance) path: derive status from the per-page masters
+ * the fetcher wrote under the archive root.
  *
  * - page-image masters all object-store-backed -> `archived`
  * - some (but not all) backed, or fetched-but-not-uploaded -> `collected`
  *
- * Fails loud (writes nothing) when the member is unknown, has no record for
- * the selected archive, or has no page-image provenance at all (nothing was
- * acquired to reconcile).
+ * Requires the injected `archiveRoot` + `gather`; fails loud (writes nothing)
+ * when either is absent, or when the copy has no page-image provenance at all
+ * (nothing was acquired to reconcile).
+ */
+async function reconcileFromArchiveProvenance(
+  input: ReconcileInput,
+  sourceArchive: string,
+): Promise<PathOutcome> {
+  if (typeof input.archiveRoot !== 'string' || input.archiveRoot.trim().length === 0) {
+    throw new Error(
+      `reconcile: input.archiveRoot is required to reconcile "${input.sourceId}" at ` +
+        `"${sourceArchive}" from archive provenance (the Gallica path).`,
+    );
+  }
+  if (typeof input.gather !== 'function') {
+    throw new Error(
+      'reconcile: input.gather is required (the injected provenance gatherer) for the ' +
+        'archive-provenance path.',
+    );
+  }
+  const archiveRoot = input.archiveRoot;
+
+  const provenance = await input.gather(input.sourceId, archiveRoot);
+  const pageImages = provenance.filter(
+    (asset) => asset.source_archive === sourceArchive && asset.type === 'page-image',
+  );
+  if (pageImages.length === 0) {
+    throw new Error(
+      `reconcile: no page-image provenance for "${input.sourceId}" at "${sourceArchive}" ` +
+        `under "${archiveRoot}" -- nothing acquired to reconcile.`,
+    );
+  }
+
+  const storedCount = pageImages.filter((asset) => asset.object_store !== null).length;
+  return {
+    pageCount: pageImages.length,
+    storedCount,
+    status: storedCount === pageImages.length ? 'archived' : 'collected',
+  };
+}
+
+/**
+ * Museum (pure-B2) path: verify each recorded {@link AcquiredAsset} against the
+ * object store via `objectStore.head(asset.objectStoreKey)`. An asset counts as
+ * backed only when it heads present AND the store's `sha256` matches the
+ * recorded `checksum`. When every recorded asset is backed the record advances
+ * to `archived`; when one is still missing the record's status is left
+ * unchanged (never overstated). A present-but-checksum-MISMATCHED object is a
+ * changed/wrong master -- fail loud, write nothing.
+ *
+ * Requires the injected `objectStore`; fails loud when absent.
+ */
+async function reconcileFromObjectStore(
+  input: ReconcileInput,
+  sourceArchive: string,
+  assets: AcquiredAsset[],
+  currentStatus: string,
+): Promise<PathOutcome> {
+  if (input.objectStore === undefined) {
+    throw new Error(
+      `reconcile: input.objectStore is required to reconcile "${input.sourceId}" at ` +
+        `"${sourceArchive}" -- its ${assets.length} recorded asset(s) are verified ` +
+        `against the object store (the museum path).`,
+    );
+  }
+  const objectStore = input.objectStore;
+
+  let storedCount = 0;
+  for (const asset of assets) {
+    const head = await objectStore.head(asset.objectStoreKey);
+    if (!head.exists) {
+      continue;
+    }
+    if (head.sha256 !== undefined && head.sha256 !== asset.checksum) {
+      throw new Error(
+        `reconcile: checksum MISMATCH for "${input.sourceId}" at "${sourceArchive}" -- ` +
+          `object "${asset.objectStoreKey}" reports sha256 ${head.sha256} but the recorded ` +
+          `asset checksum is ${asset.checksum}. Refusing to reconcile a changed/wrong master.`,
+      );
+    }
+    if (head.sha256 === undefined) {
+      // Present but unverifiable (no sha256 metadata): cannot confirm identity,
+      // so it does NOT count as backed -- reconcile never overstates progress.
+      continue;
+    }
+    storedCount += 1;
+  }
+
+  const allBacked = storedCount === assets.length;
+  return {
+    pageCount: assets.length,
+    storedCount,
+    // Advance to `archived` only when every recorded master is present +
+    // matching; otherwise leave the authored status untouched (`undefined`).
+    status: allBacked ? 'archived' : undefined,
+  };
+}
+
+/**
+ * Reconcile one member's RepositoryRecord acquisition status. Two paths,
+ * chosen by the selected record's shape:
+ *
+ * - a record carrying `assets` (the museum/B2 case) is reconciled by verifying
+ *   each recorded asset's `objectStoreKey` against the injected object store;
+ * - otherwise (the Gallica case) status is derived from the archive's per-page
+ *   provenance under the archive root.
+ *
+ * Fails loud (writes nothing) when the member is unknown, has no record for the
+ * selected archive, the path's required dependency is absent, or a museum
+ * asset's stored checksum mismatches the recorded one.
  */
 export async function runReconcile(input: ReconcileInput): Promise<ReconcileResult> {
   assertWellFormed(input);
@@ -119,21 +268,6 @@ export async function runReconcile(input: ReconcileInput): Promise<ReconcileResu
   const selected = selectRepositoryRecord(candidates, input.archive);
   const sourceArchive = selected.sourceArchive;
 
-  const provenance = await input.gather(input.sourceId, input.archiveRoot);
-  const pageImages = provenance.filter(
-    (asset) => asset.source_archive === sourceArchive && asset.type === 'page-image',
-  );
-  if (pageImages.length === 0) {
-    throw new Error(
-      `reconcile: no page-image provenance for "${input.sourceId}" at "${sourceArchive}" ` +
-        `under "${input.archiveRoot}" -- nothing acquired to reconcile.`,
-    );
-  }
-
-  const storedCount = pageImages.filter((asset) => asset.object_store !== null).length;
-  const status: 'collected' | 'archived' =
-    storedCount === pageImages.length ? 'archived' : 'collected';
-
   const target = entry.records.find((record) => record.sourceArchive === sourceArchive);
   if (target === undefined) {
     // Unreachable: `selected` was chosen from `entry.records` -- defensive.
@@ -142,19 +276,31 @@ export async function runReconcile(input: ReconcileInput): Promise<ReconcileResu
         `"${input.sourceId}"'s authored records.`,
     );
   }
-  const changed = target.status !== status;
+
+  // Path selection: a record with recorded object-store assets reconciles
+  // against the store; otherwise it reconciles from archive provenance. The
+  // museum acquire (TASK-30) writes those `assets`, so a museum copy no longer
+  // falls through to the archive path (which would have no page-image
+  // provenance and fail "nothing acquired to reconcile").
+  const outcome: PathOutcome =
+    target.assets !== undefined && target.assets.length > 0
+      ? await reconcileFromObjectStore(input, sourceArchive, target.assets, target.status)
+      : await reconcileFromArchiveProvenance(input, sourceArchive);
+
+  const nextStatus = outcome.status ?? target.status;
+  const changed = target.status !== nextStatus;
 
   const updatedRecords: AuthoredRepositoryRecord[] = entry.records.map((record) =>
-    record.sourceArchive === sourceArchive ? { ...record, status } : record,
+    record.sourceArchive === sourceArchive ? { ...record, status: nextStatus } : record,
   );
   writeSourceFile(input.sourcesDir, { source: entry.source, records: updatedRecords });
 
   return {
     sourceId: input.sourceId,
     sourceArchive,
-    status,
-    pageCount: pageImages.length,
-    storedCount,
+    status: nextStatus,
+    pageCount: outcome.pageCount,
+    storedCount: outcome.storedCount,
     changed,
   };
 }

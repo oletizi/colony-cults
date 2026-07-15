@@ -1,3 +1,4 @@
+import type { AcquiredAsset } from '@/model/acquired-asset';
 import type {
   CopyIdentifier,
   MetadataSnapshotRef,
@@ -93,6 +94,15 @@ export interface AuthoredRepositoryRecord {
    * an operator has run `bib rights-assess --status ...` on this copy.
    */
   rightsAssessment?: RightsAssessment;
+  /**
+   * Acquired representations of this copy, persisted by an adapter `acquire`
+   * that mirrors masters directly to the object store (spec 011, T005; the
+   * museum path). Each carries the object-store key + checksum a later
+   * `bib reconcile` verifies against the store (`@/model/acquired-asset`).
+   * Absent on a Gallica copy, whose masters are recorded as per-page archive
+   * provenance instead (`AssetProvenance`), not on the authored record.
+   */
+  assets?: AcquiredAsset[];
   /** Path to the census JSON this record's issues derive from (serials only). */
   census?: string;
   /** Reference to the immutable raw-response snapshot (D-07). Additive optional. */
