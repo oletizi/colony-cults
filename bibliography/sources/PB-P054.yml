@@ -1,0 +1,50 @@
+sourceId: PB-P054
+kind: monograph
+partOf: PB-P004
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: trial-record
+language: French
+creator: France. Cour de cassation, chambre criminelle
+rights:
+  status: public-domain
+  basis: >-
+    1884 official French court decision (arrêt de la Cour de cassation, chambre
+    criminelle). Public domain on two independent grounds: (a) official acts —
+    court decisions are excluded from author's-rights protection under French law;
+    (b) publication age — printed in the 1884 Bulletin des arrêts criminels, all
+    authors long dead (France life+70 long elapsed). The source volume on Gallica
+    (bpt6k61587296) is served as domaine public. Per-item OAI rights to be
+    re-confirmed on acquisition.
+  determinedAt: 2026-07-15
+titles:
+  - text: >-
+      Cour de cassation (chambre criminelle). Arrêt de rejet du pourvoi de
+      Charles-Bonaventure-Marie Dubreil de Rays contre l'arrêt de la Cour de Paris
+      du 14 mai 1884 (affaire de Port-Breton — escroquerie, art. 405 C. pén.)
+    role: canonical
+notes: >-
+  The Cour de cassation decision confirming the de Rays conviction — the legal
+  capstone of the Port-Breton affair. Located 2026-07-15 (SRCH-0010) via Gallica
+  Issues year-index + ContentSearch. Printed in the Bulletin des arrêts de la Cour
+  de cassation rendus en matière criminelle, 1884 (serial notice cb34508686x),
+  fascicule Gallica ark bpt6k61587296, p. 48-50. Verbatim: "REJET des pourvois de :
+  1° Charles-Bonaventure-Marie Dubreil de Rays [...] contre un Arrêt rendu, le 14
+  mai 1884, par la Cour d'appel de Paris, chambre correctionnelle, qui les a
+  condamnés, savoir : Dubreil de Rays à quatre ans de prison [...] et solidairement
+  à 3,000 francs d'amende [...] violation par fausse application de l'article 405 du
+  Code pénal". EXCERPT within a large serial fascicule — it has NO standalone Gallica
+  ark, so it does not fit the whole-document fetch pipeline; acquiring only the
+  pertinent 3 pages (not the whole fascicule of unrelated arrêts) needs a page-range
+  acquisition path the shipped fetcher lacks. status approved-for-acquisition +
+  repository to-collect: located, rights-cleared, ready, masters NOT yet mirrored.
+  The exact cassation date is printed at the head of the arrêt (p. 48) — to confirm
+  on acquisition.
+repositoryRecords:
+  - sourceArchive: Gallica / BnF
+    status: to-collect
+    originalUrl: https://gallica.bnf.fr/ark:/12148/bpt6k61587296
+    catalogUrl: https://catalogue.bnf.fr/ark:/12148/cb34508686x
+    identifiers:
+      - type: ark
+        value: ark:/12148/bpt6k61587296
