@@ -1,0 +1,45 @@
+sourceId: PB-P024
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Photo of MAXWELL Henry & Margaret & Family 1917
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000705.htm
+    retrievedAt: 2026-07-15T07:40:45.839Z
+    identifiers:
+      - type: accession
+        value: NIMI-0705
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1917 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:40:46.450Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000705_nimi-0705-maxwell-henry-and-margaretl-and-family-1917-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0705/cce18de59af2c4cc275c4e3b1d726e2b89b85a7b24e3fb5e67630f39bf24e605.jpg
+        checksum: cce18de59af2c4cc275c4e3b1d726e2b89b85a7b24e3fb5e67630f39bf24e605
+        byteLength: 74195
+        provenancePath: archive/museum/new-italy-museum/nimi-0705/cce18de59af2c4cc275c4e3b1d726e2b89b85a7b24e3fb5e67630f39bf24e605.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P024/https-newitaly-org-au-CAT-000705-htm-2026-07-15T07:40:45.839Z.json
+      retrievedAt: 2026-07-15T07:40:45.839Z
+      endpoint: https://newitaly.org.au/CAT/000705.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:40:47.282Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P024/https-newitaly-org-au-CAT-000705-htm-2026-07-15T07:40:45.839Z.json

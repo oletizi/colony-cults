@@ -1,0 +1,45 @@
+sourceId: PB-P026
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Photo of Empire Day New Italy 24 May 1917
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000756.htm
+    retrievedAt: 2026-07-15T07:41:18.399Z
+    identifiers:
+      - type: accession
+        value: NIMI-0756
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1917 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:41:18.878Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000756_nimi-0756-empire-day-new-italy1917-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0756/c98b3b281e83bb6f3612d0be4f5c06a2952dd7a5d201f201f590e5cd9e284418.jpg
+        checksum: c98b3b281e83bb6f3612d0be4f5c06a2952dd7a5d201f201f590e5cd9e284418
+        byteLength: 194873
+        provenancePath: archive/museum/new-italy-museum/nimi-0756/c98b3b281e83bb6f3612d0be4f5c06a2952dd7a5d201f201f590e5cd9e284418.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P026/https-newitaly-org-au-CAT-000756-htm-2026-07-15T07:41:18.399Z.json
+      retrievedAt: 2026-07-15T07:41:18.399Z
+      endpoint: https://newitaly.org.au/CAT/000756.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:41:19.754Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P026/https-newitaly-org-au-CAT-000756-htm-2026-07-15T07:41:18.399Z.json

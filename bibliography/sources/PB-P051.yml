@@ -1,0 +1,45 @@
+sourceId: PB-P051
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: PEZZUTTI Wine Making
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001123.htm
+    retrievedAt: 2026-07-15T07:50:18.958Z
+    identifiers:
+      - type: accession
+        value: NIMI-1123
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1898 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:50:19.575Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001123_nimi-1123-pezzutti-wine-making-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1123/14b4c4950dc8be609e215aac60e48a126d5fa5ae7f0fcf0e9a02d8190cddefc8.jpg
+        checksum: 14b4c4950dc8be609e215aac60e48a126d5fa5ae7f0fcf0e9a02d8190cddefc8
+        byteLength: 90465
+        provenancePath: archive/museum/new-italy-museum/nimi-1123/14b4c4950dc8be609e215aac60e48a126d5fa5ae7f0fcf0e9a02d8190cddefc8.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P051/https-newitaly-org-au-CAT-001123-htm-2026-07-15T07:50:18.958Z.json
+      retrievedAt: 2026-07-15T07:50:18.958Z
+      endpoint: https://newitaly.org.au/CAT/001123.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:50:20.447Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P051/https-newitaly-org-au-CAT-001123-htm-2026-07-15T07:50:18.958Z.json

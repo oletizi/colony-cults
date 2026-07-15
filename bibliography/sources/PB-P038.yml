@@ -1,0 +1,45 @@
+sourceId: PB-P038
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Photos of Agricultural Hall Sydney ca 1880
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000963.htm
+    retrievedAt: 2026-07-15T07:45:22.378Z
+    identifiers:
+      - type: accession
+        value: NIMI-0963
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1880 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:45:22.810Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000963_nimi-0963-agricultural-hall-sydney-1-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0963/63dd78db2de3e5af505b94216e8f8e5e829676a7a18b7c98e49288d133b62169.jpg
+        checksum: 63dd78db2de3e5af505b94216e8f8e5e829676a7a18b7c98e49288d133b62169
+        byteLength: 72427
+        provenancePath: archive/museum/new-italy-museum/nimi-0963/63dd78db2de3e5af505b94216e8f8e5e829676a7a18b7c98e49288d133b62169.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P038/https-newitaly-org-au-CAT-000963-htm-2026-07-15T07:45:22.378Z.json
+      retrievedAt: 2026-07-15T07:45:22.378Z
+      endpoint: https://newitaly.org.au/CAT/000963.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:45:23.610Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P038/https-newitaly-org-au-CAT-000963-htm-2026-07-15T07:45:22.378Z.json

@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1910\",\"evidence\":{\"excerpt\":\"Photo of School Group Anniversary Day 1910\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the item's creation year, embedded in the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:44:53.176Z\"}},\"description\":{\"value\":\"Photo of School Group Anniversary Day 1910\",\"evidence\":{\"excerpt\":\"<span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> Photo of School Group Anniversary Day 1910</span>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:44:53.176Z\"}}}",
+  "retrievedAt": "2026-07-15T07:44:53.176Z",
+  "endpoint": "https://newitaly.org.au/CAT/000956.htm",
+  "normalizationVersion": 1
+}

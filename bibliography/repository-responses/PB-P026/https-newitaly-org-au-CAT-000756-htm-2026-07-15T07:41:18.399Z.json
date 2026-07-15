@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"24 May 1917\",\"evidence\":{\"excerpt\":\"Photo of Empire Day New Italy 24 May 1917\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the item's creation date, embedded in the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:41:18.399Z\"}},\"description\":{\"value\":\"Photo of Empire Day New Italy 24 May 1917\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> Photo of Empire Day New Italy 24 May 1917</span></p>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:41:18.399Z\"}}}",
+  "retrievedAt": "2026-07-15T07:41:18.399Z",
+  "endpoint": "https://newitaly.org.au/CAT/000756.htm",
+  "normalizationVersion": 1
+}

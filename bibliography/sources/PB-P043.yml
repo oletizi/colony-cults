@@ -1,0 +1,45 @@
+sourceId: PB-P043
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Photo of TALAMINI Inez
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001024.htm
+    retrievedAt: 2026-07-15T07:46:30.876Z
+    identifiers:
+      - type: accession
+        value: NIMI-1024
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1920 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:46:31.303Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001024_nimi-1024-talamini-inez-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1024/d5595adf3474e765368340745d2e6cbda4cfb726c954bd9cf49bf0c428465f30.jpg
+        checksum: d5595adf3474e765368340745d2e6cbda4cfb726c954bd9cf49bf0c428465f30
+        byteLength: 21576
+        provenancePath: archive/museum/new-italy-museum/nimi-1024/d5595adf3474e765368340745d2e6cbda4cfb726c954bd9cf49bf0c428465f30.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P043/https-newitaly-org-au-CAT-001024-htm-2026-07-15T07:46:30.876Z.json
+      retrievedAt: 2026-07-15T07:46:30.876Z
+      endpoint: https://newitaly.org.au/CAT/001024.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:46:32.192Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P043/https-newitaly-org-au-CAT-001024-htm-2026-07-15T07:46:30.876Z.json

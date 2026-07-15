@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1902\",\"evidence\":{\"excerpt\":\"<div id=\\\"wb_head4\\\">School & Teacher's residence 1902</div>\",\"selector\":\"#wb_head4\"},\"interpretation\":\"the item's creation year, stated in the object title\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:43:37.266Z\"}},\"description\":{\"value\":\"School & Teacher's residence 1902\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> School & Teacher's residence 1902</span></p>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:43:37.266Z\"}}}",
+  "retrievedAt": "2026-07-15T07:43:37.266Z",
+  "endpoint": "https://newitaly.org.au/CAT/000846.htm",
+  "normalizationVersion": 1
+}

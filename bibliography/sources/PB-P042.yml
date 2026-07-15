@@ -1,0 +1,45 @@
+sourceId: PB-P042
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Photo of TALAMINI Nydia
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001023.htm
+    retrievedAt: 2026-07-15T07:46:17.664Z
+    identifiers:
+      - type: accession
+        value: NIMI-1023
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1920 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:46:18.277Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001023_nimi-1023-talamini-nydia-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1023/912e56f6602fcd5fe7eab637c6c08476aaf4a1b87a8a6ccbc82cfd8a8da62ec0.jpg
+        checksum: 912e56f6602fcd5fe7eab637c6c08476aaf4a1b87a8a6ccbc82cfd8a8da62ec0
+        byteLength: 15725
+        provenancePath: archive/museum/new-italy-museum/nimi-1023/912e56f6602fcd5fe7eab637c6c08476aaf4a1b87a8a6ccbc82cfd8a8da62ec0.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P042/https-newitaly-org-au-CAT-001023-htm-2026-07-15T07:46:17.664Z.json
+      retrievedAt: 2026-07-15T07:46:17.664Z
+      endpoint: https://newitaly.org.au/CAT/001023.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:46:19.116Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P042/https-newitaly-org-au-CAT-001023-htm-2026-07-15T07:46:17.664Z.json

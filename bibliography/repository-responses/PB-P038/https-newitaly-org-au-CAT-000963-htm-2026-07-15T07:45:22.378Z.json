@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"ca 1880\",\"evidence\":{\"excerpt\":\"Agricultural Hall Sydney ca 1880\",\"selector\":\"#objectname\"},\"interpretation\":\"the item's creation date, stated in the object name\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:45:22.378Z\"}},\"description\":{\"value\":\"Photos of Agricultural Hall Sydney ca 1880\",\"evidence\":{\"excerpt\":\"<span class=\\\"data\\\" id=\\\"objectdesc\\\"> Photos of Agricultural Hall Sydney ca 1880</span>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:45:22.378Z\"}}}",
+  "retrievedAt": "2026-07-15T07:45:22.378Z",
+  "endpoint": "https://newitaly.org.au/CAT/000963.htm",
+  "normalizationVersion": 1
+}

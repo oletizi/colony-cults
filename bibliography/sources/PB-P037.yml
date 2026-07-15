@@ -1,0 +1,45 @@
+sourceId: PB-P037
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Photo of Park of Peace & Homestead 1953
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000957.htm
+    retrievedAt: 2026-07-15T07:45:07.893Z
+    identifiers:
+      - type: accession
+        value: NIMI-0957
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1953 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:45:08.381Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000957_nimi-0957-park-of-peace-1953-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0957/440e3a86c7b9227babcd240b95370f4a9497cf1d961b4b6b558a4a9dcf3ef877.jpg
+        checksum: 440e3a86c7b9227babcd240b95370f4a9497cf1d961b4b6b558a4a9dcf3ef877
+        byteLength: 214718
+        provenancePath: archive/museum/new-italy-museum/nimi-0957/440e3a86c7b9227babcd240b95370f4a9497cf1d961b4b6b558a4a9dcf3ef877.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P037/https-newitaly-org-au-CAT-000957-htm-2026-07-15T07:45:07.893Z.json
+      retrievedAt: 2026-07-15T07:45:07.893Z
+      endpoint: https://newitaly.org.au/CAT/000957.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:45:09.196Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P037/https-newitaly-org-au-CAT-000957-htm-2026-07-15T07:45:07.893Z.json

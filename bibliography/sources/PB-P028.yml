@@ -1,0 +1,45 @@
+sourceId: PB-P028
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: School and Residence at New Italy 1902
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000765.htm
+    retrievedAt: 2026-07-15T07:41:57.791Z
+    identifiers:
+      - type: accession
+        value: NIMI-0765
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1902 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:41:58.370Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000765_nimi-0765-school-and-residence-1902-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0765/aea2e16b968ecf7863575c7bf1761867be18756566d35395bb2124554d2dfd56.jpg
+        checksum: aea2e16b968ecf7863575c7bf1761867be18756566d35395bb2124554d2dfd56
+        byteLength: 167668
+        provenancePath: archive/museum/new-italy-museum/nimi-0765/aea2e16b968ecf7863575c7bf1761867be18756566d35395bb2124554d2dfd56.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P028/https-newitaly-org-au-CAT-000765-htm-2026-07-15T07:41:57.791Z.json
+      retrievedAt: 2026-07-15T07:41:57.791Z
+      endpoint: https://newitaly.org.au/CAT/000765.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:41:59.188Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P028/https-newitaly-org-au-CAT-000765-htm-2026-07-15T07:41:57.791Z.json

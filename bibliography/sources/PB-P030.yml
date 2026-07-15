@@ -1,0 +1,45 @@
+sourceId: PB-P030
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Photo of ROSOLEN Giacomo & Maria (BUORO) & child Rose 1902
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000795.htm
+    retrievedAt: 2026-07-15T07:42:55.888Z
+    identifiers:
+      - type: accession
+        value: NIMI-0795
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1902 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:42:56.499Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000795_nimi-0795-rosolen-giacomo-and-maria-(nee-buoro)-1902-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0795/c6fae4ef4af0cc4004c07e21c1f93cbc57a8451365e98d77e28d681c712991da.jpg
+        checksum: c6fae4ef4af0cc4004c07e21c1f93cbc57a8451365e98d77e28d681c712991da
+        byteLength: 81906
+        provenancePath: archive/museum/new-italy-museum/nimi-0795/c6fae4ef4af0cc4004c07e21c1f93cbc57a8451365e98d77e28d681c712991da.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P030/https-newitaly-org-au-CAT-000795-htm-2026-07-15T07:42:55.888Z.json
+      retrievedAt: 2026-07-15T07:42:55.888Z
+      endpoint: https://newitaly.org.au/CAT/000795.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:42:57.335Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P030/https-newitaly-org-au-CAT-000795-htm-2026-07-15T07:42:55.888Z.json

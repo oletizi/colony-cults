@@ -1,0 +1,48 @@
+sourceId: PB-P031
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+creator: Joseph CHECK
+titles:
+  - text: "RODER Francesco and children\r
+
+      Joseph CHECK 1899"
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000816.htm
+    retrievedAt: 2026-07-15T07:43:19.634Z
+    identifiers:
+      - type: accession
+        value: NIMI-0816
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1899 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:43:20.243Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000816_nimi-0816-roder-francesco-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0816/d248c5244df0b7d4e18da5a26215c9ed2ee07e9cad82fdc2d546ff16cf3f9236.jpg
+        checksum: d248c5244df0b7d4e18da5a26215c9ed2ee07e9cad82fdc2d546ff16cf3f9236
+        byteLength: 46941
+        provenancePath: archive/museum/new-italy-museum/nimi-0816/d248c5244df0b7d4e18da5a26215c9ed2ee07e9cad82fdc2d546ff16cf3f9236.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P031/https-newitaly-org-au-CAT-000816-htm-2026-07-15T07:43:19.634Z.json
+      retrievedAt: 2026-07-15T07:43:19.634Z
+      endpoint: https://newitaly.org.au/CAT/000816.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:43:21.069Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P031/https-newitaly-org-au-CAT-000816-htm-2026-07-15T07:43:19.634Z.json

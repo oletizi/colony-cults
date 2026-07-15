@@ -1,0 +1,45 @@
+sourceId: PB-P041
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Photo of SHEATHER Maria (nee SPINAZE)
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001020.htm
+    retrievedAt: 2026-07-15T07:46:00.226Z
+    identifiers:
+      - type: accession
+        value: NIMI-1020
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1918 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:46:00.628Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001020_nimi-1020-sheather-maria-(nee-spinaze)-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1020/b2daad1a46818e7f6614e8df07cf6ca7c1103025bcc75661e494725b12a2f002.jpg
+        checksum: b2daad1a46818e7f6614e8df07cf6ca7c1103025bcc75661e494725b12a2f002
+        byteLength: 60923
+        provenancePath: archive/museum/new-italy-museum/nimi-1020/b2daad1a46818e7f6614e8df07cf6ca7c1103025bcc75661e494725b12a2f002.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P041/https-newitaly-org-au-CAT-001020-htm-2026-07-15T07:46:00.226Z.json
+      retrievedAt: 2026-07-15T07:46:00.226Z
+      endpoint: https://newitaly.org.au/CAT/001020.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:46:01.459Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P041/https-newitaly-org-au-CAT-001020-htm-2026-07-15T07:46:00.226Z.json

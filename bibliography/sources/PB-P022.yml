@@ -1,0 +1,45 @@
+sourceId: PB-P022
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Photograph of RODER Teresa (nee-SPINAZE) & daughter CHAPMAN Teresa (nee-RODER) & child RODER Arthur. 1919
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000602.htm
+    retrievedAt: 2026-07-15T07:40:06.287Z
+    identifiers:
+      - type: accession
+        value: NIMI-0602
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1919 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:40:06.882Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000602_nimi-0602-spinaze-teresa-(nee-roder)-and-chapman-teresa-(nee-roder)-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0602/03189b9810e8a6edfa0998669e0d3e7350cb9e5b96c39d29c6fa215f887b2764.jpg
+        checksum: 03189b9810e8a6edfa0998669e0d3e7350cb9e5b96c39d29c6fa215f887b2764
+        byteLength: 83996
+        provenancePath: archive/museum/new-italy-museum/nimi-0602/03189b9810e8a6edfa0998669e0d3e7350cb9e5b96c39d29c6fa215f887b2764.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P022/https-newitaly-org-au-CAT-000602-htm-2026-07-15T07:40:06.287Z.json
+      retrievedAt: 2026-07-15T07:40:06.287Z
+      endpoint: https://newitaly.org.au/CAT/000602.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:40:07.690Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P022/https-newitaly-org-au-CAT-000602-htm-2026-07-15T07:40:06.287Z.json

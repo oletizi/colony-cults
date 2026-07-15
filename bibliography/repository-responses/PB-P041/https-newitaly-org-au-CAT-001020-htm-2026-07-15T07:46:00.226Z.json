@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1918\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdate_prompt\\\">Object Date </span> <span class=\\\"data\\\" id=\\\"objectdate\\\"> 1918</span></p>\",\"selector\":\"#objectdate\"},\"interpretation\":\"the item's stated object date\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:46:00.226Z\"}},\"description\":{\"value\":\"Photo of SHEATHER Maria (nee SPINAZE)\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> Photo of SHEATHER Maria (nee SPINAZE)</span></p>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the item's object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:46:00.226Z\"}}}",
+  "retrievedAt": "2026-07-15T07:46:00.226Z",
+  "endpoint": "https://newitaly.org.au/CAT/001020.htm",
+  "normalizationVersion": 1
+}
