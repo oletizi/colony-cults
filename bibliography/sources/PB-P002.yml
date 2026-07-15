@@ -3,22 +3,46 @@ kind: monograph
 case: port-breton
 evidenceClass: prospectus
 language: French
-creator: Paul de Groote
+creator: Charles Du Breil de Rays
 rights:
   status: public-domain
-  basis: 1879 French promotional imprint (author Paul de Groote, fl. 1879); public domain by publication age — under France's life+70 term the copyright is elapsed for any plausible death date of an author active in 1879 (protection would require dying after 1955). Basis is publication age; the acquired Gallica provenance (ark bpt6k58039518) also carries a BnF OAI dc:rights "domaine public" record.
-  determinedAt: 2026-07-12
+  basis: >-
+    1879 French promotional prospectus signed by Charles Du Breil, marquis de Rays
+    (1832-1893); public domain under France's life+70 author's-death term — the
+    copyright elapsed on 1 January 1964 (de Rays d. 1893), so it is long expired.
+    The BnF-digitised copy (Gallica ark bpt6k58039518) is served as a public-domain
+    reproduction. (An earlier basis mis-attributed this work to P. de Groote; see
+    notes — the corrected author is de Rays, but the work is public domain either way.)
+  determinedAt: 2026-07-15
 titles:
-  - text: "Nouvelle-France: Colonie libre de Port-Breton, Océanie"
+  - text: "Colonie libre de Port-Breton : Nouvelle France en Océanie"
     role: canonical
-notes: "Years: 1879 | Access: digital/public domain | Public domain: likely | Promotional account useful for claims made to prospective settlers. | DIGITIZATION CONFIRMED + ALREADY ACQUIRED (2026-07-13): the Gallica digitized document is ark bpt6k58039518 (32 page-images, domaine public), masters in B2, reconciled -> archived. Found by auditing the archive repo against the SSOT -- the record had been left at to-collect / 'digitization unconfirmed' with only the BnF CATALOGUE ark cb34944911d. Gallica attributes the digitized copy to '[signe: Ch. du Breil, marquis de Rays]' (the colony's promoter/subject); the work itself is P. de Groote's promotional account. BnF dates it 1880 (this record says 1879 -- a 1879/1880 discrepancy still to resolve)."
+  - text: "Nouvelle-France: Colonie libre de Port-Breton, Océanie"
+    role: alternate
+notes: >-
+  Marseille: Typographie et lithographie Marius Olive, 1879; 20 p., in-octavo. A
+  short promotional PROSPECTUS for the colony, signed by the marquis de Rays himself.
+  DISTINCT from P. de Groote's separate 368-p. book "Nouvelle-France, colonie libre
+  de Port-Breton, Océanie: œuvre de colonisation agricole" (Paris, Société générale
+  de librairie catholique, 1880; BnF notice cb34944911d) — that is a different work,
+  NOT held here (captured as a discovery lead, SRCH-0008). DIGITISATION CONFIRMED +
+  ALREADY ACQUIRED (2026-07-13): Gallica ark bpt6k58039518 (32 page-images, domaine
+  public), masters in B2, reconciled -> archived. IDENTITY CORRECTED (2026-07-15):
+  a prior reconciliation had linked this held prospectus to the WRONG BnF notice
+  (cb34944911d, de Groote's 368-p. 1880 book) and mis-attributed it to de Groote,
+  manufacturing a false "1879 vs 1880" date discrepancy. Authoritative BnF notice
+  cb34139872z (verified via the BnF catalogue SRU + the notice itself, which links
+  directly to Gallica bpt6k58039518: title "Colonie libre de Port-Breton : Nouvelle
+  France en Océanie", Du Breil de Rays, 1879, Marseille/Marius Olive, 20 p.) fixes
+  the record — creator = de Rays, year = 1879 (the original was right), catalogue
+  ark = cb34139872z.
 repositoryRecords:
   - sourceArchive: Gallica / BnF
     status: archived
     originalUrl: https://gallica.bnf.fr/ark:/12148/bpt6k58039518
-    catalogUrl: https://catalogue.bnf.fr/ark:/12148/cb34944911d
+    catalogUrl: https://catalogue.bnf.fr/ark:/12148/cb34139872z
     identifiers:
       - type: ark
         value: ark:/12148/bpt6k58039518
       - type: ark
-        value: ark:/12148/cb34944911d
+        value: ark:/12148/cb34139872z

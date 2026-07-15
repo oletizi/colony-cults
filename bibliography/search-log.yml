@@ -116,3 +116,30 @@
   remainingQuestions:
     - "Operator curation: does the corpus want a few discrete Trove exemplars (e.g. the survivors'-arrival report) as evidentiary anchors? If so, acquire them manually (n=1) -- still no adapter."
   notes: "PB-P005's model (kind: periodical, status: to-collect) reads as a single collectible run but is really a cross-paper topical slice; reframed in the source notes as an irreducible residual. The discrete Australian PRIMARY holdings live in PB-P006 (New Italy Museum photos + settler writings), not in Trove newspapers."
+
+- id: SRCH-0008
+  date: 2026-07-15
+  repository: BnF Catalogue général (SRU + notices)
+  scope:
+    kind: work
+    id: PB-P002
+  query: "Reconcile the PB-P002 imprint-year discrepancy (record says 1879; a prior note claimed BnF dates it 1880) against the authoritative BnF catalogue -- is the held item the 1879 or the 1880 work? (Gallica itself was unreachable this session -- gallica.bnf.fr resets connections from this environment; catalogue.bnf.fr / the SRU API are reachable and were used instead.)"
+  coverage: "RESOLVED -> the discrepancy was a WORK-IDENTITY CONFLATION, not a date error, and the original 1879 was correct. The held digitised copy (Gallica ark bpt6k58039518, 32 page-images) is authoritatively BnF notice cb34139872z: 'Colonie libre de Port-Breton : Nouvelle France en Océanie', by Charles Du Breil de Rays (1832-1893), Marseille: Marius Olive, 1879, 20 p. in-8 -- and that notice links directly to Gallica bpt6k58039518. A prior reconciliation had mis-linked PB-P002 to notice cb34944911d and mis-attributed it to P. de Groote; but cb34944911d is a SEPARATE work -- de Groote's 368-p. 'Nouvelle-France... œuvre de colonisation agricole' (Paris, Société générale de librairie catholique, 1880), decisively distinct on page count alone (368 p. vs a 20-p. prospectus). Corrected PB-P002: creator de Groote -> Du Breil de Rays; catalogue ark cb34944911d -> cb34139872z; rights basis re-derived (de Rays d.1893 -> PD 1964); canonical title set to the BnF form (old title kept as an alternate). The SRU sweep for 'Colonie libre de Port-Breton' also surfaced a cluster of Port-Breton affair imprints NOT yet in the corpus (captured as discovery leads below; none acquired -- acquisition needs Gallica, currently blocked)."
+  remainingQuestions:
+    - "Discovery lead (not held): cb34944911d -- P. de Groote, 'Nouvelle-France, colonie libre de Port-Breton, Océanie: œuvre de colonisation agricole', Paris, 1880, 368 p. A major promotional book; central. Digitisation + rights check pending (needs Gallica)."
+    - "Discovery lead (not held): cb30067131v -- Dr A. Baudouin, 'L'aventure de Port-Breton : et la colonie libre dite Nouvelle-France', Paris, M. Dreyfous, 1883, 346 p. A contemporary CRITICAL account of the affair; central secondary source. Digitisation + rights check pending."
+    - "Discovery lead (not held): cb34139874n -- 'Colonie libre de Port-Breton (Nouvelle France-Océanie), Bureau de Paris', Paris, Schiller, 1881; and cb33311782v -- 'La Colonie libre de Port-Breton. Nouvelle-France (Océanie). Exposé sommaire', Marseille, Blanc et Bernard, 1881. The colony's own promotional literature (de Rays-side); central primary. Digitisation + rights check pending."
+    - "Discovery lead (not held): cb302225480 -- G. Charbonnier, 'Exploitation de la canne à sucre dans la colonie libre du Port-Breton', Paris, 1879, 7 p. (promotional/technical); and cb38797788d -- Maur d'Auxais, 'Carte de la Nouvelle France. Colonie libre de Port Breton', 1881 (the colony MAP). Central primary. Digitisation + rights check pending."
+  notes: "Second use of the just-in-time research posture, this time against the BnF catalogue SRU because Gallica was blocked. The de Rays / de Groote conflation shows why page count is the decisive work-identity discriminator when two works share a near-identical title. The discovery cluster excludes arks already held: cb341398750 (PB-P009), cb34139871m (PB-P010), cb328261098 (PB-P001, the colony's serial). These leads are the concrete Gallica acquire targets for when access returns -- 'the central corpus grows in the affair itself'."
+
+- id: SRCH-0009
+  date: 2026-07-15
+  repository: WorldCat + CCFr + BnF Catalogue général
+  scope:
+    kind: work
+    id: PB-P012
+  query: "Widen the SRCH-0003 holding search for PB-P012 (Henri Vermont, 'Le procès du Marquis de Rays... Les Plaidoiries', Marseille, impr. Blanc et Bernard, 1884, 192 p.) beyond Gallica/archive.org/HathiTrust/Google Books to the union catalogues -- WorldCat, CCFr (Catalogue collectif de France), and the BnF Catalogue général -- to locate a PHYSICAL holding + cote."
+  coverage: "NEGATIVE (measured). The Criminocorpus record (ouvrages/118666) that first attested the work confirms the imprint (Marseille, impr. Blanc et Bernard, 1884, 192 p.; cover 'Affaire de Port-Breton... Plaidoirie de Me Vermont') but names NO holding library or cote. WorldCat, CCFr, and the BnF Catalogue général surface no record for this specific Vermont plaidoiries imprint (only the unrelated de Rays literature -- Baudouin, the 'Phantom Paradise' translations, de Groote, etc.). No digitised copy and no locatable physical holding via the major union catalogues -- an irreducible-for-now holding gap, confirming SRCH-0003's finding at a wider search radius. Stays 'discovered'; not digitally acquirable."
+  remainingQuestions:
+    - "Physical holding for the 1884 Marseille Blanc-et-Bernard imprint still unlocated after WorldCat/CCFr/BnF-catalogue. Next radius would be Marseille-local catalogues (BM Marseille / Alcazar) or a specialist legal-history library -- out-of-band, no acquisition path."
+  notes: "Supersedes SRCH-0003's Gallica/digital-library holding search with the union-catalogue radius the earlier note flagged as pending. Result is the same measured negative, now with WorldCat + CCFr explicitly checked: a known trial-record work with no currently-locatable copy, digital or physical -- an irreducible holding gap, not an unexamined unknown."
