@@ -20,3 +20,7 @@
 
 ## session-end 2026-07-15
 - stackctl backlog done requires BOTH --reason <text> and --apply; surfaced via two failed attempts (first missing --reason, then a dry-run without --apply). Minor CLI-ergonomics friction — a single clear usage error listing both required affordances would save the round-trips.
+
+## session-end 2026-07-15
+- bib inventory --repository <url> --dry-run only prints the identifier + sourceUrl, not the resolved rights-critical date / grounded rights evidence -- so to assess acquirability (valid master + groundable pre-1955 date) before creating a member I had to drive adapter.resolve directly in a throwaway script. The dry-run should surface the proposed rights evidence (the same fields rights-assess review-mode shows) so an operator can judge acquire-worthiness without a scratch script.
+- NewItalyMuseumAdapter acquire's mediaFor() throws 'unrecognized master image extension' when the source page's image_anchor href is truncated/incomplete (e.g. newitaly.org.au item 000845 href './images/000845_', no filename) -- the real fault is a broken source image link, not an unknown media type. A clearer 'broken/incomplete source image href' error would make the residual (SOURCE image broken, not our bug) legible at a glance.

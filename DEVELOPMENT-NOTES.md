@@ -1,3 +1,32 @@
+## 2026-07-15: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 8
+  - research(PB-P006): resolve survivor-writings lead — central writings physical-only, undigitised
+  - feat(model): add Source.centrality; mark New Italy settlement photos corpus-adjacent
+  - acquire(PB-P006): 32 pre-1955 New Italy survivor photographs — full catalogue pass
+  - acquire(PB-P006): seven pre-1955 New Italy survivor photographs — live museum batch
+  - acquire(PB-P006): PB-P014 School Group New Italy 1887 — live museum acquisition
+  - research(PB-P006): disposition the museum photograph candidates per-item; regen views
+  - docs(011): fix STRUCTURE.md 000855 self-contradiction (has image_anchor)
+  - fix(TASK-29): honor --dry-run on museum acquire (no B2 write)
+- Files changed: 98
+- Backlog touched: TASK-29
+
 ## 2026-07-15: Spec 011 New Italy Museum acquisition — full front door (design→define→execute→review→live acquire); first real museum image in the corpus
 
 **Goal:** Pick up 009's proven frontier — the PB-P006 New Italy Museum acquisition path — and take it end to end through the stack-control front door to a *sane, real, acquired* asset, letting a live acquisition tell us quickly whether what we built holds up.
