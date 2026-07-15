@@ -10,12 +10,40 @@ knownExtent:
   state: irreducible
   basis: "The New Italy Museum holding is a heterogeneous, changing collection of settler photographs and documents with no stable finite public-domain boundary; the identified public-domain acquisition candidates are named in the suspected[] leads, but the campaign's extent itself is unbounded."
 suspected:
-  - description: "Pre-1955 photographs of early New Italy settlement (settlers clearing land, building shelters, farming, wine-making)"
-    basis: "The New Italy Museum describes holding early-settler photographs. Australian photographs taken before 1955 are out of copyright (the pre-1969 photograph term, not revived by the 2005 extension), so 1880s-1900s settlement photographs are public domain and publishable once digitized with provenance."
-    notes: "The museum's online catalogue (newitaly.org.au/CAT/, a Musarch static export) IS item-level digitised with per-item detail pages + images (~55 digital images, 300+ photographic prints). Specific pre-1955 public-domain candidates confirmed present: 'Survivors arrival in Sydney 1881', 'Landing site at Port Breton', 'Pioneers Group Photo 1890', 'School Group Photo New Italy 1903'. Excluded as post-1955 (still in copyright): 'Expedition Survivors Group Photo 1961'. Not left unexamined; inventory pending a New Italy Museum acquisition path (no adapter — see backlog) and per-item rights confirmation on acquisition."
+  - description: "Pioneers Group Photo 1890 (New Italy Museum, accession NIMI-0844) — a pre-1955 settlement photograph"
+    basis: "Australian photograph, creation year 1890 (grounded from the object description). The pre-1969 photograph copyright term has expired (not revived by the 2005 extension), so it is public domain once digitized with provenance. Per PB-P006 settlement-photograph research."
+    notes: "The named photograph candidates below were originally lumped into a single 'pre-1955 photographs' lead (resolved 'identified' 2026-07-13). Once the New Italy Museum acquisition path shipped (spec 011) each was inventoried per-item, and the leads were split because their dispositions diverge. This one: inventoried, operator-assessed public-domain, verified, promoted, and acquired as member PB-P013 (master mirrored to the object store, sha256-verified) — the first live New Italy Museum acquisition."
     resolution:
-      state: identified
-      candidate: "New Italy Museum Musarch catalogue: Survivors arrival in Sydney 1881, Landing site at Port Breton, Pioneers Group Photo 1890, School Group Photo New Italy 1903"
+      state: inventoried
+      sourceId: PB-P013
+      resolvedAt: '2026-07-15'
+  - description: "School Group Photo New Italy 1903 (New Italy Museum, accession NIMI-0845) — a pre-1955 settlement photograph"
+    basis: "Australian photograph, creation year 1903 (grounded from the object description). The pre-1969 photograph term has expired — the correct public-domain rights profile. Per PB-P006 settlement-photograph research."
+    notes: "The right rights profile (a genuine pre-1955 photograph), but its master image is not retrievable: on live per-item inventory the Musarch item page's image_anchor href is truncated/incomplete at the SOURCE ('./images/000845_' — no filename or extension) and the thumbnail reference is likewise malformed, so there is no downloadable full-res master to mirror. The block is upstream (the museum's own digitized image link), not our pipeline. Revisit if the museum repairs or supplies the image."
+    resolution:
+      state: unavailable
+      reason: "Source master-image link is broken on the museum's Musarch page (image_anchor href truncated to './images/000845_', no filename/extension) — no retrievable full-res master to acquire."
+      resolvedAt: '2026-07-15'
+  - description: "Landing site of settlement at Port Breton (New Italy Museum, accession NIMI-0668)"
+    basis: "Named as a settlement-history photograph candidate in earlier research; on live per-item inventory it proved to be an HTML-only catalogue record with no digital image."
+    notes: "Catalogue record only: no image_anchor (no downloadable master) and a blank Object Date with no year anywhere in the description — so there is nothing to mirror and no creation date on which to establish a rights term. The adapter's resolve fails loud here (the rights-critical date is absent). Not acquirable as a digital asset."
+    resolution:
+      state: unavailable
+      reason: "HTML-only catalogue record: no image_anchor (no downloadable master) and no creation date on the page (blank Object Date, no year in the description) — nothing to acquire and no basis to date."
+      resolvedAt: '2026-07-15'
+  - description: "'Survivors arrival in Sydney 1881' — an artists impression of the Italian immigrants (New Italy Museum, accession NIMI-0855)"
+    basis: "Previously listed among the settlement-photograph candidates, but live per-item inventory shows it is an ARTIST'S IMPRESSION (an artwork), not a photograph. PB-P006's public-domain basis covers pre-1955 photographs, which does not apply to an artwork whose author and creation date are unestablished."
+    notes: "The catalogue 'Object Date 1881' is the date of the depicted event (the 1881 arrival), not evidence of the artwork's own creation date; no creator is recorded on the page, so the copyright term (author's death + 70y, or a pre-1955 test) cannot be established. A master image IS present, so this could be revisited only if independent evidence establishes the impression itself is public domain. Operator decision (2026-07-15): do NOT acquire on the pre-1955-photograph basis."
+    resolution:
+      state: excluded
+      reason: "An artist's impression (artwork), not a photograph; the pre-1955-photograph public-domain basis does not apply, and the artwork's author/creation date are unestablished. Operator decision: do not acquire."
+      resolvedAt: '2026-07-15'
+  - description: "'Expedition Survivors Group Photo 1961' (New Italy Museum) — a post-1955 settlement photograph"
+    basis: "A settlement photograph, but created 1961 — after the pre-1955 threshold, so still within the Australian photograph copyright term. Excluded from the public-domain acquisition set."
+    notes: "Recorded during the 2026-07-13 photograph research as the one named candidate excluded on age grounds; kept here as an explicit exclusion so the public-domain boundary of the photograph set is legible rather than implicit."
+    resolution:
+      state: excluded
+      reason: "Created 1961 — post-1955, still in copyright under the Australian photograph term; not public domain."
       resolvedAt: '2026-07-13'
   - description: "Survivor accounts, letters, and personal writings of the de Rays expedition settlers"
     basis: "The museum holds survivor accounts. Those written before 1955, or by authors dead more than 70 years, are public domain; mid-20th-century reminiscences may remain in copyright. Determine per item on acquisition."
