@@ -1,18 +1,33 @@
-## 2026-07-15: <!-- session title -->
+## 2026-07-15: Spec 011 New Italy Museum acquisition — full front door (design→define→execute→review→live acquire); first real museum image in the corpus
 
-**Goal:** <!-- compose: what we set out to do -->
+**Goal:** Pick up 009's proven frontier — the PB-P006 New Italy Museum acquisition path — and take it end to end through the stack-control front door to a *sane, real, acquired* asset, letting a live acquisition tell us quickly whether what we built holds up.
 
 **Accomplished:**
-- <!-- compose -->
+- **Full front-door arc for `impl:feature/museum-acquisition-path`:** design (two third-party reviews + an operator-invited adversarial parser-vs-LLM argument) → define (specify → clarify → plan → tasks → analyze; analyze-clean) → execute (26 tasks at tier-resolved models: opus for the cutover/adapter/verifier/acquire, sonnet for CLI/loaders/render, haiku for enum/vocab/data) → local `/code-review` (3 findings fixed) → live acquisition.
+- **Built:** the `RepositoryAdapter` seam + registry as a **full Gallica cutover** (characterization-test-proven, hardwired `ark→fetch` path removed); the complete `NewItalyMuseumAdapter` (DOM-direct mechanical pull + grounded LLM extractor over the reused `createEngine` seam + deterministic grounding verifier + fail-closed idempotent acquire); the honest `archival-item` kind, `accession` identity, operator-authored `RightsAssessment`; `SuspectedLead.resolution` + three-state `knownExtent` discriminated unions rendered in coverage; `bib inventory --repository` and `bib rights-assess` verbs. Closed two latent gaps found en route (`sourceUrl` was never persisted; the loader rejected `archival-item`).
+- **Grounded the extractor in REAL captured Musarch pages** (fetched `newitaly.org.au/CAT/` item pages, saved fixtures + a STRUCTURE.md ground truth) rather than guessing selectors.
+- **First real museum acquisition, end-to-end:** **PB-P013** (Pioneers Group Photo 1890, accession `NIMI-0844`) — inventory → codex extraction (date `1890` grounded to the verbatim page span) → rights-assess (operator `public-domain`) → verify → promote → acquire (**122,987-byte master mirrored to B2, sha256-verified**) → reconcile → `archived`. `bib coverage` renders it correctly: leads `identified` (open 0/2, SC-004), extent `irreducible` with basis (SC-005).
+- **The live test found 3 integration gaps the unit suite missed:** TASK-28 (verify-member/promote Gallica-hardwired) **fixed**; TASK-30 (acquire mirrors to B2 but never records the asset → reconcile finds nothing) **fixed**; TASK-29 (`--dry-run` not honored on museum acquire) captured. 5 code-review + live-test defects fixed inline and re-validated. **1293 tests pass, tsc clean.**
 
 **Didn't Work:**
-- <!-- compose -->
+- **FR-017 was wrong: "museum items reuse the existing group-member verify/promote path" is false.** That path is Gallica-hardwired (ark resolver + OAIRecord rights) and fails for an accession/operator-rights member. Only the LIVE run surfaced it — the unit tests mocked the adapter and never exercised the real verify path.
+- **The museum acquire mirrored to B2 but never persisted the `AcquiredAsset` to the SSOT or wrote archive provenance,** so reconcile reported "nothing to reconcile" — the master was orphaned in B2 (SSOT↔archive drift). Again only the live run caught it.
+- The grounding verifier had a **vacuous-pass hole** (an empty excerpt passes `includes("")`) — caught in `/code-review`, not by the extensive unit tests.
+- A T016 subagent dispatch **malfunctioned once** (returned leaked prompt boilerplate, 0 tool uses, no work); re-dispatched fresh and it succeeded.
 
 **Course Corrections:**
-- <!-- compose -->
+- Operator invited an **adversarial argument** on parser-vs-LLM extraction. Conceded the accuracy point honestly, made the security/reproducibility case against *pure* LLM, and landed on the **layered hybrid** (DOM-direct mechanical + LLM prose + a deterministic grounding verifier) — determinism where a field is canonical + rights-critical, not the parsing tool.
+- Operator: *"we already have code that calls out to coding agents — reuse it, don't roll your own"* + *"full cutover, never back-compat"* → reused the `createEngine`/`TranslationEngine` seam for extraction; the Gallica cutover removed the hardwired path (no shim). ([[clean-breaks-no-backcompat]], [[fix-tooling-inline]])
+- Operator: **"let's actually acquire some assets — that will tell us quickly if what we built is sane."** The single highest-value call of the session: the live acquire proved the novel pipeline sane AND found all three integration gaps in minutes.
+- Two third-party spec/design reviews adopted with synthesis (`archival-item` over `item`, discriminated unions, fail-loud-on-remote-change, `GroundedField.interpretation`, typed adapter I/O), pushing back only where a reviewer recommendation contradicted an explicit operator decision.
 
 **Insights:**
-- <!-- compose -->
+- **Unit tests that mock the adapter can't catch gaps at the seams.** All three live-found gaps (verify-member, acquire-bookkeeping, dry-run) lived at the boundary between the new adapter and the shipped pipeline; each was invisible to a green unit suite and obvious within minutes of a real acquire. One live end-to-end run beat a hundred more mocked unit tests for integration confidence.
+- **"Reuse the existing path" is an assumption to TEST, not to state.** The design should have flagged the verify/promote path as needing the same adapter dispatch the acquire path got.
+- **The data plane can work while the control plane is silently incomplete** — the acquire correctly fetched + checksummed + mirrored a real image (data plane) while never recording or reconciling it (control plane); only reconcile's "nothing to reconcile" made the drift visible.
+- **Grounding the extractor in a real captured page shaped the design** — the real Musarch structure (`#objectdate` usually empty; the date lives in the description prose; `image_anchor` = master vs `tn_` thumbnail) decisively validated the LLM-for-prose choice and the best-representation rule.
+- Spec 011 resolves the originating **TASK-25** (suspected-resolution) + **TASK-26** (museum-acquisition-path) from the 009 backlog; **TASK-27** (standalone-source) stayed correctly out of scope (museum items are group members).
+- **Next session:** TASK-29 (`--dry-run`, open); acquire the other 3 identified PB-P006 candidates (`000855`/`000668`/`000845` — pipeline now proven); run the full `stackctl govern` cross-model barrage in a fleet-capable env (the graduate→ship gate needs its converged record and stays intact).
 
 **Quantitative (auto-derived from git; verify before publishing):**
 - Commits: 55
