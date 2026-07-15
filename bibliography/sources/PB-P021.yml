@@ -3,6 +3,7 @@ kind: archival-item
 partOf: PB-P006
 status: approved-for-acquisition
 case: port-breton
+centrality: adjacent
 titles:
   - text: ROSOLEN Peter Farm at New Italy ca 1941
     role: archive

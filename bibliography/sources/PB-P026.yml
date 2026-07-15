@@ -3,6 +3,7 @@ kind: archival-item
 partOf: PB-P006
 status: approved-for-acquisition
 case: port-breton
+centrality: adjacent
 titles:
   - text: Photo of Empire Day New Italy 24 May 1917
     role: archive

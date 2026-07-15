@@ -1,4 +1,9 @@
-import type { CitedKind, EvidenceClass, SourceLifecycleStatus } from '@/bibliography/vocab';
+import type {
+  CitedKind,
+  EvidenceClass,
+  SourceCentrality,
+  SourceLifecycleStatus,
+} from '@/bibliography/vocab';
 import type { WorkLevelIdentifierType } from '@/model/identifiers';
 import type { Publication, SourceRights } from '@/model/publication';
 
@@ -55,6 +60,15 @@ export interface Source {
   identifiers: WorkIdentifier[];
   /** Corpus grouping, e.g. `port-breton`. */
   case?: string;
+  /**
+   * This source's relation to the corpus's central subject. Absent or
+   * `'central'` is a core corpus work; `'adjacent'` marks a corpus-adjacent
+   * source -- preserved and potentially interesting, but NOT central to what
+   * the corpus is about (e.g. New Italy settlement material held alongside,
+   * yet distinct from, the Port Breton affair). Adjacent members are counted
+   * separately by the coverage report, never toward the central-corpus total.
+   */
+  centrality?: SourceCentrality;
   /**
    * The genre/evidence class of this work, e.g. `pamphlet` or `trial-record`.
    * Orthogonal to the structural `kind` (a `monograph` may be a `pamphlet`,

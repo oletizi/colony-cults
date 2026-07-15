@@ -3,6 +3,7 @@ kind: archival-item
 partOf: PB-P006
 status: approved-for-acquisition
 case: port-breton
+centrality: adjacent
 titles:
   - text: Photo of School Children New Italy 1902
     role: archive

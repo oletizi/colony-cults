@@ -80,7 +80,13 @@ function renderPerWorkBundle(perWorkBundle: WorkBundleCoverage[], lines: string[
         : workBundle.membersByLifecycleState
             .map((bucket) => `${bucket.state} ${bucket.count}`)
             .join(' | ');
-    lines.push(`    members: ${members}   (actual works: ${workBundle.actualMemberCount})`);
+    const adjacentSuffix =
+      workBundle.adjacentMemberCount > 0
+        ? ` [+ ${workBundle.adjacentMemberCount} corpus-adjacent, not central]`
+        : '';
+    lines.push(
+      `    members: ${members}   (actual works: ${workBundle.actualMemberCount})${adjacentSuffix}`,
+    );
     lines.push(
       `    believed extent (knownExtent): ${renderKnownExtent(workBundle.knownExtent)}` +
         `        gap: ${renderGap(workBundle.gap)}`,

@@ -99,3 +99,65 @@ describe('serializeSource round-trip of previously-dropped fields', () => {
     }
   });
 });
+
+/**
+ * `centrality` (corpus-central vs corpus-adjacent) must round-trip through
+ * load -> serialize, and an unrecognized value must fail loud at load rather
+ * than being silently accepted.
+ */
+describe('Source.centrality load/serialize', () => {
+  const adjacent: Source = {
+    sourceId: 'PB-P901',
+    kind: 'archival-item',
+    partOf: 'PB-P006',
+    status: 'approved-for-acquisition',
+    case: 'port-breton',
+    centrality: 'adjacent',
+    titles: [{ text: 'New Italy settlement photograph', role: 'archive' }],
+    identifiers: [],
+  };
+
+  it('round-trips centrality: adjacent through load -> serialize', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ssot-centrality-'));
+    try {
+      const path = join(dir, 'PB-P901.yml');
+      const first = serializeSource({ source: adjacent, records: [] });
+      expect(first).toContain('centrality: adjacent');
+      writeFileSync(path, first, 'utf-8');
+
+      const reloaded = loadSourceFile(path).source;
+      expect(reloaded.centrality).toBe('adjacent');
+      // Idempotent re-serialize.
+      expect(serializeSource({ source: reloaded, records: [] })).toBe(first);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('an absent centrality loads as undefined (a central corpus work)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ssot-centrality-'));
+    try {
+      const path = join(dir, 'PB-P902.yml');
+      const { centrality: _omitted, ...central } = adjacent;
+      writeFileSync(path, serializeSource({ source: { ...central, sourceId: 'PB-P902' }, records: [] }), 'utf-8');
+      expect(loadSourceFile(path).source.centrality).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('fails loud on a centrality value outside the closed vocabulary', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ssot-centrality-'));
+    try {
+      const path = join(dir, 'PB-P903.yml');
+      writeFileSync(
+        path,
+        'sourceId: PB-P903\nkind: archival-item\ncentrality: peripheral\ntitles:\n  - text: x\n    role: archive\n',
+        'utf-8',
+      );
+      expect(() => loadSourceFile(path)).toThrow(/centrality "peripheral" is not in the closed/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

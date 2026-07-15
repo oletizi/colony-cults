@@ -116,6 +116,7 @@ describe('T026 believed-extent BASIS surfaced distinctly per KnownExtent state (
           workBundle: 'SYN-P001',
           membersByLifecycleState: [],
           actualMemberCount: 0,
+          adjacentMemberCount: 0,
           knownExtent: { state: 'irreducible' as const, basis: 'the run is a continuous, unbounded serial' },
           gap: 'irreducible' as const,
         },
@@ -414,5 +415,50 @@ describe('T012 determinism (SC-004)', () => {
     expect(text).toContain('Suspected private correspondence regarding the campaign');
     // No headline percentage anywhere (INV-1).
     expect(text).not.toContain('%');
+  });
+});
+
+describe('corpus-adjacent members (centrality) are counted separately, never as central', () => {
+  function member(sourceId: string, adjacent: boolean) {
+    const source: import('@/model/source').Source = {
+      sourceId,
+      kind: 'archival-item',
+      partOf: 'SYN-GRP',
+      status: 'approved-for-acquisition',
+      titles: [{ text: sourceId, role: 'archive' }],
+      identifiers: [],
+      ...(adjacent ? { centrality: 'adjacent' as const } : {}),
+    };
+    return { source, records: [], identifierLeaks: [] };
+  }
+
+  it('excludes adjacent members from actualMemberCount and reports them as adjacentMemberCount', () => {
+    const group: import('@/model/source').Source = {
+      sourceId: 'SYN-GRP',
+      kind: 'source-group',
+      knownExtent: { state: 'irreducible', basis: 'a heterogeneous holding' },
+      titles: [{ text: 'group', role: 'canonical' }],
+      identifiers: [],
+    };
+    const input = {
+      sources: [
+        { source: group, records: [], identifierLeaks: [] },
+        member('SYN-C1', false),
+        member('SYN-C2', false),
+        member('SYN-A1', true),
+        member('SYN-A2', true),
+        member('SYN-A3', true),
+      ],
+      searchLog: [],
+    };
+    const wb = buildCoverageReport(input).perWorkBundle.find((c) => c.workBundle === 'SYN-GRP');
+    expect(wb?.actualMemberCount).toBe(2);
+    expect(wb?.adjacentMemberCount).toBe(3);
+    // Adjacent members do not appear in the central lifecycle buckets either.
+    const centralTotal = (wb?.membersByLifecycleState ?? []).reduce((s, b) => s + b.count, 0);
+    expect(centralTotal).toBe(2);
+
+    const text = renderCoverage(buildCoverageReport(input), { json: false });
+    expect(text).toContain('[+ 3 corpus-adjacent, not central]');
   });
 });

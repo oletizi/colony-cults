@@ -35,6 +35,17 @@ export const SOURCE_LIFECYCLE_STATUS_VALUES = [
 export type SourceLifecycleStatus = (typeof SOURCE_LIFECYCLE_STATUS_VALUES)[number];
 
 /**
+ * How a `Source` relates to the corpus's central subject. `central` (the
+ * default when the field is absent) is a core corpus work; `adjacent` marks a
+ * corpus-adjacent source -- preserved and potentially interesting, but NOT
+ * central to what the corpus is about (e.g. New Italy settlement material held
+ * alongside, yet distinct from, the Port Breton affair). The coverage report
+ * counts `adjacent` members separately, never toward the central-corpus total.
+ */
+export const SOURCE_CENTRALITY_VALUES = ['central', 'adjacent'] as const;
+export type SourceCentrality = (typeof SOURCE_CENTRALITY_VALUES)[number];
+
+/**
  * Acquisition status of a `RepositoryRecord` -- a held copy's own state
  * machine, distinct from a `Source`'s lifecycle status above. The handoff: a
  * Source's lifecycle ends at `approved-for-acquisition`; a RepositoryRecord is
@@ -285,6 +296,16 @@ export function isAllowed(field: string, value: string): boolean {
  */
 export function isSourceLifecycleStatus(value: string): value is SourceLifecycleStatus {
   return includesValue(SOURCE_LIFECYCLE_STATUS_VALUES, value);
+}
+
+/**
+ * Membership test for the `SourceCentrality` vocabulary:
+ * `isSourceCentrality('adjacent')` -> `true`; `isSourceCentrality('core')` ->
+ * `false`. Use wherever a `Source.centrality` value is checked
+ * (see `@/bibliography/load`).
+ */
+export function isSourceCentrality(value: string): value is SourceCentrality {
+  return includesValue(SOURCE_CENTRALITY_VALUES, value);
 }
 
 /**

@@ -22,11 +22,12 @@ import {
   requireString,
 } from '@/bibliography/load-primitives';
 import {
+  isSourceCentrality,
   isSourceLifecycleStatus,
   isSourceRightsStatus,
   isSourceStructuralKind,
 } from '@/bibliography/vocab';
-import type { SourceLifecycleStatus } from '@/bibliography/vocab';
+import type { SourceCentrality, SourceLifecycleStatus } from '@/bibliography/vocab';
 import type { MachineAssistLabel } from '@/pdf/model';
 import type { Publication, PublicationManifestRef, SourceRights } from '@/model/publication';
 import type { Reference, Source, SuspectedGap, WorkIdentifier } from '@/model/source';
@@ -56,6 +57,7 @@ const SOURCE_KEYS = new Set([
   'language',
   'identifiers',
   'case',
+  'centrality',
   'evidenceClass',
   'rights',
   'references',
@@ -306,6 +308,22 @@ export function loadSourceFile(filePath: string): LoadedSource {
   const sourceCase = optionalString(obj.case, filePath, 'case');
   const notes = optionalString(obj.notes, filePath, 'notes');
 
+  // Corpus-centrality mark (optional): absent means a central corpus work; a
+  // present value is narrowed against the closed `SourceCentrality` vocab, so an
+  // unrecognized value fails loud rather than being silently accepted.
+  const centralityRaw = optionalString(obj.centrality, filePath, 'centrality');
+  let centrality: SourceCentrality | undefined;
+  if (centralityRaw !== undefined) {
+    if (!isSourceCentrality(centralityRaw)) {
+      fail(
+        filePath,
+        `centrality "${centralityRaw}" is not in the closed SourceCentrality ` +
+          `vocabulary (central / adjacent)`,
+      );
+    }
+    centrality = centralityRaw;
+  }
+
   // Corpus-coverage-audit authored fields (specs/007), all optional/additive.
   // Parsed faithfully with the loader's normal shape/required-field checks;
   // richer vocab/referential/group-only validation is a later validation task.
@@ -422,6 +440,7 @@ export function loadSourceFile(filePath: string): LoadedSource {
     creator,
     language,
     case: sourceCase,
+    centrality,
     evidenceClass,
     rights,
     references,

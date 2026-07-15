@@ -272,8 +272,8 @@ export function serializeSource(migrated: MigratedSource): string {
   if (source.partOf !== undefined) {
     out.partOf = source.partOf;
   }
-  // Field order: sourceId, kind, partOf, status, case, evidenceClass, language,
-  // creator, rights, knownExtent, titles, identifiers, references,
+  // Field order: sourceId, kind, partOf, status, case, centrality, evidenceClass,
+  // language, creator, rights, knownExtent, titles, identifiers, references,
   // suspected, notes, repositoryRecords, publications -- status sits right after
   // partOf since both describe the Source's place in the group/lifecycle model,
   // ahead of the more descriptive/bibliographic fields; publications sits last,
@@ -284,6 +284,9 @@ export function serializeSource(migrated: MigratedSource): string {
   }
   if (source.case !== undefined) {
     out.case = source.case;
+  }
+  if (source.centrality !== undefined) {
+    out.centrality = source.centrality;
   }
   if (source.evidenceClass !== undefined) {
     out.evidenceClass = source.evidenceClass;

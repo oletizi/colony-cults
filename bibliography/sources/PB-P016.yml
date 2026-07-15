@@ -3,6 +3,7 @@ kind: archival-item
 partOf: PB-P006
 status: approved-for-acquisition
 case: port-breton
+centrality: adjacent
 titles:
   - text: Group Photo of the Sports-Committe-New-Italy with names.
     role: archive

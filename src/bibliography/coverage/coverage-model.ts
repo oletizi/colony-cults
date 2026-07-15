@@ -34,8 +34,19 @@ export interface WorkBundleCoverage {
    * members with no authored `status`. Per work, not per copy.
    */
   membersByLifecycleState: { state: SourceLifecycleStatus | 'unset'; count: number }[];
-  /** Count of actual member works, DERIVED from `partOf` edges (per work). */
+  /**
+   * Count of CENTRAL member works (per work, DERIVED from `partOf` edges),
+   * EXCLUDING any member marked `centrality: 'adjacent'`. This is the
+   * central-corpus numerator the `gap` is measured against; adjacent members
+   * are preserved but not counted here (see {@link adjacentMemberCount}).
+   */
   actualMemberCount: number;
+  /**
+   * Count of corpus-ADJACENT member works (`centrality: 'adjacent'`) under this
+   * work-bundle -- preserved and reported, but never counted as central. `0`
+   * when the group has no adjacent members.
+   */
+  adjacentMemberCount: number;
   /**
    * The authored believed extent (denominator), defaulted to
    * `{ state: 'unexamined' }` when absent (specs/011 § KnownExtent) -- never
@@ -193,7 +204,12 @@ function buildWorkBundleCoverage(
   sources: readonly LoadedSource[],
 ): WorkBundleCoverage {
   const workBundle = group.source.sourceId;
-  const members = sources.filter((loaded) => loaded.source.partOf === workBundle);
+  const allMembers = sources.filter((loaded) => loaded.source.partOf === workBundle);
+  // Corpus-adjacent members are preserved but never counted as central: they
+  // are excluded from the lifecycle buckets and the numerator the `gap` reads,
+  // and surfaced through their own `adjacentMemberCount` instead.
+  const members = allMembers.filter((loaded) => loaded.source.centrality !== 'adjacent');
+  const adjacentMemberCount = allMembers.length - members.length;
 
   const counts = new Map<SourceLifecycleStatus | 'unset', number>();
   for (const member of members) {
@@ -208,7 +224,7 @@ function buildWorkBundleCoverage(
   const knownExtent: KnownExtent = group.source.knownExtent ?? { state: 'unexamined' };
   const gap = knownExtent.state === 'measured' ? knownExtent.count - actualMemberCount : knownExtent.state;
 
-  return { workBundle, membersByLifecycleState, actualMemberCount, knownExtent, gap };
+  return { workBundle, membersByLifecycleState, actualMemberCount, adjacentMemberCount, knownExtent, gap };
 }
 
 /**

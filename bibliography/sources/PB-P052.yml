@@ -3,6 +3,7 @@ kind: archival-item
 partOf: PB-P006
 status: approved-for-acquisition
 case: port-breton
+centrality: adjacent
 titles:
   - text: ROSOLEN's Saw Mill at Moonem 1916
     role: archive

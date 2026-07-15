@@ -52,6 +52,7 @@ describe('T007 coverage skeleton: buildCoverageReport', () => {
         'workBundle',
         'membersByLifecycleState',
         'actualMemberCount',
+        'adjacentMemberCount',
         'knownExtent',
         'gap',
       ]);
