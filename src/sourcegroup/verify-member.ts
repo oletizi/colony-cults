@@ -20,6 +20,22 @@ import type { Source } from '@/model/source';
  * All I/O is injected (the ark resolver, the existing-member set) so the
  * function stays pure and testable without touching the network or the
  * filesystem.
+ *
+ * ADAPTER-AWARENESS (TASK-28): the two repository-specific checks
+ * (`identifierResolved`, `rights`) DISPATCH by the record's copy-identifier
+ * type (ark->Gallica, accession->museum; see `repositorySpecificChecks`), so
+ * this one function verifies both a Gallica member and a museum member. The
+ * injected `ArkResolver` is simply unused for an accession record.
+ *
+ * FLOW-ORDER NOTE: a museum member's `rights` check reads the
+ * operator-recorded `record.rightsAssessment`, NOT an OAIRecord. Gallica gets
+ * its rights from the OAIRecord at INVENTORY time, so a Gallica member's flow
+ * is inventory -> verify-member -> promote. A museum member has no OAIRecord,
+ * so its authoritative rights are authored by a SEPARATE `rights-assess` step
+ * that MUST precede promote: the museum flow is
+ * inventory -> rights-assess -> verify-member -> promote. Without the
+ * intervening `rights-assess`, a museum member's `rights` check fails closed
+ * (an absent `rightsAssessment` is a fail), so promote correctly aborts.
  */
 
 /**
@@ -173,6 +189,78 @@ function arkOf(record: RepositoryRecord): string | undefined {
   return identifier?.value;
 }
 
+/** The record's accession value (the first `accession`-typed copy identifier), if any. */
+function accessionOf(record: RepositoryRecord): string | undefined {
+  const identifier = (record.identifiers ?? []).find((id) => id.type === 'accession');
+  return identifier?.value;
+}
+
+/** A trimmed non-empty string, or `undefined` when absent/blank. */
+function nonEmpty(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
+}
+
+/** The pass/fail outcomes of the two repository-specific checks. */
+interface RepositoryChecks {
+  identifierResolved: 'passed' | 'failed';
+  rights: 'passed' | 'failed';
+}
+
+/**
+ * Dispatch the TWO repository-specific checks -- `identifierResolved` and
+ * `rights` -- by the record's copy-identifier type (composition, not an
+ * inheritance hierarchy: a small branch keyed on identifier type, mirroring
+ * how the acquire registry dispatches ark->gallica / accession->museum). The
+ * other three checks (`requiredMetadata`, `hardDuplicate`, `possibleDuplicate`)
+ * are repository-agnostic and are NOT dispatched here.
+ *
+ * - `ark` copy identifier (Gallica): UNCHANGED. `identifierResolved` runs the
+ *   injected {@link ArkResolver} against the ark (a dead ark fails); `rights`
+ *   passes when the OAIRecord `record.rights?.status === 'public-domain'`.
+ * - `accession` copy identifier (museum): a verify check must be CHEAP and
+ *   DETERMINISTIC, so `identifierResolved` does NOT re-fetch/re-run the museum
+ *   engine -- it passes when the record carries a non-empty `accession` value
+ *   AND a non-empty `sourceUrl` (both set + confirmed at inventory time by the
+ *   museum adapter's resolve). `rights` reads the operator-authored
+ *   `record.rightsAssessment?.rightsStatus === 'public-domain'`; it fails
+ *   CLOSED otherwise (restricted / uncertain / absent all fail).
+ * - NEITHER supported identifier: both checks fail (never silently pass) --
+ *   an unsupported record cannot be verified.
+ */
+async function repositorySpecificChecks(
+  record: RepositoryRecord,
+  resolveArk: ArkResolver,
+): Promise<RepositoryChecks> {
+  const ark = normalizeArk(arkOf(record));
+  if (ark !== undefined) {
+    // Gallica (ark) path -- UNCHANGED from the original Gallica-hardwired logic.
+    return {
+      identifierResolved: (await resolveArk(ark)) !== null ? 'passed' : 'failed',
+      rights: record.rights?.status === 'public-domain' ? 'passed' : 'failed',
+    };
+  }
+
+  const accession = nonEmpty(accessionOf(record));
+  if (accession !== undefined) {
+    // Museum (accession) path. identifierResolved is a cheap, deterministic
+    // check on already-inventoried state -- accession value + sourceUrl both
+    // present -- never a re-fetch. rights fails closed unless the
+    // operator-authored assessment says public-domain.
+    return {
+      identifierResolved: nonEmpty(record.sourceUrl) !== undefined ? 'passed' : 'failed',
+      rights: record.rightsAssessment?.rightsStatus === 'public-domain' ? 'passed' : 'failed',
+    };
+  }
+
+  // Neither a supported ark nor accession copy identifier -> fail both checks
+  // (fail-closed; an unsupported record is never silently passed).
+  return { identifierResolved: 'failed', rights: 'failed' };
+}
+
 /**
  * hardDuplicate: the same ark held at the same `sourceArchive` by ANOTHER
  * member is a hard duplicate (FR-008). The member's own record (matched by
@@ -252,8 +340,14 @@ function assertWellFormed(input: VerifyMemberInput): void {
  * async; no direct I/O.
  *
  * Checks (all deterministic):
- * - `identifierResolved`: the record's ark resolves via the injected resolver.
- * - `rights`: the record's rights normalize to `public-domain`.
+ * - `identifierResolved`: dispatched by copy-identifier type -- an `ark`
+ *   record resolves via the injected resolver (Gallica, UNCHANGED); an
+ *   `accession` record passes when it carries a non-empty accession value AND
+ *   a non-empty `sourceUrl` (museum; no re-fetch). See
+ *   `repositorySpecificChecks`.
+ * - `rights`: dispatched by copy-identifier type -- an `ark` record's
+ *   `rights.status` (Gallica OAIRecord, UNCHANGED); an `accession` record's
+ *   operator-authored `rightsAssessment.rightsStatus` (museum, fail-closed).
  * - `requiredMetadata`: required member/record fields are present.
  * - `hardDuplicate`: same ark at same archive as another member -> `failed`.
  * - `possibleDuplicate`: matching title/creator/date, DIFFERENT ark ->
@@ -265,12 +359,13 @@ export async function verifyMember(input: VerifyMemberInput): Promise<MemberVerd
   const { member, record, existingMembers } = input;
   const candidateArk = normalizeArk(arkOf(record));
 
-  const identifierResolved =
-    candidateArk !== undefined && (await input.resolveArk(candidateArk)) !== null
-      ? 'passed'
-      : 'failed';
-
-  const rights = record.rights?.status === 'public-domain' ? 'passed' : 'failed';
+  // The two repository-specific checks dispatch by copy-identifier type
+  // (ark->Gallica, accession->museum); see `repositorySpecificChecks`. The
+  // remaining three checks below are repository-agnostic.
+  const { identifierResolved, rights } = await repositorySpecificChecks(
+    record,
+    input.resolveArk,
+  );
 
   const requiredMetadata =
     allRequiredPresent(member, SOURCE_REQUIRED_FIELDS) &&

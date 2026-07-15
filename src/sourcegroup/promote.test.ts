@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import type { Source } from '@/model/source';
-import type { Rights } from '@/model/rights';
+import type { Rights, RightsAssessment } from '@/model/rights';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import { loadSourceFile } from '@/bibliography/load';
 import type { ArkResolver, ExistingMemberRecord } from '@/sourcegroup/verify-member';
@@ -289,5 +289,118 @@ describe('runPromote', () => {
     Reflect.deleteProperty(bad, 'resolveArk');
 
     await expect(runPromote(bad)).rejects.toThrow(/resolve/i);
+  });
+
+  /**
+   * TASK-28: a museum member (an `accession` copy identifier + `sourceUrl`,
+   * no ark/OAIRecord) promotes when it carries an operator-authored
+   * `rightsAssessment.rightsStatus: 'public-domain'`. The injected ark resolver
+   * is unused for an accession record -- verification dispatches by
+   * copy-identifier type. Flow order: inventory -> rights-assess ->
+   * verify-member -> promote.
+   */
+  describe('museum / accession member', () => {
+    const ACCESSION = '2015.0043.0001';
+    const MUSEUM_SNAPSHOT = 'bibliography/repository-responses/PB-P100/2015-0043-0001-abc.json';
+
+    /** An ark resolver that MUST NOT be called for an accession record. */
+    const resolverThatThrows: ArkResolver = async () => {
+      throw new Error('resolveArk must not be called for an accession (museum) record');
+    };
+
+    function publicDomainAssessment(): RightsAssessment {
+      return {
+        rightsStatus: 'public-domain',
+        rightsBasis: 'Photograph created before 1955; Australian pre-1969 term.',
+        assessedBy: 'operator',
+        assessedAt: '2026-07-14T00:00:00.000Z',
+      };
+    }
+
+    function museumAuthoredRecord(
+      overrides: Partial<AuthoredRepositoryRecord> = {},
+    ): AuthoredRepositoryRecord {
+      return {
+        sourceArchive: 'New Italy Museum',
+        status: 'wanted',
+        sourceUrl: 'https://collection.newitalymuseum.au/item/2015.0043.0001',
+        identifiers: [{ type: 'accession', value: ACCESSION }],
+        rightsAssessment: publicDomainAssessment(),
+        metadataSnapshot: {
+          path: MUSEUM_SNAPSHOT,
+          retrievedAt: '2026-07-01T00:00:00.000Z',
+          endpoint: 'https://collection.newitalymuseum.au',
+          normalizationVersion: 1,
+        },
+        ...overrides,
+      };
+    }
+
+    function museumEntries(records = [museumAuthoredRecord()]): Entry[] {
+      return [
+        { source: group(), records: [] },
+        { source: member({ kind: 'archival-item' }), records },
+      ];
+    }
+
+    function museumInput(d: string) {
+      return { ...baseInput(d), resolveArk: resolverThatThrows };
+    }
+
+    it('promotes a museum member with a public-domain assessment (ark resolver unused)', async () => {
+      dir = await seed(museumEntries());
+
+      const result = await runPromote(museumInput(dir));
+
+      expect(result.status).toBe('approved-for-acquisition');
+      expect(result.recordStatus).toBe('to-collect');
+      expect(result.verdict.result).toBe('passed');
+
+      const { source, records } = loadSourceFile(join(dir, `${MEMBER_ID}.yml`));
+      expect(source.status).toBe('approved-for-acquisition');
+      expect(records[0].status).toBe('to-collect');
+      expect(records[0].verification).toEqual({
+        result: 'passed',
+        verifiedAt: VERIFIED_AT,
+        checks: {
+          identifierResolved: 'passed',
+          rights: 'passed',
+          requiredMetadata: 'passed',
+          hardDuplicate: 'passed',
+          possibleDuplicate: 'passed',
+        },
+        snapshotRef: MUSEUM_SNAPSHOT,
+      });
+    });
+
+    it('aborts (records nothing) when the museum member has NO rightsAssessment -- rights fails closed', async () => {
+      dir = await seed(museumEntries([museumAuthoredRecord({ rightsAssessment: undefined })]));
+
+      await expect(runPromote(museumInput(dir))).rejects.toThrow(/rights/i);
+
+      const { source, records } = loadSourceFile(join(dir, `${MEMBER_ID}.yml`));
+      expect(source.status).toBe('discovered');
+      expect(records[0].status).toBe('wanted');
+      expect(records[0].verification).toBeUndefined();
+    });
+
+    it('aborts when the assessment is restricted -- rights fails closed', async () => {
+      const restricted: RightsAssessment = { ...publicDomainAssessment(), rightsStatus: 'restricted' };
+      dir = await seed(museumEntries([museumAuthoredRecord({ rightsAssessment: restricted })]));
+
+      await expect(runPromote(museumInput(dir))).rejects.toThrow(/rights/i);
+
+      const { source } = loadSourceFile(join(dir, `${MEMBER_ID}.yml`));
+      expect(source.status).toBe('discovered');
+    });
+
+    it('aborts when the museum member has no sourceUrl -- identifierResolved fails', async () => {
+      dir = await seed(museumEntries([museumAuthoredRecord({ sourceUrl: undefined })]));
+
+      await expect(runPromote(museumInput(dir))).rejects.toThrow(/identifierResolved/i);
+
+      const { source } = loadSourceFile(join(dir, `${MEMBER_ID}.yml`));
+      expect(source.status).toBe('discovered');
+    });
   });
 });
