@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"ca 1896\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdate_prompt\\\">Object Date </span> <span class=\\\"data\\\" id=\\\"objectdate\\\"> ca 1896</span></p>\",\"selector\":\"#objectdate\"},\"interpretation\":\"the item's object date\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T03:42:25.214Z\"}},\"description\":{\"value\":\"Group Photo of the Sports-Committe-New-Italy with names.\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> Group Photo of the Sports-Committe-New-Italy with names.</span></p>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the catalogue object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T03:42:25.214Z\"}}}",
+  "retrievedAt": "2026-07-15T03:42:25.214Z",
+  "endpoint": "https://newitaly.org.au/CAT/001062.htm",
+  "normalizationVersion": 1
+}

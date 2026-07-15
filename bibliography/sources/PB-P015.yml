@@ -1,0 +1,48 @@
+sourceId: PB-P015
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+creator: J. Check
+titles:
+  - text: "New Italy ca 1890. Group Photo\r
+
+      J. Check"
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001045.htm
+    retrievedAt: 2026-07-15T03:42:11.620Z
+    identifiers:
+      - type: accession
+        value: NIMI-1045
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1890 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T03:42:12.220Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001045_nimi-1045-group-at-new-italy-ca-1890-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1045/a44f014ba6d61acae73ab65eea2f3896d105ad52c5541e4f8882046b4d47d72a.jpg
+        checksum: a44f014ba6d61acae73ab65eea2f3896d105ad52c5541e4f8882046b4d47d72a
+        byteLength: 65221
+        provenancePath: archive/museum/new-italy-museum/nimi-1045/a44f014ba6d61acae73ab65eea2f3896d105ad52c5541e4f8882046b4d47d72a.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P015/https-newitaly-org-au-CAT-001045-htm-2026-07-15T03:42:11.620Z.json
+      retrievedAt: 2026-07-15T03:42:11.620Z
+      endpoint: https://newitaly.org.au/CAT/001045.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T03:42:12.981Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P015/https-newitaly-org-au-CAT-001045-htm-2026-07-15T03:42:11.620Z.json

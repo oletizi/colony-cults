@@ -1,0 +1,46 @@
+sourceId: PB-P017
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+creator: Joseph CHECK
+titles:
+  - text: Photo of Sellers gathering at Nardi.s dance hall for a Fiesta. Joseph CHECK1899
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001013.htm
+    retrievedAt: 2026-07-15T03:42:43.891Z
+    identifiers:
+      - type: accession
+        value: NIMI-1013
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1899 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T03:42:44.547Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001013_nimi-1013-nardi-dance-hall-1899-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1013/abc1df3c8318bcbbe9ed22086dd487ae56fd9eea194887d610547caa5b775b14.jpg
+        checksum: abc1df3c8318bcbbe9ed22086dd487ae56fd9eea194887d610547caa5b775b14
+        byteLength: 67878
+        provenancePath: archive/museum/new-italy-museum/nimi-1013/abc1df3c8318bcbbe9ed22086dd487ae56fd9eea194887d610547caa5b775b14.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P017/https-newitaly-org-au-CAT-001013-htm-2026-07-15T03:42:43.891Z.json
+      retrievedAt: 2026-07-15T03:42:43.891Z
+      endpoint: https://newitaly.org.au/CAT/001013.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T03:42:45.317Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P017/https-newitaly-org-au-CAT-001013-htm-2026-07-15T03:42:43.891Z.json
