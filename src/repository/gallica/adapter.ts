@@ -57,8 +57,8 @@ import { issueLandingUrl } from '@/gallica/gallica-client';
 export interface GallicaAcquisitionContext extends AcquisitionContext {
   /** Forwarded to the fetcher as `--object-store` (default `false`). */
   objectStore?: boolean;
-  /** Forwarded to the fetcher as `--dry-run` (default `false`). */
-  dryRun?: boolean;
+  // `dryRun` is inherited from the shared `AcquisitionContext` (it is not a
+  // Gallica-only concern) and forwarded to the fetcher as `--dry-run` below.
   /** Forwarded to the fetcher as `--checkpoint` (default `false`). */
   checkpoint?: boolean;
   /** Forwarded to the fetcher as `--checkpoint-every <N>` (default `undefined`). */

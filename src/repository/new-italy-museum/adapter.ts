@@ -311,7 +311,7 @@ export class NewItalyMuseumAdapter implements RepositoryAdapter {
    */
   async acquire(
     record: RepositoryRecord,
-    _ctx: AcquisitionContext,
+    ctx: AcquisitionContext,
   ): Promise<AcquisitionResult> {
     if (record === null || typeof record !== 'object') {
       throw new Error('NewItalyMuseumAdapter.acquire: record is required.');
@@ -354,6 +354,25 @@ export class NewItalyMuseumAdapter implements RepositoryAdapter {
       retrievedAt: this.now(),
     };
     const repositoryRecordId = `${record.sourceId} @ ${record.sourceArchive}`;
+
+    // Dry-run (TASK-29): everything up to here is read-only validation (the
+    // fail-closed rights gate, the page fetch, and the accession-match guard),
+    // so a dry-run exercises the same preconditions a real acquire would. But it
+    // performs NO acquisition side effect -- it does NOT download the master
+    // bytes and does NOT PUT anything to the object store. It returns an EMPTY
+    // `assets` array (so `runAcquire` persists nothing to the SSOT) and
+    // `complete: false` to signal the acquisition was not actually performed.
+    // Without this, `bib acquire --dry-run` for a museum copy would mirror the
+    // master to B2 exactly as a real run does.
+    if (ctx?.dryRun === true) {
+      return {
+        repositoryRecordId,
+        assets: [],
+        metadataSnapshot,
+        complete: false,
+        reconciliationRequired: true,
+      };
+    }
 
     // HTML-only item: catalog it, mirror nothing (documented empty-assets case).
     if (dom.masterImageUrl === null) {

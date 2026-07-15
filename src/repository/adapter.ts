@@ -48,7 +48,14 @@ export interface ResolutionContext {
  * Extensible for future needs (e.g., concurrency limits, storage destination).
  */
 export interface AcquisitionContext {
-  // Placeholder for future context fields
+  /**
+   * When true, validate the item read-only but perform NO acquisition side
+   * effect -- no asset download, no object-store write. A genuinely shared
+   * (not Gallica-specific) acquisition concern: the Gallica adapter forwards it
+   * to the shipped fetcher's `--dry-run`; the museum adapter returns empty
+   * assets without mirroring the master to B2. Defaults to `false`.
+   */
+  dryRun?: boolean;
 }
 
 /**

@@ -351,6 +351,54 @@ describe('NewItalyMuseumAdapter.acquire', () => {
     expect(result.metadataSnapshot.retrievedAt).toBe('2026-07-14T00:00:00.000Z');
   });
 
+  it('honors dry-run: validates + fetches the page but downloads no master and PUTs nothing (TASK-29)', async () => {
+    const { client, byteUrls } = fakeClient({ text: FIXTURE_844, bytes: CANNED_BYTES });
+    const { store, puts } = fakeObjectStore();
+    const adapter = new NewItalyMuseumAdapter({
+      client,
+      extractor: realExtractor(),
+      objectStore: store,
+      now: () => '2026-07-14T00:00:00.000Z',
+    });
+
+    const result = await adapter.acquire(publicDomainRecord(), { dryRun: true });
+
+    // The master was NEVER downloaded from the live site ...
+    expect(byteUrls).toEqual([]);
+    // ... and NOTHING was mirrored to the object store (the TASK-29 hazard).
+    expect(puts).toHaveLength(0);
+    // No asset is recorded, so `runAcquire` persists nothing to the SSOT.
+    expect(result.assets).toEqual([]);
+    // A dry run does not complete an acquisition.
+    expect(result.complete).toBe(false);
+    expect(result.reconciliationRequired).toBe(true);
+    expect(result.repositoryRecordId).toBe('NIMI-0844 @ New Italy Museum');
+  });
+
+  it('dry-run still fails closed on a non-public-domain record before any fetch', async () => {
+    const { client, textUrls, byteUrls } = fakeClient({ text: FIXTURE_844, bytes: CANNED_BYTES });
+    const { store, puts } = fakeObjectStore();
+    const adapter = new NewItalyMuseumAdapter({
+      client,
+      extractor: realExtractor(),
+      objectStore: store,
+    });
+
+    const record = publicDomainRecord({
+      rightsAssessment: {
+        rightsStatus: 'restricted',
+        rightsBasis: 'Term not expired.',
+        assessedBy: 'operator',
+        assessedAt: '2026-07-14T00:00:00.000Z',
+      },
+    });
+    await expect(adapter.acquire(record, { dryRun: true })).rejects.toThrow(/public-domain/i);
+    // The rights gate precedes every fetch, dry-run or not.
+    expect(textUrls).toEqual([]);
+    expect(byteUrls).toEqual([]);
+    expect(puts).toHaveLength(0);
+  });
+
   it('throws (fail-closed) when the rightsAssessment is missing', async () => {
     const { client } = fakeClient({ text: FIXTURE_844, bytes: CANNED_BYTES });
     const { store, puts } = fakeObjectStore();

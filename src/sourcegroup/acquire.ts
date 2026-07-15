@@ -282,9 +282,10 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   // keys) has nothing to reconcile and the SSOT drifts from B2. The Gallica
   // adapter returns `assets: []` (its masters are recorded as per-page archive
   // provenance, reconciled by the archive-provenance path), so nothing is
-  // written and the Gallica acquire is byte-for-byte unchanged. `dryRun`
-  // acquires persist nothing either -- the adapter returns no assets when it
-  // mirrored none.
+  // written and the Gallica acquire is byte-for-byte unchanged. A `dryRun`
+  // museum acquire persists nothing either -- the adapter honors `ctx.dryRun`
+  // and returns an EMPTY `assets` array (mirroring no master), so this block is
+  // skipped (TASK-29).
   if (acquisition.assets.length > 0) {
     const updatedRecords = authoredRecords.map((authored) =>
       authored.sourceArchive === record.sourceArchive
