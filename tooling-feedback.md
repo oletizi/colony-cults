@@ -17,3 +17,6 @@
 - bib acquire --dry-run reports would-fetch-N-pages even when masters are already in B2 (it estimates the full fetch, does not check object-store presence); this misled the initial read that PB-P007-P011 were unacquired. bib reconcile is the reliable already-acquired check.
 - SSOT/archive drift: PB-P002 sat at status to-collect while its masters were acquired in B2, found only by auditing the archive provenance against the SSOT. Consider a bib audit verb that flags to-collect-but-acquired staleness corpus-wide.
 - bib-coverage-cli integration test hard-codes live-corpus counts (PB-P004 actualMemberCount); any real corpus edit breaks it, and the PR CI gate is only the Netlify deploy-preview (no unit-test gate), so a broken assertion can merge until the next local run catches it.
+
+## session-end 2026-07-15
+- stackctl backlog done requires BOTH --reason <text> and --apply; surfaced via two failed attempts (first missing --reason, then a dry-run without --apply). Minor CLI-ergonomics friction — a single clear usage error listing both required affordances would save the round-trips.

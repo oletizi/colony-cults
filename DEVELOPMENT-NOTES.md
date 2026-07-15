@@ -1,3 +1,79 @@
+## 2026-07-15: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 55
+  - execute(011): mark TASK-28/TASK-30 done (fixed + live-validated)
+  - acquire(011): PB-P013 New Italy Museum — first live museum acquisition end-to-end
+  - fix(011): TASK-30 persist acquired asset to SSOT + reconcile museum assets via object store
+  - fix(011): TASK-28 make verify-member/promote adapter-aware for museum members
+  - fix(011): review #3 — rights-assess reuses stored snapshot, no re-extraction
+  - fix(011): review #2 — derive museum title from deterministic DOM #objectdesc
+  - fix(011): review #1 — reject empty grounding excerpt (security teeth)
+  - execute(011): mark tasks complete — 26 [x], 4 [~] live-env; bucket A done
+  - impl(011): T026 surface knownExtent basis in coverage render (FR-019)
+  - execute(011): ledger T024-T025, T027 absorbed
+  - impl(011): T025 knownExtent discriminated union, migrate carriers, PB-P006 irreducible
+  - impl(011): T024 migrate PB-P006 leads to structured resolution field
+  - execute(011): ledger T022-T023
+  - impl(011): T023 render lead resolution state in coverage (SC-004)
+  - impl(011): T022 SuspectedLead.resolution discriminated union + loader
+  - execute(011): ledger T019 (US1 code complete)
+  - impl(011): T019 acquire dispatch by identifier type + idempotent museum acquire
+  - execute(011): ledger T018
+  - impl(011): T018 bib rights-assess operator judgment verb
+  - execute(011): ledger T017
+  - impl(011): T017 bib inventory --repository museum path
+  - execute(011): ledger T015-T016 (adapter stack complete)
+  - impl(011): T016 NewItalyMuseumAdapter (resolve + rights evidence + acquire) Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+  - impl(011): T015 Musarch structured extractor over the engine seam
+  - docs(011): correct STRUCTURE.md 000855 (has image_anchor); ledger T014
+  - impl(011): T014 Musarch DOM-direct mechanical field extraction
+  - impl(011): capture real Musarch item-page fixtures + structure note
+  - execute(011): ledger US2 Gallica cutover complete (T010-T013)
+  - impl(011): T012 cut bib acquire over to GallicaAdapter, remove hardwired ark path
+  - impl(011): T011 GallicaAdapter wrapping the shipped fetcher
+  - impl(011): T010 Gallica acquisition characterization tests (pre-cutover baseline)
+  - execute(011): ledger foundational phase T001-T009 complete
+  - impl(011): T009 deterministic grounding verifier
+  - impl(011): T007 adapter registry with fail-loud dispatch
+  - impl(011): T006 RepositoryAdapter interface + typed I/O
+  - impl(011): T008 structured-extraction contract types
+  - execute(011): ledger T002-T005
+  - impl(011): T005 AcquiredAsset type + RepositoryRecord copy-level fields
+  - impl(011): T004 add operator-authored RightsAssessment type
+  - impl(011): T003 add accession copy-level identifier type
+  - impl(011): T002 add archival-item structural Source kind
+  - impl(011): T001 scaffold src/repository + src/extraction module dirs
+  - analyze(011): record analyze-clean marker on museum-acquisition-path node
+  - analyze(011): remediate terminology drift; cross-artifact consistency clean
+  - tasks(011): dependency-ordered tier-tagged tasks.md (30 tasks)
+  - plan(011): align research.md R4 to archival-item
+  - plan(011): fold in second spec review — four corrections + clarifications
+  - plan(011): impl plan + Phase 0/1 artifacts for museum acquisition path
+  - clarify(011): resolve 3 plan-shaping ambiguities
+  - specify(011): link spec pointer to museum-acquisition-path node
+  - specify(011): New Italy Museum acquisition path spec
+  - design(museum-acquisition-path): operator records design-approved
+  - design(museum-acquisition-path): sharpen extraction to layered hybrid
+  - design(museum-acquisition-path): fold in third-party review
+  - design(museum-acquisition-path): New Italy Museum acquire via RepositoryAdapter
+- Files changed: 98
+- Backlog touched: TASK-24, TASK-25, TASK-26, TASK-27, TASK-28, TASK-29, TASK-30
+
 ## 2026-07-14: Close 009's Gallica dimension — campaign→work-bundle cutover, TASK-19 fail-loud, archive↔SSOT audit; all acquirable scopes measured
 
 **Goal:** Continue the 009 research loop on shipped tooling — run the gap-closure passes, fix tooling defects *inline* as the research hits them (operator's steer this session), verify the corpus's acquisition state against the real archive, and reach a **defensible measured** state (measured, not asserted) across every scope.
