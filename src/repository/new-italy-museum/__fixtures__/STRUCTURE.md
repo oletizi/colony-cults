@@ -16,7 +16,7 @@ Image (in `#objectimages`):
 - **Master (best representation)**: `<a class="image_anchor" href="./images/000844_..-lr.jpg">` — the full-res JPG. Resolve relative to the page URL.
 - **Thumbnail (NEVER a master)**: `<img class="image" src="./images/tn_000844_..-lr.jpg">` — `tn_` prefix.
 - Template UI graphics `images/img0001.gif`..`img0009.gif`, `little_logo.jpg` are NOT item images — ignore.
-- **HTML-only item**: 000855 has no `image_anchor`/thumb → no downloadable master (edge case: catalog it, mirror nothing).
+- **HTML-only item** (no `image_anchor`/thumb → no downloadable master; edge case: catalog it, mirror nothing): both real captured items (000844, 000855) carry images, so this genuinely image-less case is exercised via a synthetic minimal fixture in the tests, not by a captured page. (An earlier note here wrongly called 000855 image-less; 000855 DOES carry an `image_anchor` — see the header.)
 
 ## Prose fields (LLM structured-extraction + grounding — FR-007/008)
 Because `#objectdate` is often blank, the **rights-critical date is prose-embedded** in the description (e.g. "Pioneers Group Photo **1890**"). Extract via the engine, ground the excerpt on the page (the date value must appear in the evidence excerpt), and the operator confirms its interpretation at rights-assessment. Same for creator/credit when only present in prose.
