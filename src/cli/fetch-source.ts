@@ -10,6 +10,7 @@ import { loadCensus } from '@/census/load';
 import { censusPath } from '@/cli/census';
 import type { Census } from '@/model/census';
 import type { IssueCheckpoint } from '@/cli/archive-checkpoint';
+import { parseFolioRange } from '@/fetch/folio-range';
 import {
   defaultFetchDeps,
   dryRunDocument,
@@ -68,6 +69,12 @@ export async function runFetchSource(
  * `--dry-run` reports rights + target dir + estimated size; `--verify`
  * re-hashes existing pages; otherwise fetches the single document via {@link
  * realFetchMonograph} (sharing its per-page pipeline with `fetch-issue`).
+ *
+ * `--pages <spec>` (spec 012, T009): parsed with {@link parseFolioRange} --
+ * fail loud (malformed spec throws before any I/O) -- and threaded through to
+ * both the dry-run estimate and the real fetch, so the whole document/excerpt
+ * distinction is honored consistently across `--dry-run`. Absent -> unchanged
+ * whole-document behavior.
  */
 async function runFetchSourceMonograph(
   args: ParsedArgs,
@@ -78,6 +85,9 @@ async function runFetchSourceMonograph(
   if (args.flags.ocr) {
     await deps.ocrPreflight();
   }
+
+  const folios =
+    args.options.pages !== undefined ? parseFolioRange(args.options.pages) : undefined;
 
   const dir = monographDir(sourceId, deps.archiveRoot);
   deps.log(`fetch-source: monograph ${sourceId} -> ${dir}`);
@@ -93,7 +103,7 @@ async function runFetchSourceMonograph(
   }
 
   if (args.flags.dryRun) {
-    const estimated = await dryRunDocument(deps, documentArk, dir);
+    const estimated = await dryRunDocument(deps, documentArk, dir, folios);
     deps.log(
       `fetch-source (dry-run): estimated total ~${formatBytes(estimated)} ` +
         `for monograph ${sourceId}; wrote nothing`,
@@ -101,7 +111,7 @@ async function runFetchSourceMonograph(
     return;
   }
 
-  const result = await realFetchMonograph(deps, sourceId, documentArk, args.flags);
+  const result = await realFetchMonograph(deps, sourceId, documentArk, args.flags, folios);
   if (args.flags.ocr) {
     await runOcrForIssue(deps, result.dir, args.flags);
   }

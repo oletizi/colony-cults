@@ -243,11 +243,17 @@ export function bareArk(issueArk: string): string {
  * estimated bytes to accumulate (0 when not PD). Shared between the
  * periodical and monograph dry-run paths so the reporting logic is not
  * duplicated between the two source kinds.
+ *
+ * `folios` (spec 012, optional, monograph-only): when supplied, the estimate
+ * is scoped to exactly that selection (see {@link estimateIssue}) so
+ * `--dry-run --pages` reports ONLY the requested folios, not the whole
+ * document. Absent (the default) is unchanged.
  */
 export async function dryRunDocument(
   deps: FetchDeps,
   documentArk: string,
   dir: string,
+  folios?: number[],
 ): Promise<number> {
   const rights = await resolveRights(documentArk, deps.client);
   if (rights.status !== 'public-domain') {
@@ -256,7 +262,7 @@ export async function dryRunDocument(
     );
     return 0;
   }
-  const estimate = await estimateIssue(documentArk, deps.client);
+  const estimate = await estimateIssue(documentArk, deps.client, folios);
   deps.log(
     `  ${documentArk}  rights=public-domain  ${estimate.pageCount} page(s)  ` +
       `~${formatBytes(estimate.estimatedBytes)}  ${dir}`,
@@ -299,12 +305,17 @@ export async function realFetchIssue(
  * Fetch a monograph source's single document into the archive (FR-016); logs
  * a summary. Reuses {@link fetchMonograph}, which shares its per-page
  * pipeline with {@link fetchIssue} (see `src/fetch/issue.ts`).
+ *
+ * `folios` (spec 012, optional): present -> fetch ONLY this excerpt of the
+ * document (threaded straight through to `FetchMonographContext.folios`);
+ * absent -- the default -- -> whole-document fetch, unchanged.
  */
 export async function realFetchMonograph(
   deps: FetchDeps,
   sourceId: string,
   documentArk: string,
   flags: ParsedFlags,
+  folios?: number[],
 ): Promise<FetchIssueResult> {
   const result = await fetchMonograph(documentArk, {
     client: deps.client,
@@ -317,6 +328,7 @@ export async function realFetchMonograph(
     objectStoreCoords: deps.objectStoreCoords,
     reconcileRemote: flags.reconcileRemote,
     onPageStored: deps.onPageStored,
+    folios,
   });
   deps.log(
     `fetch-source (monograph): ${result.issueArk} -> ${result.dir} :: ` +
