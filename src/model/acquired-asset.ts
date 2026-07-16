@@ -1,6 +1,33 @@
 import type { ObjectStoreLocation } from '@/archive/provenance';
 
 /**
+ * Typed role values for an {@link AcquiredAsset}.
+ * Represents the function of a multi-asset copy: `front`/`reverse` of a single
+ * sheet, `page` numbers in a multi-page item, `primary` (the single master the
+ * museum adapter writes), `repository-source` (a preserved source package such
+ * as the Internet Archive item PDF), and `page-master` (one per-page image the
+ * Internet Archive adapter explodes). The tuple is the single source of truth;
+ * the union and the {@link isAcquiredAssetRole} guard derive from it so the
+ * loader boundary (`@/bibliography/load-fields`) can fail loud on an unknown
+ * stored role rather than silently accepting it (Principle V).
+ */
+export const ACQUIRED_ASSET_ROLES = [
+  'front',
+  'reverse',
+  'page',
+  'primary',
+  'repository-source',
+  'page-master',
+] as const;
+
+export type AcquiredAssetRole = (typeof ACQUIRED_ASSET_ROLES)[number];
+
+/** Runtime guard: is `value` a known {@link AcquiredAssetRole}? */
+export function isAcquiredAssetRole(value: string): value is AcquiredAssetRole {
+  return (ACQUIRED_ASSET_ROLES as readonly string[]).includes(value);
+}
+
+/**
  * One preserved representation of a `RepositoryRecord`'s copy, produced by a
  * `RepositoryAdapter`'s `acquire` (contracts/repository-adapter.md
  * `AcquisitionResult.assets`). Multiple assets may exist per record
@@ -35,7 +62,7 @@ export interface AcquiredAsset {
   /** Path to the git-tracked provenance record for this asset. */
   provenancePath: string;
   /** Role within a multi-asset copy, e.g. `front` / `reverse` / `page`. */
-  role?: string;
+  role?: AcquiredAssetRole;
   /** Order within the item, for multi-page/multi-asset copies. */
   sequence?: number;
   /** How "best representation" was chosen, e.g. `max-resolution`. */

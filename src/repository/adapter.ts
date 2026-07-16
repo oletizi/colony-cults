@@ -21,7 +21,7 @@ import type {
  * Name of a supported repository.
  * Extensible string-literal union.
  */
-export type RepositoryName = 'gallica' | 'new-italy-museum';
+export type RepositoryName = 'gallica' | 'new-italy-museum' | 'internet-archive';
 
 /**
  * A raw locator the operator supplies to `resolve`.

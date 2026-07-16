@@ -10,6 +10,7 @@ import {
   requireString,
 } from '@/bibliography/load-primitives';
 import type { AcquiredAsset } from '@/model/acquired-asset';
+import { ACQUIRED_ASSET_ROLES, isAcquiredAssetRole } from '@/model/acquired-asset';
 import type { CopyLevelIdentifierType, WorkLevelIdentifierType } from '@/model/identifiers';
 import { classifyIdentifier } from '@/model/identifiers';
 import type {
@@ -434,6 +435,12 @@ export function validateAcquiredAsset(
   };
   const role = optionalString(obj.role, filePath, `${where}.role`);
   if (role !== undefined) {
+    if (!isAcquiredAssetRole(role)) {
+      fail(
+        filePath,
+        `${where}.role: unknown asset role "${role}" (expected one of ${ACQUIRED_ASSET_ROLES.join(', ')})`,
+      );
+    }
     asset.role = role;
   }
   if (obj.sequence !== undefined) {

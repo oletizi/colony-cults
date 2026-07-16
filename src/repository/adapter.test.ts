@@ -157,4 +157,16 @@ describe('RepositoryAdapter', () => {
     expect(result.reconciliationRequired).toBe(false);
     expect(result.metadataSnapshot.raw).toContain('html');
   });
+
+  it('RepositoryName should include all supported repositories', () => {
+    // Type-level test: each repository name should be assignable.
+    // If the union is missing a name, TypeScript compilation fails.
+    const gallica: RepositoryName = 'gallica';
+    const newItalyMuseum: RepositoryName = 'new-italy-museum';
+    const internetArchive: RepositoryName = 'internet-archive';
+
+    expect(gallica).toBe('gallica');
+    expect(newItalyMuseum).toBe('new-italy-museum');
+    expect(internetArchive).toBe('internet-archive');
+  });
 });

@@ -91,13 +91,25 @@ Fields `role?` and `sequence?` **already exist** (D-2). This feature establishes
 values and narrows the type so the distinction is checked:
 
 ```ts
-export type AcquiredAssetRole =
-  | 'front' | 'reverse' | 'page'        // existing museum/Gallica values (preserved)
-  | 'repository-source'                 // NEW — the preserved source PDF (exactly one per acquisition)
-  | 'page-master';                      // NEW — one per approved logical page
+// single source of truth: a const tuple → union + runtime guard (so the YAML
+// loader can fail loud on an unknown stored role — Principle V)
+export const ACQUIRED_ASSET_ROLES = [
+  'front', 'reverse', 'page',           // existing sheet/page values (preserved)
+  'primary',                            // existing — the single master the museum adapter writes (T007 fallout, corrected)
+  'repository-source',                  // NEW — the preserved source PDF (exactly one per acquisition)
+  'page-master',                        // NEW — one per approved logical page
+] as const;
+export type AcquiredAssetRole = (typeof ACQUIRED_ASSET_ROLES)[number];
+export function isAcquiredAssetRole(v: string): v is AcquiredAssetRole { /* ... */ }
 
 // role?: string  →  role?: AcquiredAssetRole
 ```
+
+> **Correction (impl T007):** the plan originally omitted `'primary'` from the union; the shipped
+> New Italy Museum adapter writes `role: 'primary'` on its master asset, so narrowing to the union
+> broke it. `'primary'` is added (capturing the existing reality, Principle V/XIV), and the YAML
+> loader (`@/bibliography/load-fields`) now validates the stored role against the guard and fails
+> loud on an unknown value — the value-channel the narrowing opened.
 
 Per acquisition: exactly one `repository-source` asset (mediaType `application/pdf`) + N `page-master`
 assets (mediaType `image/jpeg`, `sequence` = logical page order). Downstream corpus tools consume only

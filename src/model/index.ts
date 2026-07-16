@@ -23,3 +23,9 @@ export type {
   PublicationManifestRef,
   PublishedArtifactRef,
 } from '@/model/publication';
+export type {
+  QualityAssessment,
+  LeafRange,
+  ExcludedLeaf,
+  PageMethodProvenance,
+} from '@/model/quality-assessment';
