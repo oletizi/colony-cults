@@ -9,6 +9,12 @@
  * (the de Groote "Nouvelle-France" item). No network is ever touched -- a
  * fake `ArchiveHttpClient` returns the fixture (or a synthetic response) for
  * `getText`.
+ *
+ * T047 (specs/013-archiveorg-acquisition-path): also proves that
+ * `selectSourceFiles`' fail-loud ambiguous/OCR-only-PDF rules
+ * (`@/repository/internet-archive/file-select`, unit-tested in
+ * `file-select.test.ts`) surface THROUGH `resolve`, not just the module
+ * underneath it.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -56,6 +62,59 @@ function nonTextsResponse(): string {
     throw new Error('test setup: fixture metadata was not an object');
   }
   return JSON.stringify({ ...parsed, metadata: { ...metadata, mediatype: 'movies' } });
+}
+
+/** Shape-check helper mirroring the one in `metadata.ts` -- avoids `as` on `unknown`. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** The fixture's top-level `files[]` array, decoded without fabricating its shape. */
+function fixtureFiles(): unknown[] {
+  const parsed: unknown = JSON.parse(FIXTURE_TEXT);
+  if (!isRecord(parsed) || !Array.isArray(parsed.files)) {
+    throw new Error('test setup: fixture did not parse with a top-level "files" array');
+  }
+  return parsed.files;
+}
+
+/**
+ * A synthetic response, otherwise identical to the real de Groote fixture, whose
+ * `files[]` carries TWO equally-eligible page-image PDFs (the real item's
+ * `Image Container PDF` plus a second, synthetic `Text PDF`) -- both marked
+ * eligible by `selectSourceFiles`' `PAGE_IMAGE_PDF_FORMAT_MARKERS`, so selection
+ * is ambiguous (FR-003 / SC-006 / IA-INV-A).
+ */
+function ambiguousPdfResponse(): string {
+  const parsed: unknown = JSON.parse(FIXTURE_TEXT);
+  if (!isRecord(parsed)) {
+    throw new Error('test setup: fixture did not parse to an object');
+  }
+  const extraPdf = {
+    name: `${ITEM_ID}_alt.pdf`,
+    format: 'Text PDF',
+    source: 'derivative',
+  };
+  return JSON.stringify({ ...parsed, files: [...fixtureFiles(), extraPdf] });
+}
+
+/**
+ * A synthetic response whose only `.pdf` file is OCR-only (its `format` matches
+ * neither `PAGE_IMAGE_PDF_FORMAT_MARKERS` marker) -- no page-image PDF exists at
+ * all, so `selectSourceFiles` refuses to fall back to it (FR-003 / SC-006).
+ */
+function ocrOnlyOnlyResponse(): string {
+  const parsed: unknown = JSON.parse(FIXTURE_TEXT);
+  if (!isRecord(parsed)) {
+    throw new Error('test setup: fixture did not parse to an object');
+  }
+  const replaced = fixtureFiles().map((file) => {
+    if (!isRecord(file) || file.name !== `${ITEM_ID}.pdf`) {
+      return file;
+    }
+    return { ...file, format: 'OCR-only PDF' };
+  });
+  return JSON.stringify({ ...parsed, files: replaced });
 }
 
 describe('InternetArchiveAdapter.resolve -- de Groote fixture (real archive.org shape)', () => {
@@ -124,6 +183,24 @@ describe('InternetArchiveAdapter.resolve -- fail-loud invariants (IA-INV-A)', ()
   it('throws when the fetched item is not mediatype "texts"', async () => {
     const adapter = new InternetArchiveAdapter({ client: fakeClient(nonTextsResponse()) });
     await expect(adapter.resolve(LOCATOR, {})).rejects.toThrow();
+  });
+});
+
+describe('InternetArchiveAdapter.resolve -- file-select failures surfaced end-to-end (FR-003 / SC-006)', () => {
+  // `selectSourceFiles` (`@/repository/internet-archive/file-select`) is unit-tested
+  // for these ambiguity/absence rules in `file-select.test.ts`. These tests prove
+  // the SAME failures propagate all the way through `InternetArchiveAdapter.resolve`
+  // -- not just the module underneath it -- using the real fixture's shape plus one
+  // crafted `files[]` entry, via the same fake-`ArchiveHttpClient` pattern used above.
+
+  it('throws when the item exposes two equally-eligible page-image PDFs', async () => {
+    const adapter = new InternetArchiveAdapter({ client: fakeClient(ambiguousPdfResponse()) });
+    await expect(adapter.resolve(LOCATOR, {})).rejects.toThrow(/ambiguous/i);
+  });
+
+  it('throws when the item exposes only an OCR-only PDF (no page-image PDF)', async () => {
+    const adapter = new InternetArchiveAdapter({ client: fakeClient(ocrOnlyOnlyResponse()) });
+    await expect(adapter.resolve(LOCATOR, {})).rejects.toThrow(/no eligible page-image PDF/i);
   });
 });
 

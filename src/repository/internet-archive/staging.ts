@@ -19,7 +19,7 @@
  * not itself fetch.
  */
 
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { sha256OfBytes } from '@/archive/checksum';
 import type { ArchiveHttpClient } from '@/repository/internet-archive/metadata';
@@ -39,10 +39,20 @@ export interface StagedFile {
  * `destPath` (creating any missing parent directories), returning the
  * staged file's fixity.
  *
+ * **Cache-first (Principle XII / D-11 -- never waste a request).** If a
+ * non-empty file already exists at `destPath` (staged by an earlier
+ * `--dry-run` examine pass, or a prior interrupted run), its bytes are
+ * re-read from disk and its fixity returned WITHOUT calling `client.getBytes`
+ * -- so a `--dry-run` followed by the real acquire re-reads the verified
+ * local master and re-downloads NOTHING. The staged file IS the cache; the
+ * caller re-verifies it against the recorded `qualityAssessment` checksum
+ * before acting, so a stale/corrupt cache fails the gate rather than being
+ * silently trusted.
+ *
  * Fails loud rather than staging a zero-byte file: an empty response from
- * `client.getBytes` throws, since a 0-byte "PDF" is never a legitimate
- * archive.org asset and silently staging it would let a transport failure
- * masquerade as a successful fetch.
+ * `client.getBytes` (or a 0-byte file already on disk) throws, since a 0-byte
+ * "PDF" is never a legitimate archive.org asset and silently staging it would
+ * let a transport failure masquerade as a successful fetch.
  */
 export async function stageFile(
   downloadUrl: string,
@@ -56,6 +66,11 @@ export async function stageFile(
     throw new Error('stageFile: destPath is required.');
   }
 
+  const cached = await readStagedFile(destPath);
+  if (cached !== undefined) {
+    return cached;
+  }
+
   const bytes = await client.getBytes(downloadUrl);
   if (bytes.byteLength === 0) {
     throw new Error(
@@ -66,6 +81,36 @@ export async function stageFile(
   await mkdir(dirname(destPath), { recursive: true });
   await writeFile(destPath, bytes);
 
+  return {
+    path: destPath,
+    byteLength: bytes.byteLength,
+    sha256: sha256OfBytes(bytes),
+  };
+}
+
+/**
+ * Re-read an already-staged file's fixity from disk (the XII cache path), or
+ * `undefined` when nothing usable is staged at `destPath`. A 0-byte staged
+ * file throws -- it is never a legitimate cached asset and must not shadow a
+ * real re-fetch silently.
+ */
+async function readStagedFile(destPath: string): Promise<StagedFile | undefined> {
+  let exists = false;
+  try {
+    const info = await stat(destPath);
+    exists = info.isFile();
+  } catch {
+    return undefined;
+  }
+  if (!exists) {
+    return undefined;
+  }
+  const bytes = await readFile(destPath);
+  if (bytes.byteLength === 0) {
+    throw new Error(
+      `stageFile: a 0-byte file is already staged at ${destPath} -- refusing to reuse it; delete it and re-stage.`,
+    );
+  }
   return {
     path: destPath,
     byteLength: bytes.byteLength,

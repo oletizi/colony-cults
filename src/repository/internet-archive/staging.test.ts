@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { sha256OfBytes } from '@/archive/checksum';
@@ -134,6 +134,38 @@ describe('cleanupStaging', () => {
     const neverCreated = join(root, 'does', 'not', 'exist');
 
     await expect(cleanupStaging(neverCreated)).resolves.toBeUndefined();
+  });
+});
+
+describe('stageFile cache-first reuse (Principle XII / D-11 -- no re-fetch next run)', () => {
+  it('re-reads an already-staged file WITHOUT calling client.getBytes (zero re-download)', async () => {
+    const root = await freshTempRoot();
+    const dest = join(root, 'source.pdf');
+
+    // First stage: fetches once.
+    const first = await stageFile(DOWNLOAD_URL, dest, fakeClient({ [DOWNLOAD_URL]: CONTENT }));
+    expect(first.sha256).toBe(EXPECTED_SHA256);
+
+    // Second stage with a client whose getBytes THROWS if touched -- proves reuse.
+    const throwingClient: ArchiveHttpClient = {
+      getText: async () => {
+        throw new Error('getText must not be called');
+      },
+      getBytes: async () => {
+        throw new Error('getBytes must not be called -- an already-staged file must be reused');
+      },
+    };
+    const second = await stageFile(DOWNLOAD_URL, dest, throwingClient);
+    expect(second).toEqual(first);
+  });
+
+  it('refuses to reuse a 0-byte staged file (fail loud, never shadow a real re-fetch silently)', async () => {
+    const root = await freshTempRoot();
+    const dest = join(root, 'source.pdf');
+    await writeFile(dest, new Uint8Array(0));
+    await expect(
+      stageFile(DOWNLOAD_URL, dest, fakeClient({ [DOWNLOAD_URL]: CONTENT })),
+    ).rejects.toThrow(/0-byte file is already staged/);
   });
 });
 

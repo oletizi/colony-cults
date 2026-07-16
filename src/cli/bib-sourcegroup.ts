@@ -1,8 +1,12 @@
 /**
- * CLI wiring for the six source-group `bib` subactions (T020/T023/T028/T031/
+ * CLI wiring for the source-group `bib` subactions (T020/T023/T028/T031/
  * T034): `inventory`, `verify-member`, `promote`, `exclude-member`,
- * `acquire`, `discover`. Extracted from `src/cli/bibliography.ts` to keep both
- * files under the project's file-size guideline.
+ * `acquire`, `reconcile`, `discover`. Extracted from `src/cli/bibliography.ts`
+ * to keep both files under the project's file-size guideline. `inventory` is
+ * wired in `@/cli/bib-inventory` and `acquire`/`reconcile` are wired in
+ * `@/cli/bib-sourcegroup-acquire` -- both re-exported below -- for the same
+ * file-size reason; the rest (`verify-member`, `promote`, `exclude-member`,
+ * `discover`) are wired directly in this file.
  *
  * Each handler parses its own flags per
  * specs/006-source-group-acquisition/contracts/cli-commands.md, constructs the
@@ -18,30 +22,31 @@ import { parseArgs as nodeParseArgs } from 'node:util';
 
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
-import { deriveSourceLayout, registerSourceLayout } from '@/archive/location';
-import { runFetchSource } from '@/cli/fetch';
-import { parseCheckpointEvery } from '@/cli/parse';
 import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
 import { gallicaArkIdentifierResolver } from '@/sourcegroup/gallica-ark-resolver';
-import { runAcquire } from '@/sourcegroup/acquire';
-import { buildMuseumAdapterForMember } from '@/cli/bib-acquire-museum';
-import { buildInternetArchiveAdapterForMember } from '@/cli/bib-acquire-internet-archive';
-import type { LeafRange } from '@/model/quality-assessment';
-import { runReconcile, type ReconcileResult } from '@/sourcegroup/reconcile';
-import { selectRepositoryRecord } from '@/sourcegroup/record-select';
-import { gatherProvenance } from '@/bibliography/derive';
-import { resolveArchiveRoot } from '@/archive/location';
-import { S3ObjectStore } from '@/archive/s3-object-store';
-import { resolveObjectStoreConfig } from '@/archive/b2-config';
-import type { RepositoryRecord } from '@/model/repository-record';
 import { BnfSruDiscoveryMechanism } from '@/sourcegroup/discovery/bnf-sru';
 import { DiscoveryDispatcher } from '@/sourcegroup/discovery/discovery';
 import type { DiscoveryCandidate } from '@/sourcegroup/discovery/discovery';
 import { runExcludeMember } from '@/sourcegroup/exclude-member';
 import { runPromote } from '@/sourcegroup/promote';
 import { buildExistingMembers, runVerifyMember } from '@/sourcegroup/verify-member-command';
+
+// `bib acquire` and `bib reconcile` (T031/T034, TASK-20/TASK-21/TASK-30) are
+// wired in their own module, `@/cli/bib-sourcegroup-acquire` -- see that
+// module's header for why -- and re-exported here so THIS module's existing
+// external importers (e.g. `@/cli/bibliography`) are unaffected.
+export {
+  registerMemberArchiveLayout,
+  type AcquireCliArgs,
+  parseApprovedRange,
+  parseAcquireArgs,
+  runAcquireCli,
+  type ReconcileCliArgs,
+  parseReconcileArgs,
+  runReconcileCli,
+} from '@/cli/bib-sourcegroup-acquire';
 
 // `bib inventory` (T017-T020) is wired in its own module, `@/cli/bib-inventory`
 // -- see that module's header for why -- and re-exported here so THIS
@@ -205,338 +210,6 @@ export async function runExcludeMemberCli(rest: string[]): Promise<number> {
     return 0;
   } catch (error) {
     console.error(`bib exclude-member: ${describeError(error)}`);
-    return 1;
-  }
-}
-
-/**
- * Auto-register `id`'s archive layout (`@/archive/location`'s runtime
- * overlay) BEFORE `bib acquire` drives the shipped fetcher -- the fetcher
- * resolves a layout deep inside via the synchronous, sourceId-only
- * `sourceLayout(sourceId)`, which throws for a source-group member (created
- * by `bib inventory`) that was never hand-added to the static registry. Loads
- * the member Source (and, when it has one, its owning group, for the
- * fallback `case`) via the shipped `loadAllSources` -- fails loud if either
- * cannot be resolved, since a layout cannot be derived from nothing.
- *
- * Exported (not just used internally by `runAcquireCli`) so this wiring is
- * directly unit-testable without standing up the full CLI (real repo root,
- * real network-backed fetcher).
- */
-export function registerMemberArchiveLayout(sourcesDir: string, id: string): void {
-  const loaded = loadAllSources(sourcesDir);
-  const memberEntry = loaded.find((entry) => entry.source.sourceId === id);
-  if (memberEntry === undefined) {
-    throw new Error(`bib acquire: unknown sourceId "${id}" -- cannot resolve its archive layout`);
-  }
-  const memberSource = memberEntry.source;
-
-  let groupCase: string | undefined;
-  if (memberSource.partOf !== undefined) {
-    const groupEntry = loaded.find((entry) => entry.source.sourceId === memberSource.partOf);
-    if (groupEntry === undefined) {
-      throw new Error(
-        `bib acquire: member "${id}"'s group "${memberSource.partOf}" does not resolve to an ` +
-          `existing Source -- cannot derive its archive layout's fallback case`,
-      );
-    }
-    groupCase = groupEntry.source.case;
-  }
-
-  registerSourceLayout(id, deriveSourceLayout(memberSource, groupCase));
-}
-
-/** Typed result of parsing `bib acquire`'s argv (see {@link parseAcquireArgs}). */
-export interface AcquireCliArgs {
-  id: string | undefined;
-  archive: string | undefined;
-  objectStore: boolean;
-  dryRun: boolean;
-  checkpoint: boolean;
-  checkpointEvery: number | undefined;
-  /**
-   * `--approved-range <start-end>` (specs/013-archiveorg-acquisition-path,
-   * FR-008): the Internet Archive path's two-phase quality-gate flag, phase
-   * 2 (`makeCliQualityGate`, `@/cli/bib-acquire-internet-archive`). Ignored
-   * by a Gallica/museum acquire (only the IA adapter reads a `QualityGate`).
-   */
-  approvedRange: LeafRange | undefined;
-  /** `--reject`: force the IA quality gate to record `status: 'unsound'` (fail-closed, zero B2 writes). */
-  reject: boolean;
-  /** `--notes <text>`: free-text operator notes recorded on the IA quality assessment. */
-  notes: string | undefined;
-}
-
-/**
- * Parse `--approved-range <start-end>` (e.g. `"4-368"`) into a {@link
- * LeafRange}. Fails loud on anything else -- there is no partial/guessed
- * range: an absent flag maps to `undefined` (phase 1: the gate falls back to
- * the scandata-seeded proposal), but a PRESENT, malformed value is a user
- * error, never silently ignored.
- */
-export function parseApprovedRange(raw: string | undefined): LeafRange | undefined {
-  if (raw === undefined) {
-    return undefined;
-  }
-  const match = /^(\d+)-(\d+)$/.exec(raw.trim());
-  if (match === null) {
-    throw new Error(
-      `--approved-range must be "<start>-<end>" (e.g. "4-368"), got "${raw}"`,
-    );
-  }
-  const start = Number(match[1]);
-  const end = Number(match[2]);
-  if (start < 1 || end < start) {
-    throw new Error(
-      `--approved-range must have "<start>-<end>" with start >= 1 and end >= start, got "${raw}"`,
-    );
-  }
-  return { start, end };
-}
-
-/**
- * Parse `bib acquire <id> [--archive] [--object-store] [--dry-run]
- * [--checkpoint] [--checkpoint-every <N>] [--approved-range <start-end>]
- * [--reject] [--notes <text>]`'s argv into typed flags.
- *
- * Exported (not just used internally by `runAcquireCli`) so this parsing is
- * directly unit-testable without driving the real network-backed fetcher
- * (`runAcquireCli` always injects the real, unmocked `runFetchSource`).
- * `--checkpoint-every` is validated by the same `parseCheckpointEvery`
- * (`@/cli/parse`) the shipped fetcher's own `--checkpoint-every` uses, so a
- * malformed value fails identically here and there (fail loud, no
- * fallback). `--approved-range`/`--reject`/`--notes` are the Internet
- * Archive path's two-phase quality-gate flags (specs/013-archiveorg-
- * acquisition-path, FR-008) -- unused by a Gallica/museum acquire.
- */
-export function parseAcquireArgs(rest: string[]): AcquireCliArgs {
-  const { values, positionals } = nodeParseArgs({
-    args: rest,
-    options: {
-      archive: { type: 'string' },
-      'object-store': { type: 'boolean', default: false },
-      'dry-run': { type: 'boolean', default: false },
-      checkpoint: { type: 'boolean', default: false },
-      'checkpoint-every': { type: 'string' },
-      'approved-range': { type: 'string' },
-      reject: { type: 'boolean', default: false },
-      notes: { type: 'string' },
-    },
-    allowPositionals: true,
-    strict: true,
-  });
-  return {
-    id: positionals[0],
-    archive: values.archive,
-    objectStore: Boolean(values['object-store']),
-    dryRun: Boolean(values['dry-run']),
-    checkpoint: Boolean(values.checkpoint),
-    checkpointEvery: parseCheckpointEvery(values['checkpoint-every']),
-    approvedRange: parseApprovedRange(values['approved-range']),
-    reject: Boolean(values.reject),
-    notes: values.notes,
-  };
-}
-
-/**
- * `bib acquire <id> [--archive] [--object-store] [--dry-run] [--checkpoint]
- * [--checkpoint-every <N>] [--approved-range <start-end>] [--reject]
- * [--notes <text>]`.
- */
-export async function runAcquireCli(rest: string[]): Promise<number> {
-  let parsed: AcquireCliArgs;
-  try {
-    parsed = parseAcquireArgs(rest);
-  } catch (error) {
-    console.error(`bib acquire: ${describeError(error)}`);
-    return 2;
-  }
-  const { id, archive, objectStore, dryRun, checkpoint, checkpointEvery, approvedRange, reject, notes } =
-    parsed;
-
-  if (id === undefined) {
-    console.error('bib acquire: missing required argument <id>');
-    return 2;
-  }
-
-  const repoRoot = resolveRepoRoot();
-  const sourcesDir = sourcesDirOf(repoRoot);
-  try {
-    // Auto-register this member's archive layout BEFORE the fetcher (below)
-    // resolves it -- see `registerMemberArchiveLayout`'s doc comment.
-    registerMemberArchiveLayout(sourcesDir, id);
-
-    // Register all THREE adapters: the Gallica fetcher is always injected;
-    // the museum adapter (T019) and the Internet Archive adapter (T026/T027)
-    // are each built only when THIS member's selected copy is the matching
-    // identifier type (`buildMuseumAdapterForMember` /
-    // `buildInternetArchiveAdapterForMember`), so an ark acquire never pays
-    // the museum's B2/codex cost or the IA path's poppler/staging cost.
-    const museumAdapter = await buildMuseumAdapterForMember(sourcesDir, id, archive);
-    const internetArchiveAdapter = await buildInternetArchiveAdapterForMember(sourcesDir, id, archive, {
-      approvedRange,
-      reject,
-      notes,
-    });
-
-    const result = await runAcquire({
-      sourcesDir,
-      sourceId: id,
-      archive,
-      objectStore,
-      dryRun,
-      checkpoint,
-      checkpointEvery,
-      // The shipped fetcher, injected unchanged (D-08): no new fetch code here.
-      fetch: runFetchSource,
-      museumAdapter,
-      internetArchiveAdapter,
-    });
-    const mode = dryRun ? ' (dry-run)' : '';
-    const identifier = result.ark ?? result.accession ?? result.iaItem ?? '(no copy identifier)';
-    console.log(
-      `bib acquire${mode}: ${result.sourceId} -> fetched ${identifier} ` +
-        `from "${result.sourceArchive}"`,
-    );
-    return 0;
-  } catch (error) {
-    console.error(`bib acquire: ${describeError(error)}`);
-    return 1;
-  }
-}
-
-/** Typed result of parsing `bib reconcile`'s argv (see {@link parseReconcileArgs}). */
-export interface ReconcileCliArgs {
-  id: string | undefined;
-  archive: string | undefined;
-  archiveRoot: string | undefined;
-}
-
-/**
- * Parse `bib reconcile <id> [--archive <sourceArchive>] [--archive-root
- * <path>]`'s argv into typed flags. Exported so this parsing is directly
- * unit-testable without touching a real archive on disk.
- */
-export function parseReconcileArgs(rest: string[]): ReconcileCliArgs {
-  const { values, positionals } = nodeParseArgs({
-    args: rest,
-    options: {
-      archive: { type: 'string' },
-      'archive-root': { type: 'string' },
-    },
-    allowPositionals: true,
-    strict: true,
-  });
-  return {
-    id: positionals[0],
-    archive: values.archive,
-    archiveRoot: values['archive-root'],
-  };
-}
-
-/**
- * True when `id`'s SELECTED copy carries recorded object-store `assets` -- the
- * museum/B2 case, reconciled by verifying those assets against the object store
- * rather than from archive provenance (TASK-30). Resilient like
- * `buildMuseumAdapterForMember`: any load/select failure yields `false`, so the
- * archive-provenance path runs and surfaces the real precondition error with
- * its own message rather than this peek double-reporting it.
- */
-function selectedCopyHasRecordedAssets(
-  sourcesDir: string,
-  id: string,
-  archive: string | undefined,
-): boolean {
-  try {
-    const loaded = loadAllSources(sourcesDir);
-    const entry = loaded.find((e) => e.source.sourceId === id);
-    if (entry === undefined) {
-      return false;
-    }
-    const candidates: RepositoryRecord[] = entry.records.map((authored) => ({
-      ...authored,
-      sourceId: entry.source.sourceId,
-    }));
-    const record = selectRepositoryRecord(candidates, archive);
-    return record.assets !== undefined && record.assets.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * `bib reconcile <id> [--archive <sourceArchive>] [--archive-root <path>]`
- * (TASK-21, TASK-30): fold each copy's acquisition truth into the member's SSOT
- * `repositoryRecords[].status`, closing the spec/impl gaps TASK-20 (Gallica)
- * and TASK-30 (museum) found. Two paths, chosen by the selected copy's shape:
- *
- * - a museum copy (recorded object-store `assets`) is reconciled against the
- *   real `S3ObjectStore` -- no archive root or layout needed (its truth is B2 +
- *   the recorded asset, not any file under `COLONY_ARCHIVE_ROOT`);
- * - a Gallica copy is reconciled from the archive's per-page provenance, so it
- *   still resolves the archive root and registers the member's archive layout
- *   BEFORE gathering (`gatherProvenance`'s `sourceLayout` throws for an
- *   unregistered source-group member -- same overlay `bib acquire` needs).
- *
- * Idempotent; re-runnable on members acquired out-of-band.
- */
-export async function runReconcileCli(rest: string[]): Promise<number> {
-  let parsed: ReconcileCliArgs;
-  try {
-    parsed = parseReconcileArgs(rest);
-  } catch (error) {
-    console.error(`bib reconcile: ${describeError(error)}`);
-    return 2;
-  }
-  const { id, archive, archiveRoot: archiveRootOverride } = parsed;
-
-  if (id === undefined) {
-    console.error('bib reconcile: missing required argument <id>');
-    return 2;
-  }
-
-  const repoRoot = resolveRepoRoot();
-  const sourcesDir = sourcesDirOf(repoRoot);
-  const isMuseumCopy = selectedCopyHasRecordedAssets(sourcesDir, id, archive);
-  try {
-    let result: ReconcileResult;
-    if (isMuseumCopy) {
-      // Pure-B2 path: verify recorded assets against the real object store. No
-      // archive root, no `gatherProvenance`, no layout overlay -- fail loud if
-      // the store config is absent rather than silently reconciling nothing.
-      result = await runReconcile({
-        sourcesDir,
-        sourceId: id,
-        archive,
-        objectStore: new S3ObjectStore(resolveObjectStoreConfig()),
-      });
-    } else {
-      // Archive-provenance (Gallica) path: resolve the archive root and register
-      // this member's layout BEFORE gathering -- `gatherProvenance` resolves the
-      // source's slug via the synchronous, sourceId-only `sourceLayout(sourceId)`,
-      // which throws for a source-group member absent this runtime overlay.
-      const archiveRoot = resolveArchiveRoot(repoRoot, archiveRootOverride);
-      registerMemberArchiveLayout(sourcesDir, id);
-      result = await runReconcile({
-        sourcesDir,
-        archiveRoot,
-        sourceId: id,
-        archive,
-        gather: gatherProvenance,
-      });
-    }
-    const verb = result.changed ? 'reconciled' : 'already reconciled';
-    // A record with declared `folios` (specs/012) is an excerpt: report the
-    // counts against that declared set rather than implying a whole-document
-    // holding.
-    const masterLabel = result.folios !== undefined ? 'declared folio(s)' : 'master(s)';
-    console.log(
-      `bib reconcile: ${verb} ${result.sourceId} at "${result.sourceArchive}" -> ` +
-        `${result.status} (${result.storedCount}/${result.pageCount} ${masterLabel} in object store)`,
-    );
-    return 0;
-  } catch (error) {
-    console.error(`bib reconcile: ${describeError(error)}`);
     return 1;
   }
 }
