@@ -218,6 +218,14 @@ export class GallicaAdapter implements RepositoryAdapter {
       options: {
         sourceId: record.sourceId,
         checkpointEvery: context.checkpointEvery,
+        // Excerpt (specs/012): when the record declares `folios`, the held copy
+        // is exactly those folios of the document -- forward them to the shipped
+        // fetcher as `--pages` so the member-acquire path mirrors ONLY the
+        // excerpt, not the whole (possibly large) document. Absent -> whole doc.
+        pages:
+          record.folios !== undefined
+            ? record.folios.join(',')
+            : undefined,
       },
     };
 

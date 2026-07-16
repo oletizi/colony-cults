@@ -126,6 +126,25 @@ describe('GallicaAdapter', () => {
       expect(result.reconciliationRequired).toBe(true);
     });
 
+    it('forwards a record\'s declared folios to the fetcher as --pages (specs/012 excerpt)', async () => {
+      const { adapter, fetch } = makeAdapter();
+
+      await adapter.acquire(record({ folios: [48, 49, 50] }), {});
+
+      const [args] = vi.mocked(fetch).mock.calls[0];
+      // The member-acquire path mirrors ONLY the excerpt, not the whole document.
+      expect(args.options.pages).toBe('48,49,50');
+    });
+
+    it('omits --pages for a whole-document record (no folios)', async () => {
+      const { adapter, fetch } = makeAdapter();
+
+      await adapter.acquire(record(), {});
+
+      const [args] = vi.mocked(fetch).mock.calls[0];
+      expect(args.options.pages).toBeUndefined();
+    });
+
     it('prefers the record retrievedAt for the metadata snapshot when present', async () => {
       const { adapter } = makeAdapter();
 
