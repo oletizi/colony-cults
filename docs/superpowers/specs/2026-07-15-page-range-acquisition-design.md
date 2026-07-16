@@ -119,7 +119,7 @@ of the fetched pages confirms it. This lives in the acquisition runbook, not the
 - `--pages` on `fetch-issue` → usage error (v1 monograph-path only).
 - Overlapping tokens (`48-50,49`) → deduped to `[48,49,50]`, not an error.
 
-## Out of scope (YAGNI)
+## Out of scope (operator-decided, 2026-07-15)
 
 `--pages` on the periodical path; logical-printed-page → folio mapping; a distinct `excerpt`
 Source kind; coverage/audit surfaces for excerpts; multi-document excerpts.

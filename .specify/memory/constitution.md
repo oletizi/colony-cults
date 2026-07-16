@@ -1,14 +1,12 @@
 <!--
 Sync Impact Report
-- Version change: 1.1.0 → 1.2.0
-- Rationale: MINOR — added Principle XIII (No Agent Memory, Ever), which FORBIDS the coding
-  agent's private per-machine "memory" store outright: it is unshared, unversioned, and
-  unreviewable, so recording knowledge there destroys it. All durable knowledge must live in
-  the repo. Additive (no existing principle changed semantics); the memory analogue of X (No
-  Git Hooks, Ever). Overrides any global/agent guidance that promotes a memory store, for this
-  project. (Prior amendment 1.0.0 → 1.1.0 added Principle XII, Respect the Source, and
-  reconciled the report with XI, Design Through the Design Skill.)
-- Principles (13):
+- Version change: 1.2.0 → 1.3.0
+- Rationale: MINOR — added Principle XIV (The Operator Owns Scope — No Agent Scope-Cutting),
+  which FORBIDS agent-originated scope trimming/deferral (YAGNI and every equivalent). Only the
+  operator owns scope. Additive (no existing principle changed semantics). (Prior amendments:
+  1.1.0 → 1.2.0 added XIII, No Agent Memory, Ever; 1.0.0 → 1.1.0 added XII, Respect the Source,
+  and reconciled the report with XI, Design Through the Design Skill.)
+- Principles (14):
     I. Evidence Before Narrative
     II. Preserve Disagreement & Uncertainty
     III. Provenance Is Mandatory
@@ -21,7 +19,8 @@ Sync Impact Report
     X. No Git Hooks, Ever
     XI. Design Through the Design Skill
     XII. Respect the Source (Frugal, Polite Access)
-    XIII. No Agent Memory, Ever   [added this amendment]
+    XIII. No Agent Memory, Ever
+    XIV. The Operator Owns Scope (No Agent Scope-Cutting)   [added this amendment]
 - Templates reviewed for alignment:
     ✅ .specify/templates/plan-template.md — the "Constitution Check" gate is principle-generic;
        plans that touch source acquisition MUST now evaluate XII (frugal/polite access).
@@ -163,6 +162,20 @@ only context loss (Principle IX) but machine and agent changes, which a private 
 cannot. This is the memory analogue of Principle X (No Git Hooks, Ever): no local, invisible
 side-channel — enforcement and knowledge live only where the whole team can see them.
 
+### XIV. The Operator Owns Scope (No Agent Scope-Cutting)
+
+Scope belongs to the operator, and ONLY the operator. Agents MUST NOT trim, defer, or cut scope
+on their own initiative — "YAGNI", "out of scope for v1", "not needed now", "deferred", and
+every equivalent are FORBIDDEN as agent-originated decisions. Capture everything known or
+knowably-implied; when the work suggests more than was asked, SURFACE it and let the operator
+decide — never silently drop it. An agent may propose options with trade-offs, but the choice is
+the operator's; only the operator may cut scope (and once the operator does, that cut is recorded
+as the operator's decision, not the agent's). Do not present YAGNI as a rationale for doing less;
+do not invoke it at all. Rationale: unrequested scope-cutting discards work the operator wanted
+and hides it behind a false economy — scope is a product decision the agent lacks both the
+authority and the full context to make. This aligns with the stack-control front door's
+capture-over-YAGNI rule (Principle VIII); scoping is a separate, explicit, operator-driven pass.
+
 ## Additional Constraints (Technology & Conventions)
 
 - **Runtime**: TypeScript executed with `tsx`. Do NOT use `ts-node`. (`tsx`, not "nox tsx".)
@@ -196,4 +209,4 @@ expanded guidance, PATCH for clarifications. Compliance is expected in every rev
 deviations MUST be justified in writing (e.g., the plan's Complexity Tracking) or the offending
 work revised.
 
-**Version**: 1.2.0 | **Ratified**: 2026-07-08 | **Last Amended**: 2026-07-16
+**Version**: 1.3.0 | **Ratified**: 2026-07-08 | **Last Amended**: 2026-07-16

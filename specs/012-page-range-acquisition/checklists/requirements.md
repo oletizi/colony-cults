@@ -33,6 +33,6 @@
 
 - Domain nouns used in the spec (folio, master, object store, provenance, reconcile) are this
   corpus's ubiquitous vocabulary, consistent with specs 008–011, not tech-stack leakage.
-- Scope boundaries in Assumptions reflect an explicit operator scoping pass (2026-07-15), not
-  default YAGNI omissions.
+- Scope boundaries in Assumptions reflect an explicit operator scoping pass (2026-07-15) — the
+  operator owns scope (Constitution XIV); they are not agent-originated scope cuts.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.
