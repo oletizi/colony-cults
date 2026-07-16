@@ -38,6 +38,13 @@ function orderedRecord(record: AuthoredRepositoryRecord): Record<string, unknown
   if (record.identifiers !== undefined && record.identifiers.length > 0) {
     out.identifiers = record.identifiers.map((id) => ({ type: id.type, value: id.value }));
   }
+  // Excerpt folios (specs/012): present ⇒ the held copy is exactly these
+  // folios of the document at `identifiers`' ark, not the whole document.
+  // Sits right after `identifiers` -- it qualifies what that ark's copy
+  // actually comprises.
+  if (record.folios !== undefined) {
+    out.folios = record.folios;
+  }
   if (record.rights !== undefined) {
     out.rights = record.rights;
   }

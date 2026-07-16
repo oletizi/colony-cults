@@ -42,6 +42,7 @@ const RECORD_KEYS = new Set([
   'sourceUrl',
   'retrievedAt',
   'identifiers',
+  'folios',
   'rights',
   'rightsAssessment',
   'assets',
@@ -193,6 +194,45 @@ export function validateCopyIdentifier(
     fail(filePath, `${where}.type "${type}" did not narrow to a copy-level type`);
   }
   return { kind: 'ok', identifier: { type, value: val } };
+}
+
+/**
+ * Parse an authored `folios` array (specs/012) -- the folio numbers of the
+ * document at this record's ark that the held copy comprises. Present ⇒ the
+ * copy is an EXCERPT of exactly these folios; the field is entirely optional
+ * (absent ⇒ whole-document holding, today's unchanged behavior), so this is
+ * only called when `obj.folios !== undefined`. Fails loud (rule 8, no silent
+ * drop/coercion) on: not an array, a non-integer element, an element `< 1`,
+ * or the array not being strictly ascending (which also catches duplicates,
+ * since a repeated value cannot be `>` its predecessor).
+ */
+export function validateFolios(value: unknown, filePath: string, where: string): number[] {
+  const raw = requireArray(value, filePath, where);
+  if (raw.length === 0) {
+    fail(filePath, `${where} must be a non-empty array when present`);
+  }
+  const folios = raw.map((v, i) => {
+    const n = requireNumber(v, filePath, `${where}[${i}]`);
+    if (!Number.isInteger(n)) {
+      fail(filePath, `${where}[${i}] must be an integer, got ${n}`);
+    }
+    if (n < 1) {
+      fail(filePath, `${where}[${i}] must be >= 1, got ${n}`);
+    }
+    return n;
+  });
+  for (let i = 1; i < folios.length; i += 1) {
+    if (folios[i] === folios[i - 1]) {
+      fail(filePath, `${where} contains duplicate value ${folios[i]} at index ${i}`);
+    }
+    if (folios[i] < folios[i - 1]) {
+      fail(
+        filePath,
+        `${where} must be strictly ascending -- ${folios[i]} at index ${i} follows ${folios[i - 1]}`,
+      );
+    }
+  }
+  return folios;
 }
 
 export function validateRights(value: unknown, filePath: string, where: string): Rights {
@@ -450,6 +490,9 @@ export function validateRecord(value: unknown, filePath: string, index: number):
     }
   }
 
+  const folios =
+    obj.folios === undefined ? undefined : validateFolios(obj.folios, filePath, `${where}.folios`);
+
   const rights =
     obj.rights === undefined ? undefined : validateRights(obj.rights, filePath, `${where}.rights`);
 
@@ -483,6 +526,7 @@ export function validateRecord(value: unknown, filePath: string, index: number):
     sourceUrl,
     retrievedAt,
     identifiers: obj.identifiers === undefined ? undefined : identifiers,
+    folios,
     rights,
     rightsAssessment,
     assets,

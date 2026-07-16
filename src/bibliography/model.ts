@@ -84,6 +84,14 @@ export interface AuthoredRepositoryRecord {
   retrievedAt?: string;
   /** Copy-level identifiers (ark/IIIF manifest/scan DOI). */
   identifiers?: CopyIdentifier[];
+  /**
+   * Folio numbers of the document at this record's ark that the held copy
+   * comprises (specs/012). Present ⇒ excerpt of exactly these folios; absent
+   * ⇒ whole-document holding (unchanged default). See
+   * `@/model/repository-record`'s `RepositoryRecord.folios` for the full
+   * invariant (non-empty, ascending, unique, all `>= 1`).
+   */
+  folios?: number[];
   /** Rights determination for this copy. */
   rights?: Rights;
   /**

@@ -46,6 +46,9 @@ export function authoredToRepositoryRecord(
   if (authored.identifiers !== undefined) {
     record.identifiers = authored.identifiers;
   }
+  if (authored.folios !== undefined) {
+    record.folios = authored.folios;
+  }
   if (authored.rights !== undefined) {
     record.rights = authored.rights;
   }

@@ -18,6 +18,16 @@ export interface RepositoryRecord {
   sourceArchive: string;
   /** Copy-level identifiers (ark/IIIF manifest/scan DOI). */
   identifiers?: CopyIdentifier[];
+  /**
+   * Folio numbers of the document at this record's ark that the held copy
+   * actually comprises (specs/012). Present ⇒ the copy is an EXCERPT of
+   * exactly these folios (e.g. PB-P054's 3-page arrêt within a large serial
+   * fascicule); absent ⇒ a whole-document holding (unchanged default
+   * behavior). When present it MUST be non-empty, strictly ascending,
+   * duplicate-free, and every value `>= 1` -- enforced at load time
+   * (`@/bibliography/load-fields`'s `validateFolios`).
+   */
+  folios?: number[];
   /** Rights determination for this copy. */
   rights?: Rights;
   /**
