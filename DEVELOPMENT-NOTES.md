@@ -1,3 +1,34 @@
+## 2026-07-16: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 10
+  - spec(013): clarify — resolve 5 scoping questions (fidelity rule, extraction test, staging, discovery scope, AcquiredAsset role)
+  - spec(013-archiveorg-acquisition-path): author feature spec via /speckit-specify
+  - docs(agents): migrate exit-node-grace + persist-responses discipline into repo (Principle XIII)
+  - design(archiveorg-acquisition-path): integrate third-party review; fix stale 009 adapter contract
+  - design(archiveorg-acquisition-path): design record + governed roadmap node
+  - backlog(TASK-32): capture archive.org acquisition-path gap (verified de Groote book target)
+  - research(gap): verify the de Groote 1880 book is real — Internet Archive (SRCH-0013)
+  - research(gap): record Gallica resolution of PB-P002 leads (SRCH-0012) + PB-P003 ark
+  - backlog(TASK-31): capture gallica-sru-resolver gap (cb→bpt6k when catalogue.bnf.fr deflected)
+  - research(gap): persist Gallica captures — PB-P002 discovery-lead resolution + PB-P003 ark
+- Files changed: 24
+- Backlog touched: TASK-31, TASK-32
+
 ## 2026-07-16: Bookkeeping hygiene — close the de Rays arrêt in the SSOT; pin + slug-name a dedicated archive worktree
 
 **Goal:** Resume corpus-gap-closure. It resolved to two hygiene passes rather than the feature's substantive mandate: (1) reconcile the coverage-visible SSOT with reality — the de Rays cassation arrêt (PB-P054) was acquired + archived last session, but the search-log, the PB-P004 suspected lead, and the PB-P054 notes still read as unfinished, "so we don't get confused"; (2) on the operator's steer, pin and slug-name a dedicated archive worktree so no future session repeats the per-session env throat-clearing.

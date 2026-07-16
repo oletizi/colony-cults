@@ -30,3 +30,6 @@
 
 ## session-end 2026-07-16
 - bib validate/regenerate require COLONY_ARCHIVE_ROOT even for pure-SSOT edits (search-log entry, suspected-lead resolution, notes text) that touch no provenance-bearing assets — the provenance cross-check is bundled into validate, so a clean model-only validation of SSOT-only changes isn't reachable without the archive clone. A --no-provenance / model-only validate mode would let bookkeeping passes verify without the clone.
+
+## session-end 2026-07-16
+- Harness global CLAUDE.md instructs using the ~/.claude agent-memory store, which directly conflicts with Constitution Principle XIII (No Agent Memory, Ever). This session re-introduced agent memory (3 Gallica-access memories) before catching it mid-define while reading the constitution; had to migrate the durable facts into AGENTS.md and delete the store. Future sessions: honor Principle XIII over the global memory instruction from the start.
