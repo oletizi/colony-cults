@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<results ResultsGenerationSearchTime="0:00:00.239" countResults="1" resultType="CVOAIRecordSearchService" searchTime="">
+<visibility_rights>all</visibility_rights>
+<notice>
+<record>
+<header>
+<identifier>oai:bnf.fr:gallica/ark:/12148/btv1b10870266z</identifier>
+<datestamp>2025-03-07</datestamp>
+<setSpec>gallica:typedoc:cartes:carte</setSpec>
+</header>
+<metadata>
+<oai_dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+<dc:identifier>https://gallica.bnf.fr/ark:/12148/btv1b10870266z</dc:identifier>
+<dc:identifier>IFN-10870266</dc:identifier>
+<dc:title>[Port-Breton]. "Carte de la Nouvelle France. Colonie libre de Port Breton. 1881 (carte imprimée au 1/7 500 000)</dc:title>
+<dc:creator>Auxais, Maur d'. Cartographe</dc:creator>
+<dc:date>1881</dc:date>
+<dc:subject xml:lang="fre">Nouvelle-Guinée (île)</dc:subject>
+<dc:coverage>Papouasie-Nouvelle-Guinée</dc:coverage>
+<dc:description>Échelle(s) : 1:7 500 000</dc:description>
+<dc:format>1 carte</dc:format>
+<dc:language>fre</dc:language>
+<dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb38797788d</dc:relation>
+<dc:type xml:lang="eng">map</dc:type>
+<dc:type xml:lang="fre">carte</dc:type>
+<dc:type xml:lang="fre">image fixe</dc:type>
+<dc:type xml:lang="eng">image</dc:type>
+<dc:type xml:lang="eng">still image</dc:type>
+<dc:source>Bibliothèque nationale de France, département Société de Géographie, SG COLIS 37 BIS (4064)</dc:source>
+<dc:rights xml:lang="fre">conditions spécifiques d'utilisation - Société de Géographie</dc:rights>
+<dc:rights xml:lang="eng">restricted use</dc:rights>
+<dc:description>Appartient à l’ensemble documentaire : MssSGE1</dc:description>
+<dc:format>image/jpeg</dc:format>
+<dc:format>Nombre total de vues :  1</dc:format>
+</oai_dc:dc>
+</metadata>
+</record>
+</notice>
+<provenance>bnf.fr</provenance>
+<source>Bibliothèque nationale de France, département Société de Géographie, SG COLIS 37 BIS (4064)</source>
+<typedoc>carte</typedoc>
+<nqamoyen>0.0</nqamoyen>
+<title>[Port-Breton]. "Carte de la Nouvelle France. Colonie libre de Port Breton. 1881 (carte imprimée au 1/7 500 000)</title>
+<date nbIssue="1">1881</date>
+<first_indexation_date>05/03/2023</first_indexation_date>
+<streamable>false</streamable>
+<listBibVirt>
+<label>gallica</label>
+</listBibVirt>
+</results>
