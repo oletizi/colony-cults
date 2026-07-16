@@ -8,44 +8,83 @@ language: French
 creator: France. Cour de cassation, chambre criminelle
 rights:
   status: public-domain
-  basis: >-
-    1884 official French court decision (arrêt de la Cour de cassation, chambre
-    criminelle). Public domain on two independent grounds: (a) official acts —
-    court decisions are excluded from author's-rights protection under French law;
-    (b) publication age — printed in the 1884 Bulletin des arrêts criminels, all
-    authors long dead (France life+70 long elapsed). The source volume on Gallica
-    (bpt6k61587296) is served as domaine public. Per-item OAI rights to be
-    re-confirmed on acquisition.
+  basis: "1884 official French court decision (arrêt de la Cour de cassation, chambre criminelle). Public domain on two independent grounds: (a) official acts — court decisions are excluded from author's-rights protection under French law; (b) publication age — printed in the 1884 Bulletin des arrêts criminels, all authors long dead (France life+70 long elapsed). The source volume on Gallica (bpt6k61587296) is served as domaine public. Per-item OAI rights to be re-confirmed on acquisition."
   determinedAt: 2026-07-15
 titles:
-  - text: >-
-      Cour de cassation (chambre criminelle). Arrêt de rejet du pourvoi de
-      Charles-Bonaventure-Marie Dubreil de Rays contre l'arrêt de la Cour de Paris
-      du 14 mai 1884 (affaire de Port-Breton — escroquerie, art. 405 C. pén.)
+  - text: Cour de cassation (chambre criminelle). Arrêt de rejet du pourvoi de Charles-Bonaventure-Marie Dubreil de Rays contre l'arrêt de la Cour de Paris du 14 mai 1884 (affaire de Port-Breton — escroquerie, art. 405 C. pén.)
     role: canonical
-notes: >-
-  The Cour de cassation decision confirming the de Rays conviction — the legal
-  capstone of the Port-Breton affair. Located 2026-07-15 (SRCH-0010) via Gallica
-  Issues year-index + ContentSearch. Printed in the Bulletin des arrêts de la Cour
-  de cassation rendus en matière criminelle, 1884 (serial notice cb34508686x),
-  fascicule Gallica ark bpt6k61587296, p. 48-50. Verbatim: "REJET des pourvois de :
-  1° Charles-Bonaventure-Marie Dubreil de Rays [...] contre un Arrêt rendu, le 14
-  mai 1884, par la Cour d'appel de Paris, chambre correctionnelle, qui les a
-  condamnés, savoir : Dubreil de Rays à quatre ans de prison [...] et solidairement
-  à 3,000 francs d'amende [...] violation par fausse application de l'article 405 du
-  Code pénal". EXCERPT within a large serial fascicule — it has NO standalone Gallica
-  ark, so it does not fit the whole-document fetch pipeline; acquiring only the
-  pertinent 3 pages (not the whole fascicule of unrelated arrêts) needs a page-range
-  acquisition path the shipped fetcher lacks. status approved-for-acquisition +
-  repository to-collect: located, rights-cleared, ready, masters NOT yet mirrored.
-  The exact cassation date is printed at the head of the arrêt (p. 48) — to confirm
-  on acquisition.
+notes: "The Cour de cassation decision confirming the de Rays conviction — the legal capstone of the Port-Breton affair. Located 2026-07-15 (SRCH-0010) via Gallica Issues year-index + ContentSearch. Printed in the Bulletin des arrêts de la Cour de cassation rendus en matière criminelle, 1884 (serial notice cb34508686x), fascicule Gallica ark bpt6k61587296, p. 48-50. Verbatim: \"REJET des pourvois de : 1° Charles-Bonaventure-Marie Dubreil de Rays [...] contre un Arrêt rendu, le 14 mai 1884, par la Cour d'appel de Paris, chambre correctionnelle, qui les a condamnés, savoir : Dubreil de Rays à quatre ans de prison [...] et solidairement à 3,000 francs d'amende [...] violation par fausse application de l'article 405 du Code pénal\". EXCERPT within a large serial fascicule — it has NO standalone Gallica ark, so it does not fit the whole-document fetch pipeline; acquiring only the pertinent 3 pages (not the whole fascicule of unrelated arrêts) needs a page-range acquisition path the shipped fetcher lacks. status approved-for-acquisition + repository to-collect: located, rights-cleared, ready, masters NOT yet mirrored. The exact cassation date is printed at the head of the arrêt (p. 48) — to confirm on acquisition."
 repositoryRecords:
   - sourceArchive: Gallica / BnF
-    status: to-collect
-    originalUrl: https://gallica.bnf.fr/ark:/12148/bpt6k61587296
+    status: archived
     catalogUrl: https://catalogue.bnf.fr/ark:/12148/cb34508686x
-    folios: [48, 49, 50]
+    originalUrl: https://gallica.bnf.fr/ark:/12148/bpt6k61587296
     identifiers:
       - type: ark
         value: ark:/12148/bpt6k61587296
+    folios:
+      - 48
+      - 49
+      - 50
+    rights:
+      ark: ark:/12148/bpt6k61587296
+      status: public-domain
+      rawResponse: |
+        <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <results ResultsGenerationSearchTime="0:00:00.010" countResults="1" resultType="CVOAIRecordSearchService" searchTime="">
+        <visibility_rights>all</visibility_rights>
+        <notice>
+        <record>
+        <header>
+        <identifier>oai:bnf.fr:gallica/ark:/12148/bpt6k61587296</identifier>
+        <datestamp>2021-11-12</datestamp>
+        <setSpec>gallica:theme:3:34</setSpec>
+        <setSpec>gallica:typedoc:periodiques:fascicules</setSpec>
+        </header>
+        <metadata>
+        <oai_dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+        <dc:identifier>https://gallica.bnf.fr/ark:/12148/bpt6k61587296</dc:identifier>
+        <dc:date>1884</dc:date>
+        <dc:description>  1884</dc:description>
+        <dc:description>1884 (T89,N7).</dc:description>
+        <dc:description/>
+        <dc:title>Bulletin des arrêts de la Cour de cassation rendus en matière criminelle</dc:title>
+        <dc:contributor>Duchesne, Émile (1820-1887). Directeur de publication</dc:contributor>
+        <dc:creator>France. Cour de cassation. Auteur du texte</dc:creator>
+        <dc:publisher>Imprimerie impériale (Paris)</dc:publisher>
+        <dc:publisher>Imprimerie royaleImprimerie royale (Paris)</dc:publisher>
+        <dc:publisher>Imprimerie nationaleImprimerie nationale (Paris)</dc:publisher>
+        <dc:type xml:lang="fre">texte</dc:type>
+        <dc:type xml:lang="eng">text</dc:type>
+        <dc:type xml:lang="fre">publication en série imprimée</dc:type>
+        <dc:type xml:lang="eng">printed serial</dc:type>
+        <dc:language>fre</dc:language>
+        <dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb34508686x</dc:relation>
+        <dc:source>Bibliothèque Interuniversitaire Cujas, 2010-70564</dc:source>
+        <dc:rights xml:lang="fre">domaine public</dc:rights>
+        <dc:rights xml:lang="eng">public domain</dc:rights>
+        <dc:relation>http://gallica.bnf.fr/ark:/12148/cb34508686x/date</dc:relation>
+        <dc:format>Nombre total de vues :  72432</dc:format>
+        </oai_dc:dc>
+        </metadata>
+        </record>
+        </notice>
+        <provenance>bnf.fr</provenance>
+        <sdewey>34</sdewey>
+        <dewey>3</dewey>
+        <source>Bibliothèque Interuniversitaire Cujas, 2010-70564</source>
+        <typedoc>fascicule</typedoc>
+        <nqamoyen>95.61</nqamoyen>
+        <mode_indexation>text</mode_indexation>
+        <title>Bulletin des arrêts de la Cour de cassation rendus en matière criminelle</title>
+        <date nbIssue="1">1884</date>
+        <first_indexation_date>28/02/2011</first_indexation_date>
+        <streamable>false</streamable>
+        <listBibVirt>
+        <label>gallica</label>
+        </listBibVirt>
+        </results>
+      dcRights:
+        - domaine public
+        - public domain
+      raw: domaine public
