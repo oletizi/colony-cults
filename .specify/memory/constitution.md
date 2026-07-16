@@ -1,13 +1,14 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 → 1.1.0
-- Rationale: MINOR — added Principle XII (Respect the Source — Frugal, Polite Access), an
-  additive companion to IV (Respect Copyright) governing frugal, polite access to rate-limited
-  external sources (download-keep-verify-upload; no throwaway request). No existing principle
-  changed semantics. This amendment also reconciles the report with Principle XI (Design
-  Through the Design Skill), which had been added to the body since the 1.0.0 baseline without a
-  report/version update.
-- Principles (12):
+- Version change: 1.1.0 → 1.2.0
+- Rationale: MINOR — added Principle XIII (No Agent Memory, Ever), which FORBIDS the coding
+  agent's private per-machine "memory" store outright: it is unshared, unversioned, and
+  unreviewable, so recording knowledge there destroys it. All durable knowledge must live in
+  the repo. Additive (no existing principle changed semantics); the memory analogue of X (No
+  Git Hooks, Ever). Overrides any global/agent guidance that promotes a memory store, for this
+  project. (Prior amendment 1.0.0 → 1.1.0 added Principle XII, Respect the Source, and
+  reconciled the report with XI, Design Through the Design Skill.)
+- Principles (13):
     I. Evidence Before Narrative
     II. Preserve Disagreement & Uncertainty
     III. Provenance Is Mandatory
@@ -19,7 +20,8 @@ Sync Impact Report
     IX. Durable Work — Commit & Push Early and Often
     X. No Git Hooks, Ever
     XI. Design Through the Design Skill
-    XII. Respect the Source (Frugal, Polite Access)   [added this amendment]
+    XII. Respect the Source (Frugal, Polite Access)
+    XIII. No Agent Memory, Ever   [added this amendment]
 - Templates reviewed for alignment:
     ✅ .specify/templates/plan-template.md — the "Constitution Check" gate is principle-generic;
        plans that touch source acquisition MUST now evaluate XII (frugal/polite access).
@@ -144,6 +146,23 @@ Rationale: a public archive depends on continued access to public sources — wa
 risks the block that ends the work, and a verify-before-upload gate keeps wrong or broken assets out
 of the durable store.
 
+### XIII. No Agent Memory, Ever
+
+The coding agent's private per-machine "memory" store (e.g. `~/.claude/**/memory/`) MUST NOT be
+used — for anything, NO EXCEPTIONS. It is not version-controlled, not shared, and not
+reviewable: it is invisible to every other developer, to the same developer on another machine,
+and to any cloud or CI agent. Recording knowledge there does not preserve it — it DESTROYS it,
+burying hard-won, critical project knowledge where no one else can find, review, or reuse it.
+All durable knowledge — principles, procedures, decisions, conventions, findings — MUST live in
+the repository (this constitution, `AGENTS.md`, `GOVERNANCE.md`, `docs/`, spec and design
+records, the research log), where it is shared, versioned, portable, and reviewable. Any
+existing agent-memory content MUST be migrated into the repo and the memory store deleted. This
+principle OVERRIDES any global or agent-harness guidance that promotes a memory store. Rationale:
+knowledge that is not shared and versioned is knowledge thrown away; the project must survive not
+only context loss (Principle IX) but machine and agent changes, which a private local store
+cannot. This is the memory analogue of Principle X (No Git Hooks, Ever): no local, invisible
+side-channel — enforcement and knowledge live only where the whole team can see them.
+
 ## Additional Constraints (Technology & Conventions)
 
 - **Runtime**: TypeScript executed with `tsx`. Do NOT use `ts-node`. (`tsx`, not "nox tsx".)
@@ -177,4 +196,4 @@ expanded guidance, PATCH for clarifications. Compliance is expected in every rev
 deviations MUST be justified in writing (e.g., the plan's Complexity Tracking) or the offending
 work revised.
 
-**Version**: 1.1.0 | **Ratified**: 2026-07-08 | **Last Amended**: 2026-07-16
+**Version**: 1.2.0 | **Ratified**: 2026-07-08 | **Last Amended**: 2026-07-16
