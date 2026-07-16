@@ -33,10 +33,32 @@ and all analysis was done offline against these files.
 |------|-----|-----------------|
 | `../PB-P003/oai-bpt6k58017546-2026-07-16.xml` | OAIRecord `bpt6k58017546` | Baudouin, *L'aventure de Port-Breton*, 1883, `domaine public`, **Nombre total de vues: 395** — matches PB-P003's 395 archived masters exactly; resolves PB-P003's previously-missing Gallica document ark |
 
+## Internet Archive verification (SRCH-0013, added 2026-07-16)
+
+After the operator asked whether the de Groote book is even real (it had never
+been independently confirmed — `cb34944911d` was never in any captured response,
+and BnF is deflected), the claim was verified against NON-BnF catalogues. These
+are direct-egress captures (archive.org / Google Books do not CDN-deflect like
+BnF), saved before parsing.
+
+| File | Source / query | Result |
+|------|----------------|--------|
+| `archiveorg-metadata-nouvellefrancec00groogoog-2026-07-16.json` | archive.org item metadata | **VERIFIED**: P. de Groote, 1880, Société générale de librairie catholique, imagecount 421 (~368 pp), NOT_IN_COPYRIGHT, PDF available — the real de Groote book, a Google Books scan |
+| `archiveorg-search-creator-groote-2026-07-16.json` | archive.org `creator:(Groote) AND (Port-Breton…)` | 1 hit: `nouvellefrancec00groogoog` |
+| `archiveorg-search-title-nouvelle-france-2026-07-16.json` | archive.org title search | 1 hit: same item |
+| `archiveorg-search-colonisation-agricole-2026-07-16.json` | archive.org `(Port-Breton) AND (colonisation agricole)` | numFound 0 (the subtitle isn't indexed; item found via creator/title) |
+
+(Google Books API rate-limited at 429 without a key; archive.org, which hosts
+the scan, was decisive.)
+
 ## Verdict
 
-Of the five not-held leads: four have no Gallica digitisation (measured
-negatives — pursue on non-Gallica repositories: archive.org / Google Books /
-HathiTrust), and one (the map) is digitised but rights-restricted. **Zero
-acquirable via the Gallica pipeline.** The pass grew corpus *knowledge*, not the
-held corpus; the one durable SSOT gain is PB-P003's resolved ark.
+Of the five not-held Gallica leads: the **de Groote 1880 book is real, digitised,
+and public-domain — but on the Internet Archive (`nouvellefrancec00groogoog`),
+not Gallica** — a genuine acquisition target (SRCH-0013). The other three imprints
+(Schiller 1881, Exposé sommaire 1881, Charbonnier 1879) have no Gallica
+digitisation and are not yet verified elsewhere; the map is digitised but
+rights-restricted. **Zero acquirable via the Gallica pipeline**, but one (the de
+Groote book) is acquirable via archive.org once a path exists. Durable SSOT gains:
+PB-P003's resolved ark, and the de Groote book confirmed as a real acquisition
+lead rather than a phantom.
