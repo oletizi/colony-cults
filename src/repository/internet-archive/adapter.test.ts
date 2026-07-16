@@ -167,11 +167,14 @@ describe('InternetArchiveAdapter.collectRightsEvidence -- propose, never decide 
   });
 });
 
-describe('InternetArchiveAdapter.acquire -- explicit not-yet-implemented stub (T025)', () => {
-  it('throws rather than fabricating an AcquisitionResult', async () => {
+describe('InternetArchiveAdapter.acquire -- fail-closed rights gate (T025, IA-INV-B)', () => {
+  it('throws (before any fetch) on a record with no public-domain rights assessment', async () => {
     const adapter = new InternetArchiveAdapter({ client: fakeClient(FIXTURE_TEXT) });
     const record = {} as RepositoryRecord;
-    await expect(adapter.acquire(record, {})).rejects.toThrow(/not yet implemented/);
+    // The full acquire pipeline lives in `acquire.ts` (see acquire.test.ts). Here we
+    // only assert the adapter delegates and the rights gate fails closed before any
+    // fetch or acquire-time dependency is even consulted.
+    await expect(adapter.acquire(record, {})).rejects.toThrow(/public-domain|rightsStatus/);
   });
 });
 

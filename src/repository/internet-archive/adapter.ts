@@ -16,13 +16,12 @@
  *   - `collectRightsEvidence` (`@/repository/internet-archive/rights`) -- the
  *     rights-EVIDENCE proposal (never a verdict, INV-B) over the parsed
  *     `ItemMetadata`.
- *
- * THIS FILE IS A SKELETON (T018/T019): only `resolve` and
- * `collectRightsEvidence` are implemented. `acquire` (the fetch -> quality
- * gate -> fidelity probe -> page-to-leaf -> upload pipeline,
- * contracts/internet-archive-adapter.md `acquire` section) is a later task
- * (T025) and is stubbed here as an explicit, fail-loud "not yet implemented"
- * throw -- never a silent no-op, never fabricated assets.
+ *   - `acquireInternetArchiveItem`
+ *     (`@/repository/internet-archive/acquire`) -- the full fetch -> quality
+ *     gate -> fidelity probe -> page-to-leaf -> upload pipeline. `acquire`
+ *     below is a thin facade that validates its acquire-time deps are present
+ *     and delegates; the orchestration lives in that module so this file stays
+ *     small.
  */
 
 import type {
@@ -38,25 +37,43 @@ import type {
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { GroundedExtraction, MuseumItemFields } from '@/extraction/structured-extractor';
 import type { ArchiveHttpClient, ItemMetadata } from '@/repository/internet-archive/metadata';
+import type { ObjectStore } from '@/archive/object-store';
+import type { CommandRunner, PopplerRunner } from '@/pdf/poppler/runner';
+import type { QualityGate } from '@/repository/internet-archive/quality-gate';
 import { fetchItemMetadata } from '@/repository/internet-archive/metadata';
 import { selectSourceFiles } from '@/repository/internet-archive/file-select';
 import { collectRightsEvidence as buildRightsEvidence } from '@/repository/internet-archive/rights';
+import { acquireInternetArchiveItem } from '@/repository/internet-archive/acquire';
 
 /**
  * Construction dependencies for {@link InternetArchiveAdapter}.
  *
- * NOTE (T018/T019 skeleton): `acquire`-time dependencies (a `PopplerRunner`,
- * an `ObjectStore`, a `QualityGate`, a `stagingRoot`, and a clock -- see
- * `contracts/internet-archive-adapter.md`'s `InternetArchiveAdapterDeps`) are
- * intentionally NOT declared here. They are added when `acquire` is actually
- * implemented (T025). Stubbing them now with fakes/placeholders would invite
- * exactly the kind of fabricated, untested wiring this codebase forbids
- * (Principle V) -- an adapter constructed today can only ever resolve items
- * and propose rights evidence, never acquire.
+ * Only `client` is required at construction: a resolve-only caller (e.g.
+ * `bib inventory --repository`) constructs this adapter with just the fetch
+ * client and never pays for the acquire-time toolchain. Every acquire-time
+ * dependency is OPTIONAL here and validated (fail-loud) inside `acquire` when
+ * actually needed -- mirroring how `NewItalyMuseumAdapterDeps.objectStore` is
+ * optional-at-construction-but-required-for-acquire.
  */
 export interface InternetArchiveAdapterDeps {
-  /** Fetch client for item metadata (and, later, asset bytes). REQUIRED. */
+  /** Fetch client for item metadata + asset bytes. REQUIRED. */
   client: ArchiveHttpClient;
+  /** Injected poppler wrapper (`info`/`imagesList`/`extractImage`/`rasterise`). Required to acquire. */
+  poppler?: PopplerRunner;
+  /** Object store the assets are PUT to (B2 in prod). Required to acquire. */
+  objectStore?: ObjectStore;
+  /** Operator quality-gate seam (records the `QualityAssessment`). Required to acquire. */
+  qualityGate?: QualityGate;
+  /** `unzip` command runner for the image-set fallback. Required to acquire. */
+  unzip?: CommandRunner;
+  /** `magick`/`convert` command runner for the image-set fallback. Required to acquire. */
+  convert?: CommandRunner;
+  /** Scratch root under `COLONY_ARCHIVE_ROOT` staging lives under. Required to acquire. */
+  stagingRoot?: string;
+  /** Base dir the write-once metadata snapshot is recorded under. Required to acquire. */
+  baseDir?: string;
+  /** Clock for snapshot + assessment timestamps; defaults to wall clock. */
+  now?: () => string;
 }
 
 /**
@@ -68,6 +85,14 @@ export class InternetArchiveAdapter implements RepositoryAdapter {
   readonly repository = 'internet-archive' as const;
 
   private readonly client: ArchiveHttpClient;
+  private readonly poppler: PopplerRunner | undefined;
+  private readonly objectStore: ObjectStore | undefined;
+  private readonly qualityGate: QualityGate | undefined;
+  private readonly unzip: CommandRunner | undefined;
+  private readonly convert: CommandRunner | undefined;
+  private readonly stagingRoot: string | undefined;
+  private readonly baseDir: string | undefined;
+  private readonly now: () => string;
 
   /**
    * Threads the `ItemMetadata`-derived `RightsEvidence` computed during
@@ -97,6 +122,14 @@ export class InternetArchiveAdapter implements RepositoryAdapter {
       throw new Error('InternetArchiveAdapter: deps.client is required (the fetch client).');
     }
     this.client = deps.client;
+    this.poppler = deps.poppler;
+    this.objectStore = deps.objectStore;
+    this.qualityGate = deps.qualityGate;
+    this.unzip = deps.unzip;
+    this.convert = deps.convert;
+    this.stagingRoot = deps.stagingRoot;
+    this.baseDir = deps.baseDir;
+    this.now = deps.now ?? (() => new Date().toISOString());
   }
 
   /**
@@ -195,16 +228,26 @@ export class InternetArchiveAdapter implements RepositoryAdapter {
   }
 
   /**
-   * NOT YET IMPLEMENTED (T025). The full fetch -> quality-gate -> fidelity
-   * probe -> page-to-leaf -> upload pipeline
-   * (`contracts/internet-archive-adapter.md`'s `acquire` section) requires
-   * dependencies this skeleton's {@link InternetArchiveAdapterDeps}
-   * deliberately does not declare (a `PopplerRunner`, an `ObjectStore`, a
-   * `QualityGate`, a `stagingRoot`, a clock). Fails loud rather than
-   * returning a fabricated or partial `AcquisitionResult`.
+   * Acquire assets for an `ia-item` record -- the full fetch -> quality-gate ->
+   * fidelity probe -> page-to-leaf -> upload pipeline
+   * (`contracts/internet-archive-adapter.md`'s `acquire` section). A thin
+   * facade over `acquireInternetArchiveItem`
+   * (`@/repository/internet-archive/acquire`): it forwards this adapter's
+   * injected deps (the orchestration validates the acquire-time ones are
+   * present and fails loud otherwise) and never re-implements any step.
    */
-  async acquire(_record: RepositoryRecord, _ctx: AcquisitionContext): Promise<AcquisitionResult> {
-    throw new Error('InternetArchiveAdapter.acquire: not yet implemented (T025)');
+  async acquire(record: RepositoryRecord, ctx: AcquisitionContext): Promise<AcquisitionResult> {
+    return acquireInternetArchiveItem(record, ctx, {
+      client: this.client,
+      poppler: this.poppler,
+      objectStore: this.objectStore,
+      qualityGate: this.qualityGate,
+      unzip: this.unzip,
+      convert: this.convert,
+      stagingRoot: this.stagingRoot,
+      baseDir: this.baseDir,
+      now: this.now,
+    });
   }
 }
 
