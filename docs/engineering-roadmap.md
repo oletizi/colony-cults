@@ -157,6 +157,7 @@ Add a minimal `--pages <folio-range>` flag to the shipped `bib fetch-source` (si
 
 ## impl:feature/archiveorg-acquisition-path
 - status: planned
+- spec: specs/013-archiveorg-acquisition-path
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-16-archiveorg-acquisition-path-design.md
 - depends-on: impl:feature/source-group-acquisition
