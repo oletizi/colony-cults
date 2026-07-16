@@ -8,10 +8,10 @@ Validates the program end-to-end on real state. The research *judgment* is human
   ```
   set -a; source .env; set +a
   ```
-  `.env` pins a DEDICATED archive worktree (a `colony-cults-archive` clone at `main`) reused across this operator's sequential sessions. B2 secrets are NOT in `.env` — they live in `~/.config/backblaze/b2-credentials.txt`. If the pinned worktree is ever missing, re-clone and update `COLONY_ARCHIVE_ROOT`:
+  `.env` pins a DEDICATED archive worktree (a `colony-cults-archive` clone at `main`) reused across this operator's sequential sessions. Name it for the feature slug — `<feature-slug>-archive`, mirroring the code worktree's name (this feature: `corpus-gap-closure` ↔ `corpus-gap-closure-archive`). B2 secrets are NOT in `.env` — they live in `~/.config/backblaze/b2-credentials.txt`. If the pinned worktree is ever missing, re-clone under that name and update `COLONY_ARCHIVE_ROOT`:
   ```
   git clone --single-branch --branch main git@github.com:oletizi/colony-cults-archive.git \
-    ~/work/colony-cults-work/<name>-archive
+    ~/work/colony-cults-work/<feature-slug>-archive
   ```
   Do NOT run two concurrent sessions against one worktree (the per-session policy, AGENTS.md §154 / TASK-19, guards concurrency — sequential reuse is safe).
 - Baseline measure: `npx tsx src/index.ts bib coverage` (note the current `unexamined` dimensions).
