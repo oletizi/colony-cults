@@ -27,3 +27,6 @@
 
 ## session-end 2026-07-16
 - tsx -e with @/ imports silently no-ops (dynamic import('@/...') from an eval entry never resolves its .then/.catch, process exits 0) — my early 'bib validate/regenerate exit 0' runs were hollow false-greens. Use a real .ts script file with absolute-path imports (ROOT/src/...), not npx tsx -e, to drive project code.
+
+## session-end 2026-07-16
+- bib validate/regenerate require COLONY_ARCHIVE_ROOT even for pure-SSOT edits (search-log entry, suspected-lead resolution, notes text) that touch no provenance-bearing assets — the provenance cross-check is bundled into validate, so a clean model-only validation of SSOT-only changes isn't reachable without the archive clone. A --no-provenance / model-only validate mode would let bookkeeping passes verify without the clone.

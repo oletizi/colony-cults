@@ -1,3 +1,32 @@
+## 2026-07-16: Bookkeeping hygiene — close the de Rays arrêt in the SSOT; pin + slug-name a dedicated archive worktree
+
+**Goal:** Resume corpus-gap-closure. It resolved to two hygiene passes rather than the feature's substantive mandate: (1) reconcile the coverage-visible SSOT with reality — the de Rays cassation arrêt (PB-P054) was acquired + archived last session, but the search-log, the PB-P004 suspected lead, and the PB-P054 notes still read as unfinished, "so we don't get confused"; (2) on the operator's steer, pin and slug-name a dedicated archive worktree so no future session repeats the per-session env throat-clearing.
+
+**Accomplished:**
+- **Closed the de Rays arrêt in the loop's SSOT.** Appended SRCH-0011 (append-only) superseding SRCH-0010's stale "acquire the arrêt" open question, carrying forward only the two genuine out-of-band residuals; resolved the PB-P004 suspected lead (`inventoried → PB-P054`, coverage now `open 0/1`); corrected PB-P054's pre-acquisition notes to the archived repo record; regenerated the derived views; `bib validate` clean (full provenance cross-check). Brought `RESEARCH_LOG.md` current with a 2026-07-16 entry + a bridging note for the 07-14..07-16 deltas (museum 011, page-range 012, PB-P002/P012) the log had never recorded.
+- **Pinned a dedicated archive worktree** in a gitignored `.env` (`COLONY_ARCHIVE_ROOT` + non-secret `COLONY_S3_*`; B2 secrets stay in `~/.config/backblaze/b2-credentials.txt`), loaded with `set -a; source .env; set +a` — ending the re-clone + re-export throat-clearing. Verified end-to-end (the clean validate ran through it).
+- **Slug-named the worktree.** Renamed `archive-session-e96c1962` → `corpus-gap-closure-archive`, mirroring the code worktree; baked `<feature-slug>-archive` into AGENTS.md §154 + the 009 quickstart, and reframed the policy from "per-session clone" to "dedicated, sequential — never a shared *concurrent* tree."
+
+**Didn't Work:**
+- Nothing broke — but the session never reached the feature's **actual mandate** (the substantive gap-closure research loop: `unclassified 41` evidence-class gap, the PB-P002 Gallica discovery leads, PB-P005 Trove curation). It was entirely bookkeeping + infra hygiene. The operator's last steer — "let's return to the actual mandate" — was deferred to the next session.
+
+**Course Corrections:**
+- Initially read PB-P054's top-level `status: approved-for-acquisition` as stale and nearly flipped it to `archived` — corrected after reading the vocab: the Source lifecycle **deliberately ends** at `approved-for-acquisition`; acquisition state lives on the RepositoryRecord. Documented the two-axis model in the notes + log so it stops recurring.
+- Offered to delete three stale archive clones in the parent dir; operator: *"those are used by other feature efforts."* Stood down — asking before deleting others' work was the right call.
+
+**Insights:**
+- The "confusion" the operator flagged was a genuine **two-axis subtlety**, not a data error: `bib coverage` counts the Source lifecycle status (correctly `approved-for-acquisition` even for an acquired member), while acquisition completeness shows on the RepositoryRecord. Only three things were actually stale, all pure-SSOT.
+- **Name archive worktrees for the feature slug**, same as code worktrees — opaque session-hash names hide which effort owns which clone (exactly why several accumulate and can't be safely swept).
+- A pinned dedicated worktree is safe for **sequential** single-operator sessions; the per-session-clone policy guards **concurrency**, not reuse — worth stating explicitly so the policy isn't misread as forbidding the pin.
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 3
+  - docs(archive): name the dedicated worktree for the feature slug
+  - docs(archive): pin a dedicated archive worktree via gitignored .env
+  - bookkeeping(PB-P004): close the de Rays cassation arrêt in the loop's SSOT
+- Files changed: 8
+- Backlog touched: (none)
+
 ## 2026-07-16: Page-range acquisition (spec 012) — built, live-proven on the de Rays cassation arrêt; three constitutional amendments (frugal access, no agent memory, operator owns scope)
 
 **Goal:** Pick up the corpus-gap-closure thread — the central corpus grows off the museum, in the Port Breton affair via Gallica. It became: resolve the blocked-Gallica reconciliations, locate + acquire the de Rays Cour de cassation arrêt, build the page-range acquisition capability that asset needed, prove it live, and — on the operator's steer — durably govern the principles that emerged.
