@@ -1,18 +1,29 @@
-## 2026-07-16: <!-- session title -->
+## 2026-07-16: Corpus-growth pass flips a Gallica measured-negative into a real Internet Archive find; design + spec the archive.org adapter (013)
 
-**Goal:** <!-- compose: what we set out to do -->
+**Goal:** Pick up the feature's substantive mandate — corpus growth. Chose the PB-P002 Gallica discovery-leads acquisition pass; it produced an honest measured negative that the operator's skepticism then flipped into a genuine find, which pulled a new first-class repository adapter through the front door.
 
 **Accomplished:**
-- <!-- compose -->
+- **PB-P002 Gallica discovery-leads pass (SRCH-0012) — measured 0/5 acquirable, honestly.** Resolved all five not-held Port-Breton affair imprints against Gallica through the shipped polite `HttpClient` from a Paris exit node. Four have no Gallica digitisation; one (the Auxais 1881 map, `btv1b10870266z`) is digitised but Société-de-Géographie restricted-use. Persisted all 8 raw captures into the committed provenance store (`repository-responses/PB-P002` + manifest) and recorded SRCH-0012 + reconciled SRCH-0008's stale open questions. Grew corpus *knowledge*, not the held corpus. Side-win: resolved PB-P003's missing Gallica ark (`bpt6k58017546`, 395 vues = 395 archived masters) and enriched the record.
+- **Verified the de Groote book is real (SRCH-0013) — flipped the negative.** On the operator's "why do we think there's such a book?", traced the belief to a legacy mis-attribution + an unverified mislinked ark, then verified against non-BnF catalogues: de Groote's 1880, 368-pp book IS real, digitised, and public-domain on the Internet Archive (`nouvellefrancec00groogoog`, 421 images, `NOT_IN_COPYRIGHT`). A genuine, acquirable corpus-growth target — just not via Gallica.
+- **Designed + specced a first-class Internet Archive acquisition adapter (roadmap node + spec 013)** through the full stack-control front door: brainstorm → design record (design→spec gate 7/7) → integrated a substantive third-party review (7 points) → fixed the stale 009 `RepositoryAdapter` contract doc → `/stack-control:define` (`/speckit-specify` + `/speckit-clarify`), locking all 5 scoping decisions. Chosen shape: PDF-probe → fail-closed quality gate (durable `qualityAssessment`) → explode the approved range to per-page masters (uniform archive shape) → preserve the source PDF → reconcile. Rights = evidence proposed, judgment operator-authored, `acquire` fail-closed.
+- **Captured TASK-31** (gallica-sru-resolver gap) and **TASK-32** (archiveorg-acquisition-path, now promoted to spec 013).
 
 **Didn't Work:**
-- <!-- compose -->
+- The corpus-growth pass I chose (acquire the PB-P002 Gallica leads) yielded **0/5 acquirable via Gallica** — the *held* corpus did not grow this session. It grew knowledge and set up the archive.org path that will grow it next.
+- **Burned a second Gallica network pass** because the first grep-parsed responses in memory and discarded them (missed the map's `btv1b` ark). Corrected to capture-before-parse mid-session — the exact abuse of the scarce CDN grace the operator warned against.
 
 **Course Corrections:**
-- <!-- compose -->
+- Operator: *"never ping gallica with curl — it triggers CDN deflection + rate limits."* Switched to the shipped polite `HttpClient` (403-backoff, ~1 req/s); the raw-fetch script was rejected.
+- Operator taught the **exit-node grace lever** (shift the Tailscale exit node for a fresh IP + a short, scarce CDN grace window; never abuse). Batched the whole resolution into one Paris-node window.
+- Operator: *"all data fetched from gallica is precious and should be persisted."* Stopped discarding raw responses; persisted every capture into the committed provenance store and analyzed offline.
+- **Third-party design review** — verified each of 7 points against shipped code; found my design had followed the **stale 009 contract doc** (`resolveIdentifier`/`determineRights`) rather than the real interface (`resolve`/`collectRightsEvidence`/`acquire`). Integrated all 7; surfaced the two touching earlier rulings for the operator's call.
+- **Re-violated Principle XIII** (No Agent Memory) — saved 3 Gallica-access memories to `~/.claude`; caught it while reading the constitution for spec 013; migrated the durable facts into `AGENTS.md` and deleted the store.
 
 **Insights:**
-- <!-- compose -->
+- A **measured negative is not the end of the inquiry**: "not on Gallica" and "real + acquirable on the Internet Archive" were both true — for different repositories. The operator's skepticism turned the loop from closing to opening; the honest 0/5 was the setup for the find.
+- **Near-identical mirror-titles are the recurring conflation trap** (de Rays's *"Colonie libre de Port-Breton : Nouvelle France"*, 1879, 34 pp vs de Groote's *"Nouvelle-France : Colonie libre de Port-Breton"*, 1880, 421 pp). Page count is the decisive discriminator — the operator's manual download landed on the prospectus, not the book.
+- The **009 `RepositoryAdapter` contract had drifted** from the shipped interface (011 carried the canonical refinement); fixing it as part of design means the next adapter builds against reality, not a pre-build sketch.
+- **Principle XIII keeps getting re-violated because the harness's global CLAUDE.md actively instructs memory use** — captured as friction. Future sessions must honor the constitution over the global instruction from the start.
 
 **Quantitative (auto-derived from git; verify before publishing):**
 - Commits: 10
