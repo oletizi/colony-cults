@@ -1,3 +1,58 @@
+## 2026-07-16: Page-range acquisition (spec 012) — built, live-proven on the de Rays cassation arrêt; three constitutional amendments (frugal access, no agent memory, operator owns scope)
+
+**Goal:** Pick up the corpus-gap-closure thread — the central corpus grows off the museum, in the Port Breton affair via Gallica. It became: resolve the blocked-Gallica reconciliations, locate + acquire the de Rays Cour de cassation arrêt, build the page-range acquisition capability that asset needed, prove it live, and — on the operator's steer — durably govern the principles that emerged.
+
+**Accomplished:**
+- **Reconciled PB-P002 + PB-P012 (Gallica blocked, general-web catalogues used).** PB-P002's "1879 vs 1880" was a work-identity CONFLATION, not a date typo: the held 20-p. de Rays prospectus (bpt6k58039518, notice cb34139872z) had been mislinked to de Groote's separate 368-p. book (cb34944911d). Fixed creator/catalogue-ark/title/rights. PB-P012 (Vermont plaidoiries) recorded as a measured holding negative across WorldCat/CCFr/BnF. Surfaced 6 new Port-Breton acquire-leads.
+- **Located the de Rays Cour de cassation arrêt** — the legal capstone of the affair. The Gazette des Tribunaux skips 1878-1892 (no 1884); found it instead in the Bulletin des arrêts criminels 1884 (bpt6k61587296, folios 48-50) via the Issues year-index + ContentSearch (bounded metadata, never a census). Recorded as PB-P054.
+- **Built the page-range (excerpt) acquisition feature (spec 012)** through the full stack-control front door: brainstorm → design record → `/stack-control:define` (specify → plan → tasks) → analyze-clean → `/stack-control:execute` (17 tasks dispatched to fresh subagents at their `[tier:]` model — opus for the risky fetch-core loop). `fetch-source --pages` + `RepositoryRecord.folios` + folios-aware reconcile. tsc clean, 1335 tests pass.
+- **LIVE-PROVED it end-to-end.** Acquired PB-P054's 3-folio excerpt of a 56-page fascicule; verified by LOOKING at the pages that they are the complete arrêt (N°252, bounded by N°251/N°253); uploaded to B2 from local cache (0 re-download); reconciled → archived (3/3 declared folios). The actual central asset is in the corpus, without mirroring 53 unrelated arrêts.
+- **Governance: constitution v1.0.0 → v1.3.0.** Added Principle XII (Respect the Source — frugal/polite access), XIII (No Agent Memory — deleted the private memory store, migrated its durable content to `AGENTS.md`/`GOVERNANCE.md`), XIV (The Operator Owns Scope — no agent YAGNI). Added the frugal acquisition procedure to `AGENTS.md`.
+
+**Didn't Work:**
+- **Pounded Gallica during reconnaissance** and got warned — it has hair-trigger rate limits. Operator: *"DO NOT WASTE REQUESTS TO GALLICA."*
+- **`tsx -e` with `@/` imports silently no-ops** (the dynamic import from an eval entry never resolves its `.then`), so my first `bib validate`/`regenerate` "exit 0" runs were hollow false-greens — caught only when I re-checked. Undermined trust in my own success claims.
+- **Introduced two regressions earlier in the session** (PB-P002's dropped "Years: 1879" hint broke the browser date-derivation; adding PB-P054 to PB-P004 changed a member-count assertion) that the per-unit subagents could NOT see — their `git stash` baseline already contained my commits. Only the full integrated test run at the end caught them.
+- **Stored the frugal-acquisition procedure in private agent memory** — a non-portable, unshared location. Operator: *"you have essentially thrown away information that no other developer can use."*
+- The **govern barrage** did not converge in this env (known limitation); the feature is un-graduated pending an operator override.
+
+**Course Corrections:**
+- *"DO NOT WASTE REQUESTS TO GALLICA"* + *"download in a dry run, don't upload if broken"* → adopted the two-pass download-keep → verify-locally → upload-if-good flow (proven on PB-P054), now Constitution XII.
+- *"let's see if it works. that's the best proof of all"* → the live acquire surfaced the member-acquire folios-threading gap (`bib acquire` didn't pass the record's folios), which I then fixed.
+- *"What's the point of a non-persistent, non-portable memory?"* → migrated all durable knowledge into the repo, deleted the memory store; Constitution XIII.
+- *"YAGNI IS BULLSHIT… the operator and ONLY the operator owns scope"* → Constitution XIV; scrubbed my YAGNI labels from the spec-012 artifacts.
+
+**Insights:**
+- **The live run is the best proof.** Unit tests proved the fetch-core logic in isolation, but only the real acquire exposed the member-acquire integration gap, and only a human LOOK at the downloaded pages confirms the *right* pages (folio ≠ printed page number).
+- **Frugality is a source-respect ethic.** If you must hit a rate-limited source, keep what you download, verify locally, upload only if good — never a throwaway estimate-dry-run that pings and discards.
+- **Durable knowledge belongs in the repo, not private agent memory.** "This repository is the project memory" (GOVERNANCE.md); a private per-machine store destroys hard-won knowledge by hiding it from everyone else, every other machine, and CI.
+- **Scope is the operator's alone** — agents capture and surface, never cut.
+- **Page count is the decisive work-identity discriminator** when two works share a near-identical title (the 20-p. prospectus vs de Groote's 368-p. book).
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 19
+  - docs: amend constitution to v1.3.0 — add Principle XIV (The Operator Owns Scope)
+  - docs: migrate durable knowledge from private agent memory into the repo (Constitution XIII)
+  - docs: amend constitution to v1.2.0 — add Principle XIII (No Agent Memory, Ever)
+  - docs(agents): add the frugal, polite acquisition procedure (Constitution XII)
+  - docs: amend constitution to v1.1.0 — add Principle XII (Respect the Source)
+  - acquire(PB-P054): de Rays Cour de cassation arrêt — LIVE excerpt acquire, archived (3/3 folios in B2)
+  - fix(012): thread declared folios through the member-acquire path (GallicaAdapter)
+  - chore(012): mark all tasks complete (execute ledger + verification done)
+  - feat(012): record PB-P054 folios + verify; fix two self-introduced regressions (T015-T017)
+  - feat(012): reconcile preserves + verifies excerpt folios (T010,T014)
+  - feat(012): fetch-source --pages CLI + scoped dry-run (T009,T012-T013)
+  - feat(012): constrain fetch loop to selected folios (T007-T008)
+  - feat(012): RepositoryRecord.folios round-trip (T004-T006)
+  - feat(012): folio-range parser (T002-T003)
+  - chore(012): mark analyze-clean on page-range-acquisition node
+  - define(012): author page-range-acquisition spec through the stack-control front door
+  - design(page-range-acquisition): design record for fetch-source --pages excerpt acquisition
+  - acquire(PB-P004): locate + record the de Rays Cour de cassation arrêt (PB-P054, to-collect)
+  - research(PB-P002/PB-P012): resolve imprint-date + holding leads via BnF catalogue (Gallica blocked)
+- Files changed: 45
+- Backlog touched: (none)
+
 ## 2026-07-15: Museum acquisition campaign → scope correction (Port Breton, not New Italy) → `Source.centrality` + measured closure
 
 **Goal:** Pick up last session's handoff — fix TASK-29, then acquire the remaining PB-P006 candidates — and, on the operator's steer, actually *deliver acquired assets*. It became a full museum acquisition campaign, a hard scope correction, and a measured closure of the New Italy Museum for the Port Breton corpus.

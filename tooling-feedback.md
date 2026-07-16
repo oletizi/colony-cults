@@ -24,3 +24,6 @@
 ## session-end 2026-07-15
 - bib inventory --repository <url> --dry-run only prints the identifier + sourceUrl, not the resolved rights-critical date / grounded rights evidence -- so to assess acquirability (valid master + groundable pre-1955 date) before creating a member I had to drive adapter.resolve directly in a throwaway script. The dry-run should surface the proposed rights evidence (the same fields rights-assess review-mode shows) so an operator can judge acquire-worthiness without a scratch script.
 - NewItalyMuseumAdapter acquire's mediaFor() throws 'unrecognized master image extension' when the source page's image_anchor href is truncated/incomplete (e.g. newitaly.org.au item 000845 href './images/000845_', no filename) -- the real fault is a broken source image link, not an unknown media type. A clearer 'broken/incomplete source image href' error would make the residual (SOURCE image broken, not our bug) legible at a glance.
+
+## session-end 2026-07-16
+- tsx -e with @/ imports silently no-ops (dynamic import('@/...') from an eval entry never resolves its .then/.catch, process exits 0) — my early 'bib validate/regenerate exit 0' runs were hollow false-greens. Use a real .ts script file with absolute-path imports (ROOT/src/...), not npx tsx -e, to drive project code.
