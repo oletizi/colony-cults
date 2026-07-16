@@ -25,7 +25,7 @@ The working rule is simple: optimize for durable commits, not chat responses.
 - Every factual claim should move toward a source ID.
 - Notes should separate evidence, interpretation, and uncertainty.
 - Copyright uncertainty blocks mirroring, not cataloging.
-- Session state should be left in files, not in memory.
+- Session state and all durable knowledge should be left in versioned repo files — NEVER in a private per-machine agent-memory store (Constitution XIII). This repository is the project memory; a private, unshared store throws hard-won knowledge away.
 
 ## Minimum session standard
 

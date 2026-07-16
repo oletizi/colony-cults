@@ -130,6 +130,29 @@ When sources disagree:
 3. Add a note describing the conflict.
 4. Do not force resolution without evidence.
 
+## Curatorial scope (pertinence before acquirability)
+
+The corpus is about **Port Breton** — the Marquis de Rays expedition and the affair itself (recruitment, voyage, the PNG colony, its collapse, the survivors' arrival) and its **first-generation participants**. It is NOT about **New Italy**, the NSW settlement the survivors founded afterward, nor its second-generation descendants, community life, farms, weddings, school groups — those are corpus-**adjacent**, not central.
+
+Judge **pertinence (a curatorial call) before acquirability.** A rights-clearable pre-1955 photo of a school group is acquirable but adjacent; a survivor's first-hand account of the voyage is central. A mechanical filter (e.g. Australian + photograph + pre-1955) selects for rights-clearability, not corpus-centrality — never mass-acquire on such a filter alone. Here the *died-before-1955* line ≈ the *first-generation-participant* line. Preserve-and-mark out-of-scope material with `Source.centrality: adjacent` (coverage counts it separately); do NOT delete it on your own scope inference.
+
+## Engineering conventions
+
+- **Clean breaks, no back-compat.** When changing a schema/format/interface, do a single clean cutover: rewrite existing data to the new canonical shape and make every loader/consumer speak ONLY the new shape, **failing loud on the old one** (an old key becomes an error, never a tolerated alias). Do NOT stand up transitional dual-representations or "accept both for now" shims — back-compat is tech debt that lures later work onto the soon-to-be-removed shape.
+- **Fix tooling inline.** When a bounded tooling defect surfaces mid-work and you already hold the context, fix it (verify + commit + push) rather than only capturing it to the backlog — re-loading the context later is the expensive part. If a "fix" balloons past a clean bounded change, surface it instead of sprawling.
+- **No private agent memory.** Constitution XIII: never record project knowledge in a private per-machine agent-memory store. This repository IS the project memory (see `GOVERNANCE.md`); durable knowledge goes here.
+
+## Spec-driven workflow (stack-control front door)
+
+- Features flow through the stack-control front door: **design → define → execute → ship** (Constitution VIII), over raw Spec Kit.
+- Branch/spec-dir convention: work stays on a **`feature/<slug>`** git branch paired with an **independently-numbered spec dir** (`specs/NNN-<slug>/`). Do NOT run the Spec Kit `speckit.git.feature` branch hook (it would mint a new numbered branch and switch off the design-bearing branch). `.specify/feature.json` — not the branch name — resolves the active spec; Spec Kit's `check-prerequisites.sh` rejecting the `feature/<slug>` name is the expected TF-09 condition, non-blocking.
+- Bracket every `/speckit-*` backend drive with `stackctl front-door enter/exit` (capabilities `spec-definition` / `spec-execution`); carry the literal token between the two separate shell calls. At the `/speckit-tasks` seam inject the tier-requirement block from `stackctl tier-vocab`. For an existing roadmap node, set its spec pointer with `stackctl workflow link-spec <id> specs/NNN-<slug> --apply`.
+- **Govern step:** if `stackctl govern --mode implement` (the end-of-execute cross-model audit-barrage) does not converge in the current environment, read the findings from the run dirs under `.stack-control/audit-runs/*/`, fix every HIGH finding, validate the feature LIVE end-to-end, then record an explicit `stackctl govern --mode implement --item <id> --override "<reason>"` documenting the live validation + fixes. Do not silently lower the fleet floor.
+
+## Archive clones (per-session, never a shared tree)
+
+Any session that touches the archive **clones its own** copy of `git@github.com:oletizi/colony-cults-archive.git` (`--single-branch --branch main`, ~14 MB — page-image masters live in B2, not git), sets `COLONY_ARCHIVE_ROOT`/`--archive-root` to it, and syncs via `origin`. NEVER share one archive working tree across concurrent sessions — it is a corruption factory (non-fast-forward pushes, add/add conflicts, `--checkpoint` add-all sweeping other sessions' files). B2 is the single shared asset store; the git working tree must not be. Full setup recipe: `specs/009-corpus-gap-closure/quickstart.md`.
+
 ## Session workflow
 
 At the beginning of a session, read:
