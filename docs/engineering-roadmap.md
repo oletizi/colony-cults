@@ -150,6 +150,7 @@ Spun out of 009's research loop (PB-P006 New Italy Museum). The museum's identif
 
 ## impl:feature/page-range-acquisition
 - status: planned
+- analyze-clean: yes
 - spec: specs/012-page-range-acquisition
 - design: docs/superpowers/specs/2026-07-15-page-range-acquisition-design.md
 Add a minimal `--pages <folio-range>` flag to the shipped `bib fetch-source` (single-document path) so a researcher can acquire ONLY the pertinent folios of a large digitized document — masters + per-page provenance — instead of mirroring the whole thing. Constrains the existing per-page fetch loop (src/fetch/issue.ts) to a deduped ascending folio set; adds optional `RepositoryRecord.folios` recording the excerpt's intended extent (complete = held == declared, decoupled from pageCount — no such gate exists); fail-loud on out-of-bounds/malformed/empty ranges; dry-run scoped to the selection; reconcile verifies the declared folios. Reuses the whole pipeline unchanged (provenance already per-asset). First consumer: PB-P054, the de Rays Cour de cassation arrêt at folios 48-50 of the Bulletin des arrêts criminels 1884 fascicule bpt6k61587296 — advancing it to-collect -> archived without mirroring the fascicule's unrelated arrêts. Emerged this session (2026-07-15) from the PB-P054 acquisition need: a decision embedded in a serial has no standalone ark and does not fit the whole-document fetcher. Out of scope by operator decision: --pages on the periodical fetch-issue path, printed-page->folio mapping, a distinct excerpt Source kind, coverage/audit surfaces for excerpts.
