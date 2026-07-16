@@ -91,6 +91,14 @@ export interface FetchIssueContext {
    * layer (`src/cli/fetch-shared.ts`) wires a git-touching implementation in.
    */
   onPageStored?: (p: PageStored) => Promise<void>;
+  /**
+   * Optional selected-folio set (spec 012): present ⇒ fetch ONLY these folios
+   * of the document (an excerpt); absent -- the default -- ⇒ fetch every folio
+   * `1..pageCount` (whole document, unchanged). Folios are 1-indexed and are
+   * bounds-checked against the document's real `pageCount` before any fetch;
+   * arrive deduped+ascending from {@link parseFolioRange}.
+   */
+  folios?: number[];
 }
 
 /**
@@ -130,6 +138,11 @@ export interface FetchMonographContext {
    * matching field on {@link FetchIssueContext}.
    */
   onPageStored?: (p: PageStored) => Promise<void>;
+  /**
+   * Optional selected-folio set (spec 012); see the matching field on
+   * {@link FetchIssueContext}.
+   */
+  folios?: number[];
 }
 
 /** Per-document (issue or monograph) fetch outcome. */
@@ -148,6 +161,18 @@ export interface FetchIssueResult {
   bytesWritten: number;
   /** Count of pages skipped because already recorded (resumability). */
   skippedCount: number;
+  /**
+   * Number of folios visited this run (spec 012). Equals `pageCount` for a
+   * whole-document fetch and the size of the selection for an excerpt fetch --
+   * so the summary line can report the actual work regardless of the mode.
+   */
+  fetchedCount: number;
+  /**
+   * The selected-folio set that constrained this run (spec 012), or undefined
+   * for a whole-document fetch. Distinct from {@link pageCount}, which always
+   * means the document's total.
+   */
+  requestedFolios?: number[];
 }
 
 /** Internal context for the shared per-document page pipeline. */
@@ -166,11 +191,48 @@ interface DocumentFetchContext {
   /** Opt-in B2 reconcile (see StoreOptions.reconcileRemote); default trusts local provenance. */
   reconcileRemote?: boolean;
   onPageStored?: (p: PageStored) => Promise<void>;
+  /** Optional selected-folio set (spec 012); see {@link FetchIssueContext.folios}. */
+  folios?: number[];
 }
 
 /** Zero-padded page ordinal for the `f<NNN>.jpg` asset name. */
 function pageFileName(page: number): string {
   return `f${String(page).padStart(3, '0')}.jpg`;
+}
+
+/**
+ * The ordered list of folios the per-document loop must visit (spec 012,
+ * T008). With no `folios` selection this is exactly `1..pageCount`, so the loop
+ * is observationally identical to the whole-document path. With a selection,
+ * EVERY folio is bounds-checked against the real `pageCount` first -- any folio
+ * `< 1` or `> pageCount` throws a descriptive error naming the offender and the
+ * page count, BEFORE any page is fetched or stored (write nothing on a bad
+ * set). The selection is not re-sorted or de-duplicated here (the parser
+ * already guarantees deduped+ascending); its order is honored as given, and the
+ * bound check does not rely on that ordering for correctness.
+ */
+function resolveFoliosToFetch(
+  documentArk: string,
+  pageCount: number,
+  folios: number[] | undefined,
+): number[] {
+  if (folios === undefined) {
+    const all: number[] = [];
+    for (let page = 1; page <= pageCount; page += 1) {
+      all.push(page);
+    }
+    return all;
+  }
+
+  for (const folio of folios) {
+    if (!Number.isInteger(folio) || folio < 1 || folio > pageCount) {
+      throw new Error(
+        `fetchDocumentPages: requested folio ${folio} is out of bounds for ` +
+          `document ${documentArk} (valid folios are 1..${pageCount})`,
+      );
+    }
+  }
+  return folios;
 }
 
 /**
@@ -225,6 +287,13 @@ async function fetchDocumentPages(
     );
   }
 
+  // Which folios to visit (spec 012). With a selection, bounds-check EVERY
+  // folio against the real page count FIRST -- any out-of-range folio throws
+  // before a single page is fetched or stored (write nothing on a bad set).
+  // With no selection, the set is exactly `1..pageCount`, so the loop below is
+  // observationally identical to the whole-document path (regression lock).
+  const foliosToFetch = resolveFoliosToFetch(documentArk, pageCount, ctx.folios);
+
   const layout = sourceLayout(ctx.sourceId);
   const meta = sourceDescriptor(ctx.repoRoot ?? defaultRepoRoot(), ctx.sourceId);
   const retrieved = ctx.clock().toISOString();
@@ -236,7 +305,7 @@ async function fetchDocumentPages(
 
   const objectStoreConfigured = ctx.objectStore !== undefined;
 
-  for (let page = 1; page <= pageCount; page += 1) {
+  for (const page of foliosToFetch) {
     const targetPath = path.join(ctx.dir, pageFileName(page));
 
     // Is this page already present locally with a matching recorded checksum?
@@ -354,6 +423,8 @@ async function fetchDocumentPages(
     pages,
     bytesWritten,
     skippedCount,
+    fetchedCount: foliosToFetch.length,
+    requestedFolios: ctx.folios,
   };
 }
 
