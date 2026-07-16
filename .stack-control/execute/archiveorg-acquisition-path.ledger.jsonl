@@ -11,3 +11,10 @@
 {"id":"T013","tierLabel":"fast","model":"haiku","commit":"9726abe","reviewClean":true,"note":"poppler preflight helper + fail-loud test"}
 {"id":"T009","tierLabel":"balanced","model":"sonnet","commit":"b3de112","reviewClean":true,"note":"RepositoryRecord += qualityAssessment?/excludedLeaves? + round-trip test"}
 {"id":"T010","tierLabel":"fast","model":"haiku","commit":"b3de112","reviewClean":true,"note":"registry dispatch ia-item->internet-archive + test"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"metadata parse test (16), real fixture + fail-loud cases"}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"metadata.ts client+parse, injected ArchiveHttpClient, fail-loud non-texts"}
+{"id":"T016","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"file-select test (11) incl ambiguity/OCR-only/no-PDF throws"}
+{"id":"T017","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"file-select.ts deterministic; jp2-or-tif; fail-loud"}
+{"id":"T033","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"scandata.ts parse+proposeReadingRange (fast-xml-parser, shared xml helpers), 11 tests"}
+{"id":"T034","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"rights evidence test (6), no-verdict asserted"}
+{"id":"T035","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"rights.ts collectRightsEvidence, evidence-only, honest GroundedField provenance"}
