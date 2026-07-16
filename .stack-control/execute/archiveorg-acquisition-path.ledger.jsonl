@@ -43,3 +43,6 @@
 {"id":"T043","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"asset roles: exactly one repository-source + page-masters, mediaTypes"}
 {"id":"T048","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"fidelity wired into acquire; image-set branch taken on degraded"}
 {"id":"T049","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"dry-run: zero puts, staging retained, complete:false (D-11 / TASK-29 fix for IA)"}
+{"id":"T026","tierLabel":"balanced","model":"sonnet","commit":"e4f6800","reviewClean":true,"note":"register IA adapter in buildRegistry (3-adapter) + dispatch tests"}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commit":"e4f6800","reviewClean":true,"note":"bib-acquire-internet-archive.ts peek-builder + flag-driven makeCliQualityGate; +load-fields ia-item guard fix"}
+{"id":"T028","tierLabel":"balanced","model":"sonnet","commit":"e4f6800","reviewClean":true,"note":"runAcquireCli flags (--approved-range/--reject/--notes) + bib inventory IA routing"}
