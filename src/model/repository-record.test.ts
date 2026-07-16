@@ -72,3 +72,50 @@ describe('RepositoryRecord: museum copy-level fields', () => {
     void invalid;
   });
 });
+
+/**
+ * Type-level coverage for the two provenance fields added to
+ * `RepositoryRecord` for the archive.org acquisition path (T009,
+ * specs/013-archiveorg-acquisition-path/data-model.md § RepositoryRecord --
+ * two new optional fields): `qualityAssessment` (FR-008) and
+ * `excludedLeaves` (FR-011). Both are additive and optional.
+ */
+describe('RepositoryRecord: archive.org quality-assessment fields', () => {
+  it('round-trips a record carrying qualityAssessment and excludedLeaves', () => {
+    const record: RepositoryRecord = {
+      sourceId: 'PB-P042',
+      sourceArchive: 'archive.org',
+      status: 'collected',
+      qualityAssessment: {
+        status: 'sound',
+        assessedBy: 'operator',
+        assessedAt: '2026-07-16T00:00:00.000Z',
+        sourceFileChecksum:
+          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        expectedPageCount: 120,
+        observedPageCount: 120,
+        approvedLeafRange: { start: 3, end: 118 },
+      },
+      excludedLeaves: [
+        { leaf: 1, classification: 'cover', reason: 'Front cover, not a reading page' },
+        { leaf: 2, classification: 'scanner-notice', reason: 'archive.org scanner notice page' },
+      ],
+    };
+
+    expect(record.qualityAssessment?.status).toBe('sound');
+    expect(record.qualityAssessment?.approvedLeafRange).toEqual({ start: 3, end: 118 });
+    expect(record.excludedLeaves).toHaveLength(2);
+    expect(record.excludedLeaves?.[0].classification).toBe('cover');
+  });
+
+  it('accepts an ordinary record with neither field set', () => {
+    const record: RepositoryRecord = {
+      sourceId: 'PB-P001',
+      sourceArchive: 'Gallica / BnF',
+      status: 'collected',
+    };
+
+    expect(record.qualityAssessment).toBeUndefined();
+    expect(record.excludedLeaves).toBeUndefined();
+  });
+});

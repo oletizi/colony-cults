@@ -80,6 +80,36 @@ describe('RepositoryAdapterRegistry', () => {
       expect(registry.selectForRecord(record)).toBe(museum);
     });
 
+    it('dispatches a record with an ia-item identifier to the internet-archive adapter', () => {
+      const gallica = fakeAdapter('gallica');
+      const museum = fakeAdapter('new-italy-museum');
+      const internetArchive = fakeAdapter('internet-archive');
+      const registry = new RepositoryAdapterRegistry([gallica, museum, internetArchive]);
+
+      const record = baseRecord({
+        identifiers: [{ type: 'ia-item', value: 'nouvellefrancec00groogoog' }],
+      });
+
+      expect(registry.selectForRecord(record)).toBe(internetArchive);
+    });
+
+    it('preserves existing ark and accession dispatch when internet-archive adapter is registered', () => {
+      const gallica = fakeAdapter('gallica');
+      const museum = fakeAdapter('new-italy-museum');
+      const internetArchive = fakeAdapter('internet-archive');
+      const registry = new RepositoryAdapterRegistry([gallica, museum, internetArchive]);
+
+      const arkRecord = baseRecord({
+        identifiers: [{ type: 'ark', value: 'ark:/12345/x' }],
+      });
+      expect(registry.selectForRecord(arkRecord)).toBe(gallica);
+
+      const accessionRecord = baseRecord({
+        identifiers: [{ type: 'accession', value: 'MU.2024.001' }],
+      });
+      expect(registry.selectForRecord(accessionRecord)).toBe(museum);
+    });
+
     it('throws when the record has no identifiers at all', () => {
       const registry = new RepositoryAdapterRegistry([
         fakeAdapter('gallica'),

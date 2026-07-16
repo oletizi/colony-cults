@@ -2,6 +2,7 @@ import type { ObjectStoreLocation } from '@/archive/provenance';
 import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { Asset } from '@/model/asset';
 import type { CopyLevelIdentifierType } from '@/model/identifiers';
+import type { ExcludedLeaf, QualityAssessment } from '@/model/quality-assessment';
 import type { Rights, RightsAssessment } from '@/model/rights';
 
 /**
@@ -41,6 +42,21 @@ export interface RepositoryRecord {
    * contracts/repository-adapter.md INV-B), not here.
    */
   rightsAssessment?: RightsAssessment;
+  /**
+   * The durable operator scan-quality judgment for this copy's staged
+   * source file (specs/013-archiveorg-acquisition-path/data-model.md §
+   * QualityAssessment, FR-008) -- canonical provenance, not session state.
+   * Only a recorded `status === 'sound'` lets `acquire` proceed; `acquire`
+   * re-verifies the staged file's sha256 against `sourceFileChecksum`
+   * before acting, throwing on a mismatch.
+   */
+  qualityAssessment?: QualityAssessment;
+  /**
+   * Leaves omitted from the `page-master` reading assets but retained in
+   * the preserved `repository-source` PDF (specs/013-archiveorg-acquisition-path/data-model.md
+   * § ExcludedLeaf, FR-011) -- e.g. scanner notices, covers, color cards.
+   */
+  excludedLeaves?: ExcludedLeaf[];
   /** Catalog / landing page URL at the holding archive. */
   catalogUrl?: string;
   /** Original URL the copy was retrieved from. */
