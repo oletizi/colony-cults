@@ -189,7 +189,8 @@ image-set fetched + used; two equally-eligible page-image PDFs → resolve fails
 - [ ] T051 [P] File-size audit: confirm every new/edited file is ≤ 500 lines (`adapter.ts` especially); refactor into the sibling modules if any exceeds it (Principle VII).
 - [ ] T052 [P] Run the full quickstart contract-scenario matrix as an integration-style test pass (fakes only) and confirm each row maps to a passing test; fix gaps.
 - [ ] T053 Run `npm run typecheck` and `npm test`; resolve any failures. Confirm no `any`/`as`/`@ts-ignore` introduced (grep guard).
-- [ ] T054 Update the research log / a short note that spec 013 is implemented and record the measured de Groote fidelity ratio once the first real acquire runs (SC-001; deferred to the actual acquisition, flagged here so it is not forgotten).
+- [ ] T054 Update the research log with a short note that spec 013 (the Internet Archive adapter) is implemented and ready for its first acquisition (in-session doc note; the *measured* de Groote fidelity ratio is recorded by the operator-acceptance task T055, not here).
+- [~] T055 **Operator acceptance (manual, live archive.org fetch — audit-before-acceptance).** The operator runs the live de Groote acquisition end-to-end per `quickstart.md` (SC-001): `bib inventory --repository internet-archive --item nouvellefrancec00groogoog` → `rights-assess` → `promote` → `acquire` (`--dry-run` first) → `reconcile` → `coverage`; confirms the masters + source PDF in B2, record `archived`, and records the **measured** fidelity ratio (confirming/adjusting the 0.90 threshold, research D-4). Marked `- [~]` so the `tasks-complete` gate excludes it — the cross-model audit runs **before** this live-prod acceptance spends a real archive.org fetch (Principle XII).
 
 ---
 
@@ -241,6 +242,7 @@ extraction correctness is required for US1 to produce real masters, so in practi
 
 ## Format validation
 
-All tasks use `- [ ] T### [P?] [US#?] Description with file path`. Setup/Foundational/Polish tasks carry
-no story label; user-story tasks (T014–T048) carry their `[US#]` label; every task names an exact file
-path. ✅
+55 tasks (T001–T055). All use `- [ ] T### [P?] [US#?] Description with file path`, except **T055**
+which uses the `- [~]` operator-acceptance marker (excluded from the `tasks-complete` govern gate —
+audit-before-acceptance). Setup/Foundational/Polish tasks carry no story label; user-story tasks
+(T014–T048) carry their `[US#]` label; every task names an exact file path or command. ✅
