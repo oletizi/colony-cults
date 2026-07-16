@@ -28,3 +28,10 @@
 {"id":"T044","tierLabel":"balanced","model":"opus","commit":"9365297","reviewClean":true,"note":"fidelity test: r>=0.90 explode PDF"}
 {"id":"T045","tierLabel":"balanced","model":"opus","commit":"9365297","reviewClean":true,"note":"fidelity test: r<0.90 fetch image-set + boundary + fail-loud"}
 {"id":"T046","tierLabel":"powerful","model":"opus","commit":"9365297","reviewClean":true,"note":"fidelity.ts dimension-ratio probe, median, spread sampling, D-4 threshold"}
+{"id":"T020","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"snapshot.ts recordItemSnapshot + IA_NORMALIZATION_VERSION, delegates to shipped store"}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"staging test (9): fetch/fixity/cleanup/keys"}
+{"id":"T022","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"staging.ts + object-store key layout"}
+{"id":"T029","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate enforce test: unsound throws"}
+{"id":"T030","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate test: staged-checksum mismatch throws"}
+{"id":"T031","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate test: scandata range seed; operator may widen"}
+{"id":"T032","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate.ts seam+enforce+seed (adapter wiring in T025)"}
