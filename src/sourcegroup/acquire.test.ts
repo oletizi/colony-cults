@@ -127,6 +127,64 @@ function spyMuseumAdapter(): { adapter: RepositoryAdapter; calls: RepositoryReco
   return { adapter, calls };
 }
 
+/** An Internet Archive member (`ia-item` copy), approved-for-acquisition. */
+function internetArchiveMember(overrides: Partial<Source> = {}): Source {
+  return {
+    sourceId: 'PB-P300',
+    titles: [{ text: 'De Groote 1880', role: 'canonical' }],
+    kind: 'monograph',
+    partOf: 'PB-G001',
+    status: 'approved-for-acquisition',
+    identifiers: [],
+    ...overrides,
+  };
+}
+
+/** An Internet Archive RepositoryRecord: carries an `ia-item` copy identifier. */
+function internetArchiveAuthoredRecord(
+  overrides: Partial<AuthoredRepositoryRecord> = {},
+): AuthoredRepositoryRecord {
+  return {
+    sourceArchive: 'Internet Archive',
+    status: 'to-collect',
+    identifiers: [{ type: 'ia-item', value: 'nouvellefrancec00groogoog' }],
+    ...overrides,
+  };
+}
+
+/**
+ * A spy {@link RepositoryAdapter} for the Internet Archive path (T026):
+ * records every `acquire` call so a dispatch test can assert an `ia-item`
+ * record routed HERE (and neither the Gallica fetcher nor the museum adapter
+ * was ever touched). `resolve`/`collectRightsEvidence` throw -- the acquire
+ * dispatch path never calls them.
+ */
+function spyInternetArchiveAdapter(): { adapter: RepositoryAdapter; calls: RepositoryRecord[] } {
+  const calls: RepositoryRecord[] = [];
+  const adapter: RepositoryAdapter = {
+    repository: 'internet-archive',
+    async resolve() {
+      throw new Error('spyInternetArchiveAdapter.resolve: not used on the acquire dispatch path');
+    },
+    async collectRightsEvidence() {
+      throw new Error(
+        'spyInternetArchiveAdapter.collectRightsEvidence: not used on the acquire dispatch path',
+      );
+    },
+    async acquire(record) {
+      calls.push(record);
+      return {
+        repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
+        assets: [],
+        metadataSnapshot: { raw: '', retrievedAt: '2026-07-16T00:00:00.000Z' },
+        complete: true,
+        reconciliationRequired: true,
+      };
+    },
+  };
+  return { adapter, calls };
+}
+
 /** A sample master mirrored to B2, as the museum adapter would return it. */
 function sampleAsset(overrides: Partial<AcquiredAsset> = {}): AcquiredAsset {
   return {
@@ -501,6 +559,75 @@ describe('runAcquire', () => {
     expect(calls).toHaveLength(0);
     expect(result.ark).toBe(ARK);
     expect(result.sourceArchive).toBe('Gallica / BnF');
+  });
+
+  it('T026: dispatches an ia-item record to the injected Internet Archive adapter (Gallica fetcher + museum adapter untouched)', async () => {
+    dir = await seedSourcesDir([
+      { source: internetArchiveMember(), records: [internetArchiveAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const { adapter: iaAdapter, calls: iaCalls } = spyInternetArchiveAdapter();
+    const { adapter: museumAdapter, calls: museumCalls } = spyMuseumAdapter();
+
+    const result = await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P300',
+      fetch,
+      museumAdapter,
+      internetArchiveAdapter: iaAdapter,
+    });
+
+    // Routed to the IA adapter only.
+    expect(iaCalls).toHaveLength(1);
+    expect(iaCalls[0].sourceArchive).toBe('Internet Archive');
+    expect(museumCalls).toHaveLength(0);
+    expect(fetch).not.toHaveBeenCalled();
+    // Observable result carries the ia-item id (not an ark/accession).
+    expect(result).toEqual({
+      sourceId: 'PB-P300',
+      iaItem: 'nouvellefrancec00groogoog',
+      sourceArchive: 'Internet Archive',
+    });
+  });
+
+  it('T026: an ark record still dispatches to Gallica when an IA adapter is also registered', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const { adapter: iaAdapter, calls: iaCalls } = spyInternetArchiveAdapter();
+
+    const result = await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P100',
+      fetch,
+      internetArchiveAdapter: iaAdapter,
+    });
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(iaCalls).toHaveLength(0);
+    expect(result.ark).toBe(ARK);
+    expect(result.sourceArchive).toBe('Gallica / BnF');
+  });
+
+  it('T026: an accession record still dispatches to the museum adapter when an IA adapter is also registered', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const { adapter: museumAdapter, calls: museumCalls } = spyMuseumAdapter();
+    const { adapter: iaAdapter, calls: iaCalls } = spyInternetArchiveAdapter();
+
+    const result = await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P200',
+      fetch,
+      museumAdapter,
+      internetArchiveAdapter: iaAdapter,
+    });
+
+    expect(museumCalls).toHaveLength(1);
+    expect(iaCalls).toHaveLength(0);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(result.accession).toBe('NIMI-0844');
   });
 
   it('scenario 4: the source-group itself (e.g. PB-P004) is refused before any fetch is attempted, relying on the approved-status precondition -- no guardrail is reimplemented here', async () => {

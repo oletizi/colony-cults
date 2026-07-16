@@ -115,7 +115,13 @@ function isWorkLevelType(value: string): value is WorkLevelIdentifierType {
 }
 
 function isCopyLevelType(value: string): value is CopyLevelIdentifierType {
-  return value === 'accession' || value === 'ark' || value === 'iiif-manifest' || value === 'scan-doi';
+  return (
+    value === 'accession' ||
+    value === 'ark' ||
+    value === 'iiif-manifest' ||
+    value === 'scan-doi' ||
+    value === 'ia-item'
+  );
 }
 
 /** `classifyIdentifier`, with an unknown-type throw wrapped into a locating error. */

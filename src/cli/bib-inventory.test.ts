@@ -64,6 +64,18 @@ describe('parseInventoryArgs', () => {
     expect(parsed.dryRun).toBe(true);
   });
 
+  it('parses --repository internet-archive', () => {
+    const parsed = parseInventoryArgs([
+      'nouvellefrancec00groogoog',
+      '--group',
+      'PB-S006',
+      '--repository',
+      'internet-archive',
+    ]);
+    expect(parsed.repository).toBe('internet-archive');
+    expect(parsed.locator).toBe('nouvellefrancec00groogoog');
+  });
+
   it('throws (fail loud) on an unknown --repository name', () => {
     expect(() =>
       parseInventoryArgs([
@@ -73,7 +85,7 @@ describe('parseInventoryArgs', () => {
         '--repository',
         'not-a-real-repository',
       ]),
-    ).toThrow(/--repository must be "gallica" or "new-italy-museum"/);
+    ).toThrow(/--repository must be "gallica", "new-italy-museum", or "internet-archive"/);
   });
 });
 
@@ -108,9 +120,31 @@ describe('runInventoryCli (synchronous fail-loud branches)', () => {
     ]);
     expect(code).toBe(2);
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('--repository must be "gallica" or "new-italy-museum"'),
+      expect.stringContaining(
+        '--repository must be "gallica", "new-italy-museum", or "internet-archive"',
+      ),
     );
   });
+
+  it(
+    'returns exit code 2 when --kind is given but does not match "archival-item" for ' +
+      '--repository internet-archive, WITHOUT ever constructing the IA adapter (no network)',
+    async () => {
+      const code = await runInventoryCli([
+        'nouvellefrancec00groogoog',
+        '--group',
+        'PB-S006',
+        '--repository',
+        'internet-archive',
+        '--kind',
+        'monograph',
+      ]);
+      expect(code).toBe(2);
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('--kind must be "archival-item" for --repository "internet-archive"'),
+      );
+    },
+  );
 
   it(
     'returns exit code 2 when --kind is given but does not match "archival-item" for a museum ' +

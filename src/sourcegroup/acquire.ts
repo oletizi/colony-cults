@@ -37,6 +37,12 @@ import type { ArkResolver } from '@/sourcegroup/inventory';
  *   - RECORD-level gates (public-domain, identifier-present) live INSIDE the
  *     selected adapter's `acquire` and are NOT duplicated here.
  *
+ * T026 (specs/013-archiveorg-acquisition-path) extends dispatch a third way:
+ * an `ia-item` record routes to the injected `InternetArchiveAdapter`
+ * ({@link AcquireInput.internetArchiveAdapter}), mirroring how the museum
+ * adapter was added in T019 -- optional, additive, and never registered
+ * unless the caller supplies it.
+ *
  * Dispatch is by the record's copy-identifier type via
  * {@link RepositoryAdapterRegistry.selectForRecord} (T019 cutover from the
  * T012 select-by-name). A DELIBERATE consequence: a record carrying NO
@@ -96,6 +102,16 @@ export interface AcquireInput {
    * Production wiring (`src/cli/bib-sourcegroup.ts`) always injects it.
    */
   museumAdapter?: RepositoryAdapter;
+  /**
+   * The injected {@link InternetArchiveAdapter} (T026, specs/013-archiveorg-
+   * acquisition-path), registered ALONGSIDE Gallica (and the museum adapter,
+   * when present) so an `ia-item` record dispatches to it. OPTIONAL: omit it
+   * to build a registry with no IA adapter -- an `ia-item` record then fails
+   * loud at the registry ("no adapter registered"), same as any other
+   * unregistered repository. Production wiring
+   * (`src/cli/bib-sourcegroup.ts`) always injects it.
+   */
+  internetArchiveAdapter?: RepositoryAdapter;
 }
 
 /** Result of a successful acquisition: what was resolved and handed to the adapter. */
@@ -103,10 +119,12 @@ export interface AcquireResult {
   sourceId: string;
   /** The selected RepositoryRecord's holding archive. */
   sourceArchive: string;
-  /** The ARK, when the record dispatched to Gallica (absent for a museum copy). */
+  /** The ARK, when the record dispatched to Gallica (absent for a museum/IA copy). */
   ark?: string;
-  /** The accession, when the record dispatched to the museum (absent for a Gallica copy). */
+  /** The accession, when the record dispatched to the museum (absent for a Gallica/IA copy). */
   accession?: string;
+  /** The archive.org item id, when the record dispatched to the Internet Archive adapter. */
+  iaItem?: string;
 }
 
 /** The record's ark value (the first `ark`-typed copy identifier), if any. */
@@ -118,6 +136,12 @@ function arkOf(record: RepositoryRecord): string | undefined {
 /** The record's accession value (the first `accession`-typed copy identifier), if any. */
 function accessionOf(record: RepositoryRecord): string | undefined {
   const identifier = (record.identifiers ?? []).find((id) => id.type === 'accession');
+  return identifier?.value;
+}
+
+/** The record's archive.org item id (the first `ia-item`-typed copy identifier), if any. */
+function iaItemOf(record: RepositoryRecord): string | undefined {
+  const identifier = (record.identifiers ?? []).find((id) => id.type === 'ia-item');
   return identifier?.value;
 }
 
@@ -141,12 +165,14 @@ const acquirePathNeverResolvesArks: ArkResolver = (_ark: string) => {
  * Build the {@link RepositoryAdapterRegistry} for the acquire path: always the
  * {@link GallicaAdapter} (wrapping the injected fetcher), plus the injected
  * museum adapter when one was supplied (so an `accession` record dispatches to
- * it). Gallica-only when `museumAdapter` is omitted -- an `ark` record then
- * dispatches exactly as it did pre-cutover.
+ * it), plus the injected Internet Archive adapter when one was supplied (so an
+ * `ia-item` record dispatches to it, T026). Gallica-only when both are omitted
+ * -- an `ark` record then dispatches exactly as it did pre-cutover.
  */
 function buildRegistry(
   fetch: FetchSourceFn,
   museumAdapter: RepositoryAdapter | undefined,
+  internetArchiveAdapter: RepositoryAdapter | undefined,
 ): RepositoryAdapterRegistry {
   const gallica = new GallicaAdapter({
     fetch,
@@ -155,6 +181,9 @@ function buildRegistry(
   const adapters: RepositoryAdapter[] = [gallica];
   if (museumAdapter !== undefined) {
     adapters.push(museumAdapter);
+  }
+  if (internetArchiveAdapter !== undefined) {
+    adapters.push(internetArchiveAdapter);
   }
   return new RepositoryAdapterRegistry(adapters);
 }
@@ -263,7 +292,7 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   // the deliberate cutover consequence pinned in the characterization suite.
   // The selected adapter enforces its own RECORD-level gates (public-domain,
   // identifier-present) and drives its fetch.
-  const registry = buildRegistry(input.fetch, input.museumAdapter);
+  const registry = buildRegistry(input.fetch, input.museumAdapter, input.internetArchiveAdapter);
   const adapter = registry.selectForRecord(record);
 
   const ctx: GallicaAcquisitionContext = {
@@ -307,6 +336,17 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
       );
     }
     return { sourceId: input.sourceId, ark, sourceArchive: record.sourceArchive };
+  }
+
+  if (adapter.repository === 'internet-archive') {
+    const iaItem = iaItemOf(record);
+    if (iaItem === undefined) {
+      throw new Error(
+        `acquire: internal invariant -- ${adapter.repository} acquire succeeded for ` +
+          `"${input.sourceId}" but the record carries no ia-item.`,
+      );
+    }
+    return { sourceId: input.sourceId, iaItem, sourceArchive: record.sourceArchive };
   }
 
   const accession = accessionOf(record);

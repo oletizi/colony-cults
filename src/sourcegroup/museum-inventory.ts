@@ -87,6 +87,7 @@ export const MUSEUM_NORMALIZATION_VERSION = 1;
  */
 const REPOSITORY_ARCHIVE_NAMES: Readonly<Partial<Record<RepositoryName, string>>> = {
   'new-italy-museum': 'New Italy Museum',
+  'internet-archive': 'Internet Archive',
 };
 
 function archiveNameFor(repository: RepositoryName, override: string | undefined): string {

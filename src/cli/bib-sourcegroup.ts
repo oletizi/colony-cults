@@ -27,6 +27,8 @@ import { HttpClient } from '@/gallica/http-client';
 import { gallicaArkIdentifierResolver } from '@/sourcegroup/gallica-ark-resolver';
 import { runAcquire } from '@/sourcegroup/acquire';
 import { buildMuseumAdapterForMember } from '@/cli/bib-acquire-museum';
+import { buildInternetArchiveAdapterForMember } from '@/cli/bib-acquire-internet-archive';
+import type { LeafRange } from '@/model/quality-assessment';
 import { runReconcile, type ReconcileResult } from '@/sourcegroup/reconcile';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { gatherProvenance } from '@/bibliography/derive';
@@ -252,11 +254,50 @@ export interface AcquireCliArgs {
   dryRun: boolean;
   checkpoint: boolean;
   checkpointEvery: number | undefined;
+  /**
+   * `--approved-range <start-end>` (specs/013-archiveorg-acquisition-path,
+   * FR-008): the Internet Archive path's two-phase quality-gate flag, phase
+   * 2 (`makeCliQualityGate`, `@/cli/bib-acquire-internet-archive`). Ignored
+   * by a Gallica/museum acquire (only the IA adapter reads a `QualityGate`).
+   */
+  approvedRange: LeafRange | undefined;
+  /** `--reject`: force the IA quality gate to record `status: 'unsound'` (fail-closed, zero B2 writes). */
+  reject: boolean;
+  /** `--notes <text>`: free-text operator notes recorded on the IA quality assessment. */
+  notes: string | undefined;
+}
+
+/**
+ * Parse `--approved-range <start-end>` (e.g. `"4-368"`) into a {@link
+ * LeafRange}. Fails loud on anything else -- there is no partial/guessed
+ * range: an absent flag maps to `undefined` (phase 1: the gate falls back to
+ * the scandata-seeded proposal), but a PRESENT, malformed value is a user
+ * error, never silently ignored.
+ */
+export function parseApprovedRange(raw: string | undefined): LeafRange | undefined {
+  if (raw === undefined) {
+    return undefined;
+  }
+  const match = /^(\d+)-(\d+)$/.exec(raw.trim());
+  if (match === null) {
+    throw new Error(
+      `--approved-range must be "<start>-<end>" (e.g. "4-368"), got "${raw}"`,
+    );
+  }
+  const start = Number(match[1]);
+  const end = Number(match[2]);
+  if (start < 1 || end < start) {
+    throw new Error(
+      `--approved-range must have "<start>-<end>" with start >= 1 and end >= start, got "${raw}"`,
+    );
+  }
+  return { start, end };
 }
 
 /**
  * Parse `bib acquire <id> [--archive] [--object-store] [--dry-run]
- * [--checkpoint] [--checkpoint-every <N>]`'s argv into typed flags.
+ * [--checkpoint] [--checkpoint-every <N>] [--approved-range <start-end>]
+ * [--reject] [--notes <text>]`'s argv into typed flags.
  *
  * Exported (not just used internally by `runAcquireCli`) so this parsing is
  * directly unit-testable without driving the real network-backed fetcher
@@ -264,7 +305,9 @@ export interface AcquireCliArgs {
  * `--checkpoint-every` is validated by the same `parseCheckpointEvery`
  * (`@/cli/parse`) the shipped fetcher's own `--checkpoint-every` uses, so a
  * malformed value fails identically here and there (fail loud, no
- * fallback).
+ * fallback). `--approved-range`/`--reject`/`--notes` are the Internet
+ * Archive path's two-phase quality-gate flags (specs/013-archiveorg-
+ * acquisition-path, FR-008) -- unused by a Gallica/museum acquire.
  */
 export function parseAcquireArgs(rest: string[]): AcquireCliArgs {
   const { values, positionals } = nodeParseArgs({
@@ -275,6 +318,9 @@ export function parseAcquireArgs(rest: string[]): AcquireCliArgs {
       'dry-run': { type: 'boolean', default: false },
       checkpoint: { type: 'boolean', default: false },
       'checkpoint-every': { type: 'string' },
+      'approved-range': { type: 'string' },
+      reject: { type: 'boolean', default: false },
+      notes: { type: 'string' },
     },
     allowPositionals: true,
     strict: true,
@@ -286,10 +332,17 @@ export function parseAcquireArgs(rest: string[]): AcquireCliArgs {
     dryRun: Boolean(values['dry-run']),
     checkpoint: Boolean(values.checkpoint),
     checkpointEvery: parseCheckpointEvery(values['checkpoint-every']),
+    approvedRange: parseApprovedRange(values['approved-range']),
+    reject: Boolean(values.reject),
+    notes: values.notes,
   };
 }
 
-/** `bib acquire <id> [--archive] [--object-store] [--dry-run] [--checkpoint] [--checkpoint-every <N>]`. */
+/**
+ * `bib acquire <id> [--archive] [--object-store] [--dry-run] [--checkpoint]
+ * [--checkpoint-every <N>] [--approved-range <start-end>] [--reject]
+ * [--notes <text>]`.
+ */
 export async function runAcquireCli(rest: string[]): Promise<number> {
   let parsed: AcquireCliArgs;
   try {
@@ -298,7 +351,8 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
     console.error(`bib acquire: ${describeError(error)}`);
     return 2;
   }
-  const { id, archive, objectStore, dryRun, checkpoint, checkpointEvery } = parsed;
+  const { id, archive, objectStore, dryRun, checkpoint, checkpointEvery, approvedRange, reject, notes } =
+    parsed;
 
   if (id === undefined) {
     console.error('bib acquire: missing required argument <id>');
@@ -312,11 +366,18 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
     // resolves it -- see `registerMemberArchiveLayout`'s doc comment.
     registerMemberArchiveLayout(sourcesDir, id);
 
-    // Register BOTH adapters (T019): the Gallica fetcher is always injected;
-    // the museum adapter is built only when THIS member's selected copy is an
-    // accession record (see `buildMuseumAdapterForMember`), so an ark acquire
-    // never pays the codex/B2 cost of the museum path.
+    // Register all THREE adapters: the Gallica fetcher is always injected;
+    // the museum adapter (T019) and the Internet Archive adapter (T026/T027)
+    // are each built only when THIS member's selected copy is the matching
+    // identifier type (`buildMuseumAdapterForMember` /
+    // `buildInternetArchiveAdapterForMember`), so an ark acquire never pays
+    // the museum's B2/codex cost or the IA path's poppler/staging cost.
     const museumAdapter = await buildMuseumAdapterForMember(sourcesDir, id, archive);
+    const internetArchiveAdapter = await buildInternetArchiveAdapterForMember(sourcesDir, id, archive, {
+      approvedRange,
+      reject,
+      notes,
+    });
 
     const result = await runAcquire({
       sourcesDir,
@@ -329,9 +390,10 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
       // The shipped fetcher, injected unchanged (D-08): no new fetch code here.
       fetch: runFetchSource,
       museumAdapter,
+      internetArchiveAdapter,
     });
     const mode = dryRun ? ' (dry-run)' : '';
-    const identifier = result.ark ?? result.accession ?? '(no copy identifier)';
+    const identifier = result.ark ?? result.accession ?? result.iaItem ?? '(no copy identifier)';
     console.log(
       `bib acquire${mode}: ${result.sourceId} -> fetched ${identifier} ` +
         `from "${result.sourceArchive}"`,
