@@ -48,6 +48,20 @@ Do not mirror:
 
 Copyrighted or restricted material may still be cataloged, summarized, and cited.
 
+## Acquisition procedure (frugal, polite access)
+
+External source repositories (Gallica, Trove, museum catalogues) have hair-trigger rate limits. Per Constitution Principle XII (Respect the Source), minimize requests and never make a request whose result is discarded. Do NOT use an estimate-only dry-run as a pre-flight — it pings the source, keeps nothing, then re-fetches for the real run. Never `curl` a rate-limited source; use the shipped rate-limited client.
+
+The proven frugal acquire is TWO passes — download-and-keep, verify locally, upload only if good (proven end-to-end on PB-P054, the de Rays Cassation arrêt excerpt, 2026-07-16):
+
+1. **Rights first (no image fetch).** The acquire gate reads the repository record's OAI-derived `rights` block, recorded at `inventory`. A hand-authored *lead* lacks it — populate from ONE `services/OAIRecord?ark=…` fetch and author `rights: {ark, status, rawResponse, dcRights, raw}` on the record. (`verify-member` only *checks* rights; it does not fetch them.)
+2. **Pass 1 — download, keep, do NOT upload.** `npx tsx src/index.ts bib acquire <id>` **without** `--object-store` downloads page images to the local archive clone only. (Requires `COLONY_ARCHIVE_ROOT` + `COLONY_S3_*`; see the private per-session archive clone setup in `specs/009-corpus-gap-closure/quickstart.md`.)
+3. **Verify locally (zero requests).** Open the downloaded `f<NNN>.jpg` and LOOK: right pages, complete (not cut off), legible. This catches a folio-vs-printed-page offset that unit tests cannot. For an excerpt, confirm the item starts and ends within the fetched folios.
+4. **Pass 2 — upload only if good.** `bib acquire <id> --object-store` re-reads the local masters from cache and uploads to B2 with zero re-download ("from local cache", `0 B` downloaded).
+5. **Reconcile.** `bib reconcile <id>` verifies masters in B2 and sets `archived`; an excerpt reports "N/N declared folio(s) in object store".
+
+Reconnaissance (pinpointing an excerpt inside a large document) uses the narrowest bounded metadata calls — the Gallica Issues year-index + ContentSearch — never a whole-run census enumeration. Acquire only the pertinent excerpt, not the whole document (`bib fetch-source --pages` / `RepositoryRecord.folios`, spec 012).
+
 ## Metadata requirements
 
 Every major source should include:
