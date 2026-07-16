@@ -1,9 +1,13 @@
 <!--
 Sync Impact Report
-- Version change: (template / unratified) → 1.0.0
-- Rationale: First ratified constitution — replaces the unfilled Spec Kit template with
-  concrete principles. MAJOR (0→1) establishes the initial governing baseline.
-- Principles defined (10):
+- Version change: 1.0.0 → 1.1.0
+- Rationale: MINOR — added Principle XII (Respect the Source — Frugal, Polite Access), an
+  additive companion to IV (Respect Copyright) governing frugal, polite access to rate-limited
+  external sources (download-keep-verify-upload; no throwaway request). No existing principle
+  changed semantics. This amendment also reconciles the report with Principle XI (Design
+  Through the Design Skill), which had been added to the body since the 1.0.0 baseline without a
+  report/version update.
+- Principles (12):
     I. Evidence Before Narrative
     II. Preserve Disagreement & Uncertainty
     III. Provenance Is Mandatory
@@ -14,19 +18,17 @@ Sync Impact Report
     VIII. Faithful Tool Adoption
     IX. Durable Work — Commit & Push Early and Often
     X. No Git Hooks, Ever
-- Added sections: Additional Constraints (Technology & Conventions);
-  Development Workflow & Session Standard; Governance.
-- Sources reconciled: global CLAUDE.md engineering commandments; AGENTS.md (research
-  standards, copyright/acquisition, translation & OCR policy, metadata); GOVERNANCE.md
-  (durable-commits, evidence-before-narrative, survive-context-loss).
+    XI. Design Through the Design Skill
+    XII. Respect the Source (Frugal, Polite Access)   [added this amendment]
 - Templates reviewed for alignment:
-    ✅ .specify/templates/plan-template.md — "Constitution Check" gate accommodates these principles
-       (see specs/002-source-translation/plan.md for a worked Constitution Check).
+    ✅ .specify/templates/plan-template.md — the "Constitution Check" gate is principle-generic;
+       plans that touch source acquisition MUST now evaluate XII (frugal/polite access).
     ✅ .specify/templates/spec-template.md — no mandatory-section conflict.
-    ✅ .specify/templates/tasks-template.md — principle-driven task types (tests, fail-loud) already expressible.
-- Follow-up TODOs: none deferred. Note: this project's stance is NO git hooks (Principle X) —
-  any pre-commit/pre-push hooks currently installed should be removed (enforcement moves to
-  skills / CLI / code review / CI).
+    ✅ .specify/templates/tasks-template.md — XII-driven task types (frugal fetch,
+       verify-before-upload) are expressible with existing categories.
+- Runtime guidance: the agent memory note `frugal-acquisition` captures XII's operational
+  procedure (the proven two-pass download-keep → verify-locally → upload-if-good flow).
+- Follow-up TODOs: none deferred.
 -->
 
 # Colony Cults Constitution
@@ -126,6 +128,22 @@ components, visual design, typography, styling — begins by invoking the fronte
 BEFORE any markup or CSS is written. This is a hard commandment and overrides any inclination to
 "just quickly" build UI directly.
 
+### XII. Respect the Source (Frugal, Polite Access)
+
+External source repositories (Gallica, Trove, museum catalogues) have hair-trigger rate limits
+and finite goodwill; their infrastructure is a shared public resource, not ours to exhaust.
+Requests to a rate-limited source MUST be minimized and MUST NOT be wasted — never make a request
+whose result is discarded. The estimate-only dry-run (which pings the source, keeps nothing, then
+re-fetches for the real run) is FORBIDDEN as a pre-flight; instead a "dry run" DOWNLOADS the assets
+once, keeps them locally, VERIFIES them (right pages, complete, legible — an actual look, not just a
+checksum), and uploads to the object store ONLY if they are good. A verified local master is re-read
+from cache and uploaded with zero re-download. Reconnaissance (pinpointing an excerpt) uses the
+narrowest bounded metadata calls, never a whole-run enumeration. Access uses the shipped
+rate-limited client, never an ad-hoc tool (e.g. `curl`) that bypasses the politeness envelope.
+Rationale: a public archive depends on continued access to public sources — wasting their requests
+risks the block that ends the work, and a verify-before-upload gate keeps wrong or broken assets out
+of the durable store.
+
 ## Additional Constraints (Technology & Conventions)
 
 - **Runtime**: TypeScript executed with `tsx`. Do NOT use `ts-node`. (`tsx`, not "nox tsx".)
@@ -159,4 +177,4 @@ expanded guidance, PATCH for clarifications. Compliance is expected in every rev
 deviations MUST be justified in writing (e.g., the plan's Complexity Tracking) or the offending
 work revised.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-08 | **Last Amended**: 2026-07-08
+**Version**: 1.1.0 | **Ratified**: 2026-07-08 | **Last Amended**: 2026-07-16
