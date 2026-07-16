@@ -572,3 +572,39 @@ Investigated the New Italy Museum holdings and resolved both PB-P006 suspected l
 ### Next actions
 
 - Operator decision: build the resolution-state + three-state-extent tool (TASK-25 / T029) as its own small spec via the front door so US4/US6 progress becomes measurable — vs. continuing more shipped-tooling passes first.
+
+## 2026-07-16 - Corpus gap-closure: de Rays cassation arrêt acquired + bookkeeping reconciled
+
+### Summary
+
+Closed the de Rays court-decisions thread and reconciled the loop's coverage-visible bookkeeping with what had actually shipped. The Cour de cassation arrêt — the legal capstone of the affair — is now a held, public-domain member (PB-P054); the search-log and the PB-P004 suspected lead now reflect that.
+
+### Completed
+
+- **PB-P054 acquired** — the de Rays *Cour de cassation* arrêt de rejet (Bulletin des arrêts criminels 1884, Gallica `bpt6k61587296`, p. 48–50), located 2026-07-15 (SRCH-0010), was live-acquired via the spec-012 page-range path (`fetch-source --pages`): only folios 48–50 mirrored to B2 (not the whole fascicule), reconciled → repositoryRecord `archived`, 3/3 folio masters backed + folio-verified.
+- **Search log** — appended SRCH-0011 recording the acquisition (append-only; supersedes SRCH-0010's "acquire the arrêt" open question). Two genuine residuals carried forward: the Seine jugement (1884) and Cour de Paris appeal arrêt (14 May 1884) texts are out-of-band (un-digitised Gazette des Tribunaux 1884), with the cassation arrêt standing as the reachable proxy that confirms both; and the physical Paris appeal dossier remains unsearched.
+- **PB-P004 suspected lead** — marked `resolution: { state: inventoried, sourceId: PB-P054 }`; `bib coverage` now shows the court-decisions lead resolved (was open 1/1) instead of stale-open.
+- **PB-P054 notes** — corrected the trailing pre-acquisition sentence ("masters NOT yet mirrored") to reflect the archived repository record; recorded that the Source lifecycle status stays terminal at `approved-for-acquisition` by design (acquisition state lives on the RepositoryRecord).
+
+### Findings
+
+- The confusion the operator flagged was a genuine two-axis subtlety, not an error: the **Source lifecycle status ends at `approved-for-acquisition`** (there is deliberately no `archived` on a Source), while acquisition completeness lives on the **RepositoryRecord status**. `bib coverage`'s member breakdown counts the Source status, so an acquired member correctly still reads "approved-for-acquisition" — the acquired-ness shows on the repo record, not the lifecycle bucket. Only the search-log open question, the suspected-lead resolution, and the PB-P054 notes were actually stale.
+
+### Bridging note — the 2026-07-14→16 deltas this log had not yet recorded
+
+The log went silent after 2026-07-13 while the museum + page-range arc shipped; full narrative is in the git session journals (`e96c82d`, `ee2d27a`, and the session-end records). Measured deltas, grounded in committed SSOT:
+
+- **Spec 011 (New Italy Museum acquisition path)** — built the museum RepositoryAdapter; first live museum acquisition PB-P013, then PB-P014 and a full catalogue pass. PB-P006's suspected leads were dispositioned per-item into the structured `resolution` field (TASK-25 landed), and its extent set `irreducible` with basis (three-state extent, TASK-29 landed). New Italy settlement photographs marked `centrality: adjacent` (37 corpus-adjacent), so they are preserved but never counted toward the central-corpus total.
+- **PB-P002** — imprint-year discrepancy resolved as a work-identity conflation (SRCH-0008): the held copy is Du Breil de Rays's 1879 20-p. prospectus (BnF `cb34139872z`), not de Groote's 1880 368-p. book; record corrected. A cluster of not-yet-held Port-Breton imprints captured as discovery leads (acquisition blocked on Gallica access at the time).
+- **PB-P012** — union-catalogue holding search (WorldCat / CCFr / BnF, SRCH-0009) returned a measured negative: no digital or physical copy locatable; stays `discovered`, an irreducible-for-now holding gap.
+- **Governance** — three constitution amendments emerged from the work (frugal/polite acquisition, no agent memory, operator owns scope); durable knowledge migrated from private agent memory into the repo.
+
+### Open frontier (next candidate passes)
+
+- **Evidence classes: `unclassified 41`** — the inventoried museum items lack an `evidenceClass`; largest standing SC-002 miss. Tangled with the container-counting and vocab-narrowness backlog items (TASK-22/23).
+- **PB-P002 discovery leads** — the de Groote 1880 book (`cb34944911d`) and other affair imprints, acquirable now that Gallica access has been reachable.
+- **PB-P005 × Trove** — operator-curation question: acquire a few discrete exemplars as anchors (n=1, no adapter)?
+
+### Notes
+
+Pure-SSOT bookkeeping (search-log, suspected resolution, notes) needs no archive clone; acquisition/reconcile passes still require the per-session `COLONY_ARCHIVE_ROOT` clone + B2 env.
