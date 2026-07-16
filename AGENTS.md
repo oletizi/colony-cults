@@ -62,6 +62,8 @@ The proven frugal acquire is TWO passes — download-and-keep, verify locally, u
 
 Reconnaissance (pinpointing an excerpt inside a large document) uses the narrowest bounded metadata calls — the Gallica Issues year-index + ContentSearch — never a whole-run census enumeration. Acquire only the pertinent excerpt, not the whole document (`bib fetch-source --pages` / `RepositoryRecord.folios`, spec 012).
 
+**Reaching a deflected source.** When a source's CDN has deflected this environment's IP (e.g. Gallica/BnF returning 403), shifting the Tailscale exit node (`tailscale set --exit-node=<node>`, a France node for BnF) presents a fresh public IP with a SHORT grace window. That grace is a scarce, shared lever — plan the full batch of URLs first, run them in ONE economical polite pass (still through the shipped rate-limited client, never `curl`), and never abuse it. **Every fetched response is precious: write each raw body to disk (the committed `bibliography/repository-responses/` provenance store) BEFORE parsing, then run all analysis/greps offline against the saved files.** Never re-fetch a source to re-grep a response you already fetched and discarded — a parsing miss must cost zero additional requests.
+
 ## Metadata requirements
 
 Every major source should include:
