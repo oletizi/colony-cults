@@ -141,11 +141,27 @@ describe('PageMethodProvenance', () => {
     expect(provenance.sourcePdfObject).toBeUndefined();
   });
 
+  it('accepts the image-set-jpeg method with sourceImage', () => {
+    const provenance: PageMethodProvenance = {
+      leaf: 5,
+      logicalPage: 3,
+      method: 'image-set-jpeg',
+      sourceImage: 'nouvellefrancec00groogoog_tif/nouvellefrancec00groogoog_0005.tif',
+    };
+
+    expect(provenance.method).toBe('image-set-jpeg');
+    expect(provenance.sourceImage).toBe(
+      'nouvellefrancec00groogoog_tif/nouvellefrancec00groogoog_0005.tif',
+    );
+    expect(provenance.sourcePdfObject).toBeUndefined();
+    expect(provenance.resolutionDpi).toBeUndefined();
+  });
+
   it('rejects a method outside the enumerated set (type-level check)', () => {
     const invalid: PageMethodProvenance = {
       leaf: 5,
       logicalPage: 3,
-      // @ts-expect-error -- method must be 'pdfimages-lossless' | 'pdftoppm-rasterised'
+      // @ts-expect-error -- method must be 'pdfimages-lossless' | 'pdftoppm-rasterised' | 'image-set-jpeg'
       method: 'manual-crop',
     };
     void invalid;
