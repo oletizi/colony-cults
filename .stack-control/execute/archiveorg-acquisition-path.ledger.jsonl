@@ -1,0 +1,13 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commit":"d54d176","reviewClean":true,"note":"create IA adapter package dir + barrel + __fixtures__/"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commit":"d54d176","reviewClean":true,"note":"copy de Groote metadata JSON fixture verbatim; valid JSON verified"}
+{"id":"T003","tierLabel":"fast","model":"haiku","commit":"d54d176","reviewClean":true,"note":"scandata.xml fixture: 8 leaves (Cover/Title/Color Card + 5 Normal) with recorded dims"}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commit":"d54d176","reviewClean":true,"note":"synthetic PDFs: single-image-page.pdf (1 image/page) + overlay-page.pdf (image+vector+text); poppler-verified"}
+{"id":"T005","tierLabel":"fast","model":"haiku","commit":"9726abe","reviewClean":true,"note":"CopyLevelIdentifierType += 'ia-item' + test"}
+{"id":"T006","tierLabel":"fast","model":"haiku","commit":"9726abe","reviewClean":true,"note":"RepositoryName += 'internet-archive' + test; no exhaustive-switch fallout"}
+{"id":"T007","tierLabel":"fast","model":"haiku","commit":"9726abe","reviewClean":true,"note":"narrow role to AcquiredAssetRole union; surfaced 'primary' regression -> controller fixed (added 'primary' + guard + loader validation)"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commit":"9726abe","reviewClean":true,"note":"quality-assessment.ts types + barrel export + 10 tests"}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commit":"9726abe","reviewClean":true,"note":"poppler runner test (TDD, RED) using real captured pdfimages -list output"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commit":"9726abe","reviewClean":true,"note":"poppler runner impl (GREEN), fail-loud, 176 lines, injected runner"}
+{"id":"T013","tierLabel":"fast","model":"haiku","commit":"9726abe","reviewClean":true,"note":"poppler preflight helper + fail-loud test"}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commit":"b3de112","reviewClean":true,"note":"RepositoryRecord += qualityAssessment?/excludedLeaves? + round-trip test"}
+{"id":"T010","tierLabel":"fast","model":"haiku","commit":"b3de112","reviewClean":true,"note":"registry dispatch ia-item->internet-archive + test"}
