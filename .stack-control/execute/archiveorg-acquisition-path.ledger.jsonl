@@ -46,3 +46,9 @@
 {"id":"T026","tierLabel":"balanced","model":"sonnet","commit":"e4f6800","reviewClean":true,"note":"register IA adapter in buildRegistry (3-adapter) + dispatch tests"}
 {"id":"T027","tierLabel":"balanced","model":"sonnet","commit":"e4f6800","reviewClean":true,"note":"bib-acquire-internet-archive.ts peek-builder + flag-driven makeCliQualityGate; +load-fields ia-item guard fix"}
 {"id":"T028","tierLabel":"balanced","model":"sonnet","commit":"e4f6800","reviewClean":true,"note":"runAcquireCli flags (--approved-range/--reject/--notes) + bib inventory IA routing"}
+{"id":"T047","tierLabel":"balanced","model":"sonnet","commit":"7fa37c0","reviewClean":true,"note":"multi-file failure surfaced end-to-end through resolve"}
+{"id":"T050","tierLabel":"fast","model":"sonnet","commit":"7fa37c0","reviewClean":true,"note":"never-bib-migrate guard test (INV-F)"}
+{"id":"T051","tierLabel":"fast","model":"sonnet","commit":"7fa37c0","reviewClean":true,"note":"split bib-sourcegroup.ts 604->275 + bib-sourcegroup-acquire.ts (367); +XII staging-cache fix"}
+{"id":"T052","tierLabel":"balanced","model":"sonnet","commit":"7fa37c0","reviewClean":true,"note":"quickstart coverage matrix; honestly found+fixed the XII no-re-fetch gap"}
+{"id":"T053","tierLabel":"fast","model":"opus","commit":"7fa37c0","reviewClean":true,"note":"verify: 1534 passed (3 pre-existing browser env fails), tsc clean, no any/as/ts-ignore"}
+{"id":"T054","tierLabel":"fast","model":"opus","commit":"7fa37c0","reviewClean":true,"note":"research log note; measured ratio deferred to T055 acceptance"}
