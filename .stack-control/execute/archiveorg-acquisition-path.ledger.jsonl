@@ -35,3 +35,11 @@
 {"id":"T030","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate test: staged-checksum mismatch throws"}
 {"id":"T031","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate test: scandata range seed; operator may widen"}
 {"id":"T032","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate.ts seam+enforce+seed (adapter wiring in T025)"}
+{"id":"T023","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"acquire happy-path test (PDF branch): assets+puts+complete"}
+{"id":"T024","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"acquire idempotency test: head-match skip / mismatch throw"}
+{"id":"T025","tierLabel":"powerful","model":"opus","commit":"9a82d53","reviewClean":true,"note":"acquire.ts orchestration (499 lines); rights->stage->quality->fidelity->extract/image-set->assemble->idempotent upload->dryRun; 12 tests"}
+{"id":"T036","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"rights gate test: non-PD throws before any fetch (client never called)"}
+{"id":"T037","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"rights gate is acquire step 1 (ordering asserted)"}
+{"id":"T043","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"asset roles: exactly one repository-source + page-masters, mediaTypes"}
+{"id":"T048","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"fidelity wired into acquire; image-set branch taken on degraded"}
+{"id":"T049","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"dry-run: zero puts, staging retained, complete:false (D-11 / TASK-29 fix for IA)"}
