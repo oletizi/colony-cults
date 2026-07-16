@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<book>
+  <pageData>
+    <page leafNum="1">
+      <pageType>Cover</pageType>
+      <originalWidth>1600</originalWidth>
+      <originalHeight>2300</originalHeight>
+    </page>
+    <page leafNum="2">
+      <pageType>Color Card</pageType>
+      <originalWidth>1600</originalWidth>
+      <originalHeight>2300</originalHeight>
+    </page>
+    <page leafNum="3">
+      <pageType>Title</pageType>
+      <originalWidth>1580</originalWidth>
+      <originalHeight>2290</originalHeight>
+    </page>
+    <page leafNum="4">
+      <pageType>Normal</pageType>
+      <originalWidth>1600</originalWidth>
+      <originalHeight>2300</originalHeight>
+    </page>
+    <page leafNum="5">
+      <pageType>Normal</pageType>
+      <originalWidth>1598</originalWidth>
+      <originalHeight>2305</originalHeight>
+    </page>
+    <page leafNum="6">
+      <pageType>Normal</pageType>
+      <originalWidth>1602</originalWidth>
+      <originalHeight>2295</originalHeight>
+    </page>
+    <page leafNum="7">
+      <pageType>Normal</pageType>
+      <originalWidth>1600</originalWidth>
+      <originalHeight>2300</originalHeight>
+    </page>
+    <page leafNum="8">
+      <pageType>Normal</pageType>
+      <originalWidth>1599</originalWidth>
+      <originalHeight>2298</originalHeight>
+    </page>
+  </pageData>
+</book>
