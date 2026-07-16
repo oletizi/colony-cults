@@ -4,13 +4,16 @@ Validates the program end-to-end on real state. The research *judgment* is human
 
 ## Prerequisites
 
-- **Per-session archive clone** (never the shared tree):
+- **Archive worktree + env.** The archive-root and object-store pointers are persisted in the gitignored project `.env`; load them once per shell instead of re-exporting by hand:
+  ```
+  set -a; source .env; set +a
+  ```
+  `.env` pins a DEDICATED archive worktree (a `colony-cults-archive` clone at `main`) reused across this operator's sequential sessions. B2 secrets are NOT in `.env` — they live in `~/.config/backblaze/b2-credentials.txt`. If the pinned worktree is ever missing, re-clone and update `COLONY_ARCHIVE_ROOT`:
   ```
   git clone --single-branch --branch main git@github.com:oletizi/colony-cults-archive.git \
-    ~/work/colony-cults-work/<session>-archive
-  export COLONY_ARCHIVE_ROOT=~/work/colony-cults-work/<session>-archive
-  export COLONY_S3_BUCKET=colony-cults COLONY_S3_ENDPOINT=https://s3.us-west-004.backblazeb2.com COLONY_S3_REGION=us-west-004
+    ~/work/colony-cults-work/<name>-archive
   ```
+  Do NOT run two concurrent sessions against one worktree (the per-session policy, AGENTS.md §154 / TASK-19, guards concurrency — sequential reuse is safe).
 - Baseline measure: `npx tsx src/index.ts bib coverage` (note the current `unexamined` dimensions).
 
 ## Track-1 (immediate, reused tooling — no new code)
