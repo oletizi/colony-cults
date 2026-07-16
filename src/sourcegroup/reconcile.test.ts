@@ -434,6 +434,127 @@ describe('runReconcile', () => {
     expect(await statusOf(dir, 'PB-P100', MUSEUM_ARCHIVE)).toBe('to-collect');
   });
 
+  // --- Excerpt folios (specs/012, T010/T014): declared-folio-aware verification ---
+
+  it('verifies a folios excerpt against the declared set and reports N/N declared folios, marking it archived', async () => {
+    dir = await seedSourcesDir([
+      { source: member(), records: [authoredRecord({ folios: [48, 49, 50] })] },
+    ]);
+    const gather: GatherProvenanceFn = vi.fn(async () => [
+      pageImage({ local_path: 'archive/cases/x/books/y/f048.jpg' }),
+      pageImage({ local_path: 'archive/cases/x/books/y/f049.jpg' }),
+      pageImage({ local_path: 'archive/cases/x/books/y/f050.jpg' }),
+    ]);
+
+    const result = await runReconcile({
+      sourcesDir: dir,
+      archiveRoot: '/unused',
+      sourceId: 'PB-P100',
+      gather,
+    });
+
+    expect(result.status).toBe('archived');
+    expect(result.pageCount).toBe(3);
+    expect(result.storedCount).toBe(3);
+    expect(result.folios).toEqual([48, 49, 50]);
+    expect(result.changed).toBe(true);
+    expect(await statusOf(dir, 'PB-P100')).toBe('archived');
+  });
+
+  it('does not let page-image masters outside the declared folios inflate or depress an excerpt\'s count', async () => {
+    dir = await seedSourcesDir([
+      { source: member(), records: [authoredRecord({ folios: [48, 49, 50] })] },
+    ]);
+    const gather: GatherProvenanceFn = vi.fn(async () => [
+      // Declared folios: all three backed.
+      pageImage({ local_path: 'archive/cases/x/books/y/f048.jpg' }),
+      pageImage({ local_path: 'archive/cases/x/books/y/f049.jpg' }),
+      pageImage({ local_path: 'archive/cases/x/books/y/f050.jpg' }),
+      // A sibling folio of the same document, outside the excerpt, not backed.
+      pageImage({ local_path: 'archive/cases/x/books/y/f051.jpg', object_store: null }),
+    ]);
+
+    const result = await runReconcile({
+      sourcesDir: dir,
+      archiveRoot: '/unused',
+      sourceId: 'PB-P100',
+      gather,
+    });
+
+    // The excerpt is complete once its OWN 3 declared folios verify -- the
+    // unrelated, unbacked f051 must not prevent archived (no held===pageCount
+    // whole-document gate).
+    expect(result.status).toBe('archived');
+    expect(result.pageCount).toBe(3);
+    expect(result.storedCount).toBe(3);
+  });
+
+  it('reports a partially-backed excerpt as collected, counting only the declared folios', async () => {
+    dir = await seedSourcesDir([
+      { source: member(), records: [authoredRecord({ folios: [48, 49, 50] })] },
+    ]);
+    const gather: GatherProvenanceFn = vi.fn(async () => [
+      pageImage({ local_path: 'archive/cases/x/books/y/f048.jpg' }),
+      pageImage({ local_path: 'archive/cases/x/books/y/f049.jpg', object_store: null }),
+      // f050 never fetched at all -- no provenance entry for it.
+    ]);
+
+    const result = await runReconcile({
+      sourcesDir: dir,
+      archiveRoot: '/unused',
+      sourceId: 'PB-P100',
+      gather,
+    });
+
+    expect(result.status).toBe('collected');
+    expect(result.pageCount).toBe(3);
+    expect(result.storedCount).toBe(1);
+    expect(result.folios).toEqual([48, 49, 50]);
+  });
+
+  it('round-trips: reconciling a folios excerpt preserves folios in the rewritten SSOT YAML', async () => {
+    dir = await seedSourcesDir([
+      { source: member(), records: [authoredRecord({ folios: [48, 49, 50] })] },
+    ]);
+    const gather: GatherProvenanceFn = vi.fn(async () => [
+      pageImage({ local_path: 'archive/cases/x/books/y/f048.jpg' }),
+      pageImage({ local_path: 'archive/cases/x/books/y/f049.jpg' }),
+      pageImage({ local_path: 'archive/cases/x/books/y/f050.jpg' }),
+    ]);
+
+    await runReconcile({ sourcesDir: dir, archiveRoot: '/unused', sourceId: 'PB-P100', gather });
+
+    const loaded = loadAllSources(dir);
+    const entry = loaded.find((l) => l.source.sourceId === 'PB-P100');
+    expect(entry).toBeDefined();
+    expect(entry?.records[0]?.folios).toEqual([48, 49, 50]);
+    expect(entry?.records[0]?.status).toBe('archived');
+
+    const rewritten = await readFile(join(dir, 'PB-P100.yml'), 'utf-8');
+    expect(rewritten).toContain('folios:');
+    expect(rewritten).toMatch(/folios:\s*\n\s*- 48\s*\n\s*- 49\s*\n\s*- 50/);
+  });
+
+  it('a whole-document record (no folios) reconciles exactly as before -- regression', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
+    const gather: GatherProvenanceFn = vi.fn(async () => [
+      pageImage({ local_path: 'archive/cases/x/books/y/f001.jpg' }),
+      pageImage({ local_path: 'archive/cases/x/books/y/f002.jpg' }),
+    ]);
+
+    const result = await runReconcile({
+      sourcesDir: dir,
+      archiveRoot: '/unused',
+      sourceId: 'PB-P100',
+      gather,
+    });
+
+    expect(result.status).toBe('archived');
+    expect(result.pageCount).toBe(2);
+    expect(result.storedCount).toBe(2);
+    expect(result.folios).toBeUndefined();
+  });
+
   it('TASK-30: the museum path needs no archiveRoot/gather (its truth is B2 + the recorded asset)', async () => {
     dir = await seedSourcesDir([{ source: member(), records: [museumRecord()] }]);
     const gather: GatherProvenanceFn = vi.fn(async () => []);

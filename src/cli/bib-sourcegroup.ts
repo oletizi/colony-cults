@@ -464,9 +464,13 @@ export async function runReconcileCli(rest: string[]): Promise<number> {
       });
     }
     const verb = result.changed ? 'reconciled' : 'already reconciled';
+    // A record with declared `folios` (specs/012) is an excerpt: report the
+    // counts against that declared set rather than implying a whole-document
+    // holding.
+    const masterLabel = result.folios !== undefined ? 'declared folio(s)' : 'master(s)';
     console.log(
       `bib reconcile: ${verb} ${result.sourceId} at "${result.sourceArchive}" -> ` +
-        `${result.status} (${result.storedCount}/${result.pageCount} master(s) in object store)`,
+        `${result.status} (${result.storedCount}/${result.pageCount} ${masterLabel} in object store)`,
     );
     return 0;
   } catch (error) {
