@@ -1,0 +1,17 @@
+{"id":"T001","tierLabel":"fast","model":"sonnet","commit":"9d74bcd","reviewClean":true,"note":"baseline + bundled into the parser TDD unit (ran at sonnet)"}
+{"id":"T002","tierLabel":"fast","model":"sonnet","commit":"9d74bcd","reviewClean":true,"note":"bundled TDD unit with T003 (ran at sonnet)"}
+{"id":"T003","tierLabel":"balanced","model":"sonnet","commit":"9d74bcd","reviewClean":true}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commit":"83af7ba","reviewClean":true}
+{"id":"T005","tierLabel":"fast","model":"sonnet","commit":"83af7ba","reviewClean":true,"note":"bundled with T004/T006"}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commit":"83af7ba","reviewClean":true,"note":"folios validation placed at load-time per codebase architecture (documented)"}
+{"id":"T007","tierLabel":"balanced","model":"opus","commit":"e49d6d2","reviewClean":true,"note":"bundled with T008 at opus; also delivered the T011 no-folios regression lock"}
+{"id":"T008","tierLabel":"powerful","model":"opus","commit":"e49d6d2","reviewClean":true}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commit":"0fbd071","reviewClean":true}
+{"id":"T011","tierLabel":"balanced","model":"opus","commit":"e49d6d2","reviewClean":true,"note":"US2 no-folios regression lock delivered within Unit 3 (T007-T008)"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commit":"0fbd071","reviewClean":true}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commit":"0fbd071","reviewClean":true}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commit":"7c64534","reviewClean":true,"note":"reconcile already preserved folios; verified by round-trip test + doc comment"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commit":"7c64534","reviewClean":true}
+{"id":"T015","tierLabel":"fast","model":"controller","commit":"pending","reviewClean":true,"note":"authored PB-P054 folios [48,49,50]; regenerated views"}
+{"id":"T016","tierLabel":"balanced","model":"controller","commit":"pending","reviewClean":true,"note":"full tsc+vitest verify; found+fixed 2 self-introduced regressions (PB-P002 Years hint, PB-P004 member count 6->7); only env-gated CORPUS_ARCHIVE_PATH suites remain"}
+{"id":"T017","tierLabel":"fast","model":"controller","commit":"pending","reviewClean":true,"note":"design-doc implementation notes appended"}

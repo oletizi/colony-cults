@@ -135,3 +135,11 @@ folios in B2). Advances PB-P054 from `to-collect` to `archived`.
 This design record is the HOW source-of-truth. The Spec Kit spec (`specs/NNN-page-range-acquisition/`)
 is authored via `/stack-control:define`, which drives `/speckit-specify` → `plan` → `tasks`,
 then `/stack-control:execute`.
+
+## Implementation notes (2026-07-16)
+
+Implemented via the stack-control execute front door (spec `specs/012-page-range-acquisition/`). Three details firmed up during implementation, all consistent with the design above:
+
+- **Folios structural validation lives at LOAD time** (`src/bibliography/load-fields.ts`), not in `validate-checks.ts` — that module returns `ValidationFinding[]` and never throws, whereas a well-typed `number[]` must be enforced as the record loads (matching how `rights`/`metadataSnapshot` are validated). `bib validate` runs the loader first, so a malformed `folios` still fails loud end-to-end.
+- **Reconcile scopes verification to the declared set** by reading each held page-image's folio from its `f<NNN>` filename basename, so a sibling folio outside the excerpt never inflates or depresses completeness. No `held==pageCount` gate was added (none exists).
+- **Dry-run bounds-checks the selection** against the real pagination before estimating, so a dry run never reports a plausible size for an out-of-range folio.

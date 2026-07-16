@@ -45,6 +45,7 @@ repositoryRecords:
     status: to-collect
     originalUrl: https://gallica.bnf.fr/ark:/12148/bpt6k61587296
     catalogUrl: https://catalogue.bnf.fr/ark:/12148/cb34508686x
+    folios: [48, 49, 50]
     identifiers:
       - type: ark
         value: ark:/12148/bpt6k61587296

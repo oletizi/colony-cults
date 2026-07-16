@@ -106,11 +106,12 @@ describe('bib coverage CLI', () => {
         gap: number | 'unexamined' | 'irreducible';
       }[];
     };
-    // Real corpus source-group PB-P004 has six members (per-work): 5
+    // Real corpus source-group PB-P004 has seven members (per-work): 5
     // approved-for-acquisition (PB-P007-P011) + 1 discovered (PB-P012, the
-    // Vermont pleadings, SRCH-0002). Extent still unexamined.
+    // Vermont pleadings, SRCH-0002) + PB-P054 (the de Rays Cour de cassation
+    // arrêt, approved-for-acquisition, SRCH-0010). Extent still unexamined.
     const pb004 = parsed.perWorkBundle.find((c) => c.workBundle === 'PB-P004');
-    expect(pb004?.actualMemberCount).toBe(6);
+    expect(pb004?.actualMemberCount).toBe(7);
     expect(pb004?.gap).toBe('unexamined');
   });
 
