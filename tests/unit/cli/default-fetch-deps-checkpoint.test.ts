@@ -33,6 +33,7 @@ function args(overrides: {
       force: false,
       verify: false,
       ocr: false,
+      enhanceContrast: false,
       objectStore: false,
       reconcileRemote: false,
       checkpoint: overrides.checkpoint,

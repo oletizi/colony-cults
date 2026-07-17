@@ -128,3 +128,53 @@ describe('serializeProvenance machine-assistance keys', () => {
     expect(parsed.translation).toBe('machine-assisted');
   });
 });
+
+describe('serializeProvenance ocr_quality block', () => {
+  it('round-trips an ocr-text record carrying ocr_quality', () => {
+    const fields: ProvenanceFields = {
+      ...legacyFields(),
+      type: 'ocr-text',
+      format: 'text/plain',
+      ocr_quality: {
+        method: 'aspell-realword-ratio-v1',
+        language: 'en',
+        ratio: 0.46,
+        tier: 'low',
+      },
+    };
+    const yaml = serializeProvenance(fields);
+    expect(yaml).toContain('ocr_quality:');
+    expect(yaml).toContain('  method: "aspell-realword-ratio-v1"');
+    expect(yaml).toContain('  ratio: 0.46'); // bare number, not quoted
+    expect(yaml).toContain('  tier: "low"');
+    // The block sits between object_store and notes (KEY_ORDER).
+    const keys = yaml.trimEnd().split('\n').filter((l) => !l.startsWith('  '));
+    const idx = (k: string) => keys.findIndex((l) => l.startsWith(`${k}:`));
+    expect(idx('ocr_quality')).toBe(idx('object_store') + 1);
+    expect(idx('notes')).toBe(idx('ocr_quality') + 1);
+
+    const parsed = parseProvenance(yaml);
+    expect(parsed).toEqual(fields);
+    expect(serializeProvenance(parsed)).toBe(yaml);
+  });
+
+  it('omits ocr_quality entirely when absent (legacy records re-serialize byte-identically)', () => {
+    const yaml = serializeProvenance(legacyFields());
+    expect(yaml).not.toMatch(/^ocr_quality:/m);
+    expect(parseProvenance(yaml).ocr_quality).toBeUndefined();
+  });
+
+  it('rejects an invalid tier in an ocr_quality block', () => {
+    const yaml = serializeProvenance({
+      ...legacyFields(),
+      type: 'ocr-text',
+      ocr_quality: {
+        method: 'aspell-realword-ratio-v1',
+        language: 'en',
+        ratio: 0.5,
+        tier: 'low',
+      },
+    }).replace('tier: "low"', 'tier: "bogus"');
+    expect(() => parseProvenance(yaml)).toThrow(/tier must be low\|medium\|high/);
+  });
+});

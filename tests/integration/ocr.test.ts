@@ -61,6 +61,10 @@ function fakeRunner(): OcrCommandRunner {
         await writeFile(outPath, 'FAKE OCR TEXT\n');
         return { stdout: '', stderr: '', exitCode: 0 };
       }
+      if (command === 'aspell') {
+        // No misspelled tokens echoed -> real-word ratio 1.0 (tier high).
+        return { stdout: '', stderr: '', exitCode: 0 };
+      }
       throw new Error(`fakeRunner: unexpected command "${command}"`);
     },
   };
@@ -126,6 +130,11 @@ describe('ocrIssue (T030/T033)', () => {
     expect(txtYaml).toContain('ocr_status: "searchable"');
     expect(txtYaml).toContain('format: "text/plain"');
     expect(txtYaml).toContain('rights_status: "public-domain"');
+    // Every ocr-text artifact MUST carry a computed quality block (Constitution
+    // III). The fake aspell echoed no misspellings -> ratio 1, tier high.
+    expect(txtYaml).toContain('ocr_quality:');
+    expect(txtYaml).toContain('method: "aspell-realword-ratio-v1"');
+    expect(txtYaml).toContain('tier: "high"');
 
     // Page provenance is updated from 'none' to 'searchable' (T030).
     const page1Yaml = await readFile(path.join(issueDir, 'f001.yml'), 'utf-8');
@@ -208,5 +217,93 @@ describe('ocrIssue (T030/T033)', () => {
     } finally {
       rmSync(outsideDir, { recursive: true, force: true });
     }
+  });
+
+  it('nulls object_store on the OCR-text sidecar even when the page image has one', async () => {
+    // The base page IS an object-store master (its companion carries a real
+    // object_store block); the derived OCR text must NOT inherit that key --
+    // else its (text) sha256 mismatches the image key's sha (checksum-drift).
+    const pageWithStore: ProvenanceFields = {
+      ...BASE_PAGE_PROVENANCE,
+      object_store: {
+        provider: 'backblaze-b2',
+        bucket: 'colony-cults',
+        key: 'archive/cases/x/f001.jpg',
+        endpoint: 'https://s3.us-west-004.backblazeb2.com',
+      },
+    };
+    await writeProvenance(path.join(issueDir, 'f001.yml'), pageWithStore);
+    await writeProvenance(path.join(issueDir, 'f002.yml'), pageWithStore);
+
+    await ocrIssue(issueDir, {
+      runner: fakeRunner(),
+      archiveRoot,
+      clock: () => new Date('2026-07-17T00:00:00.000Z'),
+    });
+
+    const txtYaml = await readFile(
+      path.join(issueDir, 'issue.txt.yml'),
+      'utf-8',
+    );
+    expect(txtYaml).toContain('object_store: null');
+    expect(txtYaml).not.toContain('key: "archive/cases/x/f001.jpg"');
+  });
+
+  it('passes the pinned language to ocrmypdf (default fra unchanged)', async () => {
+    await writePageProvenance(issueDir, [1, 2]);
+    const calls: Array<{ command: string; args: string[] }> = [];
+    const recording: OcrCommandRunner = {
+      run: async (command, args) => {
+        calls.push({ command, args });
+        return fakeRunner().run(command, args);
+      },
+    };
+
+    await ocrIssue(issueDir, {
+      runner: recording,
+      archiveRoot,
+      clock: () => new Date('2026-07-16T00:00:00.000Z'),
+      language: 'eng',
+    });
+
+    const ocrmypdf = calls.find((c) => c.command === 'ocrmypdf');
+    expect(ocrmypdf).toBeDefined();
+    const langIdx = ocrmypdf!.args.indexOf('--language');
+    expect(ocrmypdf!.args[langIdx + 1]).toBe('eng');
+    // No contrast preprocessing was requested -> ImageMagick is never invoked.
+    expect(calls.some((c) => c.command === 'magick')).toBe(false);
+  });
+
+  it('preprocesses each page with ImageMagick when enhanceContrast is set', async () => {
+    await writePageProvenance(issueDir, [1, 2]);
+    const calls: Array<{ command: string; args: string[] }> = [];
+    const recording: OcrCommandRunner = {
+      run: async (command, args) => {
+        calls.push({ command, args });
+        if (command === 'magick') {
+          // Emulate ImageMagick writing the normalized output image.
+          await writeFile(args[args.length - 1], 'FAKE-NORMALIZED');
+          return { stdout: '', stderr: '', exitCode: 0 };
+        }
+        return fakeRunner().run(command, args);
+      },
+    };
+
+    await ocrIssue(issueDir, {
+      runner: recording,
+      archiveRoot,
+      clock: () => new Date('2026-07-16T00:00:00.000Z'),
+      enhanceContrast: true,
+    });
+
+    // One magick invocation per page, each grayscale + normalize.
+    const magickCalls = calls.filter((c) => c.command === 'magick');
+    expect(magickCalls).toHaveLength(2);
+    expect(magickCalls[0].args).toContain('-normalize');
+    expect(magickCalls[0].args).toContain('-colorspace');
+    // img2pdf runs on the ENHANCED copies (workdir enh-*.png), not the originals.
+    const img2pdf = calls.find((c) => c.command === 'img2pdf');
+    expect(img2pdf!.args.some((a) => /enh-\d{3}\.png$/.test(a))).toBe(true);
+    expect(img2pdf!.args.some((a) => /f00\d\.jpg$/.test(a))).toBe(false);
   });
 });

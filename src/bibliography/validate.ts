@@ -16,7 +16,11 @@ import {
   validateVocab,
 } from '@/bibliography/validate-checks';
 import type { CompanionRef } from '@/bibliography/validate-companion-coverage';
-import { validateArchiveReconciliation } from '@/bibliography/validate-companion-coverage';
+import {
+  validateArchiveReconciliation,
+  validateOcrTextQuality,
+  validateTranslationLabels,
+} from '@/bibliography/validate-companion-coverage';
 import { validateCoverageFields } from '@/bibliography/validate-coverage-checks';
 import { buildScopeResolutionContext, validateSearchLogScopes } from '@/bibliography/validate-search-log';
 import { loadScopesRegistry, threadIdSet } from '@/bibliography/scopes-registry';
@@ -61,7 +65,9 @@ export type ValidationFindingKind =
   | 'publication-manifest-missing'
   | 'undiscoverable-master'
   | 'orphaned-companion'
-  | 'checksum-drift';
+  | 'checksum-drift'
+  | 'ocr-quality-missing'
+  | 'translation-label-inconsistent';
 
 /**
  * One `bib validate` finding. Findings are DATA, not errors -- `validate`
@@ -219,6 +225,13 @@ export interface ValidateOptions {
    * companions found", a real violation for any record with object-store masters.
    */
   archiveCompanions?: ReadonlyMap<string, CompanionRef>;
+  /**
+   * Private-archive root for the OCR-quality gate: every `type: ocr-text`
+   * artifact under `<archiveRoot>/archive/**` MUST carry an `ocr_quality` block
+   * (`ocr-quality-missing` otherwise). Absent ⇒ the gate is skipped (no archive
+   * access).
+   */
+  archiveRoot?: string;
 }
 
 /**
@@ -263,6 +276,10 @@ export function validate(model: CanonicalModel, opts?: ValidateOptions): Validat
   }
   if (opts?.archiveCompanions !== undefined) {
     findings.push(...validateArchiveReconciliation(model, opts.archiveCompanions));
+  }
+  if (opts?.archiveRoot !== undefined) {
+    findings.push(...validateOcrTextQuality(opts.archiveRoot));
+    findings.push(...validateTranslationLabels(opts.archiveRoot));
   }
   return findings;
 }

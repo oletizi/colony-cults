@@ -6,14 +6,18 @@
  * Rendered in the "Prospectus / Dossier" hand, grouped by owning work-bundle with
  * a final "No work-bundle" bucket for references on sources outside any group.
  *
- * The signature mark: absence is stamped in oxide (`--oxide`). A `suspected gap`
- * tag and the `No work-bundle` bucket heading -- the places a gap could hide -- burn
- * oxide; a plain cited-but-unidentified reference stays quiet in `--faint`. The
- * cited work itself speaks in the warm `--serif` source voice; its basis and
- * owner stay in the cool apparatus voices. Owners link only when a target exists
- * (T010) -- otherwise the id is rendered plain, never a dead link.
+ * The signature mark: only a genuinely-OPEN gap is stamped in oxide (`--oxide`).
+ * An `unexamined` suspected lead ("Suspected gap") and the `No work-bundle` bucket
+ * heading burn oxide; a cited-but-unidentified reference is open but quiet
+ * (`--faint`); a dispositioned lead (inventoried/excluded/unavailable/identified)
+ * renders quiet with its resolution line, NEVER as an oxide gap (specs/011 SC-004,
+ * so the page's oxide marks point only at what is still unresolved). Open leads
+ * sort ahead of dispositioned ones. The cited work speaks in the warm `--serif`
+ * source voice; basis, disposition, and owner stay in the cool apparatus voices.
+ * Owners + an `inventoried as` id link only when a target exists (T010) -- else
+ * the id is rendered plain, never a dead link.
  */
-import type { CoverageRegister } from '@/bibliography/coverage/coverage-model';
+import type { CoverageRegister, RegisterEntry } from '@/bibliography/coverage/coverage-model';
 
 interface Props {
   register: CoverageRegister;
@@ -23,10 +27,53 @@ interface Props {
 
 const { register, labelFor } = Astro.props;
 
-// "N open" -- every unresolved entry across both axes, work-bundle-grouped + loose.
-const totalOpen =
-  register.byWorkBundle.reduce((sum, group) => sum + group.entries.length, 0) +
-  register.ungrouped.length;
+/**
+ * One entry's disposition for display (specs/011 SC-004). Only an `unexamined`
+ * suspected lead is a genuinely OPEN gap and burns oxide; a cited-but-unidentified
+ * reference is open but quiet; a suspected lead with a resolution
+ * (identified/inventoried/excluded/unavailable) is dispositioned -- shown quiet
+ * with its disposition, never as an oxide gap.
+ */
+interface Disposition {
+  open: boolean;
+  oxide: boolean;
+  tag: string;
+  /** A quiet disposition line; `inventoriedAs` links to the resolved source. */
+  detail: string | null;
+  inventoriedAs: string | null;
+  inventoriedAt: string | null;
+}
+function disposition(entry: RegisterEntry): Disposition {
+  if (entry.kind === 'reference') {
+    return { open: true, oxide: false, tag: 'Cited · unidentified', detail: null, inventoriedAs: null, inventoriedAt: null };
+  }
+  const r = entry.resolution;
+  if (r === undefined || r.state === 'unexamined') {
+    return { open: true, oxide: true, tag: 'Suspected gap', detail: null, inventoriedAs: null, inventoriedAt: null };
+  }
+  switch (r.state) {
+    case 'identified':
+      return { open: false, oxide: false, tag: 'Identified', detail: `candidate ${r.candidate} · ${r.resolvedAt}`, inventoriedAs: null, inventoriedAt: null };
+    case 'inventoried':
+      return { open: false, oxide: false, tag: 'Inventoried', detail: null, inventoriedAs: r.sourceId, inventoriedAt: r.resolvedAt };
+    case 'excluded':
+      return { open: false, oxide: false, tag: 'Excluded', detail: `excluded — ${r.reason} · ${r.resolvedAt}`, inventoriedAs: null, inventoriedAt: null };
+    case 'unavailable':
+      return { open: false, oxide: false, tag: 'Unavailable', detail: `unavailable — ${r.reason} · ${r.resolvedAt}`, inventoriedAs: null, inventoriedAt: null };
+  }
+}
+
+const allEntries: RegisterEntry[] = [
+  ...register.byWorkBundle.flatMap((group) => group.entries),
+  ...register.ungrouped,
+];
+const openCount = allEntries.filter((entry) => disposition(entry).open).length;
+const resolvedCount = allEntries.length - openCount;
+const countLabel = resolvedCount > 0 ? `${openCount} open · ${resolvedCount} resolved` : `${openCount} open`;
+
+// Open leads (oxide/quiet) sort ahead of dispositioned ones within each group.
+const openFirst = (entries: RegisterEntry[]): RegisterEntry[] =>
+  [...entries].sort((a, b) => Number(disposition(b).open) - Number(disposition(a).open));
 
 // One flat list of renderable groups: work-bundle groups (title, then · id) that
 // actually carry entries, then the ungrouped bucket under the oxide "No work-bundle"
@@ -39,18 +86,18 @@ const groups = [
       return {
         heading: title === undefined ? group.workBundle : `${title} · ${group.workBundle}`,
         isNone: false,
-        entries: group.entries,
+        entries: openFirst(group.entries),
       };
     }),
   ...(register.ungrouped.length > 0
-    ? [{ heading: 'No work-bundle', isNone: true, entries: register.ungrouped }]
+    ? [{ heading: 'No work-bundle', isNone: true, entries: openFirst(register.ungrouped) }]
     : []),
 ];
 ---
 
 <section class="sec">
-  <p class="sec__label">Unresolved references<span class="sec__count">{totalOpen} open</span></p>
-  {totalOpen === 0 ? (
+  <p class="sec__label">Unresolved references<span class="sec__count">{countLabel}</span></p>
+  {allEntries.length === 0 ? (
     <p class="empty">Nothing unresolved in the register.</p>
   ) : (
     groups.map((group) => (
@@ -59,16 +106,25 @@ const groups = [
         {group.entries.map((entry) => {
           const work = entry.kind === 'reference' ? entry.citedAs : entry.description;
           const owner = labelFor(entry.owner);
+          const disp = disposition(entry);
+          const inventoried = disp.inventoriedAs === null ? null : labelFor(disp.inventoriedAs);
           return (
             <div class="reg__entry">
-              {entry.kind === 'suspected' ? (
-                <span class="reg__tag reg__tag--sus">Suspected gap</span>
-              ) : (
-                <span class="reg__tag reg__tag--ref">Cited · unidentified</span>
-              )}
+              <span class={`reg__tag ${disp.oxide ? 'reg__tag--sus' : 'reg__tag--ref'}`}>{disp.tag}</span>
               <div>
                 <p class="reg__cited">{work}</p>
                 {entry.basis ? <p class="reg__basis">{entry.basis}</p> : null}
+                {disp.inventoriedAs !== null ? (
+                  <p class="reg__disp">
+                    inventoried as{' '}
+                    {inventoried && inventoried.href ? (
+                      <a href={inventoried.href}>{disp.inventoriedAs}</a>
+                    ) : disp.inventoriedAs}
+                    {' · '}{disp.inventoriedAt}
+                  </p>
+                ) : disp.detail !== null ? (
+                  <p class="reg__disp">{disp.detail}</p>
+                ) : null}
                 <p class="reg__owner">
                   owner{' '}
                   {owner.href ? <a href={owner.href}>{entry.owner}</a> : entry.owner}
@@ -174,6 +230,27 @@ const groups = [
     font-size: 13px;
     color: var(--slate);
     margin: 4px 0 0;
+  }
+
+  /* A dispositioned lead's quiet resolution line (inventoried / excluded /
+     unavailable / identified). Never oxide -- it records a settled outcome, not
+     an open gap. `inventoried as <id>` links to the resolved source. */
+  .reg__disp {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    margin: 6px 0 0;
+    overflow-wrap: anywhere;
+  }
+
+  .reg__disp a {
+    border-bottom: 1px solid var(--rule);
+    text-decoration: none;
+  }
+
+  .reg__disp a:hover {
+    border-bottom-color: var(--oxide);
+    color: var(--oxide);
   }
 
   .reg__owner {
