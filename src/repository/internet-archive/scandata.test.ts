@@ -116,3 +116,32 @@ describe('proposeReadingRange -- real fixture scandata-nouvellefrancec00groogoog
     expect(() => proposeReadingRange([])).toThrow(/no leaves with pageType "Normal"/);
   });
 });
+
+describe('parseScandata -- 0-based leaf numbering (newspaper issues) normalized to 1-based', () => {
+  // Many archive.org newspaper issues (China Mail, Hong Kong Daily Press) number
+  // scandata leaves from 0; the adapter assumes 1-based (leaf N <-> PDF page N).
+  const ZERO_BASED = `<book><pageData>
+    <page leafNum="0"><pageType>Normal</pageType></page>
+    <page leafNum="1"><pageType>Normal</pageType></page>
+    <page leafNum="2"><pageType>Normal</pageType></page>
+    <page leafNum="3"><pageType>Normal</pageType></page>
+  </pageData></book>`;
+
+  it('shifts a 0-based leaf set up to 1-based positional', () => {
+    const leaves = parseScandata(ZERO_BASED);
+    expect(leaves.map((l) => l.leafNum)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('proposeReadingRange over the normalized leaves is 1-based (valid for assessFidelity)', () => {
+    const range = proposeReadingRange(parseScandata(ZERO_BASED));
+    expect(range).toEqual({ start: 1, end: 4 });
+  });
+
+  it('leaves an already-1-based set untouched', () => {
+    const oneBased = `<book><pageData>
+      <page leafNum="1"><pageType>Normal</pageType></page>
+      <page leafNum="2"><pageType>Normal</pageType></page>
+    </pageData></book>`;
+    expect(parseScandata(oneBased).map((l) => l.leafNum)).toEqual([1, 2]);
+  });
+});
