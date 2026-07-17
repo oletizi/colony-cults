@@ -18,6 +18,18 @@ export interface OcrPreflightDeps {
   run: OcrCommandRunner;
 }
 
+/** What a specific OCR run needs, beyond the always-required base toolchain. */
+export interface OcrPreflightOptions {
+  /**
+   * Tesseract language code(s) the recognition data must include -- each
+   * element of a `+`-joined `--language` set (e.g. `['eng','fra']`). Omitted ->
+   * the `fra` default, so existing French-only OCR preflight is unchanged.
+   */
+  languages?: string[];
+  /** Also require ImageMagick `magick` (the `--enhance-contrast` preprocessing tool). */
+  enhanceContrast?: boolean;
+}
+
 /** Real (PATH-lookup + shell-out) preflight dependencies. */
 export function defaultOcrPreflightDeps(): OcrPreflightDeps {
   return {
@@ -47,8 +59,13 @@ function parseLanguages(stdout: string): string[] {
  */
 export async function assertOcrToolchain(
   deps: OcrPreflightDeps = defaultOcrPreflightDeps(),
+  options: OcrPreflightOptions = {},
 ): Promise<void> {
   const missing: string[] = [];
+  const requiredLanguages =
+    options.languages !== undefined && options.languages.length > 0
+      ? options.languages
+      : [REQUIRED_LANGUAGE];
 
   for (const tool of REQUIRED_TOOLS) {
     if (!(await deps.pathLookup(tool))) {
@@ -56,13 +73,20 @@ export async function assertOcrToolchain(
     }
   }
 
+  // ImageMagick is only needed for the opt-in contrast-enhancement pass.
+  if (options.enhanceContrast === true && !(await deps.pathLookup('magick'))) {
+    missing.push('magick (ImageMagick)');
+  }
+
   if (!(await deps.pathLookup('tesseract'))) {
     missing.push('tesseract');
   } else {
     const result = await deps.run.run('tesseract', ['--list-langs']);
-    const languages = parseLanguages(result.stdout);
-    if (!languages.includes(REQUIRED_LANGUAGE)) {
-      missing.push(`tesseract language data "${REQUIRED_LANGUAGE}"`);
+    const installed = parseLanguages(result.stdout);
+    for (const lang of requiredLanguages) {
+      if (!installed.includes(lang)) {
+        missing.push(`tesseract language data "${lang}"`);
+      }
     }
   }
 

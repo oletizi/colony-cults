@@ -84,6 +84,7 @@ function baseArgs(): ParsedArgs {
       force: false,
       verify: false,
       ocr: false,
+      enhanceContrast: false,
       objectStore: false,
       reconcileRemote: false,
       checkpoint: false,

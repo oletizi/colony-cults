@@ -17,9 +17,15 @@ import {
 import { execCommand } from '@/ocr/exec';
 import type { OcrCommandRunner } from '@/ocr/types';
 
+/** Default Tesseract recognition language when the caller pins none. */
+export const DEFAULT_OCR_LANGUAGE = 'fra';
+
 /** Injectable dependencies of {@link ocrIssue} (T030). */
 export interface OcrContext {
-  /** Runs `img2pdf`/`ocrmypdf`/`pdftotext` (real by default, faked in tests). */
+  /**
+   * Runs `img2pdf`/`ocrmypdf`/`pdftotext` -- and, when {@link enhanceContrast}
+   * is set, `magick` (ImageMagick) -- real by default, faked in tests.
+   */
   runner: OcrCommandRunner;
   /** Absolute private-archive root (`../colony-cults-archive`). */
   archiveRoot: string;
@@ -29,6 +35,18 @@ export interface OcrContext {
   force?: boolean;
   /** Optional line-oriented progress sink. */
   log?: (message: string) => void;
+  /**
+   * Tesseract language code(s) passed to `ocrmypdf --language`, e.g. `fra`,
+   * `eng`, or `eng+fra`. Omitted -> {@link DEFAULT_OCR_LANGUAGE} (`fra`), so an
+   * English-language source is not OCR'd with the French recognition model.
+   */
+  language?: string;
+  /**
+   * Grayscale + histogram-normalize each page image (via ImageMagick `magick`)
+   * BEFORE `img2pdf`, to recover OCR accuracy on faded/low-contrast scans.
+   * Omitted/false -> the original images are OCR'd unchanged.
+   */
+  enhanceContrast?: boolean;
 }
 
 /** Outcome of one {@link ocrIssue} call. */
@@ -155,12 +173,39 @@ export async function ocrIssue(
     const searchablePdf = path.join(workDir, 'issue.pdf');
     const textFile = path.join(workDir, 'issue.txt');
 
-    await runStep(ctx.runner, 'img2pdf', [...pageFiles, '-o', rawPdf]);
+    // Optional contrast-enhancement preprocessing (faded/low-contrast scans):
+    // grayscale + histogram normalize each page into the temp workdir, and feed
+    // the enhanced copies to img2pdf. Safe on high-contrast scans (normalize is
+    // a no-op there). Off by default -> the originals are OCR'd unchanged.
+    let ocrInputs = pageFiles;
+    if (ctx.enhanceContrast === true) {
+      ocrInputs = [];
+      for (let i = 0; i < pageFiles.length; i += 1) {
+        const enhanced = path.join(
+          workDir,
+          `enh-${String(i + 1).padStart(3, '0')}.png`,
+        );
+        await runStep(ctx.runner, 'magick', [
+          pageFiles[i],
+          '-colorspace',
+          'Gray',
+          '-normalize',
+          enhanced,
+        ]);
+        ocrInputs.push(enhanced);
+      }
+      ctx.log?.(
+        `  enhance-contrast: normalized ${pageFiles.length} page image(s) before OCR`,
+      );
+    }
+
+    const language = ctx.language ?? DEFAULT_OCR_LANGUAGE;
+    await runStep(ctx.runner, 'img2pdf', [...ocrInputs, '-o', rawPdf]);
     await runStep(ctx.runner, 'ocrmypdf', [
       '--deskew',
       '--rotate-pages',
       '--language',
-      'fra',
+      language,
       '--output-type',
       'pdfa',
       rawPdf,

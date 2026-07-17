@@ -31,6 +31,7 @@ const ALL_FLAGS = {
   force: false,
   verify: false,
   ocr: false,
+  enhanceContrast: false,
   objectStore: false,
   reconcileRemote: false,
   checkpoint: false,

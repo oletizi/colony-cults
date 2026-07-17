@@ -68,4 +68,34 @@ describe('assertOcrToolchain (T029/T032)', () => {
       assertOcrToolchain(fakeDeps({ langs: ['eng'] })),
     ).rejects.toThrow(/brew install ocrmypdf tesseract-lang img2pdf poppler/);
   });
+
+  it('checks the REQUESTED language, not just fra (eng passes when installed)', async () => {
+    // fra absent, eng present -> requesting eng resolves; requesting fra throws.
+    await expect(
+      assertOcrToolchain(fakeDeps({ langs: ['eng'] }), { languages: ['eng'] }),
+    ).resolves.toBeUndefined();
+    await expect(
+      assertOcrToolchain(fakeDeps({ langs: ['eng'] }), { languages: ['fra'] }),
+    ).rejects.toThrow(/tesseract language data "fra"/);
+  });
+
+  it('requires each language of a +-joined set', async () => {
+    await expect(
+      assertOcrToolchain(fakeDeps({ langs: ['eng'] }), {
+        languages: ['eng', 'fra'],
+      }),
+    ).rejects.toThrow(/tesseract language data "fra"/);
+  });
+
+  it('requires ImageMagick (magick) only when enhanceContrast is requested', async () => {
+    // magick absent: fine by default, but demanded under enhanceContrast.
+    await expect(
+      assertOcrToolchain(fakeDeps({ missingTools: ['magick'] })),
+    ).resolves.toBeUndefined();
+    await expect(
+      assertOcrToolchain(fakeDeps({ missingTools: ['magick'] }), {
+        enhanceContrast: true,
+      }),
+    ).rejects.toThrow(/magick/);
+  });
 });

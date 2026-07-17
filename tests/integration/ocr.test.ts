@@ -209,4 +209,62 @@ describe('ocrIssue (T030/T033)', () => {
       rmSync(outsideDir, { recursive: true, force: true });
     }
   });
+
+  it('passes the pinned language to ocrmypdf (default fra unchanged)', async () => {
+    await writePageProvenance(issueDir, [1, 2]);
+    const calls: Array<{ command: string; args: string[] }> = [];
+    const recording: OcrCommandRunner = {
+      run: async (command, args) => {
+        calls.push({ command, args });
+        return fakeRunner().run(command, args);
+      },
+    };
+
+    await ocrIssue(issueDir, {
+      runner: recording,
+      archiveRoot,
+      clock: () => new Date('2026-07-16T00:00:00.000Z'),
+      language: 'eng',
+    });
+
+    const ocrmypdf = calls.find((c) => c.command === 'ocrmypdf');
+    expect(ocrmypdf).toBeDefined();
+    const langIdx = ocrmypdf!.args.indexOf('--language');
+    expect(ocrmypdf!.args[langIdx + 1]).toBe('eng');
+    // No contrast preprocessing was requested -> ImageMagick is never invoked.
+    expect(calls.some((c) => c.command === 'magick')).toBe(false);
+  });
+
+  it('preprocesses each page with ImageMagick when enhanceContrast is set', async () => {
+    await writePageProvenance(issueDir, [1, 2]);
+    const calls: Array<{ command: string; args: string[] }> = [];
+    const recording: OcrCommandRunner = {
+      run: async (command, args) => {
+        calls.push({ command, args });
+        if (command === 'magick') {
+          // Emulate ImageMagick writing the normalized output image.
+          await writeFile(args[args.length - 1], 'FAKE-NORMALIZED');
+          return { stdout: '', stderr: '', exitCode: 0 };
+        }
+        return fakeRunner().run(command, args);
+      },
+    };
+
+    await ocrIssue(issueDir, {
+      runner: recording,
+      archiveRoot,
+      clock: () => new Date('2026-07-16T00:00:00.000Z'),
+      enhanceContrast: true,
+    });
+
+    // One magick invocation per page, each grayscale + normalize.
+    const magickCalls = calls.filter((c) => c.command === 'magick');
+    expect(magickCalls).toHaveLength(2);
+    expect(magickCalls[0].args).toContain('-normalize');
+    expect(magickCalls[0].args).toContain('-colorspace');
+    // img2pdf runs on the ENHANCED copies (workdir enh-*.png), not the originals.
+    const img2pdf = calls.find((c) => c.command === 'img2pdf');
+    expect(img2pdf!.args.some((a) => /enh-\d{3}\.png$/.test(a))).toBe(true);
+    expect(img2pdf!.args.some((a) => /f00\d\.jpg$/.test(a))).toBe(false);
+  });
 });
