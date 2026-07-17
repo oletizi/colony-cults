@@ -3,8 +3,16 @@ import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
-import { assertOcrToolchain } from '@/ocr/preflight';
-import { ocrIssue, defaultOcrCommandRunner } from '@/ocr/run';
+import {
+  assertOcrToolchain,
+  defaultOcrPreflightDeps,
+  type OcrPreflightOptions,
+} from '@/ocr/preflight';
+import {
+  ocrIssue,
+  defaultOcrCommandRunner,
+  DEFAULT_OCR_LANGUAGE,
+} from '@/ocr/run';
 import type { OcrCommandRunner } from '@/ocr/types';
 import {
   restoreIssueImages,
@@ -19,8 +27,13 @@ export interface OcrCliDeps {
   clock: () => Date;
   /** Line-oriented output sink (stdout in production). */
   log: (message: string) => void;
-  /** OCR toolchain preflight (T029/FR-013); always runs for this command. */
-  ocrPreflight: () => Promise<void>;
+  /**
+   * OCR toolchain preflight (T029/FR-013); always runs for this command. Takes
+   * the run's requirements (language set + whether contrast-enhance is on) so
+   * it fails loud when the needed Tesseract language data or ImageMagick is
+   * absent -- not just the default `fra`.
+   */
+  ocrPreflight: (options: OcrPreflightOptions) => Promise<void>;
   /** Injected OCR command runner (T030). */
   ocrRunner: OcrCommandRunner;
   /**
@@ -45,7 +58,8 @@ export function defaultOcrCliDeps(): OcrCliDeps {
     log: (message) => {
       console.log(message);
     },
-    ocrPreflight: () => assertOcrToolchain(),
+    ocrPreflight: (options) =>
+      assertOcrToolchain(defaultOcrPreflightDeps(), options),
     ocrRunner: defaultOcrCommandRunner(),
     restoreImages: (issueDir, log, force) =>
       restoreIssueImages(issueDir, { log, force }),
@@ -86,7 +100,10 @@ export async function runOcr(
     return;
   }
 
-  await deps.ocrPreflight();
+  const language = args.options.ocrLang ?? DEFAULT_OCR_LANGUAGE;
+  const enhanceContrast = args.flags.enhanceContrast;
+
+  await deps.ocrPreflight({ languages: language.split('+'), enhanceContrast });
 
   // Restore page-image masters from the public B2 cache when they are absent
   // locally (object-store-migrated issue). A no-op when the images are present.
@@ -103,6 +120,8 @@ export async function runOcr(
     clock: deps.clock,
     force: args.flags.force,
     log: deps.log,
+    language,
+    enhanceContrast,
   });
 
   deps.log(

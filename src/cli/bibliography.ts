@@ -355,7 +355,12 @@ async function runValidate(rest: string[]): Promise<number> {
     // The cross-repo archive-reconciliation sanity check: the SSOT masters and
     // the committed archive companions must agree in both directions + on bytes.
     const archiveCompanions = collectCompanions(archiveRoot);
-    findings = validate(model, { repoRoot, searchLog, archiveCompanions });
+    findings = validate(model, {
+      repoRoot,
+      searchLog,
+      archiveCompanions,
+      archiveRoot,
+    });
   } catch (error) {
     console.error(`bib validate: ${describeError(error)}`);
     return 2;

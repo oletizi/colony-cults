@@ -65,6 +65,38 @@ function* walkYmlFiles(dir: string): Generator<string> {
 }
 
 /**
+ * Fail-loud gate (Constitution III): EVERY `type: ocr-text` artifact MUST carry
+ * a computed `ocr_quality` block. The OCR pipeline always writes it, but this
+ * catches any that slip in without it (a hand-authored sidecar, a legacy
+ * artifact, a future code path) -- so a lapse in recording OCR fidelity cannot
+ * silently land. Returns one `ocr-quality-missing` finding per offender; empty
+ * when the archive tree is absent.
+ */
+export function validateOcrTextQuality(archiveRoot: string): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
+  const archiveDir = join(archiveRoot, 'archive');
+  if (!existsSync(archiveDir)) {
+    return findings;
+  }
+  for (const file of walkYmlFiles(archiveDir)) {
+    const text = readFileSync(file, 'utf-8');
+    if (!/(^|\n)type: "ocr-text"/.test(text)) {
+      continue;
+    }
+    if (!/(^|\n)ocr_quality:/.test(text)) {
+      findings.push({
+        kind: 'ocr-quality-missing',
+        detail:
+          `OCR-text artifact is missing the mandatory ocr_quality block ` +
+          `(Constitution III): ${file}`,
+        path: file,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
  * Index every committed companion in the archive repo by its `object_store.key`.
  * Files without an `object_store:` block (non-companion sidecars -- translation
  * text, etc.) are skipped; a companion WITH the block is parsed strictly, so a

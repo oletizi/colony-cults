@@ -71,6 +71,14 @@ export interface ParsedFlags {
   /** Opt into OCR during a fetch (default: images-only). */
   ocr: boolean;
   /**
+   * Opt into a contrast-enhancement preprocessing pass before OCR
+   * (grayscale + histogram normalize via ImageMagick). Default false --
+   * unchanged behavior. Safe on high-contrast scans (a no-op that restores
+   * nothing), it recovers accuracy on genuinely faded/low-contrast newspaper
+   * images. Applies to the `ocr` command.
+   */
+  enhanceContrast: boolean;
+  /**
    * Opt into the object-store (B2) backend for page-image masters (T016).
    * Default false -- legacy local-only behavior is unchanged when absent.
    * When set, the fetch commands resolve `resolveObjectStoreConfig()` and
@@ -105,6 +113,13 @@ export interface ParsedOptions {
   slug?: string;
   /** Claude model alias/id to pin for a translation run (contracts/cli.md). */
   model?: string;
+  /**
+   * Tesseract language code(s) for the `ocr` command, e.g. `fra`, `eng`, or a
+   * `+`-joined set like `eng+fra`. Absent -> the `fra` default (unchanged
+   * behavior). Set `eng` for English-language sources so OCR is not run with
+   * the French recognition model.
+   */
+  ocrLang?: string;
   /** Translation engine selector (`claude`/`codex`); CLI flag beats config beats the built-in default. */
   engine?: string;
   /**
@@ -159,6 +174,7 @@ export function parse(argv: string[]): ParsedArgs {
       force: { type: 'boolean', default: false },
       verify: { type: 'boolean', default: false },
       ocr: { type: 'boolean', default: false },
+      'enhance-contrast': { type: 'boolean', default: false },
       'object-store': { type: 'boolean', default: false },
       'reconcile-remote': { type: 'boolean', default: false },
       checkpoint: { type: 'boolean', default: false },
@@ -168,6 +184,7 @@ export function parse(argv: string[]): ParsedArgs {
       engine: { type: 'string' },
       'archive-root': { type: 'string' },
       'checkpoint-every': { type: 'string' },
+      'ocr-lang': { type: 'string' },
       pages: { type: 'string' },
     },
     allowPositionals: true,
@@ -202,6 +219,7 @@ export function parse(argv: string[]): ParsedArgs {
       force: Boolean(values.force),
       verify: Boolean(values.verify),
       ocr: Boolean(values.ocr),
+      enhanceContrast: Boolean(values['enhance-contrast']),
       objectStore: Boolean(values['object-store']),
       reconcileRemote: Boolean(values['reconcile-remote']),
       checkpoint: Boolean(values.checkpoint),
@@ -213,6 +231,7 @@ export function parse(argv: string[]): ParsedArgs {
       engine: values.engine,
       archiveRoot: values['archive-root'],
       checkpointEvery: parseCheckpointEvery(values['checkpoint-every']),
+      ocrLang: values['ocr-lang'],
       pages: values.pages,
     },
   };

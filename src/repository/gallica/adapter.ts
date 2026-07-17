@@ -211,6 +211,7 @@ export class GallicaAdapter implements RepositoryAdapter {
         force: false,
         verify: false,
         ocr: false,
+        enhanceContrast: false,
         objectStore: context.objectStore ?? false,
         reconcileRemote: false,
         checkpoint: context.checkpoint ?? false,

@@ -141,6 +141,7 @@ describe('fetch-source guardrail for source-groups (T004)', () => {
         force: false,
         verify: false,
         ocr: false,
+        enhanceContrast: false,
         objectStore: false,
         reconcileRemote: false,
         checkpoint: false,

@@ -87,6 +87,7 @@ function baseFlags(overrides: Partial<ParsedFlags> = {}): ParsedFlags {
     force: false,
     verify: false,
     ocr: false,
+    enhanceContrast: false,
     objectStore: false,
     reconcileRemote: false,
     checkpoint: false,
