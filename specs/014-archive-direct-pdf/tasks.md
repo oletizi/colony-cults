@@ -129,7 +129,7 @@ and — separately — a source with an absent translation (fail loud, page name
 - [x] T017 [P] [US1] [tier:balanced] Unit test `tests/unit/pdf/archive-image-verify.test.ts`: a page whose `object_store` master is absent (fetch 404 / `FakeObjectStore` miss) fails loud with no IIIF fallback; a master whose bytes mismatch the recorded `sha256` fails loud (`assertMasterSha256Match`) (SC-003).
 - [x] T018 [P] [tier:fast] Update `README.md` `pdf:build` section: reads the archive (`COLONY_ARCHIVE_ROOT`/`--archive-root`), object_store images, no snapshot dependency; note the archive-clone-at-pin expectation.
 - [x] T019 [tier:balanced] Run `npm run typecheck` and `npm run pdf:test` (+ full `npm test`) green; fix any fallout. Confirm all new `src/pdf/load/*` modules are ≤ 500 lines (Constitution VII).
-- [x] T020 [~] [tier:powerful] [operator live acceptance] Execute `quickstart.md` Scenarios 1–2 against the real archive clone: build PB-P055 (archive.org) and PB-P054 (Gallica extract) end-to-end to real PDFs, confirming both — the two sources unbuildable before this feature (SC-006). Marked `[~]` (excluded from the tasks-complete gate): needs the live archive clone + B2/CDN, an operator acceptance run after the cross-model govern audit.
+- [~] T020 [tier:powerful] [operator live acceptance] Execute `quickstart.md` Scenarios 1–2 against the real archive clone: build PB-P055 (archive.org) and PB-P054 (Gallica extract) end-to-end to real PDFs, confirming both — the two sources unbuildable before this feature (SC-006). Marked `[~]` (excluded from the tasks-complete gate): needs the live archive clone + B2/CDN, an operator acceptance run after the cross-model govern audit.
 
 ---
 
