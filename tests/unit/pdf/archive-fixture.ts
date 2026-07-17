@@ -194,8 +194,11 @@ export async function writeFixtureArchive(
       const folioStr = String(folioNum).padStart(3, '0');
       const positionStr = String(i + 1).padStart(3, '0');
 
-      // Generate fixture image bytes: deterministic but distinct per folio.
+      // Generate fixture image bytes: deterministic but distinct per folio, and
+      // prefixed with the JPEG magic (FF D8 FF E0) so the build's format
+      // detection (`detectImageExt`) recognizes them as a real image master.
       const imageData = Buffer.concat([
+        Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
         Buffer.from('image-', 'utf-8'),
         Buffer.from(folioStr, 'utf-8'),
         randomBytes(32),

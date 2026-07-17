@@ -20,7 +20,7 @@
  * No fallbacks, no placeholder images, no partial PDFs.
  */
 
-import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { resolveRepoRoot } from '@/browser/load/repo-root';
@@ -133,9 +133,34 @@ function makeImageSource(
   return makeB2ImageSource(cdnBase, fetchFn);
 }
 
-/** Stable verso filename for a folio (matches `typst-input.ts`'s `versoImagePath`). */
-function versoName(folioId: string): string {
-  return `${folioId}.jpg`;
+/**
+ * Detect the master's image extension from its magic bytes — masters are not all
+ * JPEG (e.g. Internet-Archive-sourced pages are PNG). Typst infers the decoder
+ * from the file extension, so a PNG staged as `.jpg` fails to decode. Fail loud
+ * on an unrecognized format rather than mis-stage it.
+ */
+function detectImageExt(bytesPath: string, folioId: string): string {
+  const head = readFileSync(bytesPath).subarray(0, 8);
+  if (head[0] === 0xff && head[1] === 0xd8) {
+    return '.jpg';
+  }
+  if (
+    head[0] === 0x89 &&
+    head[1] === 0x50 &&
+    head[2] === 0x4e &&
+    head[3] === 0x47
+  ) {
+    return '.png';
+  }
+  throw new Error(
+    `stageImages: master for folio ${folioId} is neither JPEG nor PNG ` +
+      `(magic ${[...head.subarray(0, 4)].map((b) => b.toString(16)).join(' ')})`,
+  );
+}
+
+/** Stable verso filename for a folio + its detected extension (matches `versoImagePath`). */
+function versoName(folioId: string, ext: string): string {
+  return `${folioId}${ext}`;
 }
 
 /**
@@ -182,7 +207,12 @@ async function stageImages(
       objectStoreKey: page.image.objectStoreKey,
       sha256: page.image.sha256,
     });
-    copyFileSync(fetched.bytesPath, path.join(imageDir, versoName(page.folioId)));
+    const ext = detectImageExt(fetched.bytesPath, page.folioId);
+    const stagedPath = path.join(imageDir, versoName(page.folioId, ext));
+    copyFileSync(fetched.bytesPath, stagedPath);
+    // Record the staged path (with its real extension) so `versoImagePath` in
+    // the Typst input derives the matching filename (`fNNN.png` vs `fNNN.jpg`).
+    page.image.bytesPath = stagedPath;
   }
 }
 

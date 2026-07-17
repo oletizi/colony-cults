@@ -12,8 +12,10 @@
  * `f048..f050`) maps to `p001..p003`, resolving the mapping bug in
  * `@/browser/load/translation` (which keys `fNNN -> p<folioNum>`).
  *
- * Fail-loud, no fallbacks: an absent translation artifact, an inconsistent
- * label/text pairing, or an empty OCR all throw naming the page.
+ * Fail-loud, no fallbacks: an absent translation artifact or an inconsistent
+ * label/text pairing throws naming the page. Empty OCR throws too -- UNLESS the
+ * page is `untranslatable` (a blank/cover/plate page has neither OCR nor
+ * translation, and renders as a blank recto).
  */
 
 import { existsSync } from 'node:fs';
@@ -38,7 +40,11 @@ export interface ArchivePageContent {
   pageId: string;
   /** Folio id as it appears in the sidecar filename, e.g. `f048`. */
   folioId: string;
-  /** Corrected French if present, else the position-th `issue.txt` segment (non-empty). */
+  /**
+   * Corrected French if present, else the position-th `issue.txt` segment.
+   * Non-empty for a normal page; empty ONLY for an `untranslatable` blank/cover
+   * page (which has neither OCR nor translation).
+   */
   ocrFrench: string;
   /**
    * The English translation. Empty string ONLY for an `untranslatable`-labeled
@@ -96,13 +102,21 @@ function deriveOcrCondition(prov: ProvenanceFields): string | null {
   return null;
 }
 
-/** Resolve the OCR French: corrected `pNNN.fr.txt` if present, else the segment. */
+/**
+ * Resolve the OCR French: corrected `pNNN.fr.txt` if present, else the segment.
+ *
+ * `allowEmpty` is true for an `untranslatable`-labeled page: a blank / cover /
+ * plate page legitimately has NO OCR text (and no translation), so an empty OCR
+ * is the blank-recto marker, not a gap. For a `machine-assisted` page (real
+ * translated text), empty OCR is a genuine gap and fails loud.
+ */
 async function resolveOcrFrench(
   translationDir: string,
   pageId: string,
   folioId: string,
   segments: string[],
   position: number,
+  allowEmpty: boolean,
 ): Promise<string> {
   const frTextPath = path.join(translationDir, `${pageId}.fr.txt`);
   const ocrFrench = existsSync(frTextPath)
@@ -110,6 +124,10 @@ async function resolveOcrFrench(
     : segments[position - 1];
 
   if (ocrFrench === undefined || ocrFrench.trim().length === 0) {
+    if (allowEmpty) {
+      // Blank/untranslatable page: no OCR text, render an empty recto column.
+      return '';
+    }
     throw new Error(
       `loadArchivePage: no OCR French for page "${pageId}" (folio ${folioId}) -- ` +
         `neither ${frTextPath} nor issue.txt segment #${position} yielded text`,
@@ -204,18 +222,22 @@ export async function loadArchivePage(
   const pageId = pageIdForPosition(page.position);
   const translationDir = path.join(page.pageDir, 'translation');
 
+  // Resolve the translation FIRST: an `untranslatable` page (a blank/cover/plate)
+  // legitimately has no OCR either, so its untranslatable status governs whether
+  // an empty OCR is tolerated (blank recto) or a fail-loud gap.
+  const { english, untranslatable, provenance } = await resolveTranslation(
+    translationDir,
+    pageId,
+    page.folioId,
+  );
+
   const ocrFrench = await resolveOcrFrench(
     translationDir,
     pageId,
     page.folioId,
     issueOcrSegments,
     page.position,
-  );
-
-  const { english, untranslatable, provenance } = await resolveTranslation(
-    translationDir,
-    pageId,
-    page.folioId,
+    untranslatable,
   );
 
   const folioSidecarPath = path.join(page.pageDir, `${page.folioId}.yml`);
