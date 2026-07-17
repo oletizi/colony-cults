@@ -11,6 +11,7 @@ import {
   issueArtifactPath,
   pageArtifactPath,
   type TranslationKind,
+  type TranslationLabel,
 } from '@/translate/artifacts';
 import { cleanupPage } from '@/translate/cleanup';
 import { assemble, splitPages } from '@/translate/pages';
@@ -152,12 +153,20 @@ async function persist(
   model: string,
   ctx: TranslateIssueCtx,
 ): Promise<void> {
+  // DERIVE the label from the content, so the empty<=>untranslatable invariant
+  // holds by construction at the only producer: an empty artifact is an
+  // intentional untranslatable page (blank/scan-artifact/plate), a non-empty
+  // one is a machine translation. No path can emit an ambiguous empty
+  // machine-assisted artifact.
+  const label: TranslationLabel =
+    text.trim().length === 0 ? 'untranslatable' : 'machine-assisted';
   const provenance = buildTranslationProvenance(
     base,
     kind,
     ctx.engine.name,
     model,
     ctx.clock().toISOString(),
+    label,
   );
   await storeAsset(encode(text), targetPath, provenance, ctx.archiveRoot, {
     force: ctx.force,
@@ -371,7 +380,7 @@ export async function translateIssue(
       await persist('', enPath, base, 'english', model, ctx);
       workDone = true;
       pagesDone += 1;
-      ctx.log(`  blank page ${i}/${pagesTotal} (no translatable content)`);
+      ctx.log(`  untranslatable page ${i}/${pagesTotal} (no translatable content -- recorded empty + labeled)`);
       await firePageStored(i, false);
       continue;
     }

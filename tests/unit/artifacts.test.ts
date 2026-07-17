@@ -59,6 +59,7 @@ describe('buildTranslationProvenance', () => {
       'codex-cli',
       'claude-opus-4',
       '2026-07-08T00:00:00.000Z',
+      'machine-assisted',
     );
 
     expect(result.engine).toBe('codex-cli');
@@ -78,6 +79,7 @@ describe('buildTranslationProvenance', () => {
       'codex-cli',
       'claude-opus-4',
       '2026-07-08T00:00:00.000Z',
+      'machine-assisted',
     );
 
     expect(result.engine).toBe('codex-cli');
@@ -96,6 +98,7 @@ describe('buildTranslationProvenance', () => {
       'codex-cli',
       'claude-opus-4',
       '2026-07-08T00:00:00.000Z',
+      'machine-assisted',
     );
 
     expect(result.rights_status).toBe(base.rights_status);
@@ -106,7 +109,7 @@ describe('buildTranslationProvenance', () => {
   it('does not mutate the base ProvenanceFields', () => {
     const base = loadBase();
     const baseCopy = { ...base };
-    buildTranslationProvenance(base, 'corrected-french', 'codex-cli', 'claude-opus-4', '2026-07-08T00:00:00.000Z');
+    buildTranslationProvenance(base, 'corrected-french', 'codex-cli', 'claude-opus-4', '2026-07-08T00:00:00.000Z', 'machine-assisted');
     expect(base).toEqual(baseCopy);
   });
 
@@ -118,6 +121,7 @@ describe('buildTranslationProvenance', () => {
       'codex-cli',
       'claude-opus-4',
       '2026-07-08T00:00:00.000Z',
+      'machine-assisted',
     );
     expect(result).not.toBe(base);
   });

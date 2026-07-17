@@ -8,6 +8,17 @@ export type ArtifactLanguage = 'fr' | 'en';
 export type TranslationKind = 'corrected-french' | 'english';
 
 /**
+ * The `translation` provenance label. `machine-assisted` marks a real
+ * machine-produced translation; `untranslatable` marks a page that was
+ * DELIBERATELY left empty because it has no translatable content (blank leaf,
+ * scan-artifact, illustration/plate). Recording the distinction is what lets a
+ * downstream consumer -- and the QA gate -- tell an intentional empty from a
+ * missing/corrupt one: an empty artifact MUST be `untranslatable`, a non-empty
+ * one MUST be `machine-assisted` (enforced by `bib validate`).
+ */
+export type TranslationLabel = 'machine-assisted' | 'untranslatable';
+
+/**
  * Absolute path of the whole-issue assembled artifact:
  * `<issueDir>/issue.fr.txt` or `<issueDir>/issue.en.txt`
  * (data-model.md "Whole-issue assembly").
@@ -77,6 +88,7 @@ export function buildTranslationProvenance(
   engineName: string,
   model: string,
   retrieved: string,
+  label: TranslationLabel,
 ): ProvenanceFields {
   return {
     id: base.id,
@@ -101,7 +113,7 @@ export function buildTranslationProvenance(
     ocr_status: base.ocr_status,
     engine: engineName,
     model,
-    translation: 'machine-assisted',
+    translation: label,
     notes: base.notes,
     rights_raw: base.rights_raw,
   };
