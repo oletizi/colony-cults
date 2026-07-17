@@ -291,37 +291,40 @@ refusing hard, allowing a preview of intended work before requiring a full run.
 
 ## Corpus Print PDF
 
-Generates print-native PDF facsimile editions from the committed corpus snapshot. Each PDF is a facing-page spread: verso contains the original facsimile scan, recto contains that page's French OCR (left column) and English translation (right column), with a provenance title page and colophon. This tool is internal-first — it publishes nothing, only writes locally.
+Generates print-native PDF facsimile editions by reading directly from the private archive. Each PDF is a facing-page spread: verso contains the original facsimile scan, recto contains that page's French OCR (left column) and English translation (right column), with a provenance title page and colophon. This tool is internal-first — it publishes nothing, only writes locally. The build renders sources from any origin archive (Gallica, Internet Archive, museum, etc.) uniformly; reproducibility is pinned via the archive commit recorded in the colophon.
 
 ### Prerequisites
 
 - **Typst CLI** (`typst --version`) — a documented build dependency, not an npm package. See https://github.com/typst/typst to install.
-- The committed snapshot present: `site/data/*.json.gz` (per-source files) and the pin sidecar `site/data/archive-source.json`.
+- **Private archive clone** checked out at a known commit: `COLONY_ARCHIVE_ROOT` environment variable or `--archive-root <dir>` flag pointing to the archive worktree root.
+- **Archive pin** (`site/data/archive-source.json`): present and readable in the corpus repo (used for version recording in the colophon).
 - Image byte source (one of):
-  - **B2 object store** (default): `COLONY_S3_BUCKET`, `COLONY_S3_ENDPOINT`, `COLONY_S3_REGION` environment variables set, and `~/.config/backblaze/b2-credentials.txt` present.
-  - **Public IIIF** (alternative): pass `--provider iiif` to fetch full-size scans from the public Gallica IIIF endpoint instead.
+  - **B2 object store** (default): `COLONY_S3_BUCKET`, `COLONY_S3_ENDPOINT`, `COLONY_S3_REGION` environment variables set, `~/.config/backblaze/b2-credentials.txt` present, and `CORPUS_CDN_BASE` set to the CDN base URL. Page images are fetched from the archive's recorded `object_store` masters, sha256-verified.
+  - **Public IIIF** (alternative): pass `--provider iiif` to fetch full-size scans from the public Gallica IIIF endpoint instead (image verification depends on provider capabilities).
 
 ### Usage
 
-Run via `npm run pdf:build -- <selector> [--provider b2|iiif] [--out <dir>]`.
+Run via `npm run pdf:build -- <selector> [--archive-root <dir>] [--provider b2|iiif] [--no-french] [--out <dir>]`.
 
 **Selectors** (mutually exclusive):
 
 - `<sourceId>/<issueId>` — single bibliographic item (e.g. `PB-P001/1879-08-15_bpt6k56068358`).
 - `<sourceId>` — every issue of a source (e.g. `PB-P001` → 78 issue PDFs; `PB-P008` → 1 PDF).
-- `--all` — the whole committed v1 corpus (all sources and issues).
+- `--all` — all sources enumerated in the archive at the resolved `--archive-root`.
 
 **Flags**:
 
-- `--provider b2|iiif` (optional, default `b2`): image byte source. `b2` fetches from private archive masters; `iiif` fetches from public Gallica.
+- `--archive-root <dir>` (optional, default `COLONY_ARCHIVE_ROOT` env var): path to the private archive clone worktree. The build reads directly from this archive; if neither this flag nor the env var is set, the build fails loudly.
+- `--provider b2|iiif` (optional, default from config, else `b2`): image byte source. `b2` fetches from archive-recorded object-store masters; `iiif` fetches from public Gallica (for Gallica-origin sources only).
+- `--no-french` (optional): render the English-only reading recto (two English columns, FR label dropped) instead of the default two-column parallel FR|EN study recto.
 - `--out <dir>` (optional, default `build/pdf`): output root. PDFs land at `<out>/<sourceId>/<itemId>.pdf`.
 
 **Examples**:
 
 ```bash
-npm run pdf:build -- PB-P001/1879-08-15_bpt6k56068358 --provider iiif
-npm run pdf:build -- PB-P001
-npm run pdf:build -- --all --out /tmp/corpus-pdfs
+COLONY_ARCHIVE_ROOT=../colony-cults-archive npm run pdf:build -- PB-P001/1879-08-15_bpt6k56068358
+npm run pdf:build -- PB-P001 --archive-root ../colony-cults-archive --provider b2
+npm run pdf:build -- --all --archive-root ../colony-cults-archive --no-french --out /tmp/corpus-pdfs
 ```
 
 ### B2 read-cost note

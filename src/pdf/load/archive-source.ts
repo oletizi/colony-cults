@@ -22,6 +22,9 @@ import { readProvenance } from '@/archive/provenance';
 /** Folio sidecar filename shape: `fNNN.yml` (digits preserve their zero-padding). */
 const FOLIO_SIDECAR_PATTERN = /^f(\d+)\.yml$/;
 
+/** English translation artifact filename shape: `pNNN.en.txt`. */
+const TRANSLATION_EN_PATTERN = /^p(\d+)\.en\.txt$/;
+
 /**
  * One page's source data, assembled from its folio sidecar. `position` is the
  * 1-based index in the source's own sorted folio sequence (the extract-safe
@@ -88,10 +91,13 @@ function trimmedOrEmpty(value: string | undefined): string {
  * Enumerate one directory's folio sidecars into an ordered, provenance-backed
  * `ArchivePageSource[]`.
  *
- * @throws Error if `pageDir` has no folio sidecars, or if any folio's
- *   provenance is unreadable, or missing `object_store.key` / `sha256` --
- *   every error names the offending folio (and `sourceId`) so a fail-loud
- *   condition is immediately actionable.
+ * @throws Error if `pageDir` has no folio sidecars, if any folio's
+ *   provenance is unreadable or missing `object_store.key` / `sha256`, or if
+ *   `translation/` holds a `pNNN.en.txt` whose position exceeds the folio
+ *   count (an over-count folio/translation mismatch, see
+ *   {@link checkTranslationCoverage}) -- every error names the offending
+ *   folio/position (and `sourceId`) so a fail-loud condition is immediately
+ *   actionable.
  */
 async function enumerateFolios(pageDir: string, sourceId: string): Promise<ArchivePageSource[]> {
   const entries = readdirSync(pageDir);
@@ -152,7 +158,54 @@ async function enumerateFolios(pageDir: string, sourceId: string): Promise<Archi
       pageDir,
     });
   }
+
+  checkTranslationCoverage(pageDir, sourceId, folios.length);
+
   return folios;
+}
+
+/**
+ * Guard against an OVER-COUNT: translation artifacts (`pNNN.en.txt`) whose
+ * position exceeds the source's own folio count. The under-count case (a
+ * folio with no translation) is already fail-loud per-folio in
+ * `loadArchivePage` (T004, FR-008) once that folio is read; this guard covers
+ * the case that check cannot see -- extra translation files with no
+ * corresponding folio at all, which would otherwise be silently ignored
+ * (never read, never erroring) instead of signaling a folio/translation
+ * count mismatch.
+ *
+ * @throws Error naming `sourceId`, `pageDir`, and the offending position(s)
+ *   when any `translation/pNNN.en.txt` position exceeds `folioCount`.
+ */
+function checkTranslationCoverage(pageDir: string, sourceId: string, folioCount: number): void {
+  const translationDir = path.join(pageDir, 'translation');
+  if (!existsSync(translationDir)) {
+    // No translation directory at all is the absent-translation case T004
+    // already fails loud on (per-folio, once that folio is read).
+    return;
+  }
+
+  const extraPositions: number[] = [];
+  for (const name of readdirSync(translationDir)) {
+    const match = TRANSLATION_EN_PATTERN.exec(name);
+    if (match === null) {
+      continue;
+    }
+    const position = Number(match[1]);
+    if (position > folioCount) {
+      extraPositions.push(position);
+    }
+  }
+
+  if (extraPositions.length > 0) {
+    extraPositions.sort((a, b) => a - b);
+    throw new Error(
+      `resolveArchiveSource: source "${sourceId}" (${pageDir}) has ${extraPositions.length} ` +
+        `translation artifact(s) beyond its ${folioCount} folio(s) -- position(s) ` +
+        `${extraPositions.map((p) => `p${String(p).padStart(3, '0')}`).join(', ')} have no ` +
+        `corresponding folio (folio/translation count mismatch).`,
+    );
+  }
 }
 
 /** Resolve a monograph source: one archive directory, fully enumerated. */
