@@ -1,0 +1,57 @@
+sourceId: PB-P057
+kind: monograph
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: The China Mail (Hong Kong)
+rights:
+  status: public-domain
+  basis: >-
+    The China Mail (Hong Kong English-language daily), issue of 16 October 1880 —
+    a report, relayed via the steamer Glenroy from the "Sea Islands", on the
+    collapse of the Marquis de Rays / Port-Breton (New Ireland) colony. Public
+    domain: (1) publication age — an 1880 newspaper of anonymous news/cable
+    reports; any conceivable term (author's life+70, or a publication-based
+    term) is long elapsed, and it is pre-1955 material; (2) United States —
+    published in 1880, before 1929, so public domain in the U.S., where the
+    Internet Archive scan is hosted. The faithful photographic reproduction is
+    not independently re-copyrightable (the *Bridgeman* principle).
+  determinedAt: 2026-07-17
+titles:
+  - text: "The China Mail (Hong Kong), 16 October 1880 — report on the wreck of the Marquis de Rays / Port-Breton colony at New Ireland"
+    role: canonical
+notes: >-
+  A contemporary Asian-English-press report of the Port-Breton disaster — among
+  the earliest (Oct 1880), relayed from the Sea Islands via the steamer Glenroy:
+  the "quixotic undertaking of the Marquis de Rays, a Legitimist, who thought of
+  forming a New France" in the New Britain / New Ireland archipelago; colonists
+  dead, survivors "in huts more miserable and filthy than those of the lowest
+  natives", flour and bread casks scattered on the beach. Part of the third
+  contemporary-press thread (Asian-English) identified in SRCH-0015 — distinct
+  from PB-P005 (Australian / Trove) and PB-P004 (French legal). Verified genuine
+  via OCR (SRCH-0015) and located to a single self-contained page via a page +
+  jump analysis on the cleaned OCR (no article jump; see
+  repository-responses/PB-P055/ia-press-clean-NPCM18801016-2026-07-17.txt).
+  ACQUISITION: only the affair leaf (page 2 of 6) is mirrored as a page-master
+  via the spec-013 IA adapter's --approved-range; the full issue is preserved as
+  the source PDF. Item metadata + page-structured OCR captures under
+  repository-responses/PB-P055 (ia-*-NPCM18801016-*).
+repositoryRecords:
+  - sourceArchive: Internet Archive
+    status: to-collect
+    originalUrl: https://archive.org/details/NPCM18801016
+    identifiers:
+      - type: ia-item
+        value: NPCM18801016
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: >-
+        1880 Hong Kong English-language newspaper (The China Mail); public domain
+        by publication age (anonymous 1880 news reports; any term long expired;
+        pre-1955) and in the United States (published before 1929), where the
+        Internet Archive scan is hosted. Faithful photographic reproduction not
+        independently re-copyrightable (Bridgeman).
+      rightsJurisdiction: HK/US
+      assessedBy: operator
+      assessedAt: 2026-07-17T12:00:00.000Z

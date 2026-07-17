@@ -1,0 +1,56 @@
+sourceId: PB-P058
+kind: monograph
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: The China Mail (Hong Kong)
+rights:
+  status: public-domain
+  basis: >-
+    The China Mail (Hong Kong English-language daily), issue of 8 March 1882 — the
+    column "THE COLONY OF PORT BRETON", relaying (via El Comercio) a first-hand
+    account by the colony's own Justice of the Peace, who escaped aboard the
+    Nouvelle Bretagne. Public domain: (1) publication age — an 1882 newspaper of
+    anonymous reports; any conceivable term is long elapsed, and it is pre-1955
+    material; (2) United States — published in 1882, before 1929, so public
+    domain in the U.S., where the Internet Archive scan is hosted. The faithful
+    photographic reproduction is not independently re-copyrightable (*Bridgeman*).
+  determinedAt: 2026-07-17
+titles:
+  - text: "The China Mail (Hong Kong), 8 March 1882 — \"The Colony of Port Breton\" (the Justice of the Peace's account via El Comercio)"
+    role: canonical
+notes: >-
+  A contemporary Asian-English-press account of conditions in the Port-Breton
+  colony, from the colony's own Justice of the Peace (who left aboard the
+  Nouvelle Bretagne): "the greatest disorders had prevailed there from the
+  beginning", provisions "insufficient", only eight days' damaged flour and rice
+  on Capt. Henry's arrival, "very little cultivable soil", "It rains constantly",
+  "absolutely nothing" growing. Part of the third contemporary-press thread
+  (Asian-English) identified in SRCH-0015 — distinct from PB-P005 (Australian /
+  Trove) and PB-P004 (French legal). Verified genuine via OCR (SRCH-0015);
+  located to a single self-contained page (page 3 of 4) via a page + jump
+  analysis on the cleaned OCR (the article concludes and is followed by an
+  unrelated Suez Canal item — no jump; see
+  repository-responses/PB-P055/ia-press-clean-NPCM18820308-2026-07-17.txt).
+  ACQUISITION: only the affair leaf (page 3) is mirrored as a page-master via the
+  spec-013 IA adapter's --approved-range; the full issue is preserved as the
+  source PDF. Captures under repository-responses/PB-P055 (ia-*-NPCM18820308-*).
+repositoryRecords:
+  - sourceArchive: Internet Archive
+    status: to-collect
+    originalUrl: https://archive.org/details/NPCM18820308
+    identifiers:
+      - type: ia-item
+        value: NPCM18820308
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: >-
+        1882 Hong Kong English-language newspaper (The China Mail); public domain
+        by publication age (anonymous 1882 reports; any term long expired;
+        pre-1955) and in the United States (published before 1929), where the
+        Internet Archive scan is hosted. Faithful photographic reproduction not
+        independently re-copyrightable (Bridgeman).
+      rightsJurisdiction: HK/US
+      assessedBy: operator
+      assessedAt: 2026-07-17T12:00:00.000Z
