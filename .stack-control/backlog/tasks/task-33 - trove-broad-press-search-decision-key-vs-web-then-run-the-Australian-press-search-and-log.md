@@ -3,9 +3,10 @@ id: TASK-33
 title: >-
   trove-broad-press-search-decision: key-vs-web then run the Australian-press
   search-and-log
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-17 06:34'
+updated_date: '2026-07-17 07:20'
 labels:
   - agent-found
   - 'type:gap'
@@ -33,3 +34,9 @@ DECISION (reframed from the original key-vs-web): use Trove for DISCOVERY only, 
 - Cross-cutting policy recorded in DECISIONS.md (2026-07-17): store-raw-responses is a waivable frugality convenience; waived for Trove.
 REMAINING: run the web-interface search-and-log (affair + New Italy aftermath), record derived facts + attribution, author the SearchLogRecord; acquire the ~5 verified-PD landmark articles out-of-band n=1.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Closed: Trove web-interface measurement (SRCH-0016): Australian-press residual MEASURED — 'Marquis de Rays' 2,450, 'Port Breton' 1,039, 'New Italy'+'Richmond River' 1,880. Substantiates irreducible; web-first cleared Anubis; no API, no raw-response persistence, Trove-attributed.
+<!-- SECTION:NOTES:END -->
