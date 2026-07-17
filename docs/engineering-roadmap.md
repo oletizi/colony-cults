@@ -164,3 +164,7 @@ Add a minimal `--pages <folio-range>` flag to the shipped `bib fetch-source` (si
 - depends-on: impl:feature/source-group-acquisition
 
 Spun out of 009's research loop (backlog TASK-32). SRCH-0013 verified that the de Groote 1880 promotional book (archive.org item nouvellefrancec00groogoog, ~368 pp, public domain, Google Books scan) — a central Port-Breton affair imprint absent from Gallica and long a Phase-2 ROADMAP goal — is real, digitised, and acquirable, but the shipped pipeline reaches only Gallica + the New Italy Museum, so nothing can mirror an Internet Archive item into the corpus + B2. The operator expects archive.org to hold much more affair material, so this warrants a reusable first-class RepositoryAdapter (contracts/repository-adapter.md: search / resolveIdentifier / determineRights / acquire), modelled on the shipped museum adapter (spec 011). Design surface: map archive.org advancedsearch + the item metadata API to search/resolveIdentifier; map possible-copyright-status to determineRights (fail-closed); and mirror page-image masters into B2 from archive.org's per-page assets (single-page TIFFs / DjVu / PDF) into our page-image-master model. Scope — and the research-first go/no-go on how deep to build vs. a minimal first acquisition — is decided in design, not here. Fail-loud, no fabrication (FR-008).
+
+## impl:feature/source-query-client
+- status: planned
+- spec: specs/014-source-query-client
