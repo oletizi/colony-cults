@@ -1,3 +1,39 @@
+## 2026-07-17: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 15
+  - chore(backlog): close TASK-37 (3 Asian-English press items acquired + verified)
+  - bibliography(PB-P057/058/059): page-range acquire the 3 Asian-English press items -> archived
+  - fix(013): normalize 0-based IA scandata leaf numbering to 1-based
+  - fix(013): IA file-select prefers Image Container PDF over Additional Text PDF
+  - bibliography(PB-P057/058/059): catalog the 3 Asian-English press affair items
+  - docs(gap-closure): cleaned English transcriptions of the 3 affair press pages (TASK-37)
+  - feat(translate): make OCR cleanup language-aware (was French-only)
+  - feat(gap-closure): Trove Australian-press residual MEASURED (SRCH-0016) + IA acquire snapshot
+  - chore(backlog): close TASK-34 (Clifford acquired -> archived)
+  - bibliography(PB-P056): acquire the Clifford 1889 New Italy sketch -> archived
+  - feat(gap-closure): verify IA Asian-press candidates (SRCH-0015) — 3 confirmed, 1 rejected
+  - bibliography(PB-P056): catalog + approve-for-acquisition the Clifford 1889 New Italy sketch
+  - docs: record store-responses frugality-exception (DECISIONS) + web-first Trove method (TASK-33)
+  - docs(backlog): fold Trove API ToS review + frugality-exception into TASK-33
+  - feat(gap-closure): IA affair+aftermath discovery pass (SRCH-0014) + backlog
+- Files changed: 49
+- Backlog touched: TASK-33, TASK-34, TASK-35, TASK-36, TASK-37
+
 ## 2026-07-17: Implement + live-acquire the Internet Archive adapter (spec 013) — de Groote book enters the corpus; a class-wide archive-bookkeeping failure surfaces and is made mechanically impossible
 
 **Goal:** Execute spec 013 (the Internet Archive acquisition adapter) through the stack-control front door, then actually acquire the de Groote 1880 book — real corpus growth, not just a shipped adapter.
