@@ -1,18 +1,26 @@
-## 2026-07-17: <!-- session title -->
+## 2026-07-17: Implement + live-acquire the Internet Archive adapter (spec 013) — de Groote book enters the corpus; a class-wide archive-bookkeeping failure surfaces and is made mechanically impossible
 
-**Goal:** <!-- compose: what we set out to do -->
+**Goal:** Execute spec 013 (the Internet Archive acquisition adapter) through the stack-control front door, then actually acquire the de Groote 1880 book — real corpus growth, not just a shipped adapter.
 
 **Accomplished:**
-- <!-- compose -->
+- **Implemented spec 013 end-to-end through the front door** (extend → plan → tasks → analyze → execute): 54 tasks via model-sized subagent dispatch (haiku/sonnet/opus per declared `[tier:]`), test-first, committed per boundary with a durable ledger. Delivered the **third first-class `RepositoryAdapter`** (`internet-archive`, `ia-item` copies): fail-closed rights gate → frugal one-download staging → operator quality gate → evidence-selected master (dimension-ratio probe) → strict page-to-leaf extraction → **lossless PNG** masters → B2 → reconcile. Full suite green.
+- **Live-acquired the de Groote 1880 book as PB-P055 → `archived`.** 419 lossless PNG page-masters (leaves 3–421; Google's EN/FR digitization preamble excluded from masters, retained in the source PDF) + the source PDF to B2; `reconcile` verified 420/420 in the object store; durable `qualityAssessment`. Fidelity measured **1.0** on the real scan → the frugal explode-PDF path (no 58 MB `_tif.zip` fetch). The central de Groote imprint, unreachable via Gallica, is now held — the session's corpus-growth win.
+- **Running it against the real archive.org item caught 7 real-data bugs** fixtures could not: scandata field names (`origWidth`/`origHeight`), missing output-dir `mkdir`, rasterise-DPI derived from scandata page-size instead of the embedded image `x-ppi`, `pdfimages -all` writing unusable JBIG2 streams (→ `-png`), stale-output collision on re-acquire, and the `qualityAssessment`/`excludedLeaves` persistence + loader/serializer threading (SC-003).
+- **Built the archive-bookkeeping sanity check + repaired the full damage.** `bib validate` now reconciles the SSOT (this repo) against the archive companions (the archive repo) **bidirectionally** (`undiscoverable-master` / `orphaned-companion` / `checksum-drift`) and fails loud. Its first run exposed **42 records** with orphaned masters — the de Groote book AND every New Italy Museum acquisition since spec 011. Backfilled **461 companions**, wired the B2-direct adapters to auto-write companions on acquire (proven end-to-end: deleted `f419.yml`, re-acquired, the adapter recreated it). Merged everything to `main` (PRs #44, #45) + the companions to the archive repo's `main`.
 
 **Didn't Work:**
-- <!-- compose -->
+- **The B2-direct acquisition path never wrote archive companions.** Museum (spec 011) and IA (spec 013) mirrored masters to B2 + recorded them in the SSOT but skipped the `f###.yml` companions the pipeline (translator/OCR/browser/coverage) actually reads — so acquired masters were **undiscoverable**, and the translator couldn't find the de Groote book. Latent since spec 011 across 41 museum records; nobody noticed because museum photos aren't translated. No gate caught it.
+- **The whole-feature govern was impractical.** `govern --mode implement` ran 40+ min across 8+ chunks (one degraded on a sonnet timeout) and was killed — too slow/heavy to be the working correctness gate for this session.
 
 **Course Corrections:**
-- <!-- compose -->
+- **Killed govern in favor of "run the thing to see if it works"** (operator call). Driving the adapter against the real item was the stronger audit — it found the 7 bugs above; governance had surfaced only low-severity notes in the chunks it completed.
+- **Master format → lossless PNG, no lossy transcode** (operator call). These are 600-DPI bitonal scans where JPEG both artifacts line art and is *larger* than a 1-bit PNG. `image/png` masters, `.png` keys, `image-set-png` path.
+- **Fix the bookkeeping failure contract-first** (operator, emphatically): don't hand-patch PB-P055 — START with a mechanically-enforceable sanity checker that screams when the books don't balance, watch it bark on the full damage, then fix until it's quiet. That reframing turned a one-off patch into a permanent guarantee and exposed the 41 hidden museum cases.
 
 **Insights:**
-- <!-- compose -->
+- **Live verification against the real artifact catches a class of bugs fixtures structurally cannot** — real-data shape (scandata element names, JBIG2 encoding, Google's dual-image pages, the `_tif.zip`-not-`_jp2.zip` reality). When fixtures are authored to match the parser, they validate the parser against itself. "Run the thing" beats green tests for correctness confidence on an integration with a live source.
+- **Two-representation drift is the deep failure mode.** The SSOT records the masters; the archive companions are what every consumer reads; nothing reconciled them. A B2-direct adapter that skipped companion-writing produced "archived" work no one could find — bytes safe, discoverability zero. The durable fix is a mechanical **cross-repo reconciliation that fails loud** (basic record-keeping made enforceable), plus writing the companion in the same step that records the master.
+- **Absence of a consumer ≠ correctness.** The companion gap sat silent for 41 museum records because no downstream job exercised them; the first *text* acquisition (de Groote, which gets translated) is what finally surfaced it. A gate that only fires when something breaks downstream is not a gate — the sanity check now fires on the SSOT↔archive mismatch itself, before any consumer.
 
 **Quantitative (auto-derived from git; verify before publishing):**
 - Commits: 35
