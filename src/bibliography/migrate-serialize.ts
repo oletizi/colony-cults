@@ -89,6 +89,32 @@ function orderedRecord(record: AuthoredRepositoryRecord): Record<string, unknown
       return entry;
     });
   }
+  // Internet Archive acquisition provenance (spec 013, SC-003): the operator's
+  // durable fail-closed scan judgment + approved leaf range, and the excluded
+  // third-party leaves (omitted from the masters, retained in the source PDF).
+  if (record.qualityAssessment !== undefined) {
+    const qa = record.qualityAssessment;
+    const assessment: Record<string, unknown> = {
+      status: qa.status,
+      assessedBy: qa.assessedBy,
+      assessedAt: qa.assessedAt,
+      sourceFileChecksum: qa.sourceFileChecksum,
+      expectedPageCount: qa.expectedPageCount,
+      observedPageCount: qa.observedPageCount,
+      approvedLeafRange: { start: qa.approvedLeafRange.start, end: qa.approvedLeafRange.end },
+    };
+    if (qa.notes !== undefined) {
+      assessment.notes = qa.notes;
+    }
+    out.qualityAssessment = assessment;
+  }
+  if (record.excludedLeaves !== undefined && record.excludedLeaves.length > 0) {
+    out.excludedLeaves = record.excludedLeaves.map((leaf) => ({
+      leaf: leaf.leaf,
+      classification: leaf.classification,
+      reason: leaf.reason,
+    }));
+  }
   if (record.census !== undefined) {
     out.census = record.census;
   }

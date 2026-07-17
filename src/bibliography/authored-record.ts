@@ -58,6 +58,12 @@ export function authoredToRepositoryRecord(
   if (authored.assets !== undefined) {
     record.assets = authored.assets;
   }
+  if (authored.qualityAssessment !== undefined) {
+    record.qualityAssessment = authored.qualityAssessment;
+  }
+  if (authored.excludedLeaves !== undefined) {
+    record.excludedLeaves = authored.excludedLeaves;
+  }
   if (authored.metadataSnapshot !== undefined) {
     record.metadataSnapshot = authored.metadataSnapshot;
   }

@@ -11,6 +11,11 @@ import {
 } from '@/bibliography/load-primitives';
 import type { AcquiredAsset } from '@/model/acquired-asset';
 import { ACQUIRED_ASSET_ROLES, isAcquiredAssetRole } from '@/model/acquired-asset';
+import type {
+  ExcludedLeaf,
+  LeafRange,
+  QualityAssessment,
+} from '@/model/quality-assessment';
 import type { CopyLevelIdentifierType, WorkLevelIdentifierType } from '@/model/identifiers';
 import { classifyIdentifier } from '@/model/identifiers';
 import type {
@@ -47,10 +52,24 @@ const RECORD_KEYS = new Set([
   'rights',
   'rightsAssessment',
   'assets',
+  'qualityAssessment',
+  'excludedLeaves',
   'census',
   'metadataSnapshot',
   'verification',
 ]);
+const QUALITY_ASSESSMENT_KEYS = new Set([
+  'status',
+  'assessedBy',
+  'assessedAt',
+  'sourceFileChecksum',
+  'expectedPageCount',
+  'observedPageCount',
+  'approvedLeafRange',
+  'notes',
+]);
+const EXCLUDED_LEAF_KEYS = new Set(['leaf', 'classification', 'reason']);
+const APPROVED_LEAF_RANGE_KEYS = new Set(['start', 'end']);
 const ACQUIRED_ASSET_KEYS = new Set([
   'sourceUrl',
   'mediaType',
@@ -463,6 +482,75 @@ export function validateAcquiredAsset(
   return asset;
 }
 
+/** Narrow a string to an {@link ExcludedLeaf} classification, else `undefined`. */
+function asExcludedLeafClassification(value: string): ExcludedLeaf['classification'] | undefined {
+  return value === 'scanner-notice' ||
+    value === 'cover' ||
+    value === 'color-card' ||
+    value === 'blank' ||
+    value === 'other'
+    ? value
+    : undefined;
+}
+
+/** Parse an authored `qualityAssessment` (spec 013 IA acquire, FR-008 / SC-003). */
+export function validateQualityAssessment(
+  value: unknown,
+  filePath: string,
+  where: string,
+): QualityAssessment {
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, QUALITY_ASSESSMENT_KEYS, filePath, where);
+  const status = requireString(obj.status, filePath, `${where}.status`);
+  if (status !== 'sound' && status !== 'unsound') {
+    fail(filePath, `${where}.status "${status}" must be "sound" or "unsound"`);
+  }
+  const assessedBy = requireString(obj.assessedBy, filePath, `${where}.assessedBy`);
+  if (assessedBy !== 'operator') {
+    fail(filePath, `${where}.assessedBy "${assessedBy}" must be "operator"`);
+  }
+  const range = requireObject(obj.approvedLeafRange, filePath, `${where}.approvedLeafRange`);
+  assertKnownKeys(range, APPROVED_LEAF_RANGE_KEYS, filePath, `${where}.approvedLeafRange`);
+  const approvedLeafRange: LeafRange = {
+    start: requireNumber(range.start, filePath, `${where}.approvedLeafRange.start`),
+    end: requireNumber(range.end, filePath, `${where}.approvedLeafRange.end`),
+  };
+  const assessment: QualityAssessment = {
+    status,
+    assessedBy,
+    assessedAt: requireString(obj.assessedAt, filePath, `${where}.assessedAt`),
+    sourceFileChecksum: requireString(obj.sourceFileChecksum, filePath, `${where}.sourceFileChecksum`),
+    expectedPageCount: requireNumber(obj.expectedPageCount, filePath, `${where}.expectedPageCount`),
+    observedPageCount: requireNumber(obj.observedPageCount, filePath, `${where}.observedPageCount`),
+    approvedLeafRange,
+  };
+  const notes = optionalString(obj.notes, filePath, `${where}.notes`);
+  if (notes !== undefined) {
+    assessment.notes = notes;
+  }
+  return assessment;
+}
+
+/** Parse one authored `excludedLeaves` entry (spec 013, FR-011 / SC-003). */
+export function validateExcludedLeaf(value: unknown, filePath: string, where: string): ExcludedLeaf {
+  const obj = requireObject(value, filePath, where);
+  assertKnownKeys(obj, EXCLUDED_LEAF_KEYS, filePath, where);
+  const classificationRaw = requireString(obj.classification, filePath, `${where}.classification`);
+  const classification = asExcludedLeafClassification(classificationRaw);
+  if (classification === undefined) {
+    fail(
+      filePath,
+      `${where}.classification "${classificationRaw}" must be one of ` +
+        'scanner-notice, cover, color-card, blank, other',
+    );
+  }
+  return {
+    leaf: requireNumber(obj.leaf, filePath, `${where}.leaf`),
+    classification,
+    reason: requireString(obj.reason, filePath, `${where}.reason`),
+  };
+}
+
 /** {@link validateRecord}'s result: the authored record plus any identifier leaks found on it. */
 export interface ValidatedRecord {
   record: AuthoredRepositoryRecord;
@@ -521,6 +609,18 @@ export function validateRecord(value: unknown, filePath: string, index: number):
           validateAcquiredAsset(a, filePath, `${where}.assets[${i}]`),
         );
 
+  const qualityAssessment =
+    obj.qualityAssessment === undefined
+      ? undefined
+      : validateQualityAssessment(obj.qualityAssessment, filePath, `${where}.qualityAssessment`);
+
+  const excludedLeaves: ExcludedLeaf[] | undefined =
+    obj.excludedLeaves === undefined
+      ? undefined
+      : requireArray(obj.excludedLeaves, filePath, `${where}.excludedLeaves`).map((e, i) =>
+          validateExcludedLeaf(e, filePath, `${where}.excludedLeaves[${i}]`),
+        );
+
   const metadataSnapshot =
     obj.metadataSnapshot === undefined
       ? undefined
@@ -543,6 +643,8 @@ export function validateRecord(value: unknown, filePath: string, index: number):
     rights,
     rightsAssessment,
     assets,
+    qualityAssessment,
+    excludedLeaves,
     census,
     metadataSnapshot,
     verification,

@@ -1,4 +1,5 @@
 import type { AcquiredAsset } from '@/model/acquired-asset';
+import type { ExcludedLeaf, QualityAssessment } from '@/model/quality-assessment';
 import type {
   CopyIdentifier,
   MetadataSnapshotRef,
@@ -111,6 +112,19 @@ export interface AuthoredRepositoryRecord {
    * provenance instead (`AssetProvenance`), not on the authored record.
    */
   assets?: AcquiredAsset[];
+  /**
+   * The operator's durable fail-closed scan-quality judgment for an Internet
+   * Archive acquisition (spec 013, FR-008 / SC-003): status, assessed-by/at,
+   * source-file checksum, expected/observed page counts, and the approved leaf
+   * range. Additive optional -- present only on an acquired `ia-item` copy.
+   */
+  qualityAssessment?: QualityAssessment;
+  /**
+   * Third-party leaves omitted from the reading masters but retained in the
+   * preserved source PDF (spec 013, FR-011 / SC-003): scanner notices, covers,
+   * colour cards. Additive optional -- present only on an acquired `ia-item` copy.
+   */
+  excludedLeaves?: ExcludedLeaf[];
   /** Path to the census JSON this record's issues derive from (serials only). */
   census?: string;
   /** Reference to the immutable raw-response snapshot (D-07). Additive optional. */
