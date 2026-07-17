@@ -162,6 +162,16 @@ describe('translateIssue (T016/T017/T019)', () => {
     expect(existsSync(blankEn)).toBe(true);
     expect((await readFile(blankFr, 'utf-8')).trim()).toBe('');
     expect((await readFile(blankEn, 'utf-8')).trim()).toBe('');
+    // ...and are EXPLICITLY labeled untranslatable, not machine-assisted, so a
+    // consumer can tell the intentional empty from a missing/corrupt one.
+    const blankEnYaml = await readFile(`${blankEn}.yml`, 'utf-8');
+    expect(blankEnYaml).toContain('translation: "untranslatable"');
+    // A real page on the same issue stays machine-assisted.
+    const realEnYaml = await readFile(
+      path.join(fetched.issueDir, 'translation', 'p001.en.txt.yml'),
+      'utf-8',
+    );
+    expect(realEnYaml).toContain('translation: "machine-assisted"');
   });
 
   it('records an OCR-garbage illustration/plate page as blank (word-content, not raw alnum)', async () => {

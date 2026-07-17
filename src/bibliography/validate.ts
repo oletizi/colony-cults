@@ -19,6 +19,7 @@ import type { CompanionRef } from '@/bibliography/validate-companion-coverage';
 import {
   validateArchiveReconciliation,
   validateOcrTextQuality,
+  validateTranslationLabels,
 } from '@/bibliography/validate-companion-coverage';
 import { validateCoverageFields } from '@/bibliography/validate-coverage-checks';
 import { buildScopeResolutionContext, validateSearchLogScopes } from '@/bibliography/validate-search-log';
@@ -65,7 +66,8 @@ export type ValidationFindingKind =
   | 'undiscoverable-master'
   | 'orphaned-companion'
   | 'checksum-drift'
-  | 'ocr-quality-missing';
+  | 'ocr-quality-missing'
+  | 'translation-label-inconsistent';
 
 /**
  * One `bib validate` finding. Findings are DATA, not errors -- `validate`
@@ -277,6 +279,7 @@ export function validate(model: CanonicalModel, opts?: ValidateOptions): Validat
   }
   if (opts?.archiveRoot !== undefined) {
     findings.push(...validateOcrTextQuality(opts.archiveRoot));
+    findings.push(...validateTranslationLabels(opts.archiveRoot));
   }
   return findings;
 }
