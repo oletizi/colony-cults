@@ -10,7 +10,8 @@
  * interfaces and implementations are developed in later tasks.
  */
 import type { BrowserSession } from '@/sourcequery/browser-session';
-import type { PageResult } from '@/sourcequery/types';
+import type { TailscaleRunner } from '@/sourcequery/tailscale-runner';
+import type { ExitNode, PageResult } from '@/sourcequery/types';
 
 /**
  * Script for a {@link FakeBrowserSession}: a per-URL response map plus an
@@ -67,5 +68,48 @@ export class FakeBrowserSession implements BrowserSession {
 
   async close(): Promise<void> {
     this.closed = true;
+  }
+}
+
+/**
+ * No-network test double for {@link TailscaleRunner}. Constructed with a
+ * scripted exit-node list and the exit node "already active" on the host
+ * (mirroring `currentExitNode()`'s captured-before-any-switch contract).
+ *
+ * Every `setExitNode()` call (both the approved switch and the later
+ * restore) is appended, in order, to the public `setCalls` array, so tests
+ * can assert:
+ * - `setCalls` is empty before operator approval (no switch happened yet),
+ * - `setCalls` holds exactly two entries once a switch-then-restore pass
+ *   completes (`setCalls[0]` the switched-to node, `setCalls[1]` the
+ *   restore value),
+ * - the restore value (`setCalls[1]`) matches the node that was current
+ *   before the switch (or `''` if there was no prior exit node).
+ *
+ * Never shells out to the real `tailscale` CLI.
+ */
+export class FakeTailscaleRunner implements TailscaleRunner {
+  /** Every value passed to `setExitNode()`, in call order. */
+  readonly setCalls: string[] = [];
+
+  private readonly nodes: ExitNode[];
+  private current: string | null;
+
+  constructor(nodes: ExitNode[] = [], initialCurrentExitNode: string | null = null) {
+    this.nodes = nodes;
+    this.current = initialCurrentExitNode;
+  }
+
+  async listExitNodes(): Promise<ExitNode[]> {
+    return this.nodes;
+  }
+
+  async currentExitNode(): Promise<string | null> {
+    return this.current;
+  }
+
+  async setExitNode(value: string): Promise<void> {
+    this.setCalls.push(value);
+    this.current = value === '' ? null : value;
   }
 }
