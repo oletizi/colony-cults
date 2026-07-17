@@ -6,10 +6,16 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { CanonicalModel } from '@/bibliography/model';
 import {
   collectCompanionObjectKeys,
+  validateArchiveReconciliation,
   validateUndiscoverableMasters,
+  type CompanionRef,
 } from '@/bibliography/validate-companion-coverage';
 import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { RepositoryRecord } from '@/model/repository-record';
+
+function companion(sha256: string, path = 'archive/cases/x/f001.yml'): CompanionRef {
+  return { sha256, path };
+}
 
 /**
  * The no-orphaned-master contract (`undiscoverable-master`): every SSOT
@@ -19,12 +25,12 @@ import type { RepositoryRecord } from '@/model/repository-record';
  * bytes to the store + records them in the SSOT but never writes the companions.
  */
 
-function master(objectStoreKey: string): AcquiredAsset {
+function master(objectStoreKey: string, checksum = 'deadbeef'): AcquiredAsset {
   return {
     sourceUrl: 'https://example/x',
     mediaType: 'image/png',
     objectStoreKey,
-    checksum: 'deadbeef',
+    checksum,
     byteLength: 1,
     provenancePath: objectStoreKey.replace(/\.[^./]+$/, '.yml'),
     role: 'page-master',
@@ -84,6 +90,53 @@ describe('validateUndiscoverableMasters (the no-orphaned-master contract)', () =
       status: 'archived',
     };
     expect(validateUndiscoverableMasters(modelWith([record]), new Set())).toHaveLength(0);
+  });
+});
+
+describe('validateArchiveReconciliation (bidirectional cross-repo consistency)', () => {
+  it('flags an orphaned-companion: a B2-direct companion with no SSOT master', () => {
+    const companions = new Map<string, CompanionRef>([
+      ['archive/internet-archive/x/pages/9-zzz.png', companion('zzz', 'archive/cases/x/f009.yml')],
+    ]);
+    const findings = validateArchiveReconciliation(modelWith([]), companions);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].kind).toBe('orphaned-companion');
+    expect(findings[0].path).toBe('archive/cases/x/f009.yml');
+  });
+
+  it('does NOT flag a Gallica-layout companion key as orphaned (scoped to B2-direct prefixes)', () => {
+    const companions = new Map<string, CompanionRef>([
+      ['archive/cases/port-breton/books/x/f001.jpg', companion('aaa')],
+    ]);
+    expect(validateArchiveReconciliation(modelWith([]), companions)).toHaveLength(0);
+  });
+
+  it('flags checksum-drift when the SSOT and companion disagree about an object\'s bytes', () => {
+    const key = 'archive/internet-archive/x/pages/1-abc.png';
+    const record: RepositoryRecord = {
+      sourceId: 'PB-P055',
+      sourceArchive: 'Internet Archive',
+      status: 'archived',
+      assets: [master(key, 'SSOT_SHA')],
+    };
+    const companions = new Map<string, CompanionRef>([[key, companion('COMPANION_SHA')]]);
+    const findings = validateArchiveReconciliation(modelWith([record]), companions);
+    expect(findings.some((f) => f.kind === 'checksum-drift')).toBe(true);
+    const drift = findings.find((f) => f.kind === 'checksum-drift');
+    expect(drift?.detail).toMatch(/SSOT_SHA/);
+    expect(drift?.detail).toMatch(/COMPANION_SHA/);
+  });
+
+  it('is QUIET when SSOT masters and companions agree in both directions + on bytes', () => {
+    const key = 'archive/internet-archive/x/pages/1-abc.png';
+    const record: RepositoryRecord = {
+      sourceId: 'PB-P055',
+      sourceArchive: 'Internet Archive',
+      status: 'archived',
+      assets: [master(key, 'same')],
+    };
+    const companions = new Map<string, CompanionRef>([[key, companion('same')]]);
+    expect(validateArchiveReconciliation(modelWith([record]), companions)).toHaveLength(0);
   });
 });
 
