@@ -1,3 +1,8 @@
 {"id":"T001","tierLabel":"fast","model":"haiku","commit":"df8743c","reviewClean":true}
 {"id":"T002","tierLabel":"fast","model":"haiku","commit":"e17e075","reviewClean":true}
 {"id":"T003","tierLabel":"fast","model":"haiku","commit":"d3bc10f","reviewClean":true}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commit":"7ac43a6","reviewClean":true}
+{"id":"T007","tierLabel":"fast","model":"haiku","commit":"7ac43a6","reviewClean":true}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commit":"e275af6","reviewClean":true}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commit":"pending","reviewClean":true}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commit":"pending","reviewClean":true}
