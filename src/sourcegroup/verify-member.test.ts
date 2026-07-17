@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Source } from '@/model/source';
 import type { RepositoryRecord } from '@/model/repository-record';
-import type { Rights } from '@/model/rights';
+import type { Rights, RightsAssessment } from '@/model/rights';
 import {
   verifyMember,
   type ArkResolver,
@@ -289,5 +289,152 @@ describe('verifyMember', () => {
     Reflect.deleteProperty(bad, 'resolveArk');
 
     await expect(verifyMember(bad)).rejects.toThrow(/resolve/i);
+  });
+});
+
+/**
+ * TASK-28: `verifyMember` is adapter-aware -- the two repository-specific
+ * checks (`identifierResolved`, `rights`) dispatch by copy-identifier type. A
+ * museum member carries an `accession` copy identifier + `sourceUrl` (no ark,
+ * no OAIRecord `rights`) and its authoritative rights live on the
+ * operator-authored `rightsAssessment`. These tests exercise the museum arm;
+ * the Gallica arm above must stay unchanged (no regression).
+ */
+describe('verifyMember (museum / accession member)', () => {
+  const ACCESSION = '2015.0043.0001';
+  const SOURCE_URL = 'https://collection.newitalymuseum.au/item/2015.0043.0001';
+
+  /** An ark resolver that MUST NOT be called for an accession record. */
+  const resolverThatThrows: ArkResolver = async () => {
+    throw new Error('resolveArk must not be called for an accession (museum) record');
+  };
+
+  function publicDomainAssessment(): RightsAssessment {
+    return {
+      rightsStatus: 'public-domain',
+      rightsBasis: 'Photograph created before 1955; Australian pre-1969 term.',
+      assessedBy: 'operator',
+      assessedAt: '2026-07-14T00:00:00.000Z',
+    };
+  }
+
+  function museumMember(overrides: Partial<Source> = {}): Source {
+    return {
+      sourceId: 'PB-M100',
+      titles: [{ text: 'New Italy settlers, group portrait', role: 'canonical' }],
+      kind: 'archival-item',
+      creator: 'Unknown',
+      identifiers: [],
+      ...overrides,
+    };
+  }
+
+  function museumRecord(overrides: Partial<RepositoryRecord> = {}): RepositoryRecord {
+    return {
+      sourceId: 'PB-M100',
+      sourceArchive: 'New Italy Museum',
+      status: 'wanted',
+      identifiers: [{ type: 'accession', value: ACCESSION }],
+      sourceUrl: SOURCE_URL,
+      rightsAssessment: publicDomainAssessment(),
+      ...overrides,
+    };
+  }
+
+  function museumInput(overrides: Partial<VerifyMemberInput> = {}): VerifyMemberInput {
+    return {
+      member: museumMember(),
+      record: museumRecord(),
+      // The ark resolver is injected but must be UNUSED for an accession record.
+      resolveArk: resolverThatThrows,
+      existingMembers: [],
+      ...overrides,
+    };
+  }
+
+  it('passes every check for an accession member with sourceUrl + public-domain assessment (resolver never called)', async () => {
+    const verdict = await verifyMember(museumInput());
+
+    expect(verdict.result).toBe('passed');
+    expect(verdict.checks).toEqual({
+      identifierResolved: 'passed',
+      rights: 'passed',
+      requiredMetadata: 'passed',
+      hardDuplicate: 'passed',
+      possibleDuplicate: 'passed',
+    });
+  });
+
+  it('fails rights (fail-closed) when the record has NO rightsAssessment at all', async () => {
+    const verdict = await verifyMember(
+      museumInput({ record: museumRecord({ rightsAssessment: undefined }) }),
+    );
+
+    expect(verdict.checks.rights).toBe('failed');
+    expect(verdict.result).toBe('failed');
+    // identifierResolved is independent and still passes.
+    expect(verdict.checks.identifierResolved).toBe('passed');
+  });
+
+  it('fails rights (fail-closed) when the assessment is restricted', async () => {
+    const restricted: RightsAssessment = { ...publicDomainAssessment(), rightsStatus: 'restricted' };
+    const verdict = await verifyMember(
+      museumInput({ record: museumRecord({ rightsAssessment: restricted }) }),
+    );
+
+    expect(verdict.checks.rights).toBe('failed');
+    expect(verdict.result).toBe('failed');
+  });
+
+  it('fails rights (fail-closed) when the assessment is uncertain', async () => {
+    const uncertain: RightsAssessment = { ...publicDomainAssessment(), rightsStatus: 'uncertain' };
+    const verdict = await verifyMember(
+      museumInput({ record: museumRecord({ rightsAssessment: uncertain }) }),
+    );
+
+    expect(verdict.checks.rights).toBe('failed');
+    expect(verdict.result).toBe('failed');
+  });
+
+  it('fails identifierResolved when the accession record has no sourceUrl', async () => {
+    const verdict = await verifyMember(
+      museumInput({ record: museumRecord({ sourceUrl: undefined }) }),
+    );
+
+    expect(verdict.checks.identifierResolved).toBe('failed');
+    expect(verdict.result).toBe('failed');
+    // rights is independent and still passes.
+    expect(verdict.checks.rights).toBe('passed');
+  });
+
+  it('fails identifierResolved when the sourceUrl is blank', async () => {
+    const verdict = await verifyMember(
+      museumInput({ record: museumRecord({ sourceUrl: '   ' }) }),
+    );
+
+    expect(verdict.checks.identifierResolved).toBe('failed');
+  });
+
+  it('fails identifierResolved when the accession identifier value is empty', async () => {
+    const verdict = await verifyMember(
+      museumInput({ record: museumRecord({ identifiers: [{ type: 'accession', value: '' }] }) }),
+    );
+
+    // An empty accession value classifies as "neither supported identifier".
+    expect(verdict.checks.identifierResolved).toBe('failed');
+    expect(verdict.result).toBe('failed');
+  });
+
+  it('fails both repository-specific checks when the record carries NEITHER ark nor accession', async () => {
+    const verdict = await verifyMember(
+      museumInput({
+        record: museumRecord({ identifiers: [], rightsAssessment: undefined }),
+        resolveArk: resolvesLive,
+      }),
+    );
+
+    expect(verdict.checks.identifierResolved).toBe('failed');
+    expect(verdict.checks.rights).toBe('failed');
+    expect(verdict.result).toBe('failed');
   });
 });

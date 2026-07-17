@@ -11,7 +11,7 @@ rights:
 titles:
   - text: Australian newspaper coverage in Trove
     role: canonical
-notes: "Years: 1880s | Access: digital/public domain | Public domain: likely | Coverage of survivors, trial, and New Italy settlement."
+notes: "Years: 1880-1883+ | Access: digital/public domain (Trove) | Public domain: yes (pre-1955 Australian). | IRREDUCIBLE PRESS RESIDUAL (research 2026-07-13, SRCH-0007): not a single periodical but a topical slice of contemporary Australian reportage on the de Rays / Port-Breton / New Italy affair spread across many papers (Sydney Morning Herald, Sydney Mail, The Tasmanian, et al.) -- abundant and digitized in Trove, effectively unbounded and not exhaustively acquirable (analogous to the French-press residual on PB-P004). NO Trove adapter is warranted: there is no repetitive discrete-acquisition target, so the plan's anticipated PB-P005 Trove adapter (T015) is deliberately NOT pulled (research-first: the need is disproven, not deferred). Landmark article exemplars (Trove article ids, all PD) if the corpus later wants discrete evidentiary anchors -- each acquirable MANUALLY (n=1, no adapter/seam): 898535 (1 Jun 1880 'The New Colony at New Ireland'); 13481147 (25 Mar 1881 'Emigrants for Sydney'); 161883566 (16 Apr 1881 'The Marquis de Rays' Victims'); 199526344 (25 Jun 1881 'The New Ireland Fiasco'); 3420684 (3 Aug 1883 'The Marquis de Rays' Expedition'). Distinct from PB-P006 (New Italy Museum's discrete primary holdings: settler photos + writings)."
 repositoryRecords:
   - sourceArchive: Trove/National Library of Australia
     status: to-collect

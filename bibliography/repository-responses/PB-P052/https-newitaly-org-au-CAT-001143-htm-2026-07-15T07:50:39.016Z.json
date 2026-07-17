@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1916\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdate_prompt\\\">Object Date </span> <span class=\\\"data\\\" id=\\\"objectdate\\\"> 1916</span></p>\",\"selector\":\"#objectdate\"},\"interpretation\":\"the item's object date\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:50:39.016Z\"}},\"description\":{\"value\":\"ROSOLEN's Saw Mill at Moonem 1916\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> ROSOLEN's Saw Mill at Moonem 1916</span></p>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the item description from the object details\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:50:39.016Z\"}}}",
+  "retrievedAt": "2026-07-15T07:50:39.016Z",
+  "endpoint": "https://newitaly.org.au/CAT/001143.htm",
+  "normalizationVersion": 1
+}

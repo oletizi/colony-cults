@@ -1,0 +1,47 @@
+sourceId: PB-P023
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+creator: Joseph CHECK
+titles:
+  - text: Family portrait of  NARDI Vincenzo & Caterina (nee PAOLIN) & Family . Joseph CHECK 1898
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000704.htm
+    retrievedAt: 2026-07-15T07:40:28.930Z
+    identifiers:
+      - type: accession
+        value: NIMI-0704
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1898 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:40:29.556Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000704_nimi-0704-nardi-vincenzo-and-caterina-(nee-paolin)-and-family-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0704/7234d61b44c5f9ea311369d2b03b226f8f3bb6331932804fba182e4ca3cc3f16.jpg
+        checksum: 7234d61b44c5f9ea311369d2b03b226f8f3bb6331932804fba182e4ca3cc3f16
+        byteLength: 160326
+        provenancePath: archive/museum/new-italy-museum/nimi-0704/7234d61b44c5f9ea311369d2b03b226f8f3bb6331932804fba182e4ca3cc3f16.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P023/https-newitaly-org-au-CAT-000704-htm-2026-07-15T07:40:28.930Z.json
+      retrievedAt: 2026-07-15T07:40:28.930Z
+      endpoint: https://newitaly.org.au/CAT/000704.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:40:30.367Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P023/https-newitaly-org-au-CAT-000704-htm-2026-07-15T07:40:28.930Z.json

@@ -4,7 +4,7 @@ import type { CanonicalModel } from '@/bibliography/model';
 import { validate } from '@/bibliography/validate';
 import {
   validateGroupOnlyFields,
-  validateKnownMemberCountShape,
+  validateKnownExtentShape,
   validateReferences,
 } from '@/bibliography/validate-coverage-checks';
 import type { Source } from '@/model/source';
@@ -91,9 +91,9 @@ describe('validateReferences (V3: dangling resolvedTo)', () => {
   });
 });
 
-describe('validateGroupOnlyFields (V4: knownMemberCount/suspected only on source-group)', () => {
-  it('reports group-only-field for knownMemberCount on a non-source-group Source', () => {
-    const source = makeSource({ knownMemberCount: 3 });
+describe('validateGroupOnlyFields (V4: knownExtent/suspected only on source-group)', () => {
+  it('reports group-only-field for knownExtent on a non-source-group Source', () => {
+    const source = makeSource({ knownExtent: { state: 'measured', count: 3, basis: 'basis' } });
     const model = makeModel({ sources: [source] });
 
     const findings = validateGroupOnlyFields(model);
@@ -101,7 +101,7 @@ describe('validateGroupOnlyFields (V4: knownMemberCount/suspected only on source
     expect(findings).toHaveLength(1);
     expect(findings[0].kind).toBe('group-only-field');
     expect(findings[0].sourceId).toBe('PB-P001');
-    expect(findings[0].detail).toContain('knownMemberCount');
+    expect(findings[0].detail).toContain('knownExtent');
     expect(findings[0].detail).toContain('PB-P001');
   });
 
@@ -119,22 +119,22 @@ describe('validateGroupOnlyFields (V4: knownMemberCount/suspected only on source
     expect(findings[0].detail).toContain('PB-P001');
   });
 
-  it('reports both fields when a non-group Source carries knownMemberCount AND suspected', () => {
+  it('reports both fields when a non-group Source carries knownExtent AND suspected', () => {
     const source = makeSource({
-      knownMemberCount: 3,
+      knownExtent: { state: 'measured', count: 3, basis: 'basis' },
       suspected: [{ description: 'a suspected work', basis: 'inferred somehow' }],
     });
     const model = makeModel({ sources: [source] });
 
     const findings = validateGroupOnlyFields(model);
     expect(findings).toHaveLength(2);
-    expect(findings.map((f) => f.detail).join(' ')).toContain('knownMemberCount');
+    expect(findings.map((f) => f.detail).join(' ')).toContain('knownExtent');
     expect(findings.map((f) => f.detail).join(' ')).toContain('suspected');
   });
 
-  it('reports no finding when knownMemberCount/suspected are on a source-group', () => {
+  it('reports no finding when knownExtent/suspected are on a source-group', () => {
     const group = makeSourceGroup({
-      knownMemberCount: 3,
+      knownExtent: { state: 'measured', count: 3, basis: 'basis' },
       suspected: [{ description: 'a suspected work', basis: 'inferred somehow' }],
     });
     const model = makeModel({ sources: [group] });
@@ -151,12 +151,12 @@ describe('validateGroupOnlyFields (V4: knownMemberCount/suspected only on source
   });
 });
 
-describe('validateKnownMemberCountShape (V5: non-negative integer or "unknown")', () => {
-  it('reports invalid-known-member-count for a negative value (-1)', () => {
-    const group = makeSourceGroup({ knownMemberCount: -1 });
+describe('validateKnownExtentShape (V5: measured.count must be a non-negative integer)', () => {
+  it('reports invalid-known-member-count for a negative measured count (-1)', () => {
+    const group = makeSourceGroup({ knownExtent: { state: 'measured', count: -1, basis: 'basis' } });
     const model = makeModel({ sources: [group] });
 
-    const findings = validateKnownMemberCountShape(model);
+    const findings = validateKnownExtentShape(model);
 
     expect(findings).toHaveLength(1);
     expect(findings[0].kind).toBe('invalid-known-member-count');
@@ -164,43 +164,50 @@ describe('validateKnownMemberCountShape (V5: non-negative integer or "unknown")'
     expect(findings[0].detail).toContain('-1');
   });
 
-  it('reports invalid-known-member-count for a non-integer value (2.5)', () => {
-    const group = makeSourceGroup({ knownMemberCount: 2.5 });
+  it('reports invalid-known-member-count for a non-integer measured count (2.5)', () => {
+    const group = makeSourceGroup({ knownExtent: { state: 'measured', count: 2.5, basis: 'basis' } });
     const model = makeModel({ sources: [group] });
 
-    const findings = validateKnownMemberCountShape(model);
+    const findings = validateKnownExtentShape(model);
 
     expect(findings).toHaveLength(1);
     expect(findings[0].kind).toBe('invalid-known-member-count');
     expect(findings[0].detail).toContain('2.5');
   });
 
-  it('reports no finding for a valid non-negative integer (3)', () => {
-    const group = makeSourceGroup({ knownMemberCount: 3 });
+  it('reports no finding for a valid non-negative measured count (3)', () => {
+    const group = makeSourceGroup({ knownExtent: { state: 'measured', count: 3, basis: 'basis' } });
     const model = makeModel({ sources: [group] });
 
-    expect(validateKnownMemberCountShape(model)).toEqual([]);
+    expect(validateKnownExtentShape(model)).toEqual([]);
   });
 
-  it('reports no finding for the literal "unknown"', () => {
-    const group = makeSourceGroup({ knownMemberCount: 'unknown' });
+  it('reports no finding for an unexamined extent', () => {
+    const group = makeSourceGroup({ knownExtent: { state: 'unexamined' } });
     const model = makeModel({ sources: [group] });
 
-    expect(validateKnownMemberCountShape(model)).toEqual([]);
+    expect(validateKnownExtentShape(model)).toEqual([]);
   });
 
-  it('reports no finding when knownMemberCount is absent', () => {
+  it('reports no finding for an irreducible extent', () => {
+    const group = makeSourceGroup({ knownExtent: { state: 'irreducible', basis: 'basis' } });
+    const model = makeModel({ sources: [group] });
+
+    expect(validateKnownExtentShape(model)).toEqual([]);
+  });
+
+  it('reports no finding when knownExtent is absent', () => {
     const group = makeSourceGroup();
     const model = makeModel({ sources: [group] });
 
-    expect(validateKnownMemberCountShape(model)).toEqual([]);
+    expect(validateKnownExtentShape(model)).toEqual([]);
   });
 
-  it('reports 0 as valid (zero is a non-negative integer, distinct from "unknown")', () => {
-    const group = makeSourceGroup({ knownMemberCount: 0 });
+  it('reports 0 as a valid measured count (zero is a non-negative integer)', () => {
+    const group = makeSourceGroup({ knownExtent: { state: 'measured', count: 0, basis: 'basis' } });
     const model = makeModel({ sources: [group] });
 
-    expect(validateKnownMemberCountShape(model)).toEqual([]);
+    expect(validateKnownExtentShape(model)).toEqual([]);
   });
 });
 
@@ -210,8 +217,14 @@ describe('coverage checks composed into validate() aggregator', () => {
       sourceId: 'PB-P001',
       references: [{ citedAs: 'Unresolvable Work', resolvedTo: 'PB-P999' }],
     });
-    const nonGroupWithGroupFields = makeSource({ sourceId: 'PB-P002', knownMemberCount: 3 });
-    const groupWithBadCount = makeSourceGroup({ sourceId: 'PB-P004', knownMemberCount: -5 });
+    const nonGroupWithGroupFields = makeSource({
+      sourceId: 'PB-P002',
+      knownExtent: { state: 'measured', count: 3, basis: 'basis' },
+    });
+    const groupWithBadCount = makeSourceGroup({
+      sourceId: 'PB-P004',
+      knownExtent: { state: 'measured', count: -5, basis: 'basis' },
+    });
     const model = makeModel({
       sources: [sourceWithBadRef, nonGroupWithGroupFields, groupWithBadCount],
     });
@@ -224,7 +237,7 @@ describe('coverage checks composed into validate() aggregator', () => {
   });
 
   it('reports no coverage-field findings for a fully valid model', () => {
-    const group = makeSourceGroup({ knownMemberCount: 2 });
+    const group = makeSourceGroup({ knownExtent: { state: 'measured', count: 2, basis: 'basis' } });
     const member1 = makeSource({ sourceId: 'PB-P005', partOf: 'PB-P004' });
     const member2 = makeSource({
       sourceId: 'PB-P006',

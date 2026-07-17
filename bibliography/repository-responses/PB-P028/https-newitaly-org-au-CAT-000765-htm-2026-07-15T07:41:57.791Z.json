@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1902\",\"evidence\":{\"excerpt\":\"School and Residence at New Italy 1902\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the item's creation year, embedded in the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:41:57.791Z\"}},\"description\":{\"value\":\"School and Residence at New Italy 1902\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> School and Residence at New Italy 1902</span></p>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:41:57.791Z\"}}}",
+  "retrievedAt": "2026-07-15T07:41:57.791Z",
+  "endpoint": "https://newitaly.org.au/CAT/000765.htm",
+  "normalizationVersion": 1
+}

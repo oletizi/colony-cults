@@ -52,7 +52,8 @@ describe('T007 coverage skeleton: buildCoverageReport', () => {
         'workBundle',
         'membersByLifecycleState',
         'actualMemberCount',
-        'knownMemberCount',
+        'adjacentMemberCount',
+        'knownExtent',
         'gap',
       ]);
     }
@@ -88,9 +89,9 @@ describe('T007 coverage skeleton: renderCoverage text', () => {
     expect(text).not.toContain('%');
   });
 
-  it('renders unknown gap/denominator as the literal unknown (INV-2)', () => {
-    expect(text).toContain('believed extent (knownMemberCount): unknown');
-    expect(text).toContain('gap: unknown');
+  it('renders an unmeasured gap/denominator as its KnownExtent state word (INV-2)', () => {
+    expect(text).toContain('believed extent (knownExtent): unexamined');
+    expect(text).toContain('gap: unexamined');
   });
 });
 

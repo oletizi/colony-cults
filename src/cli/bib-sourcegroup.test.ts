@@ -6,7 +6,12 @@ import { join } from 'node:path';
 import type { Source } from '@/model/source';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import { serializeSource } from '@/bibliography/migrate-serialize';
-import { parseAcquireArgs, parseReconcileArgs, registerMemberArchiveLayout } from '@/cli/bib-sourcegroup';
+import {
+  parseAcquireArgs,
+  parseApprovedRange,
+  parseReconcileArgs,
+  registerMemberArchiveLayout,
+} from '@/cli/bib-sourcegroup';
 import { sourceLayout } from '@/archive/location';
 
 /**
@@ -194,6 +199,49 @@ describe('parseAcquireArgs', () => {
     expect(() => parseAcquireArgs(['PB-P100', '--checkpoint-every', 'abc'])).toThrow(
       /checkpoint-every/i,
     );
+  });
+
+  it('defaults approvedRange/reject/notes when none of the IA quality-gate flags are given', () => {
+    const parsed = parseAcquireArgs(['PB-P100']);
+    expect(parsed.approvedRange).toBeUndefined();
+    expect(parsed.reject).toBe(false);
+    expect(parsed.notes).toBeUndefined();
+  });
+
+  it('parses --approved-range, --reject, and --notes (the IA two-phase quality-gate flags)', () => {
+    const parsed = parseAcquireArgs([
+      'PB-P100',
+      '--approved-range',
+      '4-368',
+      '--reject',
+      '--notes',
+      'scan too dark past leaf 300',
+    ]);
+    expect(parsed.approvedRange).toEqual({ start: 4, end: 368 });
+    expect(parsed.reject).toBe(true);
+    expect(parsed.notes).toBe('scan too dark past leaf 300');
+  });
+});
+
+describe('parseApprovedRange', () => {
+  it('returns undefined when the flag is absent', () => {
+    expect(parseApprovedRange(undefined)).toBeUndefined();
+  });
+
+  it('parses "4-368" into { start: 4, end: 368 }', () => {
+    expect(parseApprovedRange('4-368')).toEqual({ start: 4, end: 368 });
+  });
+
+  it('fails loud on a non-range string', () => {
+    expect(() => parseApprovedRange('x')).toThrow(/--approved-range/);
+  });
+
+  it('fails loud when end < start', () => {
+    expect(() => parseApprovedRange('5-2')).toThrow(/--approved-range/);
+  });
+
+  it('fails loud on an empty string', () => {
+    expect(() => parseApprovedRange('')).toThrow(/--approved-range/);
   });
 });
 

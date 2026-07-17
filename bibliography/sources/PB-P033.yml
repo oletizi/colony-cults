@@ -1,0 +1,45 @@
+sourceId: PB-P033
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Photo of New Italy Pioneers 1890
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000952.htm
+    retrievedAt: 2026-07-15T07:43:51.453Z
+    identifiers:
+      - type: accession
+        value: NIMI-0952
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1890 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:43:51.866Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000952_nimi-0952-new-italy-pioneers-1890-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0952/45fc49d0f983d7a452f80384527a0ef74e5d88138194e506313589df2b312f8c.jpg
+        checksum: 45fc49d0f983d7a452f80384527a0ef74e5d88138194e506313589df2b312f8c
+        byteLength: 184459
+        provenancePath: archive/museum/new-italy-museum/nimi-0952/45fc49d0f983d7a452f80384527a0ef74e5d88138194e506313589df2b312f8c.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P033/https-newitaly-org-au-CAT-000952-htm-2026-07-15T07:43:51.453Z.json
+      retrievedAt: 2026-07-15T07:43:51.453Z
+      endpoint: https://newitaly.org.au/CAT/000952.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:43:52.680Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P033/https-newitaly-org-au-CAT-000952-htm-2026-07-15T07:43:51.453Z.json

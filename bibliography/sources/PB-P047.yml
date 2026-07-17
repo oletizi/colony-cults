@@ -1,0 +1,49 @@
+sourceId: PB-P047
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+creator: Joseph Check
+titles:
+  - text: "Photo of ROSOLEN_Giacomo_and_Friend\r
+
+      By Joseph Check"
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001063.htm
+    retrievedAt: 2026-07-15T07:47:39.959Z
+    identifiers:
+      - type: accession
+        value: NIMI-1063
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1897 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:47:40.553Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001063_nimi-1063-rosolen-giacomo-and-friend-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1063/6d502659e52b85b28fcf1b938b43d4250e557dbb239070a4eb4a46b2cd451d83.jpg
+        checksum: 6d502659e52b85b28fcf1b938b43d4250e557dbb239070a4eb4a46b2cd451d83
+        byteLength: 37539
+        provenancePath: archive/museum/new-italy-museum/nimi-1063/6d502659e52b85b28fcf1b938b43d4250e557dbb239070a4eb4a46b2cd451d83.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P047/https-newitaly-org-au-CAT-001063-htm-2026-07-15T07:47:39.959Z.json
+      retrievedAt: 2026-07-15T07:47:39.959Z
+      endpoint: https://newitaly.org.au/CAT/001063.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:47:41.367Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P047/https-newitaly-org-au-CAT-001063-htm-2026-07-15T07:47:39.959Z.json

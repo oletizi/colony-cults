@@ -37,14 +37,32 @@ export function authoredToRepositoryRecord(
   if (authored.originalUrl !== undefined) {
     record.originalUrl = authored.originalUrl;
   }
+  if (authored.sourceUrl !== undefined) {
+    record.sourceUrl = authored.sourceUrl;
+  }
   if (authored.retrievedAt !== undefined) {
     record.retrievedAt = authored.retrievedAt;
   }
   if (authored.identifiers !== undefined) {
     record.identifiers = authored.identifiers;
   }
+  if (authored.folios !== undefined) {
+    record.folios = authored.folios;
+  }
   if (authored.rights !== undefined) {
     record.rights = authored.rights;
+  }
+  if (authored.rightsAssessment !== undefined) {
+    record.rightsAssessment = authored.rightsAssessment;
+  }
+  if (authored.assets !== undefined) {
+    record.assets = authored.assets;
+  }
+  if (authored.qualityAssessment !== undefined) {
+    record.qualityAssessment = authored.qualityAssessment;
+  }
+  if (authored.excludedLeaves !== undefined) {
+    record.excludedLeaves = authored.excludedLeaves;
   }
   if (authored.metadataSnapshot !== undefined) {
     record.metadataSnapshot = authored.metadataSnapshot;

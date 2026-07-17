@@ -6,7 +6,7 @@ language: French
 creator: A. Baudouin
 rights:
   status: public-domain
-  basis: 1883 French imprint (author A. Baudouin, fl. 1883); public domain by publication age under France's life+70 term (elapsed for any plausible death date of an author active in 1883). Basis is publication age; no BnF OAI domaine-public record on file.
+  basis: 1883 French imprint (author A. Baudouin, fl. 1883); public domain by publication age under France's life+70 term (elapsed for any plausible death date of an author active in 1883). Corroborated by the Gallica OAIRecord for the digitisation (bpt6k58017546), which serves it as 'domaine public' / 'public domain' (retrieved 2026-07-16; raw response persisted under repository-responses/PB-P003).
   determinedAt: 2026-07-12
 titles:
   - text: L'aventure de Port-Breton et la colonie libre dite Nouvelle-France
@@ -15,3 +15,10 @@ notes: "Years: 1883 | Access: library/public domain | Public domain: likely | Co
 repositoryRecords:
   - sourceArchive: Gallica / BnF
     status: archived
+    originalUrl: https://gallica.bnf.fr/ark:/12148/bpt6k58017546
+    catalogUrl: https://catalogue.bnf.fr/ark:/12148/cb30067131v
+    identifiers:
+      - type: ark
+        value: ark:/12148/bpt6k58017546
+      - type: ark
+        value: ark:/12148/cb30067131v

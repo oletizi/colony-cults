@@ -1,7 +1,9 @@
 import type { ObjectStoreLocation } from '@/archive/provenance';
+import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { Asset } from '@/model/asset';
 import type { CopyLevelIdentifierType } from '@/model/identifiers';
-import type { Rights } from '@/model/rights';
+import type { ExcludedLeaf, QualityAssessment } from '@/model/quality-assessment';
+import type { Rights, RightsAssessment } from '@/model/rights';
 
 /**
  * A specific held copy of a {@link Source} at a given archive. Keyed by
@@ -17,12 +19,56 @@ export interface RepositoryRecord {
   sourceArchive: string;
   /** Copy-level identifiers (ark/IIIF manifest/scan DOI). */
   identifiers?: CopyIdentifier[];
+  /**
+   * Folio numbers of the document at this record's ark that the held copy
+   * actually comprises (specs/012). Present ⇒ the copy is an EXCERPT of
+   * exactly these folios (e.g. PB-P054's 3-page arrêt within a large serial
+   * fascicule); absent ⇒ a whole-document holding (unchanged default
+   * behavior). When present it MUST be non-empty, strictly ascending,
+   * duplicate-free, and every value `>= 1` -- enforced at load time
+   * (`@/bibliography/load-fields`'s `validateFolios`).
+   */
+  folios?: number[];
   /** Rights determination for this copy. */
   rights?: Rights;
+  /**
+   * The authoritative, operator-authored copy-level rights judgment (T004,
+   * `@/model/rights`). Distinct from `rights` (the automated Gallica
+   * OAIRecord gate result): `rightsAssessment` is repository-agnostic and is
+   * what the museum path (and any future non-OAI repository) records, since
+   * a museum record has no ark/OAIRecord to hang a `Rights` value off of.
+   * Only a recorded `rightsStatus === 'public-domain'` permits mirroring an
+   * asset for this copy -- enforced at `acquire` time (a later task; see
+   * contracts/repository-adapter.md INV-B), not here.
+   */
+  rightsAssessment?: RightsAssessment;
+  /**
+   * The durable operator scan-quality judgment for this copy's staged
+   * source file (specs/013-archiveorg-acquisition-path/data-model.md §
+   * QualityAssessment, FR-008) -- canonical provenance, not session state.
+   * Only a recorded `status === 'sound'` lets `acquire` proceed; `acquire`
+   * re-verifies the staged file's sha256 against `sourceFileChecksum`
+   * before acting, throwing on a mismatch.
+   */
+  qualityAssessment?: QualityAssessment;
+  /**
+   * Leaves omitted from the `page-master` reading assets but retained in
+   * the preserved `repository-source` PDF (specs/013-archiveorg-acquisition-path/data-model.md
+   * § ExcludedLeaf, FR-011) -- e.g. scanner notices, covers, color cards.
+   */
+  excludedLeaves?: ExcludedLeaf[];
   /** Catalog / landing page URL at the holding archive. */
   catalogUrl?: string;
   /** Original URL the copy was retrieved from. */
   originalUrl?: string;
+  /**
+   * Catalogue/asset-page locator for this copy, e.g. a Musarch detail-page
+   * URL. NOT identity: copy identity is carried by `identifiers` (e.g. an
+   * `accession` `CopyIdentifier`), which is durable across a URL changing.
+   */
+  sourceUrl?: string;
+  /** Acquired representations of this copy (adapter `acquire` output). */
+  assets?: AcquiredAsset[];
   /** Retrieval timestamp (ISO). */
   retrievedAt?: string;
   /**

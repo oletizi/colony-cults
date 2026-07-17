@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1919\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdate_prompt\\\">Object Date </span> <span class=\\\"data\\\" id=\\\"objectdate\\\"> 1919</span></p>\",\"selector\":\"#objectdate\"},\"interpretation\":\"the item's object date\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:44:15.265Z\"}},\"description\":{\"value\":\"Photo of Flood at New Italy 1919\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> Photo of Flood at New Italy 1919</span></p>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the item's object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:44:15.265Z\"}}}",
+  "retrievedAt": "2026-07-15T07:44:15.265Z",
+  "endpoint": "https://newitaly.org.au/CAT/000954.htm",
+  "normalizationVersion": 1
+}

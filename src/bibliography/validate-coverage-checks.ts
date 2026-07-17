@@ -4,7 +4,7 @@ import type { Source } from '@/model/source';
 
 /**
  * Validation rules V3-V5 for the corpus-coverage-audit authored fields
- * (`Source.references[]`, `Source.knownMemberCount`, `Source.suspected[]`) --
+ * (`Source.references[]`, `Source.knownExtent`, `Source.suspected[]`) --
  * see specs/007-corpus-coverage-audit/data-model.md § Validation rules. Split
  * out of `@/bibliography/validate-checks` to keep that file's total under the
  * repo's ~300-500-line-per-file guidance; composed into `validate()`
@@ -62,7 +62,7 @@ function groupOnlyFinding(source: Source, field: string): ValidationFinding {
 }
 
 /**
- * V4: `knownMemberCount` and `suspected[]` are valid ONLY on `kind:
+ * V4: `knownExtent` and `suspected[]` are valid ONLY on `kind:
  * 'source-group'` (data-model). Neither is enforced at load (`@/bibliography/
  * load-coverage-fields` parses either field's shape but does not know the
  * OWNING Source's `kind` -- that cross-field check belongs here). Reports one
@@ -75,8 +75,8 @@ export function validateGroupOnlyFields(model: CanonicalModel): ValidationFindin
     if (source.kind === 'source-group') {
       continue;
     }
-    if (source.knownMemberCount !== undefined) {
-      findings.push(groupOnlyFinding(source, 'knownMemberCount'));
+    if (source.knownExtent !== undefined) {
+      findings.push(groupOnlyFinding(source, 'knownExtent'));
     }
     if (source.suspected !== undefined) {
       findings.push(groupOnlyFinding(source, 'suspected'));
@@ -86,32 +86,34 @@ export function validateGroupOnlyFields(model: CanonicalModel): ValidationFindin
 }
 
 /**
- * V5: when present and not the literal `'unknown'`, `knownMemberCount` MUST
- * be a non-negative integer (data-model). The loader's `validateKnownMemberCount`
- * already narrows the field to `number | 'unknown'` (rejecting any other
- * shape, e.g. a string other than `'unknown'`) -- but it deliberately accepts
- * ANY number, including negatives and non-integers (see its doc comment: "The
- * non-negative-integer refinement is a later validation task"). This check
- * is that refinement. Reports one `invalid-known-member-count` finding per
- * offending value, independent of V4 (a negative count on a non-group Source
- * yields both findings, since they check different invariants).
+ * V5: when present with `state: 'measured'`, `knownExtent.count` MUST be a
+ * non-negative integer (data-model). The loader's `validateKnownExtent`
+ * already narrows the field to the closed {@link KnownExtent} shape (`state`
+ * in the closed vocab, `measured` carrying a `count` number + `basis`
+ * string) -- but it deliberately accepts ANY number for `count`, including
+ * negatives and non-integers (see its doc comment: "The non-negative-integer
+ * refinement is a later validation task"). This check is that refinement;
+ * `unexamined` and `irreducible` carry no count and are never flagged.
+ * Reports one `invalid-known-member-count` finding per offending value,
+ * independent of V4 (a negative count on a non-group Source yields both
+ * findings, since they check different invariants).
  */
-export function validateKnownMemberCountShape(model: CanonicalModel): ValidationFinding[] {
+export function validateKnownExtentShape(model: CanonicalModel): ValidationFinding[] {
   const findings: ValidationFinding[] = [];
   for (const source of model.sources) {
-    const count = source.knownMemberCount;
-    if (count === undefined || count === 'unknown') {
+    const extent = source.knownExtent;
+    if (extent === undefined || extent.state !== 'measured') {
       continue;
     }
-    if (Number.isInteger(count) && count >= 0) {
+    if (Number.isInteger(extent.count) && extent.count >= 0) {
       continue;
     }
     findings.push({
       kind: 'invalid-known-member-count',
       sourceId: source.sourceId,
       detail:
-        `Source "${source.sourceId}" knownMemberCount ${count} must be a non-negative integer ` +
-        `or the literal string "unknown"`,
+        `Source "${source.sourceId}" knownExtent.count ${extent.count} must be a ` +
+        `non-negative integer`,
     });
   }
   return findings;
@@ -131,6 +133,6 @@ export function validateCoverageFields(model: CanonicalModel): ValidationFinding
   return [
     ...validateReferences(model),
     ...validateGroupOnlyFields(model),
-    ...validateKnownMemberCountShape(model),
+    ...validateKnownExtentShape(model),
   ];
 }

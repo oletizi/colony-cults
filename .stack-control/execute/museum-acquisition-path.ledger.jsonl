@@ -1,0 +1,26 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commit":"6b2722b","reviewClean":true}
+{"id":"T002","tierLabel":"fast","model":"haiku","commit":"03b194a","reviewClean":true}
+{"id":"T003","tierLabel":"fast","model":"haiku","commit":"267f134","reviewClean":true}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commit":"50b40e2","reviewClean":true}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commit":"9d0e1a4","reviewClean":true}
+{"id":"T008","tierLabel":"fast","model":"haiku","commit":"6065675","reviewClean":true}
+{"id":"T006","tierLabel":"fast","model":"haiku","commit":"64cf085","reviewClean":true}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commit":"1b13179","reviewClean":true}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commit":"440d706","reviewClean":true}
+{"id":"T010","tierLabel":"powerful","model":"opus","commit":"e970dc8","reviewClean":true}
+{"id":"T011","tierLabel":"powerful","model":"opus","commit":"590aff2","reviewClean":true}
+{"id":"T012","tierLabel":"powerful","model":"opus","commit":"9f19f75","reviewClean":true}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commit":"9f19f75","reviewClean":true,"note":"SC-003 unit-level confirmed via T010 chars green through adapter; full end-to-end archive-layout/checksum confirmation rides quickstart T021/T030 (T010 characterization gap needs real archive infra)"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commit":"7ff16ea","reviewClean":true}
+{"id":"T015","tierLabel":"powerful","model":"opus","commit":"a9e0cae","reviewClean":true}
+{"id":"T016","tierLabel":"powerful","model":"opus","commit":"b473ad3","reviewClean":true}
+{"id":"T017","tierLabel":"balanced","model":"sonnet","commit":"2f65e28","reviewClean":true,"note":"also closed sourceUrl-persistence + loader isSourceKind gaps"}
+{"id":"T018","tierLabel":"balanced","model":"sonnet","commit":"2628a2c","reviewClean":true}
+{"id":"T019","tierLabel":"powerful","model":"opus","commit":"c1745ca","reviewClean":true}
+{"id":"T022","tierLabel":"balanced","model":"sonnet","commit":"03032fb","reviewClean":true}
+{"id":"T023","tierLabel":"balanced","model":"sonnet","commit":"4fe7064","reviewClean":true}
+{"id":"T024","tierLabel":"fast","model":"haiku","commit":"c523ff0","reviewClean":true}
+{"id":"T025","tierLabel":"balanced","model":"sonnet","commit":"288831f","reviewClean":true}
+{"id":"T027","tierLabel":"fast","model":"sonnet","commit":"288831f","reviewClean":true,"note":"absorbed into T025 (PB-P006 -> irreducible with researched basis)"}
+{"id":"T026","tierLabel":"balanced","model":"sonnet","commit":"e3148c1","reviewClean":true}
+{"id":"T029","tierLabel":"balanced","model":"sonnet","commit":"e3148c1","reviewClean":true,"note":"controller-verified: all feature files <=500 lines (store.ts 517 is pre-existing/untouched), tsc clean, 1269 pass"}

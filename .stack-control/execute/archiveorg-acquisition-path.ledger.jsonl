@@ -1,0 +1,54 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commit":"d54d176","reviewClean":true,"note":"create IA adapter package dir + barrel + __fixtures__/"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commit":"d54d176","reviewClean":true,"note":"copy de Groote metadata JSON fixture verbatim; valid JSON verified"}
+{"id":"T003","tierLabel":"fast","model":"haiku","commit":"d54d176","reviewClean":true,"note":"scandata.xml fixture: 8 leaves (Cover/Title/Color Card + 5 Normal) with recorded dims"}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commit":"d54d176","reviewClean":true,"note":"synthetic PDFs: single-image-page.pdf (1 image/page) + overlay-page.pdf (image+vector+text); poppler-verified"}
+{"id":"T005","tierLabel":"fast","model":"haiku","commit":"9726abe","reviewClean":true,"note":"CopyLevelIdentifierType += 'ia-item' + test"}
+{"id":"T006","tierLabel":"fast","model":"haiku","commit":"9726abe","reviewClean":true,"note":"RepositoryName += 'internet-archive' + test; no exhaustive-switch fallout"}
+{"id":"T007","tierLabel":"fast","model":"haiku","commit":"9726abe","reviewClean":true,"note":"narrow role to AcquiredAssetRole union; surfaced 'primary' regression -> controller fixed (added 'primary' + guard + loader validation)"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commit":"9726abe","reviewClean":true,"note":"quality-assessment.ts types + barrel export + 10 tests"}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commit":"9726abe","reviewClean":true,"note":"poppler runner test (TDD, RED) using real captured pdfimages -list output"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commit":"9726abe","reviewClean":true,"note":"poppler runner impl (GREEN), fail-loud, 176 lines, injected runner"}
+{"id":"T013","tierLabel":"fast","model":"haiku","commit":"9726abe","reviewClean":true,"note":"poppler preflight helper + fail-loud test"}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commit":"b3de112","reviewClean":true,"note":"RepositoryRecord += qualityAssessment?/excludedLeaves? + round-trip test"}
+{"id":"T010","tierLabel":"fast","model":"haiku","commit":"b3de112","reviewClean":true,"note":"registry dispatch ia-item->internet-archive + test"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"metadata parse test (16), real fixture + fail-loud cases"}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"metadata.ts client+parse, injected ArchiveHttpClient, fail-loud non-texts"}
+{"id":"T016","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"file-select test (11) incl ambiguity/OCR-only/no-PDF throws"}
+{"id":"T017","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"file-select.ts deterministic; jp2-or-tif; fail-loud"}
+{"id":"T033","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"scandata.ts parse+proposeReadingRange (fast-xml-parser, shared xml helpers), 11 tests"}
+{"id":"T034","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"rights evidence test (6), no-verdict asserted"}
+{"id":"T035","tierLabel":"balanced","model":"sonnet","commit":"ab2a32f","reviewClean":true,"note":"rights.ts collectRightsEvidence, evidence-only, honest GroundedField provenance"}
+{"id":"T018","tierLabel":"balanced","model":"sonnet","commit":"9365297","reviewClean":true,"note":"adapter resolve test (12)"}
+{"id":"T019","tierLabel":"balanced","model":"sonnet","commit":"9365297","reviewClean":true,"note":"InternetArchiveAdapter skeleton: resolve+collectRightsEvidence(WeakMap cache), acquire stub"}
+{"id":"T038","tierLabel":"balanced","model":"opus","commit":"9365297","reviewClean":true,"note":"extract test: single-image lossless case"}
+{"id":"T039","tierLabel":"balanced","model":"opus","commit":"9365297","reviewClean":true,"note":"extract test: overlay rasterise case + DPI"}
+{"id":"T040","tierLabel":"balanced","model":"opus","commit":"9365297","reviewClean":true,"note":"extract test: count-invariant throw"}
+{"id":"T041","tierLabel":"balanced","model":"opus","commit":"9365297","reviewClean":true,"note":"extract test: excluded leaves recorded/retained"}
+{"id":"T042","tierLabel":"powerful","model":"opus","commit":"9365297","reviewClean":true,"note":"extract.ts page-to-leaf engine, coverage heuristic, count invariant, excluded leaves"}
+{"id":"T044","tierLabel":"balanced","model":"opus","commit":"9365297","reviewClean":true,"note":"fidelity test: r>=0.90 explode PDF"}
+{"id":"T045","tierLabel":"balanced","model":"opus","commit":"9365297","reviewClean":true,"note":"fidelity test: r<0.90 fetch image-set + boundary + fail-loud"}
+{"id":"T046","tierLabel":"powerful","model":"opus","commit":"9365297","reviewClean":true,"note":"fidelity.ts dimension-ratio probe, median, spread sampling, D-4 threshold"}
+{"id":"T020","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"snapshot.ts recordItemSnapshot + IA_NORMALIZATION_VERSION, delegates to shipped store"}
+{"id":"T021","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"staging test (9): fetch/fixity/cleanup/keys"}
+{"id":"T022","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"staging.ts + object-store key layout"}
+{"id":"T029","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate enforce test: unsound throws"}
+{"id":"T030","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate test: staged-checksum mismatch throws"}
+{"id":"T031","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate test: scandata range seed; operator may widen"}
+{"id":"T032","tierLabel":"balanced","model":"sonnet","commit":"3b5fa4e","reviewClean":true,"note":"quality-gate.ts seam+enforce+seed (adapter wiring in T025)"}
+{"id":"T023","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"acquire happy-path test (PDF branch): assets+puts+complete"}
+{"id":"T024","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"acquire idempotency test: head-match skip / mismatch throw"}
+{"id":"T025","tierLabel":"powerful","model":"opus","commit":"9a82d53","reviewClean":true,"note":"acquire.ts orchestration (499 lines); rights->stage->quality->fidelity->extract/image-set->assemble->idempotent upload->dryRun; 12 tests"}
+{"id":"T036","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"rights gate test: non-PD throws before any fetch (client never called)"}
+{"id":"T037","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"rights gate is acquire step 1 (ordering asserted)"}
+{"id":"T043","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"asset roles: exactly one repository-source + page-masters, mediaTypes"}
+{"id":"T048","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"fidelity wired into acquire; image-set branch taken on degraded"}
+{"id":"T049","tierLabel":"balanced","model":"opus","commit":"9a82d53","reviewClean":true,"note":"dry-run: zero puts, staging retained, complete:false (D-11 / TASK-29 fix for IA)"}
+{"id":"T026","tierLabel":"balanced","model":"sonnet","commit":"e4f6800","reviewClean":true,"note":"register IA adapter in buildRegistry (3-adapter) + dispatch tests"}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commit":"e4f6800","reviewClean":true,"note":"bib-acquire-internet-archive.ts peek-builder + flag-driven makeCliQualityGate; +load-fields ia-item guard fix"}
+{"id":"T028","tierLabel":"balanced","model":"sonnet","commit":"e4f6800","reviewClean":true,"note":"runAcquireCli flags (--approved-range/--reject/--notes) + bib inventory IA routing"}
+{"id":"T047","tierLabel":"balanced","model":"sonnet","commit":"7fa37c0","reviewClean":true,"note":"multi-file failure surfaced end-to-end through resolve"}
+{"id":"T050","tierLabel":"fast","model":"sonnet","commit":"7fa37c0","reviewClean":true,"note":"never-bib-migrate guard test (INV-F)"}
+{"id":"T051","tierLabel":"fast","model":"sonnet","commit":"7fa37c0","reviewClean":true,"note":"split bib-sourcegroup.ts 604->275 + bib-sourcegroup-acquire.ts (367); +XII staging-cache fix"}
+{"id":"T052","tierLabel":"balanced","model":"sonnet","commit":"7fa37c0","reviewClean":true,"note":"quickstart coverage matrix; honestly found+fixed the XII no-re-fetch gap"}
+{"id":"T053","tierLabel":"fast","model":"opus","commit":"7fa37c0","reviewClean":true,"note":"verify: 1534 passed (3 pre-existing browser env fails), tsc clean, no any/as/ts-ignore"}
+{"id":"T054","tierLabel":"fast","model":"opus","commit":"7fa37c0","reviewClean":true,"note":"research log note; measured ratio deferred to T055 acceptance"}

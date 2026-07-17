@@ -6,7 +6,7 @@ import type { AuthoredRepositoryRecord, IdentifierLeak } from '@/bibliography/mo
 import { validateRecord, validateTitle, validateWorkIdentifier } from '@/bibliography/load-fields';
 import {
   optionalEvidenceClass,
-  validateKnownMemberCount,
+  validateKnownExtent,
   validateReference,
   validateSuspectedGap,
   validateThreads,
@@ -21,8 +21,13 @@ import {
   requireObject,
   requireString,
 } from '@/bibliography/load-primitives';
-import { isSourceLifecycleStatus, isSourceRightsStatus } from '@/bibliography/vocab';
-import type { SourceLifecycleStatus } from '@/bibliography/vocab';
+import {
+  isSourceCentrality,
+  isSourceLifecycleStatus,
+  isSourceRightsStatus,
+  isSourceStructuralKind,
+} from '@/bibliography/vocab';
+import type { SourceCentrality, SourceLifecycleStatus } from '@/bibliography/vocab';
 import type { MachineAssistLabel } from '@/pdf/model';
 import type { Publication, PublicationManifestRef, SourceRights } from '@/model/publication';
 import type { Reference, Source, SuspectedGap, WorkIdentifier } from '@/model/source';
@@ -52,10 +57,11 @@ const SOURCE_KEYS = new Set([
   'language',
   'identifiers',
   'case',
+  'centrality',
   'evidenceClass',
   'rights',
   'references',
-  'knownMemberCount',
+  'knownExtent',
   'suspected',
   'notes',
   'publications',
@@ -86,10 +92,6 @@ function isPublicationVariant(value: string): value is Publication['variant'] {
 
 function isKeyScheme(value: string): value is Publication['keyScheme'] {
   return value === 'versioned' || value === 'legacy-flat';
-}
-
-function isSourceKind(value: string): value is Source['kind'] {
-  return value === 'periodical' || value === 'monograph' || value === 'source-group';
 }
 
 /**
@@ -272,8 +274,11 @@ export function loadSourceFile(filePath: string): LoadedSource {
   const titles = titlesArr.map((t, i) => validateTitle(t, filePath, i));
 
   const kindRaw = requireString(obj.kind, filePath, 'kind');
-  if (!isSourceKind(kindRaw)) {
-    fail(filePath, `kind "${kindRaw}" must be "periodical", "monograph", or "source-group"`);
+  if (!isSourceStructuralKind(kindRaw)) {
+    fail(
+      filePath,
+      `kind "${kindRaw}" must be "periodical", "monograph", "archival-item", or "source-group"`,
+    );
   }
 
   // The member -> source-group edge (FR-006). Absent stays undefined -- no
@@ -303,6 +308,22 @@ export function loadSourceFile(filePath: string): LoadedSource {
   const sourceCase = optionalString(obj.case, filePath, 'case');
   const notes = optionalString(obj.notes, filePath, 'notes');
 
+  // Corpus-centrality mark (optional): absent means a central corpus work; a
+  // present value is narrowed against the closed `SourceCentrality` vocab, so an
+  // unrecognized value fails loud rather than being silently accepted.
+  const centralityRaw = optionalString(obj.centrality, filePath, 'centrality');
+  let centrality: SourceCentrality | undefined;
+  if (centralityRaw !== undefined) {
+    if (!isSourceCentrality(centralityRaw)) {
+      fail(
+        filePath,
+        `centrality "${centralityRaw}" is not in the closed SourceCentrality ` +
+          `vocabulary (central / adjacent)`,
+      );
+    }
+    centrality = centralityRaw;
+  }
+
   // Corpus-coverage-audit authored fields (specs/007), all optional/additive.
   // Parsed faithfully with the loader's normal shape/required-field checks;
   // richer vocab/referential/group-only validation is a later validation task.
@@ -313,10 +334,10 @@ export function loadSourceFile(filePath: string): LoadedSource {
       : requireArray(obj.references, filePath, 'references').map((r, i) =>
           validateReference(r, filePath, i),
         );
-  const knownMemberCount =
-    obj.knownMemberCount === undefined
+  const knownExtent =
+    obj.knownExtent === undefined
       ? undefined
-      : validateKnownMemberCount(obj.knownMemberCount, filePath, 'knownMemberCount');
+      : validateKnownExtent(obj.knownExtent, filePath, 'knownExtent');
   const suspected: SuspectedGap[] | undefined =
     obj.suspected === undefined
       ? undefined
@@ -419,10 +440,11 @@ export function loadSourceFile(filePath: string): LoadedSource {
     creator,
     language,
     case: sourceCase,
+    centrality,
     evidenceClass,
     rights,
     references,
-    knownMemberCount,
+    knownExtent,
     suspected,
     notes,
     publications,

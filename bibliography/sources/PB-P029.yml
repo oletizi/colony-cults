@@ -1,0 +1,46 @@
+sourceId: PB-P029
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+titles:
+  - text: ROSOLEN Family 1902
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000792.htm
+    retrievedAt: 2026-07-15T07:42:34.258Z
+    identifiers:
+      - type: accession
+        value: NIMI-0792
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1902 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:42:34.877Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000792_nimi-0792-rosolen-family-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0792/36d588629755f86b873271f6a7e925fc14e7a3c84fe63b3e96bdd9395b4bdcc7.jpg
+        checksum: 36d588629755f86b873271f6a7e925fc14e7a3c84fe63b3e96bdd9395b4bdcc7
+        byteLength: 90363
+        provenancePath: archive/museum/new-italy-museum/nimi-0792/36d588629755f86b873271f6a7e925fc14e7a3c84fe63b3e96bdd9395b4bdcc7.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P029/https-newitaly-org-au-CAT-000792-htm-2026-07-15T07:42:34.258Z.json
+      retrievedAt: 2026-07-15T07:42:34.258Z
+      endpoint: https://newitaly.org.au/CAT/000792.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:42:35.701Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P029/https-newitaly-org-au-CAT-000792-htm-2026-07-15T07:42:34.258Z.json

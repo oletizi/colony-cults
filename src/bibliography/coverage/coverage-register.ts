@@ -34,15 +34,27 @@ function unresolvedReferenceEntries(loaded: LoadedSource): RegisterEntry[] {
   return entries;
 }
 
-/** Suspected-gap entries authored on one source-group. */
+/**
+ * Suspected-gap entries authored on one source-group. Each entry carries its
+ * `resolution` VERBATIM from the authored `SuspectedGap` when present (T023,
+ * specs/011 § SuspectedLead.resolution) -- an absent `resolution` stays
+ * absent here; it is never defaulted to `unexamined` on the model, only at
+ * render time (see `@/bibliography/coverage/coverage-render`).
+ */
 function suspectedEntries(group: LoadedSource): RegisterEntry[] {
   const owner = group.source.sourceId;
-  return (group.source.suspected ?? []).map((gap) => ({
-    kind: 'suspected',
-    description: gap.description,
-    basis: gap.basis,
-    owner,
-  }));
+  return (group.source.suspected ?? []).map((gap) => {
+    const entry: RegisterEntry = {
+      kind: 'suspected',
+      description: gap.description,
+      basis: gap.basis,
+      owner,
+    };
+    if (gap.resolution !== undefined) {
+      entry.resolution = gap.resolution;
+    }
+    return entry;
+  });
 }
 
 /** True when `loaded` belongs to work-bundle `workBundleId` (a member, or the group itself). */

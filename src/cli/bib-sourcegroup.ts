@@ -1,8 +1,12 @@
 /**
- * CLI wiring for the six source-group `bib` subactions (T020/T023/T028/T031/
+ * CLI wiring for the source-group `bib` subactions (T020/T023/T028/T031/
  * T034): `inventory`, `verify-member`, `promote`, `exclude-member`,
- * `acquire`, `discover`. Extracted from `src/cli/bibliography.ts` to keep both
- * files under the project's file-size guideline.
+ * `acquire`, `reconcile`, `discover`. Extracted from `src/cli/bibliography.ts`
+ * to keep both files under the project's file-size guideline. `inventory` is
+ * wired in `@/cli/bib-inventory` and `acquire`/`reconcile` are wired in
+ * `@/cli/bib-sourcegroup-acquire` -- both re-exported below -- for the same
+ * file-size reason; the rest (`verify-member`, `promote`, `exclude-member`,
+ * `discover`) are wired directly in this file.
  *
  * Each handler parses its own flags per
  * specs/006-source-group-acquisition/contracts/cli-commands.md, constructs the
@@ -14,59 +18,52 @@
  * returns a non-zero code; no fallbacks.
  */
 
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseArgs as nodeParseArgs } from 'node:util';
 
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
-import { deriveSourceLayout, registerSourceLayout } from '@/archive/location';
-import { runFetchSource } from '@/cli/fetch';
-import { parseCheckpointEvery } from '@/cli/parse';
+import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
-import {
-  gallicaArkIdentifierResolver,
-  gallicaArkMetadataResolver,
-} from '@/sourcegroup/gallica-ark-resolver';
-import { runAcquire } from '@/sourcegroup/acquire';
-import { runReconcile } from '@/sourcegroup/reconcile';
-import { gatherProvenance } from '@/bibliography/derive';
-import { resolveArchiveRoot } from '@/archive/location';
+import { gallicaArkIdentifierResolver } from '@/sourcegroup/gallica-ark-resolver';
 import { BnfSruDiscoveryMechanism } from '@/sourcegroup/discovery/bnf-sru';
 import { DiscoveryDispatcher } from '@/sourcegroup/discovery/discovery';
 import type { DiscoveryCandidate } from '@/sourcegroup/discovery/discovery';
 import { runExcludeMember } from '@/sourcegroup/exclude-member';
-import { runInventory } from '@/sourcegroup/inventory';
 import { runPromote } from '@/sourcegroup/promote';
 import { buildExistingMembers, runVerifyMember } from '@/sourcegroup/verify-member-command';
 
-/**
- * Resolve the repo root from THIS module's location -- `src/cli/` is two
- * levels below the repo root -- so a `bib` subaction behaves the same
- * regardless of the caller's `process.cwd()`. Shared by every handler here
- * and (re-imported) by `src/cli/bibliography.ts`.
- */
-export function resolveRepoRoot(): string {
-  const here = fileURLToPath(import.meta.url);
-  return path.resolve(path.dirname(here), '..', '..');
-}
+// `bib acquire` and `bib reconcile` (T031/T034, TASK-20/TASK-21/TASK-30) are
+// wired in their own module, `@/cli/bib-sourcegroup-acquire` -- see that
+// module's header for why -- and re-exported here so THIS module's existing
+// external importers (e.g. `@/cli/bibliography`) are unaffected.
+export {
+  registerMemberArchiveLayout,
+  type AcquireCliArgs,
+  parseApprovedRange,
+  parseAcquireArgs,
+  runAcquireCli,
+  type ReconcileCliArgs,
+  parseReconcileArgs,
+  runReconcileCli,
+} from '@/cli/bib-sourcegroup-acquire';
 
-/** The one-file-per-source SSOT directory under the repo root. */
-function sourcesDirOf(repoRoot: string): string {
-  return path.join(repoRoot, 'bibliography', 'sources');
-}
+// `bib inventory` (T017-T020) is wired in its own module, `@/cli/bib-inventory`
+// -- see that module's header for why -- and re-exported here so THIS
+// module's existing external importers (e.g. `@/cli/bibliography`) are
+// unaffected.
+export {
+  runInventoryCli,
+  parseInventoryArgs,
+  type InventoryCliArgs,
+} from '@/cli/bib-inventory';
 
-/** Narrow the `--kind` flag to the member-kind union (never `source-group`). */
-function asMemberKind(value: string | undefined): 'monograph' | 'periodical' | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-  if (value === 'monograph' || value === 'periodical') {
-    return value;
-  }
-  throw new Error(`--kind must be "monograph" or "periodical" (got "${value}")`);
-}
+// `resolveRepoRoot` moved to `@/cli/bib-sourcegroup-paths` (shared with
+// `@/cli/bib-inventory`, avoiding a circular import) but stays re-exported
+// here for this module's existing external importers
+// (`@/cli/bib-coverage`, `@/bibliography/coverage/load-coverage-report`,
+// `@/cli/bibliography`).
+export { resolveRepoRoot };
 
 /** Parse `--limit` into a positive integer (no silent fallback to a default). */
 function parseLimit(raw: string | undefined): number | undefined {
@@ -78,92 +75,6 @@ function parseLimit(raw: string | undefined): number | undefined {
     throw new Error(`--limit must be a positive integer (got "${raw}")`);
   }
   return n;
-}
-
-/** `bib inventory <ark> --group <id> [--kind] [--archive] [--dry-run]`. */
-export async function runInventoryCli(rest: string[]): Promise<number> {
-  let ark: string | undefined;
-  let group: string | undefined;
-  let kind: 'monograph' | 'periodical' | undefined;
-  let archive: string | undefined;
-  let dryRun = false;
-  try {
-    const { values, positionals } = nodeParseArgs({
-      args: rest,
-      options: {
-        group: { type: 'string' },
-        kind: { type: 'string' },
-        archive: { type: 'string' },
-        'dry-run': { type: 'boolean', default: false },
-      },
-      allowPositionals: true,
-      strict: true,
-    });
-    ark = positionals[0];
-    group = values.group;
-    kind = asMemberKind(values.kind);
-    archive = values.archive;
-    dryRun = Boolean(values['dry-run']);
-  } catch (error) {
-    console.error(`bib inventory: ${describeError(error)}`);
-    return 2;
-  }
-
-  if (ark === undefined) {
-    console.error('bib inventory: missing required argument <ark>');
-    return 2;
-  }
-  if (group === undefined) {
-    console.error('bib inventory: missing required flag --group <group-id>');
-    return 2;
-  }
-
-  const repoRoot = resolveRepoRoot();
-  const sourcesDir = sourcesDirOf(repoRoot);
-  // GALLICA (not the BnF general-catalogue SRU): the acquisition targets are
-  // Gallica digital documents (`bpt6k` arks), which the catalogue SRU does
-  // not index -- see @/sourcegroup/gallica-ark-resolver.
-  const resolveArk = gallicaArkMetadataResolver(new GallicaHttpClient(new HttpClient()));
-
-  try {
-    if (dryRun) {
-      const metadata = await resolveArk(ark);
-      if (metadata === null) {
-        throw new Error(`ark "${ark}" could not be resolved -- nothing would be created`);
-      }
-      const sourceArchive = archive ?? metadata.archive;
-      console.log(`bib inventory (dry-run): would create a member of "${group}" from ${ark}; wrote nothing`);
-      console.log(`  kind: ${kind ?? 'monograph'}`);
-      console.log(`  sourceArchive: ${sourceArchive ?? '(none -- pass --archive <name>)'}`);
-      for (const title of metadata.titles) {
-        console.log(`  title (${title.role}): ${title.text}`);
-      }
-      if (metadata.rightsRaw !== undefined) {
-        console.log(`  rightsRaw: ${metadata.rightsRaw}`);
-      }
-      return 0;
-    }
-
-    const result = await runInventory({
-      ark,
-      groupId: group,
-      kind,
-      archive,
-      sourcesDir,
-      baseDir: repoRoot,
-      resolveArk,
-    });
-    console.log(`bib inventory: created ${result.sourceId} (status: discovered, record: wanted)`);
-    console.log(`  sourceArchive: ${result.record.sourceArchive}`);
-    console.log(`  snapshot: ${result.snapshot.path}`);
-    if (!result.acquirable) {
-      console.log('  note: rights are not public-domain -- not yet acquirable (US1 scenario 5)');
-    }
-    return 0;
-  } catch (error) {
-    console.error(`bib inventory: ${describeError(error)}`);
-    return 1;
-  }
 }
 
 /** `bib verify-member <id> [--archive] [--json]`. */
@@ -299,217 +210,6 @@ export async function runExcludeMemberCli(rest: string[]): Promise<number> {
     return 0;
   } catch (error) {
     console.error(`bib exclude-member: ${describeError(error)}`);
-    return 1;
-  }
-}
-
-/**
- * Auto-register `id`'s archive layout (`@/archive/location`'s runtime
- * overlay) BEFORE `bib acquire` drives the shipped fetcher -- the fetcher
- * resolves a layout deep inside via the synchronous, sourceId-only
- * `sourceLayout(sourceId)`, which throws for a source-group member (created
- * by `bib inventory`) that was never hand-added to the static registry. Loads
- * the member Source (and, when it has one, its owning group, for the
- * fallback `case`) via the shipped `loadAllSources` -- fails loud if either
- * cannot be resolved, since a layout cannot be derived from nothing.
- *
- * Exported (not just used internally by `runAcquireCli`) so this wiring is
- * directly unit-testable without standing up the full CLI (real repo root,
- * real network-backed fetcher).
- */
-export function registerMemberArchiveLayout(sourcesDir: string, id: string): void {
-  const loaded = loadAllSources(sourcesDir);
-  const memberEntry = loaded.find((entry) => entry.source.sourceId === id);
-  if (memberEntry === undefined) {
-    throw new Error(`bib acquire: unknown sourceId "${id}" -- cannot resolve its archive layout`);
-  }
-  const memberSource = memberEntry.source;
-
-  let groupCase: string | undefined;
-  if (memberSource.partOf !== undefined) {
-    const groupEntry = loaded.find((entry) => entry.source.sourceId === memberSource.partOf);
-    if (groupEntry === undefined) {
-      throw new Error(
-        `bib acquire: member "${id}"'s group "${memberSource.partOf}" does not resolve to an ` +
-          `existing Source -- cannot derive its archive layout's fallback case`,
-      );
-    }
-    groupCase = groupEntry.source.case;
-  }
-
-  registerSourceLayout(id, deriveSourceLayout(memberSource, groupCase));
-}
-
-/** Typed result of parsing `bib acquire`'s argv (see {@link parseAcquireArgs}). */
-export interface AcquireCliArgs {
-  id: string | undefined;
-  archive: string | undefined;
-  objectStore: boolean;
-  dryRun: boolean;
-  checkpoint: boolean;
-  checkpointEvery: number | undefined;
-}
-
-/**
- * Parse `bib acquire <id> [--archive] [--object-store] [--dry-run]
- * [--checkpoint] [--checkpoint-every <N>]`'s argv into typed flags.
- *
- * Exported (not just used internally by `runAcquireCli`) so this parsing is
- * directly unit-testable without driving the real network-backed fetcher
- * (`runAcquireCli` always injects the real, unmocked `runFetchSource`).
- * `--checkpoint-every` is validated by the same `parseCheckpointEvery`
- * (`@/cli/parse`) the shipped fetcher's own `--checkpoint-every` uses, so a
- * malformed value fails identically here and there (fail loud, no
- * fallback).
- */
-export function parseAcquireArgs(rest: string[]): AcquireCliArgs {
-  const { values, positionals } = nodeParseArgs({
-    args: rest,
-    options: {
-      archive: { type: 'string' },
-      'object-store': { type: 'boolean', default: false },
-      'dry-run': { type: 'boolean', default: false },
-      checkpoint: { type: 'boolean', default: false },
-      'checkpoint-every': { type: 'string' },
-    },
-    allowPositionals: true,
-    strict: true,
-  });
-  return {
-    id: positionals[0],
-    archive: values.archive,
-    objectStore: Boolean(values['object-store']),
-    dryRun: Boolean(values['dry-run']),
-    checkpoint: Boolean(values.checkpoint),
-    checkpointEvery: parseCheckpointEvery(values['checkpoint-every']),
-  };
-}
-
-/** `bib acquire <id> [--archive] [--object-store] [--dry-run] [--checkpoint] [--checkpoint-every <N>]`. */
-export async function runAcquireCli(rest: string[]): Promise<number> {
-  let parsed: AcquireCliArgs;
-  try {
-    parsed = parseAcquireArgs(rest);
-  } catch (error) {
-    console.error(`bib acquire: ${describeError(error)}`);
-    return 2;
-  }
-  const { id, archive, objectStore, dryRun, checkpoint, checkpointEvery } = parsed;
-
-  if (id === undefined) {
-    console.error('bib acquire: missing required argument <id>');
-    return 2;
-  }
-
-  const repoRoot = resolveRepoRoot();
-  const sourcesDir = sourcesDirOf(repoRoot);
-  try {
-    // Auto-register this member's archive layout BEFORE the fetcher (below)
-    // resolves it -- see `registerMemberArchiveLayout`'s doc comment.
-    registerMemberArchiveLayout(sourcesDir, id);
-
-    const result = await runAcquire({
-      sourcesDir,
-      sourceId: id,
-      archive,
-      objectStore,
-      dryRun,
-      checkpoint,
-      checkpointEvery,
-      // The shipped fetcher, injected unchanged (D-08): no new fetch code here.
-      fetch: runFetchSource,
-    });
-    const mode = dryRun ? ' (dry-run)' : '';
-    console.log(
-      `bib acquire${mode}: ${result.sourceId} -> fetched ${result.ark} ` +
-        `from "${result.sourceArchive}"`,
-    );
-    return 0;
-  } catch (error) {
-    console.error(`bib acquire: ${describeError(error)}`);
-    return 1;
-  }
-}
-
-/** Typed result of parsing `bib reconcile`'s argv (see {@link parseReconcileArgs}). */
-export interface ReconcileCliArgs {
-  id: string | undefined;
-  archive: string | undefined;
-  archiveRoot: string | undefined;
-}
-
-/**
- * Parse `bib reconcile <id> [--archive <sourceArchive>] [--archive-root
- * <path>]`'s argv into typed flags. Exported so this parsing is directly
- * unit-testable without touching a real archive on disk.
- */
-export function parseReconcileArgs(rest: string[]): ReconcileCliArgs {
-  const { values, positionals } = nodeParseArgs({
-    args: rest,
-    options: {
-      archive: { type: 'string' },
-      'archive-root': { type: 'string' },
-    },
-    allowPositionals: true,
-    strict: true,
-  });
-  return {
-    id: positionals[0],
-    archive: values.archive,
-    archiveRoot: values['archive-root'],
-  };
-}
-
-/**
- * `bib reconcile <id> [--archive <sourceArchive>] [--archive-root <path>]`
- * (TASK-21): fold the archive's per-page object_store provenance into the
- * member's SSOT `repositoryRecords[].status`, closing the spec/impl gap
- * TASK-20 found (contract cli-commands.md line 64). Idempotent; re-runnable on
- * members acquired out-of-band. Registers the member's archive layout first
- * (same overlay `bib acquire` needs) so `gatherProvenance`'s `sourceLayout`
- * resolves a source-group member, then delegates to the tested
- * `runReconcile`, injecting the real `gatherProvenance`.
- */
-export async function runReconcileCli(rest: string[]): Promise<number> {
-  let parsed: ReconcileCliArgs;
-  try {
-    parsed = parseReconcileArgs(rest);
-  } catch (error) {
-    console.error(`bib reconcile: ${describeError(error)}`);
-    return 2;
-  }
-  const { id, archive, archiveRoot: archiveRootOverride } = parsed;
-
-  if (id === undefined) {
-    console.error('bib reconcile: missing required argument <id>');
-    return 2;
-  }
-
-  const repoRoot = resolveRepoRoot();
-  const sourcesDir = sourcesDirOf(repoRoot);
-  const archiveRoot = resolveArchiveRoot(repoRoot, archiveRootOverride);
-  try {
-    // Register this member's archive layout BEFORE gathering provenance --
-    // `gatherProvenance` resolves the source's slug via the synchronous,
-    // sourceId-only `sourceLayout(sourceId)`, which throws for a source-group
-    // member absent this runtime overlay (same reason `bib acquire` registers).
-    registerMemberArchiveLayout(sourcesDir, id);
-
-    const result = await runReconcile({
-      sourcesDir,
-      archiveRoot,
-      sourceId: id,
-      archive,
-      gather: gatherProvenance,
-    });
-    const verb = result.changed ? 'reconciled' : 'already reconciled';
-    console.log(
-      `bib reconcile: ${verb} ${result.sourceId} at "${result.sourceArchive}" -> ` +
-        `${result.status} (${result.storedCount}/${result.pageCount} master(s) in object store)`,
-    );
-    return 0;
-  } catch (error) {
-    console.error(`bib reconcile: ${describeError(error)}`);
     return 1;
   }
 }

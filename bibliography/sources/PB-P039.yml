@@ -1,0 +1,46 @@
+sourceId: PB-P039
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+titles:
+  - text: Photo wedding of SPINAZE  Antonio & Fiorina (nee BAZZO) 1911
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000971.htm
+    retrievedAt: 2026-07-15T07:45:35.705Z
+    identifiers:
+      - type: accession
+        value: NIMI-0971
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1911 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:45:36.101Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000971_nimi-0971-spinaze-antonio-and-fiorina-(nee-bazzo)-1911-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0971/d57be5904c84b825309c41fa0eec372384f76ce8ca329df284c17d8061069dc5.jpg
+        checksum: d57be5904c84b825309c41fa0eec372384f76ce8ca329df284c17d8061069dc5
+        byteLength: 88528
+        provenancePath: archive/museum/new-italy-museum/nimi-0971/d57be5904c84b825309c41fa0eec372384f76ce8ca329df284c17d8061069dc5.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P039/https-newitaly-org-au-CAT-000971-htm-2026-07-15T07:45:35.705Z.json
+      retrievedAt: 2026-07-15T07:45:35.705Z
+      endpoint: https://newitaly.org.au/CAT/000971.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:45:36.899Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P039/https-newitaly-org-au-CAT-000971-htm-2026-07-15T07:45:35.705Z.json

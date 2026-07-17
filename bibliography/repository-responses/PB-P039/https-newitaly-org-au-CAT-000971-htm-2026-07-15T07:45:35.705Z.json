@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1911\",\"evidence\":{\"excerpt\":\"Photo wedding of SPINAZE  Antonio & Fiorina (nee BAZZO) 1911\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the item's creation year, embedded in the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:45:35.705Z\"}},\"description\":{\"value\":\"Photo wedding of SPINAZE  Antonio & Fiorina (nee BAZZO) 1911\",\"evidence\":{\"excerpt\":\"Photo wedding of SPINAZE  Antonio & Fiorina (nee BAZZO) 1911\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:45:35.705Z\"}}}",
+  "retrievedAt": "2026-07-15T07:45:35.705Z",
+  "endpoint": "https://newitaly.org.au/CAT/000971.htm",
+  "normalizationVersion": 1
+}

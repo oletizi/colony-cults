@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1953\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdate_prompt\\\">Object Date </span> <span class=\\\"data\\\" id=\\\"objectdate\\\"> 1953</span></p>\",\"selector\":\"#objectdate\"},\"interpretation\":\"the item's object date\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:45:07.893Z\"}},\"description\":{\"value\":\"Photo of Park of Peace & Homestead 1953\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> Photo of Park of Peace & Homestead 1953</span></p>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the object's description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:45:07.893Z\"}}}",
+  "retrievedAt": "2026-07-15T07:45:07.893Z",
+  "endpoint": "https://newitaly.org.au/CAT/000957.htm",
+  "normalizationVersion": 1
+}

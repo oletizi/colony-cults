@@ -1,0 +1,46 @@
+sourceId: PB-P014
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+titles:
+  - text: School Group New Italy 1887
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001156.htm
+    retrievedAt: 2026-07-15T03:40:04.324Z
+    identifiers:
+      - type: accession
+        value: NIMI-1156
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1887 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T03:40:17.490Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001156_nimi-1156-school-group-1887-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1156/0cbe5bf43111c259bea9caa05ebf4b3771ac742f0ff0d2983bb87bfb38196014.jpg
+        checksum: 0cbe5bf43111c259bea9caa05ebf4b3771ac742f0ff0d2983bb87bfb38196014
+        byteLength: 96028
+        provenancePath: archive/museum/new-italy-museum/nimi-1156/0cbe5bf43111c259bea9caa05ebf4b3771ac742f0ff0d2983bb87bfb38196014.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P014/https-newitaly-org-au-CAT-001156-htm-2026-07-15T03:40:04.324Z.json
+      retrievedAt: 2026-07-15T03:40:04.324Z
+      endpoint: https://newitaly.org.au/CAT/001156.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T03:40:26.778Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P014/https-newitaly-org-au-CAT-001156-htm-2026-07-15T03:40:04.324Z.json

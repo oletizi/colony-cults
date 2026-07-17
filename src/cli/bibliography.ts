@@ -13,6 +13,7 @@ import {
   runVerifyMemberCli,
 } from '@/cli/bib-sourcegroup';
 import { runCoverageCli } from '@/cli/bib-coverage';
+import { runRightsAssessCli } from '@/cli/bib-rights-assess';
 import { deriveModel, gatherCensusForAll, gatherProvenance } from '@/bibliography/derive';
 import { loadAllSources } from '@/bibliography/load';
 import { describeError } from '@/bibliography/load-primitives';
@@ -29,8 +30,8 @@ import type { RepositoryRecord } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 
 /** Subactions the `bib` verb group recognizes (contracts/cli.md). */
-type Subaction = 'migrate' | 'show' | 'validate' | 'regenerate' | 'inventory' | 'verify-member' | 'promote' | 'exclude-member' | 'acquire' | 'reconcile' | 'discover' | 'coverage';
-const SUBACTIONS: readonly Subaction[] = ['migrate', 'show', 'validate', 'regenerate', 'inventory', 'verify-member', 'promote', 'exclude-member', 'acquire', 'reconcile', 'discover', 'coverage'];
+type Subaction = 'migrate' | 'show' | 'validate' | 'regenerate' | 'inventory' | 'verify-member' | 'promote' | 'exclude-member' | 'acquire' | 'reconcile' | 'discover' | 'coverage' | 'rights-assess';
+const SUBACTIONS: readonly Subaction[] = ['migrate', 'show', 'validate', 'regenerate', 'inventory', 'verify-member', 'promote', 'exclude-member', 'acquire', 'reconcile', 'discover', 'coverage', 'rights-assess'];
 
 function isSubaction(value: string): value is Subaction {
   return (SUBACTIONS as readonly string[]).includes(value);
@@ -493,5 +494,7 @@ export async function runBibliography(argv: string[]): Promise<number> {
       return runDiscoverCli(rest);
     case 'coverage':
       return runCoverageCli(rest);
+    case 'rights-assess':
+      return runRightsAssessCli(rest);
   }
 }

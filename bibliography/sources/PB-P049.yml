@@ -1,0 +1,47 @@
+sourceId: PB-P049
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+creator: ROSOLEN
+titles:
+  - text: Cream Truck built by ROSOLEN
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001089.htm
+    retrievedAt: 2026-07-15T07:49:43.381Z
+    identifiers:
+      - type: accession
+        value: NIMI-1089
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1920 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:49:44.050Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001089_nimi-1089-cream-truck-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1089/b58263439c7ada4142847b991e252f316bb2111c6c6f523db90e363183d6b8da.jpg
+        checksum: b58263439c7ada4142847b991e252f316bb2111c6c6f523db90e363183d6b8da
+        byteLength: 76568
+        provenancePath: archive/museum/new-italy-museum/nimi-1089/b58263439c7ada4142847b991e252f316bb2111c6c6f523db90e363183d6b8da.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P049/https-newitaly-org-au-CAT-001089-htm-2026-07-15T07:49:43.381Z.json
+      retrievedAt: 2026-07-15T07:49:43.381Z
+      endpoint: https://newitaly.org.au/CAT/001089.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:49:44.937Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P049/https-newitaly-org-au-CAT-001089-htm-2026-07-15T07:49:43.381Z.json

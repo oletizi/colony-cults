@@ -1,0 +1,46 @@
+sourceId: PB-P032
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+titles:
+  - text: School & Teacher's residence 1902
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000846.htm
+    retrievedAt: 2026-07-15T07:43:37.266Z
+    identifiers:
+      - type: accession
+        value: NIMI-0846
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1902 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:43:37.832Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000846_nimi-0846-school-and-residence-1902-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0846/3873616fb28016451bd94e7b922cef62914a8cb620661c434701d163d83b67a3.jpg
+        checksum: 3873616fb28016451bd94e7b922cef62914a8cb620661c434701d163d83b67a3
+        byteLength: 167295
+        provenancePath: archive/museum/new-italy-museum/nimi-0846/3873616fb28016451bd94e7b922cef62914a8cb620661c434701d163d83b67a3.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P032/https-newitaly-org-au-CAT-000846-htm-2026-07-15T07:43:37.266Z.json
+      retrievedAt: 2026-07-15T07:43:37.266Z
+      endpoint: https://newitaly.org.au/CAT/000846.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:43:38.659Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P032/https-newitaly-org-au-CAT-000846-htm-2026-07-15T07:43:37.266Z.json

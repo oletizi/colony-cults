@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1890\",\"evidence\":{\"excerpt\":\"Photo of New Italy Pioneers 1890\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the item's creation year, embedded in the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:43:51.453Z\"}},\"description\":{\"value\":\"Photo of New Italy Pioneers 1890\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> Photo of New Italy Pioneers 1890</span></p>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the object description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:43:51.453Z\"}}}",
+  "retrievedAt": "2026-07-15T07:43:51.453Z",
+  "endpoint": "https://newitaly.org.au/CAT/000952.htm",
+  "normalizationVersion": 1
+}

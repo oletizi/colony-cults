@@ -29,6 +29,19 @@ export async function runFetchIssue(
   args: ParsedArgs,
   deps: FetchDeps = defaultFetchDeps(args),
 ): Promise<void> {
+  // Usage guard (spec 012, T009): `--pages` selects an excerpt of a SINGLE
+  // document -- it is monograph-path-only in v1 (see `fetch-source`). A
+  // periodical issue has no per-issue folio-excerpt concept, so fail loud
+  // here, before any other work (including the OCR preflight below).
+  if (args.options.pages !== undefined) {
+    throw new Error(
+      'fetch-issue: --pages is not supported for a periodical issue -- it ' +
+        'selects folios of a single document and is monograph-path-only ' +
+        '(v1); use "fetch-source <documentArk> --source-id <id> --pages ' +
+        '<spec>" instead',
+    );
+  }
+
   // SC-008 / AS2: an OCR-enabled run fails loud BEFORE any work when the
   // toolchain is missing; an images-only run (no --ocr) never calls this.
   if (args.flags.ocr) {

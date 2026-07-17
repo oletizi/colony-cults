@@ -6,5 +6,6 @@ creator: various
 titles:
   - text: Fixture Source Group B - Unknown Extent
     role: canonical
-notes: "Source group with unknown member extent; used to test gap inference"
-knownMemberCount: unknown
+notes: "Source group with unexamined member extent; used to test gap inference"
+knownExtent:
+  state: unexamined

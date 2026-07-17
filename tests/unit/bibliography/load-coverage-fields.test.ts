@@ -7,12 +7,16 @@ import { loadSourceFile } from '@/bibliography/load';
 
 /**
  * T005: the loader carries the coverage-feature authored fields
- * (`evidenceClass`, `references[]`, `knownMemberCount`, `suspected[]`) through
+ * (`evidenceClass`, `references[]`, `knownExtent`, `suspected[]`) through
  * onto the loaded {@link Source}. All are optional/additive -- existing sources
  * with none of them load exactly as before (see the regression cases at the
  * bottom). Cross-field/vocab/referential validation (citedKind-in-vocab,
  * resolvedTo-referential, group-only enforcement, non-negative-integer) is the
  * job of the later validation tasks, NOT this loader.
+ *
+ * T025: `knownMemberCount: number | 'unknown'` is REPLACED by a discriminated
+ * `knownExtent` (specs/011 § KnownExtent) -- see the
+ * `loader: knownExtent (T025 discriminated union)` describe block below.
  */
 
 let dir: string;
@@ -175,8 +179,8 @@ references:
   });
 });
 
-describe('loader: knownMemberCount + suspected[] (source-group)', () => {
-  it('carries a numeric knownMemberCount and a full suspected[] onto the loaded group', () => {
+describe('loader: knownExtent + suspected[] (source-group)', () => {
+  it('carries a measured knownExtent and a full suspected[] onto the loaded group', () => {
     const filePath = writeSource(
       'PB-P004.yml',
       `
@@ -186,7 +190,10 @@ case: port-breton
 titles:
   - text: "Fixture Source Group - Test Campaign"
     role: canonical
-knownMemberCount: 3
+knownExtent:
+  state: measured
+  count: 3
+  basis: "three issues comprise the run"
 suspected:
   - description: "appeal-court records for the de Rays trial"
     basis: "trial testimony references an appeal not yet located"
@@ -197,7 +204,11 @@ suspected:
     const { source } = loadSourceFile(filePath);
 
     expect(source.kind).toBe('source-group');
-    expect(source.knownMemberCount).toBe(3);
+    expect(source.knownExtent).toEqual({
+      state: 'measured',
+      count: 3,
+      basis: 'three issues comprise the run',
+    });
     expect(source.suspected).toEqual([
       {
         description: 'appeal-court records for the de Rays trial',
@@ -206,23 +217,6 @@ suspected:
         notes: 'not available online as of last search',
       },
     ]);
-  });
-
-  it("round-trips knownMemberCount: 'unknown' as the literal string (distinct from 0 / absent)", () => {
-    const filePath = writeSource(
-      'PB-P004.yml',
-      `
-sourceId: PB-P004
-kind: source-group
-titles:
-  - text: "Fixture Source Group - Test Campaign"
-    role: canonical
-knownMemberCount: unknown
-`,
-    );
-    const { source } = loadSourceFile(filePath);
-
-    expect(source.knownMemberCount).toBe('unknown');
   });
 
   it('carries a minimal suspected entry (only required description + basis)', () => {
@@ -281,7 +275,10 @@ suspected:
     expect(() => loadSourceFile(filePath)).toThrow(/suspected\[0\]\.basis/);
   });
 
-  it('throws when knownMemberCount is neither a number nor the literal "unknown"', () => {
+});
+
+describe('loader: knownExtent (T025 discriminated union)', () => {
+  it('parses a measured extent (count + basis)', () => {
     const filePath = writeSource(
       'PB-P004.yml',
       `
@@ -290,10 +287,456 @@ kind: source-group
 titles:
   - text: "Whatever"
     role: canonical
-knownMemberCount: lots
+knownExtent:
+  state: measured
+  count: 5
+  basis: "five issues per the publisher's masthead"
 `,
     );
-    expect(() => loadSourceFile(filePath)).toThrow(/knownMemberCount/);
+    const { source } = loadSourceFile(filePath);
+    expect(source.knownExtent).toEqual({
+      state: 'measured',
+      count: 5,
+      basis: "five issues per the publisher's masthead",
+    });
+  });
+
+  it('parses an unexamined extent (no extra fields)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: unexamined
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.knownExtent).toEqual({ state: 'unexamined' });
+  });
+
+  it('parses an irreducible extent (basis only)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: irreducible
+  basis: "a heterogeneous, changing holding with no stable finite boundary"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.knownExtent).toEqual({
+      state: 'irreducible',
+      basis: 'a heterogeneous, changing holding with no stable finite boundary',
+    });
+  });
+
+  it('throws when a measured extent is missing count', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: measured
+  basis: "some basis"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/knownExtent\.count/);
+  });
+
+  it('throws when a measured extent is missing basis', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: measured
+  count: 3
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/knownExtent\.basis/);
+  });
+
+  it('throws when an irreducible extent is missing basis', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: irreducible
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/knownExtent\.basis/);
+  });
+
+  it('throws on an unknown key within an unexamined extent (no silent drop)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: unexamined
+  count: 3
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/unknown key "count"/);
+  });
+
+  it('throws when knownExtent.state is not in the closed vocabulary', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent:
+  state: partial
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(
+      /knownExtent\.state "partial" is not in the KnownExtent state vocabulary/,
+    );
+  });
+
+  it('throws on the retired bare literal "unknown" (no back-compat)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownExtent: unknown
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/knownExtent must be an object/);
+  });
+
+  it('throws on the retired old knownMemberCount key (no back-compat alias)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+knownMemberCount: 3
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/unknown key "knownMemberCount"/);
+  });
+});
+
+describe('loader: suspected[].resolution (T022 discriminated union)', () => {
+  it('parses an unexamined resolution (no extra fields)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: unexamined
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toEqual({ state: 'unexamined' });
+  });
+
+  it('parses an identified resolution (candidate + resolvedAt)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: identified
+      candidate: "Trove: The Vagabond, 3 May 1883"
+      resolvedAt: "2026-07-01"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toEqual({
+      state: 'identified',
+      candidate: 'Trove: The Vagabond, 3 May 1883',
+      resolvedAt: '2026-07-01',
+    });
+  });
+
+  it('parses an inventoried resolution (sourceId + resolvedAt)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: inventoried
+      sourceId: PB-P010
+      resolvedAt: "2026-07-02"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toEqual({
+      state: 'inventoried',
+      sourceId: 'PB-P010',
+      resolvedAt: '2026-07-02',
+    });
+  });
+
+  it('parses an excluded resolution (reason + resolvedAt)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: excluded
+      reason: "duplicate of an already-acquired issue"
+      resolvedAt: "2026-07-03"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toEqual({
+      state: 'excluded',
+      reason: 'duplicate of an already-acquired issue',
+      resolvedAt: '2026-07-03',
+    });
+  });
+
+  it('parses an unavailable resolution (reason + resolvedAt)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: unavailable
+      reason: "archive declined digitization request"
+      resolvedAt: "2026-07-04"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toEqual({
+      state: 'unavailable',
+      reason: 'archive declined digitization request',
+      resolvedAt: '2026-07-04',
+    });
+  });
+
+  it('omits resolution entirely when absent (not fabricated as unexamined)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+`,
+    );
+    const { source } = loadSourceFile(filePath);
+    expect(source.suspected?.[0]?.resolution).toBeUndefined();
+  });
+
+  it('throws when resolution.state is not in the closed vocabulary', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: resolved
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(
+      /resolution\.state "resolved" is not in the LeadResolution state vocabulary/,
+    );
+  });
+
+  it('throws when an identified resolution is missing candidate', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: identified
+      resolvedAt: "2026-07-01"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/resolution\.candidate/);
+  });
+
+  it('throws when an identified resolution is missing resolvedAt', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: identified
+      candidate: "Trove: The Vagabond, 3 May 1883"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/resolution\.resolvedAt/);
+  });
+
+  it('throws when an inventoried resolution is missing sourceId', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: inventoried
+      resolvedAt: "2026-07-02"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/resolution\.sourceId/);
+  });
+
+  it('throws when an excluded resolution is missing reason', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: excluded
+      resolvedAt: "2026-07-03"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/resolution\.reason/);
+  });
+
+  it('throws when an unavailable resolution is missing reason', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: unavailable
+      resolvedAt: "2026-07-04"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/resolution\.reason/);
+  });
+
+  it('throws on an unknown key within an unexamined resolution (no silent drop)', () => {
+    const filePath = writeSource(
+      'PB-P004.yml',
+      `
+sourceId: PB-P004
+kind: source-group
+titles:
+  - text: "Whatever"
+    role: canonical
+suspected:
+  - description: "a suspected work"
+    basis: "inferred somehow"
+    resolution:
+      state: unexamined
+      candidate: "should not be here"
+`,
+    );
+    expect(() => loadSourceFile(filePath)).toThrow(/unknown key "candidate"/);
   });
 });
 
@@ -315,7 +758,7 @@ titles:
 
     expect(source.evidenceClass).toBeUndefined();
     expect(source.references).toBeUndefined();
-    expect(source.knownMemberCount).toBeUndefined();
+    expect(source.knownExtent).toBeUndefined();
     expect(source.suspected).toBeUndefined();
     // Existing fields untouched.
     expect(source.sourceId).toBe('PB-P001');

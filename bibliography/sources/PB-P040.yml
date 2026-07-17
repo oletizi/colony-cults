@@ -1,0 +1,46 @@
+sourceId: PB-P040
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+titles:
+  - text: Photo of SANOTTI Pietro & Angelina (nee BATTISTUZZI) Golden Wedding
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000982.htm
+    retrievedAt: 2026-07-15T07:45:48.403Z
+    identifiers:
+      - type: accession
+        value: NIMI-0982
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1940 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:45:48.795Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000982_nimi-0982-sanotti-pietro-and-angelina-(nee-battistuzzi)-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0982/3eff964da9cd9990e15367887eb4456d85f043c4e4c4dd795191c1fcd0a541f5.jpg
+        checksum: 3eff964da9cd9990e15367887eb4456d85f043c4e4c4dd795191c1fcd0a541f5
+        byteLength: 39172
+        provenancePath: archive/museum/new-italy-museum/nimi-0982/3eff964da9cd9990e15367887eb4456d85f043c4e4c4dd795191c1fcd0a541f5.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P040/https-newitaly-org-au-CAT-000982-htm-2026-07-15T07:45:48.403Z.json
+      retrievedAt: 2026-07-15T07:45:48.403Z
+      endpoint: https://newitaly.org.au/CAT/000982.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:45:49.589Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P040/https-newitaly-org-au-CAT-000982-htm-2026-07-15T07:45:48.403Z.json

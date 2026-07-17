@@ -11,7 +11,7 @@ describe('classifyIdentifier', () => {
     },
   );
 
-  it.each(['ark', 'iiif-manifest', 'scan-doi'] as const)(
+  it.each(['accession', 'ark', 'iiif-manifest', 'scan-doi'] as const)(
     'classifies %s as a copy-level identifier',
     (type) => {
       expect(classifyIdentifier(type)).toBe('copy');

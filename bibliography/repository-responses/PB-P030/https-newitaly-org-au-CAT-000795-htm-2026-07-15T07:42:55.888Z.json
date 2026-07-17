@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1902\",\"evidence\":{\"excerpt\":\"ROSOLEN Giacomo & Maria (BUORO) 1902\",\"selector\":\"#objectname\"},\"interpretation\":\"the item's year, stated in the object name\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:42:55.888Z\"}},\"description\":{\"value\":\"Photo of ROSOLEN Giacomo & Maria (BUORO) & child Rose 1902\",\"evidence\":{\"excerpt\":\"Photo of ROSOLEN Giacomo & Maria (BUORO) & child Rose 1902\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the object description/content summary\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:42:55.888Z\"}}}",
+  "retrievedAt": "2026-07-15T07:42:55.888Z",
+  "endpoint": "https://newitaly.org.au/CAT/000795.htm",
+  "normalizationVersion": 1
+}

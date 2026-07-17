@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1881\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdate_prompt\\\">Object Date </span> <span class=\\\"data\\\" id=\\\"objectdate\\\"> 1881</span></p>\",\"selector\":\"#objectdate\"},\"interpretation\":\"the item's creation year, stated as Object Date\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T03:43:11.179Z\"}},\"description\":{\"value\":\"Sydney Harbour 1881\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdesc_prompt\\\">Object Desc </span> <span class=\\\"data\\\" id=\\\"objectdesc\\\"> Sydney Harbour 1881</span></p>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the item description, stated as Object Desc\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T03:43:11.179Z\"}}}",
+  "retrievedAt": "2026-07-15T03:43:11.179Z",
+  "endpoint": "https://newitaly.org.au/CAT/001112.htm",
+  "normalizationVersion": 1
+}

@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<srw:searchRetrieveResponse xmlns:ns6="http://gallica.bnf.fr/namespaces/gallica/" xmlns:diag="http://www.loc.gov/zing/srw/diagnostic/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:srw="http://www.loc.gov/zing/srw/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <srw:version>1.2</srw:version>
+    <srw:echoedSearchRetrieveRequest>
+        <srw:query>dc.title all "Nouvelle-France colonie libre Port-Breton"</srw:query>
+        <srw:version>1.2</srw:version>
+    </srw:echoedSearchRetrieveRequest>
+    <srw:numberOfRecords>6</srw:numberOfRecords>
+    <srw:extraResponseData>&lt;numberOfRecordsDecollapser&gt;84&lt;/numberOfRecordsDecollapser&gt;</srw:extraResponseData>
+    <srw:records>
+        <srw:record>
+            <srw:recordSchema>http://www.openarchives.org/OAI/2.0/OAIdc.xsd</srw:recordSchema>
+            <srw:recordPacking>xml</srw:recordPacking>
+            <srw:recordData>
+                <oai_dc:dc>
+                    <dc:creator>Du Breil de Rays, Charles (1832-1893). Auteur du texte</dc:creator>
+                    <dc:date>1879</dc:date>
+                    <dc:description>Avec mode texte</dc:description>
+                    <dc:format>2 p. ; in-4</dc:format>
+                    <dc:format>Nombre total de vues : 5</dc:format>
+                    <dc:identifier>https://gallica.bnf.fr/ark:/12148/bpt6k5806269g</dc:identifier>
+                    <dc:language>fre</dc:language>
+                    <dc:language>français</dc:language>
+                    <dc:publisher> (Paris)</dc:publisher>
+                    <dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb341398750</dc:relation>
+                    <dc:rights>domaine public</dc:rights>
+                    <dc:rights>public domain</dc:rights>
+                    <dc:source>Bibliothèque nationale de France, département Philosophie, histoire, sciences de l'homme, 4-LK13-76</dc:source>
+                    <dc:subject>Port-Breton, Affaire de (1877-1884)</dc:subject>
+                    <dc:subject>Colonies françaises -- Océanie -- 1870-1914</dc:subject>
+                    <dc:subject>Nouvelle-Irlande (Papouasie-Nouvelle-Guinée ; île) -- 1870-1914</dc:subject>
+                    <dc:title>La Nouvelle France : colonie libre de Port-Breton... : clôture de la première série de souscription / [signé : Ch. du Breil, marquis de Rays]</dc:title>
+                    <dc:type>text</dc:type>
+                    <dc:type>monographie imprimée</dc:type>
+                    <dc:type>monographie imprimée</dc:type>
+                </oai_dc:dc>
+            </srw:recordData>
+            <srw:recordIdentifier>ark</srw:recordIdentifier>
+            <srw:recordPosition>0</srw:recordPosition>
+            <srw:extraRecordData>
+                <epubFile></epubFile>
+                <highres>https://gallica.bnf.fr/ark:/12148/bpt6k5806269g.highres</highres>
+                <infoSupModifiable></infoSupModifiable>
+                <link>https://gallica.bnf.fr/ark:/12148/bpt6k5806269g</link>
+                <lowres>https://gallica.bnf.fr/ark:/12148/bpt6k5806269g.lowres</lowres>
+                <medres>https://gallica.bnf.fr/ark:/12148/bpt6k5806269g.medres</medres>
+                <nqamoyen>96.81</nqamoyen>
+                <provenance>Gallica</provenance>
+                <thumbnail>https://gallica.bnf.fr/ark:/12148/bpt6k5806269g.thumbnail</thumbnail>
+                <typedoc>monographies</typedoc>
+                <uri>bpt6k5806269g</uri>
+            </srw:extraRecordData>
+        </srw:record>
+        <srw:record>
+            <srw:recordSchema>http://www.openarchives.org/OAI/2.0/OAIdc.xsd</srw:recordSchema>
+            <srw:recordPacking>xml</srw:recordPacking>
+            <srw:recordData>
+                <oai_dc:dc>
+                    <dc:date>1879-1885</dc:date>
+                    <dc:description>Périodicité : Mensuel ou bimensuel</dc:description>
+                    <dc:description>Appartient à l’ensemble documentaire : BIPFPIG00</dc:description>
+                    <dc:description>Appartient à l’ensemble documentaire : BIPFPIG13</dc:description>
+                    <dc:description>Appartient à l’ensemble documentaire : BIPFPIG29</dc:description>
+                    <dc:description>Appartient à l’ensemble documentaire : PACA1</dc:description>
+                    <dc:description>Avec mode texte</dc:description>
+                    <dc:format>Nombre total de vues : 985</dc:format>
+                    <dc:identifier>https://gallica.bnf.fr/ark:/12148/cb328261098/date</dc:identifier>
+                    <dc:identifier>NUMP-5185</dc:identifier>
+                    <dc:identifier>ISSN 21330395</dc:identifier>
+                    <dc:language>fre</dc:language>
+                    <dc:publisher>[s.n.] (Marseille)</dc:publisher>
+                    <dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb328261098</dc:relation>
+                    <dc:relation>A pour reproduction : La Nouvelle France (Marseille. Reproduction numérique) = ISSN 2390-786X (https://gallica.bnf.fr/ark:/12148/cb328261098/date)</dc:relation>
+                    <dc:relation>Première de couverture : 201227</dc:relation>
+                    <dc:source>Bibliothèque nationale de France, département Droit, économie, politique, JO-3094</dc:source>
+                    <dc:title>La Nouvelle France (Marseille)</dc:title>
+                    <dc:title>La Nouvelle France : journal de la colonie libre de Port-Breton, Océanie</dc:title>
+                    <dc:type>text</dc:type>
+                    <dc:type>texte</dc:type>
+                    <dc:type>publication en série imprimée</dc:type>
+                    <dc:type>printed serial</dc:type>
+                </oai_dc:dc>
+            </srw:recordData>
+            <srw:recordIdentifier>ark</srw:recordIdentifier>
+            <srw:recordPosition>1</srw:recordPosition>
+            <srw:extraRecordData>
+                <epubFile></epubFile>
+                <highres>https://gallica.bnf.fr/ark:/12148/bpt6k5606860b.highres</highres>
+                <infoSupModifiable></infoSupModifiable>
+                <link>https://gallica.bnf.fr/ark:/12148/cb328261098/date</link>
+                <lowres>https://gallica.bnf.fr/ark:/12148/bpt6k5606860b.lowres</lowres>
+                <medres>https://gallica.bnf.fr/ark:/12148/bpt6k5606860b.medres</medres>
+                <nqamoyen>92.38</nqamoyen>
+                <provenance>Gallica</provenance>
+                <thumbnail>https://gallica.bnf.fr/ark:/12148/bpt6k5606860b.thumbnail</thumbnail>
+                <typedoc>periodiques</typedoc>
+                <uri>bpt6k5606860b</uri>
+            </srw:extraRecordData>
+        </srw:record>
+        <srw:record>
+            <srw:recordSchema>http://www.openarchives.org/OAI/2.0/OAIdc.xsd</srw:recordSchema>
+            <srw:recordPacking>xml</srw:recordPacking>
+            <srw:recordData>
+                <oai_dc:dc>
+                    <dc:creator>Du Breil de Rays, Charles (1832-1893). Auteur du texte</dc:creator>
+                    <dc:date>1879</dc:date>
+                    <dc:description>Appartient à l’ensemble documentaire : PACA1</dc:description>
+                    <dc:description>Avec mode texte</dc:description>
+                    <dc:format>1 pièce (20 p.) ; in-8°</dc:format>
+                    <dc:format>Nombre total de vues : 32</dc:format>
+                    <dc:identifier>https://gallica.bnf.fr/ark:/12148/bpt6k58039518</dc:identifier>
+                    <dc:language>fre</dc:language>
+                    <dc:publisher>Typographie et lithographie Marius Olive (Marseille)</dc:publisher>
+                    <dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb34139872z</dc:relation>
+                    <dc:rights>domaine public</dc:rights>
+                    <dc:rights>public domain</dc:rights>
+                    <dc:source>Bibliothèque nationale de France, département Philosophie, histoire, sciences de l'homme, 8-LK13-79 (A)</dc:source>
+                    <dc:subject>Du Breil de Rays, Charles (1832-1893)</dc:subject>
+                    <dc:subject>Port-Breton, Affaire de (1877-1884)</dc:subject>
+                    <dc:subject>Colonisation -- Nouvelle-Irlande (Papouasie-Nouvelle-Guinée ; île) -- 1870-1914</dc:subject>
+                    <dc:subject>Colonies françaises -- Océanie -- 1870-1914</dc:subject>
+                    <dc:subject>Nouvelle-Irlande (Papouasie-Nouvelle-Guinée ; île) -- 1870-1914</dc:subject>
+                    <dc:title>Colonie libre de Port-Breton : Nouvelle France en Océanie / [signé : Ch. du Breil, marquis de Rays]</dc:title>
+                    <dc:type>text</dc:type>
+                    <dc:type>monographie imprimée</dc:type>
+                    <dc:type>printed monograph</dc:type>
+                </oai_dc:dc>
+            </srw:recordData>
+            <srw:recordIdentifier>ark</srw:recordIdentifier>
+            <srw:recordPosition>2</srw:recordPosition>
+            <srw:extraRecordData>
+                <epubFile></epubFile>
+                <highres>https://gallica.bnf.fr/ark:/12148/bpt6k58039518.highres</highres>
+                <infoSupModifiable></infoSupModifiable>
+                <link>https://gallica.bnf.fr/ark:/12148/bpt6k58039518</link>
+                <lowres>https://gallica.bnf.fr/ark:/12148/bpt6k58039518.lowres</lowres>
+                <medres>https://gallica.bnf.fr/ark:/12148/bpt6k58039518.medres</medres>
+                <nqamoyen>97.33</nqamoyen>
+                <provenance>Gallica</provenance>
+                <thumbnail>https://gallica.bnf.fr/ark:/12148/bpt6k58039518.thumbnail</thumbnail>
+                <typedoc>monographies</typedoc>
+                <uri>bpt6k58039518</uri>
+            </srw:extraRecordData>
+        </srw:record>
+        <srw:record>
+            <srw:recordSchema>http://www.openarchives.org/OAI/2.0/OAIdc.xsd</srw:recordSchema>
+            <srw:recordPacking>xml</srw:recordPacking>
+            <srw:recordData>
+                <oai_dc:dc>
+                    <dc:creator>Du Breil de Rays, Charles (1832-1893). Auteur du texte</dc:creator>
+                    <dc:date>1879</dc:date>
+                    <dc:description>Appartient à l’ensemble documentaire : PACA1</dc:description>
+                    <dc:description>Avec mode texte</dc:description>
+                    <dc:format>1 pièce (20 p.) ; in-8°</dc:format>
+                    <dc:format>Nombre total de vues : 36</dc:format>
+                    <dc:identifier>https://gallica.bnf.fr/ark:/12148/bpt6k58040250</dc:identifier>
+                    <dc:language>fre</dc:language>
+                    <dc:publisher>Typographie et lithographie Marius Olive (Marseille)</dc:publisher>
+                    <dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb32048782h</dc:relation>
+                    <dc:rights>domaine public</dc:rights>
+                    <dc:rights>public domain</dc:rights>
+                    <dc:source>Bibliothèque nationale de France, département Philosophie, histoire, sciences de l'homme, 8-LK13-77</dc:source>
+                    <dc:subject>Du Breil de Rays, Charles (1832-1893)</dc:subject>
+                    <dc:subject>Port-Breton, Affaire de (1877-1884)</dc:subject>
+                    <dc:subject>Colonisation -- Nouvelle-Irlande (Papouasie-Nouvelle-Guinée ; île) -- 1870-1914</dc:subject>
+                    <dc:subject>Colonies françaises -- Océanie -- 1870-1914</dc:subject>
+                    <dc:subject>Nouvelle-Irlande (Papouasie-Nouvelle-Guinée ; île) -- 1870-1914</dc:subject>
+                    <dc:title>La colonie libre de Port-Breton : Nouvelle France en Océanie : [conférence faite par le marquis de Rays au salon des œuvres de Marseille] : [et compte rendu de cette conférence par la Gazette du Midi]</dc:title>
+                    <dc:type>text</dc:type>
+                    <dc:type>monographie imprimée</dc:type>
+                    <dc:type>printed monograph</dc:type>
+                </oai_dc:dc>
+            </srw:recordData>
+            <srw:recordIdentifier>ark</srw:recordIdentifier>
+            <srw:recordPosition>3</srw:recordPosition>
+            <srw:extraRecordData>
+                <epubFile></epubFile>
+                <highres>https://gallica.bnf.fr/ark:/12148/bpt6k58040250.highres</highres>
+                <infoSupModifiable></infoSupModifiable>
+                <link>https://gallica.bnf.fr/ark:/12148/bpt6k58040250</link>
+                <lowres>https://gallica.bnf.fr/ark:/12148/bpt6k58040250.lowres</lowres>
+                <medres>https://gallica.bnf.fr/ark:/12148/bpt6k58040250.medres</medres>
+                <nqamoyen>97.75</nqamoyen>
+                <provenance>Gallica</provenance>
+                <thumbnail>https://gallica.bnf.fr/ark:/12148/bpt6k58040250.thumbnail</thumbnail>
+                <typedoc>monographies</typedoc>
+                <uri>bpt6k58040250</uri>
+            </srw:extraRecordData>
+        </srw:record>
+        <srw:record>
+            <srw:recordSchema>http://www.openarchives.org/OAI/2.0/OAIdc.xsd</srw:recordSchema>
+            <srw:recordPacking>xml</srw:recordPacking>
+            <srw:recordData>
+                <oai_dc:dc>
+                    <dc:creator>Baudouin, A. (Dr). Auteur du texte</dc:creator>
+                    <dc:date>1883</dc:date>
+                    <dc:description>Contient une table des matières</dc:description>
+                    <dc:description>Avec mode texte</dc:description>
+                    <dc:format>1 vol. (346 p.) : fig. ; In-18</dc:format>
+                    <dc:format>Nombre total de vues : 395</dc:format>
+                    <dc:identifier>https://gallica.bnf.fr/ark:/12148/bpt6k58017546</dc:identifier>
+                    <dc:identifier>NUMM-5801754</dc:identifier>
+                    <dc:language>fre</dc:language>
+                    <dc:publisher>M. Dreyfous (Paris)</dc:publisher>
+                    <dc:relation>Notice d'ensemble : http://catalogue.bnf.fr/ark:/12148/cb30067131v</dc:relation>
+                    <dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb30067131v</dc:relation>
+                    <dc:rights>domaine public</dc:rights>
+                    <dc:rights>public domain</dc:rights>
+                    <dc:source>Bibliothèque nationale de France, département Philosophie, histoire, sciences de l'homme, 8-LK13-99</dc:source>
+                    <dc:subject>Port-Breton</dc:subject>
+                    <dc:subject>France -- Colonies -- Histoire</dc:subject>
+                    <dc:title>L'aventure de Port-Breton : et la colonie libre dite Nouvelle-France : souvenirs personnels et documents / par A. Baudouin,...</dc:title>
+                    <dc:type>text</dc:type>
+                    <dc:type>monographie imprimée</dc:type>
+                    <dc:type>printed monograph</dc:type>
+                </oai_dc:dc>
+            </srw:recordData>
+            <srw:recordIdentifier>ark</srw:recordIdentifier>
+            <srw:recordPosition>4</srw:recordPosition>
+            <srw:extraRecordData>
+                <epubFile></epubFile>
+                <highres>https://gallica.bnf.fr/ark:/12148/bpt6k58017546.highres</highres>
+                <infoSupModifiable></infoSupModifiable>
+                <link>https://gallica.bnf.fr/ark:/12148/bpt6k58017546</link>
+                <lowres>https://gallica.bnf.fr/ark:/12148/bpt6k58017546.lowres</lowres>
+                <medres>https://gallica.bnf.fr/ark:/12148/bpt6k58017546.medres</medres>
+                <nqamoyen>97.61</nqamoyen>
+                <provenance>Gallica</provenance>
+                <thumbnail>https://gallica.bnf.fr/ark:/12148/bpt6k58017546.thumbnail</thumbnail>
+                <typedoc>monographies</typedoc>
+                <uri>bpt6k58017546</uri>
+            </srw:extraRecordData>
+        </srw:record>
+        <srw:record>
+            <srw:recordSchema>http://www.openarchives.org/OAI/2.0/OAIdc.xsd</srw:recordSchema>
+            <srw:recordPacking>xml</srw:recordPacking>
+            <srw:recordData>
+                <oai_dc:dc>
+                    <dc:coverage>Papouasie-Nouvelle-Guinée</dc:coverage>
+                    <dc:creator>Auxais, Maur d'. Cartographe</dc:creator>
+                    <dc:date>1881</dc:date>
+                    <dc:description>Échelle(s) : 1:7 500 000</dc:description>
+                    <dc:description>Appartient à l’ensemble documentaire : MssSGE1</dc:description>
+                    <dc:format>1 carte</dc:format>
+                    <dc:format>image/jpeg</dc:format>
+                    <dc:format>Nombre total de vues : 1</dc:format>
+                    <dc:identifier>https://gallica.bnf.fr/ark:/12148/btv1b10870266z</dc:identifier>
+                    <dc:identifier>IFN-10870266</dc:identifier>
+                    <dc:language>fre</dc:language>
+                    <dc:relation>Notice du catalogue : http://catalogue.bnf.fr/ark:/12148/cb38797788d</dc:relation>
+                    <dc:rights>conditions spécifiques d'utilisation - Société de Géographie</dc:rights>
+                    <dc:rights>restricted use</dc:rights>
+                    <dc:source>Bibliothèque nationale de France, département Société de Géographie, SG COLIS 37 BIS (4064)</dc:source>
+                    <dc:subject>Nouvelle-Guinée (île)</dc:subject>
+                    <dc:title>[Port-Breton]. "Carte de la Nouvelle France. Colonie libre de Port Breton. 1881 (carte imprimée au 1/7 500 000)</dc:title>
+                    <dc:type>map</dc:type>
+                    <dc:type>carte</dc:type>
+                    <dc:type>image fixe</dc:type>
+                    <dc:type>image</dc:type>
+                    <dc:type>still image</dc:type>
+                </oai_dc:dc>
+            </srw:recordData>
+            <srw:recordIdentifier>ark</srw:recordIdentifier>
+            <srw:recordPosition>5</srw:recordPosition>
+            <srw:extraRecordData>
+                <epubFile></epubFile>
+                <highres>https://gallica.bnf.fr/ark:/12148/btv1b10870266z.highres</highres>
+                <infoSupModifiable></infoSupModifiable>
+                <link>https://gallica.bnf.fr/ark:/12148/btv1b10870266z</link>
+                <lowres>https://gallica.bnf.fr/ark:/12148/btv1b10870266z.lowres</lowres>
+                <medres>https://gallica.bnf.fr/ark:/12148/btv1b10870266z.medres</medres>
+                <nqamoyen>0.0</nqamoyen>
+                <provenance>Gallica</provenance>
+                <thumbnail>https://gallica.bnf.fr/ark:/12148/btv1b10870266z.thumbnail</thumbnail>
+                <typedoc>cartes</typedoc>
+                <uri>btv1b10870266z</uri>
+            </srw:extraRecordData>
+        </srw:record>
+    </srw:records>
+    <srw:nextRecordPosition>7</srw:nextRecordPosition>
+</srw:searchRetrieveResponse>

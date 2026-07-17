@@ -1,4 +1,9 @@
-import type { CitedKind, EvidenceClass, SourceLifecycleStatus } from '@/bibliography/vocab';
+import type {
+  CitedKind,
+  EvidenceClass,
+  SourceCentrality,
+  SourceLifecycleStatus,
+} from '@/bibliography/vocab';
 import type { WorkLevelIdentifierType } from '@/model/identifiers';
 import type { Publication, SourceRights } from '@/model/publication';
 
@@ -15,12 +20,17 @@ export interface Source {
   /** One or more titles; none is authoritative (FR-003). */
   titles: Title[];
   /**
-   * Determines whether a census is built. A `source-group` (FR-001) is a
-   * research-defined container of member Sources -- it is never fetchable and
-   * holds no repository records; its members are derived from their `partOf`
-   * edges, not listed here.
+   * Determines whether a census is built. The structural kind of this work:
+   * `periodical` (serial) / `monograph` (monographic textual work) /
+   * `archival-item` (discrete non-serial archival work, e.g. photograph, letter,
+   * postcard, certificate) / `source-group` (non-fetchable work bundle). A
+   * `source-group` (FR-001) is a research-defined container of member Sources
+   * -- it is never fetchable and holds no repository records; its members are
+   * derived from their `partOf` edges, not listed here. A member's `kind` may be
+   * any of `periodical`, `monograph`, or `archival-item` -- group membership does
+   * not change the member's own kind.
    */
-  kind: 'periodical' | 'monograph' | 'source-group';
+  kind: 'periodical' | 'monograph' | 'archival-item' | 'source-group';
   /**
    * The `sourceId` of the source-group this Source is a member of (FR-006).
    * Present only on members; absent on standalone sources and on the group
@@ -51,6 +61,15 @@ export interface Source {
   /** Corpus grouping, e.g. `port-breton`. */
   case?: string;
   /**
+   * This source's relation to the corpus's central subject. Absent or
+   * `'central'` is a core corpus work; `'adjacent'` marks a corpus-adjacent
+   * source -- preserved and potentially interesting, but NOT central to what
+   * the corpus is about (e.g. New Italy settlement material held alongside,
+   * yet distinct from, the Port Breton affair). Adjacent members are counted
+   * separately by the coverage report, never toward the central-corpus total.
+   */
+  centrality?: SourceCentrality;
+  /**
    * The genre/evidence class of this work, e.g. `pamphlet` or `trial-record`.
    * Orthogonal to the structural `kind` (a `monograph` may be a `pamphlet`,
    * `prospectus`, ...) -- this describes what kind of evidence the work IS,
@@ -77,13 +96,17 @@ export interface Source {
    * coverage report measures actual members (derived from `partOf` edges)
    * against. Valid ONLY on `kind: 'source-group'`; authoring it on any other
    * kind is an error (enforced by a later validation task, not the loader).
-   * Distinct from the *derived* actual count: this is the hand-authored belief
-   * about how many members SHOULD exist. The literal string `'unknown'` is
-   * first-class and deliberately distinct from an incomplete group and from a
-   * count of `0` -- `unknown != incomplete != 0`. Absent means the extent has
-   * not been asserted (treated as `'unknown'` by the report).
+   * A discriminated union (specs/011-museum-acquisition-path/data-model.md §
+   * KnownExtent), replacing the earlier scalar `knownMemberCount: number |
+   * 'unknown'` (removed, no back-compat): `measured` records a finite
+   * hand-authored belief (`count`) with its `basis`; `unexamined` means the
+   * extent has not yet been assessed; `irreducible` means the group's extent
+   * is fundamentally unbounded/unknowable (e.g. a heterogeneous, changing
+   * museum holding), with `basis` explaining why. Absent is treated as
+   * `{ state: 'unexamined' }` by the report -- never fabricated onto the
+   * loaded Source itself.
    */
-  knownMemberCount?: number | 'unknown';
+  knownExtent?: KnownExtent;
   /**
    * Inferred, uncited pre-discovery gaps in this source-group -- works
    * suspected to exist from publication pattern, testimony, or indirect
@@ -190,4 +213,54 @@ export interface SuspectedGap {
   evidenceClass?: EvidenceClass;
   /** Free-text notes. */
   notes?: string;
+  /**
+   * The disposition of this lead (specs/011 § SuspectedLead.resolution), as a
+   * discriminated union keyed on `state` -- illegal combinations (e.g. an
+   * `identified` lead with no `candidate`) are unrepresentable in the type,
+   * not merely rejected at runtime. Absent means the lead has not been
+   * dispositioned; by convention that is treated as `unexamined`, but an
+   * absent `resolution` is never fabricated into an explicit `{ state:
+   * 'unexamined' }` object on load -- see `@/bibliography/load-coverage-fields`.
+   */
+  resolution?: LeadResolution;
 }
+
+/**
+ * The disposition of a {@link SuspectedGap} lead (specs/011 § SuspectedLead.
+ * resolution). A discriminated union keyed on `state`: each state carries
+ * exactly the fields it needs, so e.g. an `excluded` lead without a `reason`
+ * cannot be constructed -- illegal states are unrepresentable, not just
+ * rejected by the loader. `unexamined` is the initial/default disposition (no
+ * extra fields); `identified` records a candidate repository reference found
+ * but not yet inventoried as a Source; `inventoried` records the `sourceId`
+ * the lead resolved to once a Source was authored for it; `excluded` and
+ * `unavailable` are both terminal-with-reason dead ends (excluded: judged not
+ * worth pursuing; unavailable: pursued but could not be obtained).
+ */
+export type LeadResolution =
+  | { state: 'unexamined' }
+  | { state: 'identified'; candidate: string; resolvedAt: string }
+  | { state: 'inventoried'; sourceId: string; resolvedAt: string }
+  | { state: 'excluded'; reason: string; resolvedAt: string }
+  | { state: 'unavailable'; reason: string; resolvedAt: string };
+
+/**
+ * The believed extent of a {@link Source.knownExtent} (specs/011-museum-
+ * acquisition-path/data-model.md § KnownExtent). A discriminated union keyed
+ * on `state`: `measured` records a finite hand-authored belief (`count`) with
+ * its `basis` -- distinct from the *derived* actual member count, this is
+ * what SHOULD exist; `unexamined` means the extent has not yet been assessed
+ * (the initial/default disposition, same convention as `LeadResolution`);
+ * `irreducible` means the group's extent is fundamentally
+ * unbounded/unknowable (e.g. a heterogeneous, changing museum holding with no
+ * stable finite public-domain boundary), with `basis` explaining why. Illegal
+ * combinations (a `measured` extent with no `count`, an `irreducible` extent
+ * with no `basis`) are unrepresentable in the type, not merely rejected at
+ * runtime. Replaces the earlier scalar `knownMemberCount: number | 'unknown'`
+ * -- the bare literal `'unknown'` and the old scalar shape are REMOVED; a
+ * loaded Source carrying either fails loud (no back-compat alias).
+ */
+export type KnownExtent =
+  | { state: 'measured'; count: number; basis: string }
+  | { state: 'unexamined' }
+  | { state: 'irreducible'; basis: string };

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<book>
+  <bookData>
+    <bookId>nouvellefrancec00groogoog</bookId>
+    <leafCount>8</leafCount>
+  </bookData>
+  <pageData>
+    <page leafNum="1">
+      <pageType>Cover</pageType>
+      <addToAccessFormats>true</addToAccessFormats>
+      <origWidth>1600</origWidth>
+      <origHeight>2300</origHeight>
+      <cropBox>
+        <x>0</x>
+        <y>0</y>
+        <w>1600</w>
+        <h>2300</h>
+      </cropBox>
+      <bookStart>true</bookStart>
+    </page>
+    <page leafNum="2">
+      <pageType>Color Card</pageType>
+      <addToAccessFormats>true</addToAccessFormats>
+      <origWidth>1600</origWidth>
+      <origHeight>2300</origHeight>
+      <cropBox>
+        <x>0</x>
+        <y>0</y>
+        <w>1600</w>
+        <h>2300</h>
+      </cropBox>
+    </page>
+    <page leafNum="3">
+      <pageType>Title</pageType>
+      <addToAccessFormats>true</addToAccessFormats>
+      <origWidth>1580</origWidth>
+      <origHeight>2290</origHeight>
+      <cropBox>
+        <x>0</x>
+        <y>0</y>
+        <w>1580</w>
+        <h>2290</h>
+      </cropBox>
+    </page>
+    <page leafNum="4">
+      <pageType>Normal</pageType>
+      <addToAccessFormats>true</addToAccessFormats>
+      <origWidth>1600</origWidth>
+      <origHeight>2300</origHeight>
+      <cropBox>
+        <x>0</x>
+        <y>0</y>
+        <w>1600</w>
+        <h>2300</h>
+      </cropBox>
+    </page>
+    <page leafNum="5">
+      <pageType>Normal</pageType>
+      <addToAccessFormats>true</addToAccessFormats>
+      <origWidth>1598</origWidth>
+      <origHeight>2305</origHeight>
+      <cropBox>
+        <x>0</x>
+        <y>0</y>
+        <w>1598</w>
+        <h>2305</h>
+      </cropBox>
+    </page>
+    <page leafNum="6">
+      <pageType>Normal</pageType>
+      <addToAccessFormats>true</addToAccessFormats>
+      <origWidth>1602</origWidth>
+      <origHeight>2295</origHeight>
+      <cropBox>
+        <x>0</x>
+        <y>0</y>
+        <w>1602</w>
+        <h>2295</h>
+      </cropBox>
+    </page>
+    <page leafNum="7">
+      <pageType>Normal</pageType>
+      <addToAccessFormats>true</addToAccessFormats>
+      <origWidth>1600</origWidth>
+      <origHeight>2300</origHeight>
+      <cropBox>
+        <x>0</x>
+        <y>0</y>
+        <w>1600</w>
+        <h>2300</h>
+      </cropBox>
+    </page>
+    <page leafNum="8">
+      <pageType>Normal</pageType>
+      <addToAccessFormats>true</addToAccessFormats>
+      <origWidth>1599</origWidth>
+      <origHeight>2298</origHeight>
+      <cropBox>
+        <x>0</x>
+        <y>0</y>
+        <w>1599</w>
+        <h>2298</h>
+      </cropBox>
+    </page>
+  </pageData>
+</book>

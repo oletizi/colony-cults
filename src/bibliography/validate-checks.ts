@@ -22,6 +22,18 @@ import type { Source } from '@/model/source';
  * disk-reading check.
  *
  * See specs/004-canonical-source-metadata/contracts/validation.md.
+ *
+ * `RepositoryRecord.folios` (specs/012-page-range-acquisition, T004-T006) has
+ * no check in this module: unlike the referential/business-rule findings
+ * below (which run over an already-typed `CanonicalModel`), `folios`' shape
+ * invariants (non-empty, integer, `>= 1`, strictly ascending/unique) are
+ * needed just to PRODUCE a well-typed `number[]` in the first place, so they
+ * are enforced at load time in `@/bibliography/load-fields`'s
+ * `validateFolios` -- the same split every other RepositoryRecord field
+ * (`rights`, `rightsAssessment`, `metadataSnapshot`, `verification`) already
+ * follows. `bib validate` still fail-loud rejects a malformed `folios` --
+ * building the `CanonicalModel` it validates re-runs the loader, which
+ * throws first.
  */
 
 /** Human-readable label for one Repository Record, naming its key. */

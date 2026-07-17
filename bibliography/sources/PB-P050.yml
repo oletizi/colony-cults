@@ -1,0 +1,48 @@
+sourceId: PB-P050
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+titles:
+  - text: "ZANNINI Domonic Virginia and daughter Orsala\r
+
+      Orsala married Pietro MORANDINI"
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001110.htm
+    retrievedAt: 2026-07-15T07:49:59.811Z
+    identifiers:
+      - type: accession
+        value: NIMI-1110
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1899 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:50:00.390Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001110_nimi-1110-zannini_domenic&virginia%20with%20orsola-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1110/ac0d76b2eb0cf838e964be5dda00c24390c2bf4bd2f4b62f3fadc1a9895a4c76.jpg
+        checksum: ac0d76b2eb0cf838e964be5dda00c24390c2bf4bd2f4b62f3fadc1a9895a4c76
+        byteLength: 60290
+        provenancePath: archive/museum/new-italy-museum/nimi-1110/ac0d76b2eb0cf838e964be5dda00c24390c2bf4bd2f4b62f3fadc1a9895a4c76.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P050/https-newitaly-org-au-CAT-001110-htm-2026-07-15T07:49:59.811Z.json
+      retrievedAt: 2026-07-15T07:49:59.811Z
+      endpoint: https://newitaly.org.au/CAT/001110.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:50:01.227Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P050/https-newitaly-org-au-CAT-001110-htm-2026-07-15T07:49:59.811Z.json

@@ -1,0 +1,45 @@
+sourceId: PB-P019
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Sydney Harbour 1881
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001112.htm
+    retrievedAt: 2026-07-15T03:43:11.179Z
+    identifiers:
+      - type: accession
+        value: NIMI-1112
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1881 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T03:43:11.598Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001112_nimi-1112-sydney-harbour-1881-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1112/8cf18e8e0d2c590992d0761993fbf575b8666a6e93250c8c663660f82bc2869a.jpg
+        checksum: 8cf18e8e0d2c590992d0761993fbf575b8666a6e93250c8c663660f82bc2869a
+        byteLength: 91837
+        provenancePath: archive/museum/new-italy-museum/nimi-1112/8cf18e8e0d2c590992d0761993fbf575b8666a6e93250c8c663660f82bc2869a.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P019/https-newitaly-org-au-CAT-001112-htm-2026-07-15T03:43:11.179Z.json
+      retrievedAt: 2026-07-15T03:43:11.179Z
+      endpoint: https://newitaly.org.au/CAT/001112.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T03:43:12.419Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P019/https-newitaly-org-au-CAT-001112-htm-2026-07-15T03:43:11.179Z.json

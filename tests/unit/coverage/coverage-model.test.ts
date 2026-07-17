@@ -61,27 +61,73 @@ describe('T008/T010 per-work-bundle lifecycle counts (per work, FR-014)', () => 
   });
 });
 
-describe('T022 gap semantics (knownMemberCount vs derived actual)', () => {
-  it('renders a numeric gap when knownMemberCount is a number', () => {
+describe('T025 gap semantics (knownExtent vs derived actual)', () => {
+  it('renders a numeric gap when knownExtent is measured', () => {
     const pb001 = workBundle('PB-P001');
-    expect(pb001.knownMemberCount).toBe(3);
+    expect(pb001.knownExtent).toEqual({
+      state: 'measured',
+      count: 3,
+      basis: 'three issues comprise the run',
+    });
     expect(pb001.gap).toBe(0); // 3 known - 3 actual
     expect(typeof pb001.gap).toBe('number');
   });
 
-  it('keeps a numeric gap of 0 distinct from the literal unknown', () => {
+  it('keeps a numeric gap of 0 distinct from an unexamined extent', () => {
     const pb002 = workBundle('PB-P002');
-    expect(pb002.knownMemberCount).toBe('unknown');
-    expect(pb002.gap).toBe('unknown');
-    // Distinctness: PB-P001 gap is the NUMBER 0, PB-P002 gap is the STRING 'unknown'.
-    expect(workBundle('PB-P001').gap).not.toBe('unknown');
+    expect(pb002.knownExtent).toEqual({ state: 'unexamined' });
+    expect(pb002.gap).toBe('unexamined');
+    // Distinctness: PB-P001 gap is the NUMBER 0, PB-P002 gap is the STRING 'unexamined'.
+    expect(workBundle('PB-P001').gap).not.toBe('unexamined');
   });
 
-  it('renders the unknown gap as the literal word, never 0 or a percentage', () => {
+  it('renders an unexamined gap as its state word, never 0, "unknown", or a percentage', () => {
     const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
-    expect(text).toContain('gap: unknown');
+    expect(text).toContain('gap: unexamined');
     expect(text).toContain('gap: 0'); // PB-P001's numeric zero gap
+    expect(text).not.toContain('gap: unknown');
     expect(text).not.toContain('%');
+  });
+});
+
+describe('T026 believed-extent BASIS surfaced distinctly per KnownExtent state (FR-019)', () => {
+  it('renders a measured extent with its count AND basis', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    // PB-P001 is fixture-authored measured: 3, basis "three issues comprise the run".
+    expect(text).toContain(
+      'believed extent (knownExtent): measured: 3 (basis: three issues comprise the run)',
+    );
+  });
+
+  it('renders an unexamined extent with no basis suffix, and never a bare "unknown"', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    // PB-P002 is fixture-authored unexamined (no basis field to show).
+    expect(text).toContain('believed extent (knownExtent): unexamined        gap: unexamined');
+    expect(text).not.toContain('unexamined (basis:');
+    expect(text).not.toContain('knownExtent): unknown');
+  });
+
+  it('renders an irreducible extent with its basis', () => {
+    const report = buildCoverageReport(loadFixtureInput());
+    const irreducibleReport = {
+      ...report,
+      perWorkBundle: [
+        {
+          workBundle: 'SYN-P001',
+          membersByLifecycleState: [],
+          actualMemberCount: 0,
+          adjacentMemberCount: 0,
+          knownExtent: { state: 'irreducible' as const, basis: 'the run is a continuous, unbounded serial' },
+          gap: 'irreducible' as const,
+        },
+        ...report.perWorkBundle,
+      ],
+    };
+    const text = renderCoverage(irreducibleReport, { json: false });
+    expect(text).toContain(
+      'believed extent (knownExtent): irreducible (basis: the run is a continuous, unbounded serial)' +
+        '        gap: irreducible',
+    );
   });
 });
 
@@ -153,20 +199,118 @@ describe('T014/T016/T019 unresolved-references register (FR-012)', () => {
     const report = buildCoverageReport(loadFixtureInput());
     const pb001 = report.register.byWorkBundle.find((b) => b.workBundle === 'PB-P001');
     const suspected = pb001?.entries.filter((e) => e.kind === 'suspected') ?? [];
-    expect(suspected).toEqual([
-      {
-        kind: 'suspected',
-        description: 'Suspected private correspondence regarding the campaign',
-        basis: 'Referenced indirectly in acquired members; location and archive status unknown',
-        owner: 'PB-P001',
-      },
-    ]);
+    expect(suspected).toContainEqual({
+      kind: 'suspected',
+      description: 'Suspected private correspondence regarding the campaign',
+      basis: 'Referenced indirectly in acquired members; location and archive status unknown',
+      owner: 'PB-P001',
+    });
   });
 
   it('leaves a work-bundle with no unresolved refs or suspected gaps empty', () => {
     const report = buildCoverageReport(loadFixtureInput());
     const pb002 = report.register.byWorkBundle.find((b) => b.workBundle === 'PB-P002');
     expect(pb002?.entries).toEqual([]);
+  });
+});
+
+describe('T023 suspected-lead resolution (specs/011 SC-004)', () => {
+  function suspectedByDescription(description: string) {
+    const report = buildCoverageReport(loadFixtureInput());
+    const pb001 = report.register.byWorkBundle.find((b) => b.workBundle === 'PB-P001');
+    const entry = pb001?.entries.find(
+      (e) => e.kind === 'suspected' && e.description === description,
+    );
+    if (entry === undefined) {
+      throw new Error(`fixture is missing expected suspected entry "${description}"`);
+    }
+    return entry;
+  }
+
+  it('carries an absent resolution through unchanged (renders as unexamined, today\'s behavior)', () => {
+    const entry = suspectedByDescription('Suspected private correspondence regarding the campaign');
+    expect(entry.resolution).toBeUndefined();
+  });
+
+  it('carries an identified resolution through with its candidate', () => {
+    const entry = suspectedByDescription('Suspected court filing referenced by a witness deposition');
+    expect(entry.resolution).toEqual({
+      state: 'identified',
+      candidate: 'Archive C, folder 12, item 4 (uninventoried)',
+      resolvedAt: '2026-07-02',
+    });
+  });
+
+  it('carries an inventoried resolution through with its sourceId', () => {
+    const entry = suspectedByDescription('Suspected companion pamphlet to the prospectus');
+    expect(entry.resolution).toEqual({
+      state: 'inventoried',
+      sourceId: 'PB-P008',
+      resolvedAt: '2026-07-03',
+    });
+  });
+
+  it('carries an excluded resolution through with its reason', () => {
+    const entry = suspectedByDescription('Suspected second printing of the prospectus');
+    expect(entry.resolution).toEqual({
+      state: 'excluded',
+      reason: 'Turned out to be a reprint of PB-P008, not a distinct work',
+      resolvedAt: '2026-07-04',
+    });
+  });
+
+  it('carries an unavailable resolution through with its reason', () => {
+    const entry = suspectedByDescription('Suspected diary of a campaign participant');
+    expect(entry.resolution).toEqual({
+      state: 'unavailable',
+      reason: 'Family declined to make the diary available for research',
+      resolvedAt: '2026-07-05',
+    });
+  });
+
+  it('renders an unexamined (or absent-resolution) lead as a plain open bullet, unchanged', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    const line = text
+      .split('\n')
+      .find((l) => l.includes('Suspected private correspondence regarding the campaign'));
+    expect(line).toBe(
+      '      - Suspected private correspondence regarding the campaign' +
+        ' (basis: Referenced indirectly in acquired members; location and archive status unknown)',
+    );
+  });
+
+  it('renders an identified lead distinctly, referencing its candidate, not as an open bullet', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    expect(text).toContain(
+      '- Suspected court filing referenced by a witness deposition' +
+        ' (basis: A candidate repository record was located but not yet inventoried as a Source)' +
+        '  [identified: candidate Archive C, folder 12, item 4 (uninventoried) (2026-07-02)]',
+    );
+  });
+
+  it('renders an inventoried lead referencing its resolved Source id', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    expect(text).toContain('[resolved: inventoried as PB-P008 (2026-07-03)]');
+  });
+
+  it('renders an excluded lead showing its reason', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    expect(text).toContain(
+      '[resolved: excluded -- Turned out to be a reprint of PB-P008, not a distinct work (2026-07-04)]',
+    );
+  });
+
+  it('renders an unavailable lead showing its reason', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    expect(text).toContain(
+      '[resolved: unavailable -- Family declined to make the diary available for research (2026-07-05)]',
+    );
+  });
+
+  it('counts ONLY the unexamined lead as open, not the four resolved leads (SC-004)', () => {
+    const text = renderCoverage(buildCoverageReport(loadFixtureInput()), { json: false });
+    // PB-P001 has 5 suspected leads: 1 unexamined (open), 4 resolved (not open).
+    expect(text).toContain('PB-P001:  (open: 1 / total: 5)');
   });
 });
 
@@ -271,5 +415,50 @@ describe('T012 determinism (SC-004)', () => {
     expect(text).toContain('Suspected private correspondence regarding the campaign');
     // No headline percentage anywhere (INV-1).
     expect(text).not.toContain('%');
+  });
+});
+
+describe('corpus-adjacent members (centrality) are counted separately, never as central', () => {
+  function member(sourceId: string, adjacent: boolean) {
+    const source: import('@/model/source').Source = {
+      sourceId,
+      kind: 'archival-item',
+      partOf: 'SYN-GRP',
+      status: 'approved-for-acquisition',
+      titles: [{ text: sourceId, role: 'archive' }],
+      identifiers: [],
+      ...(adjacent ? { centrality: 'adjacent' as const } : {}),
+    };
+    return { source, records: [], identifierLeaks: [] };
+  }
+
+  it('excludes adjacent members from actualMemberCount and reports them as adjacentMemberCount', () => {
+    const group: import('@/model/source').Source = {
+      sourceId: 'SYN-GRP',
+      kind: 'source-group',
+      knownExtent: { state: 'irreducible', basis: 'a heterogeneous holding' },
+      titles: [{ text: 'group', role: 'canonical' }],
+      identifiers: [],
+    };
+    const input = {
+      sources: [
+        { source: group, records: [], identifierLeaks: [] },
+        member('SYN-C1', false),
+        member('SYN-C2', false),
+        member('SYN-A1', true),
+        member('SYN-A2', true),
+        member('SYN-A3', true),
+      ],
+      searchLog: [],
+    };
+    const wb = buildCoverageReport(input).perWorkBundle.find((c) => c.workBundle === 'SYN-GRP');
+    expect(wb?.actualMemberCount).toBe(2);
+    expect(wb?.adjacentMemberCount).toBe(3);
+    // Adjacent members do not appear in the central lifecycle buckets either.
+    const centralTotal = (wb?.membersByLifecycleState ?? []).reduce((s, b) => s + b.count, 0);
+    expect(centralTotal).toBe(2);
+
+    const text = renderCoverage(buildCoverageReport(input), { json: false });
+    expect(text).toContain('[+ 3 corpus-adjacent, not central]');
   });
 });

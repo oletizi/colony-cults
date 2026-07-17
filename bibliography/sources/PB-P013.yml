@@ -1,0 +1,46 @@
+sourceId: PB-P013
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+titles:
+  - text: Pioneers Group Photo 1890
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000844.htm
+    retrievedAt: 2026-07-14T23:33:14.797Z
+    identifiers:
+      - type: accession
+        value: NIMI-0844
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Photograph 'Pioneers Group Photo 1890'; creation year 1890 (grounded from the object title). Australian pre-1969 photograph term expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research.
+      rightsJurisdiction: AU
+      assessedBy: operator
+      assessedAt: 2026-07-15T01:19:41.977Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000844_nimi-0844-pioneers-1890-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0844/164c022fc42751c75dbc6f77b00dab173b86a3a2a62a246275e8e59e1b764d90.jpg
+        checksum: 164c022fc42751c75dbc6f77b00dab173b86a3a2a62a246275e8e59e1b764d90
+        byteLength: 122987
+        provenancePath: archive/museum/new-italy-museum/nimi-0844/164c022fc42751c75dbc6f77b00dab173b86a3a2a62a246275e8e59e1b764d90.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P013/https-newitaly-org-au-CAT-000844-htm-2026-07-14T23:33:14.797Z.json
+      retrievedAt: 2026-07-14T23:33:14.797Z
+      endpoint: https://newitaly.org.au/CAT/000844.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T01:19:42.789Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P013/https-newitaly-org-au-CAT-000844-htm-2026-07-14T23:33:14.797Z.json

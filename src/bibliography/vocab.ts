@@ -35,6 +35,17 @@ export const SOURCE_LIFECYCLE_STATUS_VALUES = [
 export type SourceLifecycleStatus = (typeof SOURCE_LIFECYCLE_STATUS_VALUES)[number];
 
 /**
+ * How a `Source` relates to the corpus's central subject. `central` (the
+ * default when the field is absent) is a core corpus work; `adjacent` marks a
+ * corpus-adjacent source -- preserved and potentially interesting, but NOT
+ * central to what the corpus is about (e.g. New Italy settlement material held
+ * alongside, yet distinct from, the Port Breton affair). The coverage report
+ * counts `adjacent` members separately, never toward the central-corpus total.
+ */
+export const SOURCE_CENTRALITY_VALUES = ['central', 'adjacent'] as const;
+export type SourceCentrality = (typeof SOURCE_CENTRALITY_VALUES)[number];
+
+/**
  * Acquisition status of a `RepositoryRecord` -- a held copy's own state
  * machine, distinct from a `Source`'s lifecycle status above. The handoff: a
  * Source's lifecycle ends at `approved-for-acquisition`; a RepositoryRecord is
@@ -141,6 +152,92 @@ export const SCOPE_KIND_VALUES = ['case', 'thread', 'work-bundle', 'work'] as co
 export type ScopeKind = (typeof SCOPE_KIND_VALUES)[number];
 
 /**
+ * The `state` discriminant of a `SuspectedGap.resolution`
+ * (specs/011-museum-acquisition-path § SuspectedLead.resolution): the
+ * disposition of an inferred, uncited lead. `unexamined` (no disposition
+ * recorded yet) -> `identified` (a candidate repository reference found) ->
+ * `inventoried` (resolved to a `sourceId`), or a terminal `excluded`
+ * (judged not worth pursuing) / `unavailable` (pursued but not obtainable).
+ * This tuple validates ONLY that `state` is a recognized member; each
+ * state's own required fields (`candidate`/`sourceId`/`reason`/`resolvedAt`)
+ * are checked by `@/bibliography/load-coverage-fields`'s `validateResolution`,
+ * not here -- a discriminated union's per-branch shape does not fit this
+ * module's flat closed-vocab tuples.
+ */
+export const LEAD_RESOLUTION_STATE_VALUES = [
+  'unexamined',
+  'identified',
+  'inventoried',
+  'excluded',
+  'unavailable',
+] as const;
+export type LeadResolutionState = (typeof LEAD_RESOLUTION_STATE_VALUES)[number];
+
+/**
+ * Membership test for the `LeadResolutionState` vocabulary (specs/011):
+ * `isLeadResolutionState('identified')` -> `true`;
+ * `isLeadResolutionState('resolved')` -> `false`. Use wherever a
+ * `SuspectedGap.resolution.state` value is checked (see
+ * `@/bibliography/load-coverage-fields`).
+ */
+export function isLeadResolutionState(value: string): value is LeadResolutionState {
+  return includesValue(LEAD_RESOLUTION_STATE_VALUES, value);
+}
+
+/**
+ * The `state` discriminant of a `Source.knownExtent`
+ * (specs/011-museum-acquisition-path § KnownExtent): the believed extent of a
+ * source-group. `measured` (a finite hand-authored belief) / `unexamined`
+ * (not yet assessed) / `irreducible` (fundamentally unbounded/unknowable).
+ * This tuple validates ONLY that `state` is a recognized member; each
+ * state's own required fields (`count`/`basis`) are checked by
+ * `@/bibliography/load-coverage-fields`'s `validateKnownExtent`, not here --
+ * same split as `LEAD_RESOLUTION_STATE_VALUES` above.
+ */
+export const KNOWN_EXTENT_STATE_VALUES = ['measured', 'unexamined', 'irreducible'] as const;
+export type KnownExtentState = (typeof KNOWN_EXTENT_STATE_VALUES)[number];
+
+/**
+ * Membership test for the `KnownExtentState` vocabulary (specs/011):
+ * `isKnownExtentState('measured')` -> `true`;
+ * `isKnownExtentState('unknown')` -> `false` (the retired bare literal). Use
+ * wherever a `Source.knownExtent.state` value is checked (see
+ * `@/bibliography/load-coverage-fields`).
+ */
+export function isKnownExtentState(value: string): value is KnownExtentState {
+  return includesValue(KNOWN_EXTENT_STATE_VALUES, value);
+}
+
+/**
+ * Structural kind of a `Source` -- the role this work plays in the corpus:
+ * `periodical` (serial, multiple dated issues), `monograph` (monographic textual
+ * work, single dated/undated document), `archival-item` (discrete non-serial
+ * archival work like a photograph, letter, postcard, certificate), or
+ * `source-group` (non-fetchable research-defined container of member Sources).
+ * Orthogonal to `evidenceClass`, which classifies the EVIDENCE TYPE the work IS
+ * (not its structural role). A member's kind may be `periodical`/`monograph`/
+ * `archival-item` (never `source-group` -- groups do not nest); group membership
+ * does not change a member's own kind.
+ */
+export const SOURCE_STRUCTURAL_KIND_VALUES = [
+  'periodical',
+  'monograph',
+  'archival-item',
+  'source-group',
+] as const;
+export type SourceStructuralKind = (typeof SOURCE_STRUCTURAL_KIND_VALUES)[number];
+
+/**
+ * Membership test for the `SourceStructuralKind` vocabulary:
+ * `isSourceStructuralKind('monograph')` -> `true`;
+ * `isSourceStructuralKind('scroll')` -> `false`. Use wherever a `Source.kind`
+ * value is checked (see `@/bibliography/load`).
+ */
+export function isSourceStructuralKind(value: string): value is SourceStructuralKind {
+  return includesValue(SOURCE_STRUCTURAL_KIND_VALUES, value);
+}
+
+/**
  * Closed vocab field names, mapped to their allowed-value arrays. The
  * field-name-keyed `status` entry has always meant a `RepositoryRecord`'s
  * acquisition status (`validateVocab` in `@/bibliography/validate-checks`
@@ -199,6 +296,16 @@ export function isAllowed(field: string, value: string): boolean {
  */
 export function isSourceLifecycleStatus(value: string): value is SourceLifecycleStatus {
   return includesValue(SOURCE_LIFECYCLE_STATUS_VALUES, value);
+}
+
+/**
+ * Membership test for the `SourceCentrality` vocabulary:
+ * `isSourceCentrality('adjacent')` -> `true`; `isSourceCentrality('core')` ->
+ * `false`. Use wherever a `Source.centrality` value is checked
+ * (see `@/bibliography/load`).
+ */
+export function isSourceCentrality(value: string): value is SourceCentrality {
+  return includesValue(SOURCE_CENTRALITY_VALUES, value);
 }
 
 /**

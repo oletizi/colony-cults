@@ -1,0 +1,46 @@
+sourceId: PB-P035
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+titles:
+  - text: Photo of School Group N.I.1903
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/000955.htm
+    retrievedAt: 2026-07-15T07:44:36.861Z
+    identifiers:
+      - type: accession
+        value: NIMI-0955
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1903 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:44:37.423Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/000955_nimi-0955-school-group-1903-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-0955/2beaa81a01e1fc4fc53be961fd9fbb2662cdf5c410c4e0ad72a67e3b25c1d020.jpg
+        checksum: 2beaa81a01e1fc4fc53be961fd9fbb2662cdf5c410c4e0ad72a67e3b25c1d020
+        byteLength: 163867
+        provenancePath: archive/museum/new-italy-museum/nimi-0955/2beaa81a01e1fc4fc53be961fd9fbb2662cdf5c410c4e0ad72a67e3b25c1d020.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P035/https-newitaly-org-au-CAT-000955-htm-2026-07-15T07:44:36.861Z.json
+      retrievedAt: 2026-07-15T07:44:36.861Z
+      endpoint: https://newitaly.org.au/CAT/000955.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:44:38.219Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P035/https-newitaly-org-au-CAT-000955-htm-2026-07-15T07:44:36.861Z.json

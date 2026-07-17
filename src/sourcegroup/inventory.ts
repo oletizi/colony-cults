@@ -156,8 +156,12 @@ function normalizeRightsStatus(rightsRaw: string | undefined): RightsStatus {
  * failure here creates nothing. Returns the resolved group so its `case`
  * (§ archive layout, FR-016-adjacent) can be copied onto the new member --
  * see `runInventory`'s use of `group.source.case` below.
+ *
+ * Exported (not just used internally) so `@/sourcegroup/museum-inventory`'s
+ * `runMuseumInventory` -- the `--repository`-routed sibling of `runInventory`
+ * -- can reuse this SAME group-resolution rule rather than duplicating it.
  */
-function resolveSourceGroup(sourcesDir: string, groupId: string): LoadedSource {
+export function resolveSourceGroup(sourcesDir: string, groupId: string): LoadedSource {
   let loaded: ReturnType<typeof loadAllSources>;
   try {
     loaded = loadAllSources(sourcesDir);

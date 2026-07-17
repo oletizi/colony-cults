@@ -11,8 +11,9 @@ export type {
 } from '@/model/identifiers';
 export type { Census, CensusIssue } from '@/model/census';
 export type { Issue } from '@/model/issue';
-export type { Rights } from '@/model/rights';
+export type { Rights, RightsAssessment } from '@/model/rights';
 export type { Asset } from '@/model/asset';
+export type { AcquiredAsset } from '@/model/acquired-asset';
 export type { Provenance } from '@/model/provenance';
 export type {
   SourceRights,
@@ -22,3 +23,9 @@ export type {
   PublicationManifestRef,
   PublishedArtifactRef,
 } from '@/model/publication';
+export type {
+  QualityAssessment,
+  LeafRange,
+  ExcludedLeaf,
+  PageMethodProvenance,
+} from '@/model/quality-assessment';

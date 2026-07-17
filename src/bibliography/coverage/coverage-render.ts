@@ -5,6 +5,7 @@ import type {
   CoverageSearchHistory,
   RegisterEntry,
 } from '@/bibliography/coverage/coverage-model';
+import type { KnownExtent, LeadResolution } from '@/model/source';
 
 /**
  * Render a {@link CoverageReport} as either deterministic machine JSON or
@@ -13,8 +14,9 @@ import type {
  * uphold the assertable invariants:
  *
  * - INV-1: NEVER a headline coverage percentage -- this module emits no `%`.
- * - INV-2: an unknown gap/denominator renders as the literal `unknown`, never
- *   a blank, `0`, or a percentage.
+ * - INV-2: an unmeasured gap/denominator renders as its `KnownExtent` state
+ *   word (`unexamined` / `irreducible`), never a bare `unknown`, a blank,
+ *   `0`, or a percentage.
  *
  * Every section prints its per-row detail (per-work-bundle counts, evidence
  * distribution, the register with its ungrouped bucket + suspected sub-listing,
@@ -36,9 +38,32 @@ function renderJson(report: CoverageReport): string {
 
 const NONE = '(none)';
 
-/** Render a `number | 'unknown'` value: numbers as-is, the sentinel literally (INV-2). */
-function renderCountable(value: number | 'unknown'): string {
-  return typeof value === 'number' ? String(value) : value;
+/**
+ * Render a {@link KnownExtent}, distinct per state (FR-019) and ALWAYS
+ * showing the research basis when the state carries one: `measured` shows
+ * its count plus basis; `irreducible` shows its state word plus basis;
+ * `unexamined` carries no basis, so it renders as just its state word --
+ * never a bare `unknown` (INV-2). Exhaustive over `KnownExtent['state']` --
+ * a new state is a compile error here, not a silent fall-through.
+ */
+function renderKnownExtent(extent: KnownExtent): string {
+  switch (extent.state) {
+    case 'measured':
+      return `measured: ${extent.count} (basis: ${extent.basis})`;
+    case 'unexamined':
+      return extent.state;
+    case 'irreducible':
+      return `${extent.state} (basis: ${extent.basis})`;
+    default: {
+      const exhaustive: never = extent;
+      throw new Error(`unhandled KnownExtent state: ${JSON.stringify(exhaustive)}`);
+    }
+  }
+}
+
+/** Render a `WorkBundleCoverage.gap`: the number as-is, else its state word (INV-2). */
+function renderGap(gap: number | 'unexamined' | 'irreducible'): string {
+  return typeof gap === 'number' ? String(gap) : gap;
 }
 
 function renderPerWorkBundle(perWorkBundle: WorkBundleCoverage[], lines: string[]): void {
@@ -55,10 +80,16 @@ function renderPerWorkBundle(perWorkBundle: WorkBundleCoverage[], lines: string[
         : workBundle.membersByLifecycleState
             .map((bucket) => `${bucket.state} ${bucket.count}`)
             .join(' | ');
-    lines.push(`    members: ${members}   (actual works: ${workBundle.actualMemberCount})`);
+    const adjacentSuffix =
+      workBundle.adjacentMemberCount > 0
+        ? ` [+ ${workBundle.adjacentMemberCount} corpus-adjacent, not central]`
+        : '';
     lines.push(
-      `    believed extent (knownMemberCount): ${renderCountable(workBundle.knownMemberCount)}` +
-        `        gap: ${renderCountable(workBundle.gap)}`,
+      `    members: ${members}   (actual works: ${workBundle.actualMemberCount})${adjacentSuffix}`,
+    );
+    lines.push(
+      `    believed extent (knownExtent): ${renderKnownExtent(workBundle.knownExtent)}` +
+        `        gap: ${renderGap(workBundle.gap)}`,
     );
   }
 }
@@ -87,9 +118,52 @@ function renderReferenceEntry(entry: RegisterEntry): string {
   return `- ${entry.citedAs ?? ''}${basisSuffix(entry)}  [cited in ${entry.owner}]`;
 }
 
-/** A suspected gap: what is inferred to exist and (always) why. */
+/**
+ * A suspected entry's disposition, defaulted to `unexamined` for DISPLAY ONLY
+ * when no `resolution` was authored (T023, specs/011 § SuspectedLead.
+ * resolution) -- this default lives here, not on the model, so an
+ * un-annotated lead keeps rendering exactly as before while the underlying
+ * `RegisterEntry.resolution` stays faithfully absent.
+ */
+function resolutionOf(entry: RegisterEntry): LeadResolution {
+  return entry.resolution ?? { state: 'unexamined' };
+}
+
+/** True for a suspected entry still awaiting disposition (SC-004: only `unexamined` counts as open). */
+function isOpenSuspected(entry: RegisterEntry): boolean {
+  return resolutionOf(entry).state === 'unexamined';
+}
+
+/**
+ * The resolution suffix for one suspected entry, distinct per state (SC-004):
+ * `unexamined` renders nothing (today's plain open bullet); `identified`
+ * names its candidate; `inventoried` references the Source it resolved to;
+ * `excluded`/`unavailable` show their reason. Exhaustive over
+ * `LeadResolution['state']` -- a new state is a compile error here, not a
+ * silent fall-through.
+ */
+function resolutionSuffix(resolution: LeadResolution): string {
+  switch (resolution.state) {
+    case 'unexamined':
+      return '';
+    case 'identified':
+      return `  [identified: candidate ${resolution.candidate} (${resolution.resolvedAt})]`;
+    case 'inventoried':
+      return `  [resolved: inventoried as ${resolution.sourceId} (${resolution.resolvedAt})]`;
+    case 'excluded':
+      return `  [resolved: excluded -- ${resolution.reason} (${resolution.resolvedAt})]`;
+    case 'unavailable':
+      return `  [resolved: unavailable -- ${resolution.reason} (${resolution.resolvedAt})]`;
+    default: {
+      const exhaustive: never = resolution;
+      throw new Error(`unhandled LeadResolution state: ${JSON.stringify(exhaustive)}`);
+    }
+  }
+}
+
+/** A suspected gap: what is inferred to exist, why, and its resolution state (SC-004). */
 function renderSuspectedEntry(entry: RegisterEntry): string {
-  return `- ${entry.description ?? ''}${basisSuffix(entry)}`;
+  return `- ${entry.description ?? ''}${basisSuffix(entry)}${resolutionSuffix(resolutionOf(entry))}`;
 }
 
 /** References (only) grouped by work-bundle, then the ungrouped "[no work-bundle]" bucket. */
@@ -122,7 +196,14 @@ function renderReferences(register: CoverageRegister, lines: string[]): void {
   }
 }
 
-/** The suspected-gaps sub-listing, grouped by work-bundle (only those that have any). */
+/**
+ * The suspected-gaps sub-listing, grouped by work-bundle (only those that
+ * have any). Each bucket heading is annotated `(open: N / total: M)` (SC-004)
+ * -- `open` counts ONLY `unexamined` (including un-annotated) leads; a lead
+ * resolved to `identified`/`inventoried`/`excluded`/`unavailable` is
+ * dispositioned and never counted as open, so a resolved lead cannot inflate
+ * the open count even though it still renders as a bullet with its state.
+ */
 function renderSuspected(register: CoverageRegister, lines: string[]): void {
   lines.push('  suspected:');
   const withSuspected = register.byWorkBundle
@@ -137,7 +218,8 @@ function renderSuspected(register: CoverageRegister, lines: string[]): void {
     return;
   }
   for (const bucket of withSuspected) {
-    lines.push(`    ${bucket.workBundle}:`);
+    const openCount = bucket.entries.filter(isOpenSuspected).length;
+    lines.push(`    ${bucket.workBundle}:  (open: ${openCount} / total: ${bucket.entries.length})`);
     for (const entry of bucket.entries) {
       lines.push(`      ${renderSuspectedEntry(entry)}`);
     }

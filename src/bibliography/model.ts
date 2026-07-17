@@ -1,10 +1,12 @@
+import type { AcquiredAsset } from '@/model/acquired-asset';
+import type { ExcludedLeaf, QualityAssessment } from '@/model/quality-assessment';
 import type {
   CopyIdentifier,
   MetadataSnapshotRef,
   RepositoryRecord,
   VerificationVerdict,
 } from '@/model/repository-record';
-import type { Rights } from '@/model/rights';
+import type { Rights, RightsAssessment } from '@/model/rights';
 import type { Source } from '@/model/source';
 
 /**
@@ -72,12 +74,57 @@ export interface AuthoredRepositoryRecord {
   catalogUrl?: string;
   /** Original URL the copy was retrieved from. */
   originalUrl?: string;
+  /**
+   * Catalogue/asset-page locator for this copy, e.g. a Musarch detail-page
+   * URL (specs/011-museum-acquisition-path). NOT identity: copy identity is
+   * carried by `identifiers` (e.g. an `accession` `CopyIdentifier`). Mirrors
+   * `RepositoryRecord.sourceUrl` (`@/model/repository-record`).
+   */
+  sourceUrl?: string;
   /** Retrieval timestamp (ISO). */
   retrievedAt?: string;
   /** Copy-level identifiers (ark/IIIF manifest/scan DOI). */
   identifiers?: CopyIdentifier[];
+  /**
+   * Folio numbers of the document at this record's ark that the held copy
+   * comprises (specs/012). Present ⇒ excerpt of exactly these folios; absent
+   * ⇒ whole-document holding (unchanged default). See
+   * `@/model/repository-record`'s `RepositoryRecord.folios` for the full
+   * invariant (non-empty, ascending, unique, all `>= 1`).
+   */
+  folios?: number[];
   /** Rights determination for this copy. */
   rights?: Rights;
+  /**
+   * The authoritative, operator-authored copy-level rights judgment (T018,
+   * `bib rights-assess`). Distinct from `rights` (the automated Gallica
+   * OAIRecord gate result) -- see `@/model/rights`'s `RightsAssessment` doc
+   * comment for the full rationale. Additive optional field -- absent until
+   * an operator has run `bib rights-assess --status ...` on this copy.
+   */
+  rightsAssessment?: RightsAssessment;
+  /**
+   * Acquired representations of this copy, persisted by an adapter `acquire`
+   * that mirrors masters directly to the object store (spec 011, T005; the
+   * museum path). Each carries the object-store key + checksum a later
+   * `bib reconcile` verifies against the store (`@/model/acquired-asset`).
+   * Absent on a Gallica copy, whose masters are recorded as per-page archive
+   * provenance instead (`AssetProvenance`), not on the authored record.
+   */
+  assets?: AcquiredAsset[];
+  /**
+   * The operator's durable fail-closed scan-quality judgment for an Internet
+   * Archive acquisition (spec 013, FR-008 / SC-003): status, assessed-by/at,
+   * source-file checksum, expected/observed page counts, and the approved leaf
+   * range. Additive optional -- present only on an acquired `ia-item` copy.
+   */
+  qualityAssessment?: QualityAssessment;
+  /**
+   * Third-party leaves omitted from the reading masters but retained in the
+   * preserved source PDF (spec 013, FR-011 / SC-003): scanner notices, covers,
+   * colour cards. Additive optional -- present only on an acquired `ia-item` copy.
+   */
+  excludedLeaves?: ExcludedLeaf[];
   /** Path to the census JSON this record's issues derive from (serials only). */
   census?: string;
   /** Reference to the immutable raw-response snapshot (D-07). Additive optional. */

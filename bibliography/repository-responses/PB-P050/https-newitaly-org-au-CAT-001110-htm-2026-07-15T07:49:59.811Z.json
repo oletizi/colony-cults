@@ -1,0 +1,6 @@
+{
+  "raw": "{\"date\":{\"value\":\"1899\",\"evidence\":{\"excerpt\":\"<p><span class=\\\"prompt\\\" id=\\\"objectdate_prompt\\\">Object Date </span> <span class=\\\"data\\\" id=\\\"objectdate\\\"> 1899</span></p>\",\"selector\":\"#objectdate\"},\"interpretation\":\"the item's object date\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:49:59.811Z\"}},\"description\":{\"value\":\"ZANNINI Domonic Virginia and daughter Orsala\\nOrsala married Pietro MORANDINI\",\"evidence\":{\"excerpt\":\"<span class=\\\"data\\\" id=\\\"objectdesc\\\"> ZANNINI Domonic Virginia and daughter Orsala\\nOrsala married Pietro MORANDINI</span>\",\"selector\":\"#objectdesc\"},\"interpretation\":\"the object's description\",\"provenance\":{\"modelAssisted\":true,\"engine\":\"codex\",\"model\":\"gpt-5.5\",\"promptVersion\":\"musarch-extract-v1\",\"at\":\"2026-07-15T07:49:59.811Z\"}}}",
+  "retrievedAt": "2026-07-15T07:49:59.811Z",
+  "endpoint": "https://newitaly.org.au/CAT/001110.htm",
+  "normalizationVersion": 1
+}

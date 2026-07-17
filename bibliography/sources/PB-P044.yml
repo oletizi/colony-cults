@@ -1,0 +1,46 @@
+sourceId: PB-P044
+kind: archival-item
+partOf: PB-P006
+status: approved-for-acquisition
+case: port-breton
+centrality: adjacent
+titles:
+  - text: Photo of FLETT Agnes
+    role: archive
+repositoryRecords:
+  - sourceArchive: New Italy Museum
+    status: archived
+    sourceUrl: https://newitaly.org.au/CAT/001059.htm
+    retrievedAt: 2026-07-15T07:46:47.530Z
+    identifiers:
+      - type: accession
+        value: NIMI-1059
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Australian photograph, creation year 1918 (grounded from the object page). The pre-1969 Australian photograph copyright term has expired (not revived by the 2005 extension) -- public domain. Per PB-P006 settlement-photograph research; operator standing pre-1955-photograph rule applied.
+      assessedBy: operator
+      assessedAt: 2026-07-15T07:46:48.117Z
+    assets:
+      - sourceUrl: https://newitaly.org.au/CAT/images/001059_nimi-1059-flett-agnes-lr.jpg
+        mediaType: image/jpeg
+        objectStoreKey: archive/museum/new-italy-museum/nimi-1059/9a75e093339fce70426d4a3000b4b6fdfb4bb17b97f597b65e45c8367befda63.jpg
+        checksum: 9a75e093339fce70426d4a3000b4b6fdfb4bb17b97f597b65e45c8367befda63
+        byteLength: 70118
+        provenancePath: archive/museum/new-italy-museum/nimi-1059/9a75e093339fce70426d4a3000b4b6fdfb4bb17b97f597b65e45c8367befda63.yml
+        role: primary
+        representationChoice: full-res-image-anchor
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P044/https-newitaly-org-au-CAT-001059-htm-2026-07-15T07:46:47.530Z.json
+      retrievedAt: 2026-07-15T07:46:47.530Z
+      endpoint: https://newitaly.org.au/CAT/001059.htm
+      normalizationVersion: 1
+    verification:
+      result: passed
+      verifiedAt: 2026-07-15T07:46:48.979Z
+      checks:
+        identifierResolved: passed
+        rights: passed
+        requiredMetadata: passed
+        hardDuplicate: passed
+        possibleDuplicate: passed
+      snapshotRef: bibliography/repository-responses/PB-P044/https-newitaly-org-au-CAT-001059-htm-2026-07-15T07:46:47.530Z.json

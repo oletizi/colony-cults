@@ -121,6 +121,16 @@ export interface ParsedOptions {
    * page); `N` must be a positive integer, else `parse` throws.
    */
   checkpointEvery?: number;
+  /**
+   * Excerpt folio selection (`--pages <spec>`, spec 012): a comma-separated
+   * list of single folios and/or inclusive `lo-hi` ranges, e.g. `"48-50,55"`.
+   * Parsed with `parseFolioRange` (`@/fetch/folio-range`) at the point of use
+   * -- kept as the raw string here so a malformed spec fails loud where it is
+   * consumed (`fetch-source`), not silently here. Monograph-path-only in v1
+   * (`fetch-source`); a usage error on the periodical `fetch-issue` path.
+   * Absent -> whole-document acquisition, unchanged.
+   */
+  pages?: string;
 }
 
 /** Result of parsing argv into a single command invocation. */
@@ -158,6 +168,7 @@ export function parse(argv: string[]): ParsedArgs {
       engine: { type: 'string' },
       'archive-root': { type: 'string' },
       'checkpoint-every': { type: 'string' },
+      pages: { type: 'string' },
     },
     allowPositionals: true,
     strict: true,
@@ -202,6 +213,7 @@ export function parse(argv: string[]): ParsedArgs {
       engine: values.engine,
       archiveRoot: values['archive-root'],
       checkpointEvery: parseCheckpointEvery(values['checkpoint-every']),
+      pages: values.pages,
     },
   };
 }

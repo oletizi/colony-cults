@@ -2,7 +2,7 @@ import { stringify } from 'yaml';
 
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import type { Publication } from '@/model/publication';
-import type { Reference, Source, SuspectedGap } from '@/model/source';
+import type { KnownExtent, LeadResolution, Reference, Source, SuspectedGap } from '@/model/source';
 
 /**
  * One migrated Source together with its authored Repository Records, ready to
@@ -29,14 +29,91 @@ function orderedRecord(record: AuthoredRepositoryRecord): Record<string, unknown
   if (record.originalUrl !== undefined) {
     out.originalUrl = record.originalUrl;
   }
+  if (record.sourceUrl !== undefined) {
+    out.sourceUrl = record.sourceUrl;
+  }
   if (record.retrievedAt !== undefined) {
     out.retrievedAt = record.retrievedAt;
   }
   if (record.identifiers !== undefined && record.identifiers.length > 0) {
     out.identifiers = record.identifiers.map((id) => ({ type: id.type, value: id.value }));
   }
+  // Excerpt folios (specs/012): present ⇒ the held copy is exactly these
+  // folios of the document at `identifiers`' ark, not the whole document.
+  // Sits right after `identifiers` -- it qualifies what that ark's copy
+  // actually comprises.
+  if (record.folios !== undefined) {
+    out.folios = record.folios;
+  }
   if (record.rights !== undefined) {
     out.rights = record.rights;
+  }
+  if (record.rightsAssessment !== undefined) {
+    const assessment: Record<string, unknown> = {};
+    if (record.rightsAssessment.rightsRaw !== undefined) {
+      assessment.rightsRaw = record.rightsAssessment.rightsRaw;
+    }
+    assessment.rightsStatus = record.rightsAssessment.rightsStatus;
+    assessment.rightsBasis = record.rightsAssessment.rightsBasis;
+    if (record.rightsAssessment.rightsJurisdiction !== undefined) {
+      assessment.rightsJurisdiction = record.rightsAssessment.rightsJurisdiction;
+    }
+    assessment.assessedBy = record.rightsAssessment.assessedBy;
+    assessment.assessedAt = record.rightsAssessment.assessedAt;
+    out.rightsAssessment = assessment;
+  }
+  // Acquired object-store assets (spec 011, T005/T030). Emitted in a FIXED key
+  // order per asset, with absent optionals (`role`/`sequence`/
+  // `representationChoice`) omitted, so a load -> serialize round-trip is
+  // byte-identical. Sits after rightsAssessment (the acquisition axis) and
+  // ahead of the derived/serial fields, mirroring the model's field order.
+  if (record.assets !== undefined && record.assets.length > 0) {
+    out.assets = record.assets.map((asset) => {
+      const entry: Record<string, unknown> = {
+        sourceUrl: asset.sourceUrl,
+        mediaType: asset.mediaType,
+        objectStoreKey: asset.objectStoreKey,
+        checksum: asset.checksum,
+        byteLength: asset.byteLength,
+        provenancePath: asset.provenancePath,
+      };
+      if (asset.role !== undefined) {
+        entry.role = asset.role;
+      }
+      if (asset.sequence !== undefined) {
+        entry.sequence = asset.sequence;
+      }
+      if (asset.representationChoice !== undefined) {
+        entry.representationChoice = asset.representationChoice;
+      }
+      return entry;
+    });
+  }
+  // Internet Archive acquisition provenance (spec 013, SC-003): the operator's
+  // durable fail-closed scan judgment + approved leaf range, and the excluded
+  // third-party leaves (omitted from the masters, retained in the source PDF).
+  if (record.qualityAssessment !== undefined) {
+    const qa = record.qualityAssessment;
+    const assessment: Record<string, unknown> = {
+      status: qa.status,
+      assessedBy: qa.assessedBy,
+      assessedAt: qa.assessedAt,
+      sourceFileChecksum: qa.sourceFileChecksum,
+      expectedPageCount: qa.expectedPageCount,
+      observedPageCount: qa.observedPageCount,
+      approvedLeafRange: { start: qa.approvedLeafRange.start, end: qa.approvedLeafRange.end },
+    };
+    if (qa.notes !== undefined) {
+      assessment.notes = qa.notes;
+    }
+    out.qualityAssessment = assessment;
+  }
+  if (record.excludedLeaves !== undefined && record.excludedLeaves.length > 0) {
+    out.excludedLeaves = record.excludedLeaves.map((leaf) => ({
+      leaf: leaf.leaf,
+      classification: leaf.classification,
+      reason: leaf.reason,
+    }));
   }
   if (record.census !== undefined) {
     out.census = record.census;
@@ -137,6 +214,62 @@ function orderedReference(reference: Reference): Record<string, unknown> {
 }
 
 /**
+ * Build one `resolution`'s on-disk object in a FIXED key order (`state` first,
+ * then its state-specific fields), mirroring {@link orderedRecord}'s pattern.
+ * Each branch emits exactly the fields {@link LeadResolution} carries for that
+ * `state` -- nothing fabricated, nothing dropped, so a resolution round-trips
+ * unchanged through load -> serialize (specs/011 § SuspectedLead.resolution).
+ */
+function orderedResolution(resolution: LeadResolution): Record<string, unknown> {
+  switch (resolution.state) {
+    case 'unexamined':
+      return { state: resolution.state };
+    case 'identified':
+      return {
+        state: resolution.state,
+        candidate: resolution.candidate,
+        resolvedAt: resolution.resolvedAt,
+      };
+    case 'inventoried':
+      return {
+        state: resolution.state,
+        sourceId: resolution.sourceId,
+        resolvedAt: resolution.resolvedAt,
+      };
+    case 'excluded':
+      return {
+        state: resolution.state,
+        reason: resolution.reason,
+        resolvedAt: resolution.resolvedAt,
+      };
+    case 'unavailable':
+      return {
+        state: resolution.state,
+        reason: resolution.reason,
+        resolvedAt: resolution.resolvedAt,
+      };
+  }
+}
+
+/**
+ * Build one `knownExtent`'s on-disk object in a FIXED key order (`state`
+ * first, then its state-specific fields), mirroring {@link orderedResolution}.
+ * Each branch emits exactly the fields {@link KnownExtent} carries for that
+ * `state` -- nothing fabricated, nothing dropped, so a `knownExtent`
+ * round-trips unchanged through load -> serialize (specs/011 § KnownExtent).
+ */
+function orderedKnownExtent(extent: KnownExtent): Record<string, unknown> {
+  switch (extent.state) {
+    case 'measured':
+      return { state: extent.state, count: extent.count, basis: extent.basis };
+    case 'unexamined':
+      return { state: extent.state };
+    case 'irreducible':
+      return { state: extent.state, basis: extent.basis };
+  }
+}
+
+/**
  * Build one `suspected[]` gap (a group-only inferred, uncited gap) in a FIXED
  * key order, omitting absent optionals. Preserves input array order.
  */
@@ -150,6 +283,9 @@ function orderedSuspected(gap: SuspectedGap): Record<string, unknown> {
   }
   if (gap.notes !== undefined) {
     out.notes = gap.notes;
+  }
+  if (gap.resolution !== undefined) {
+    out.resolution = orderedResolution(gap.resolution);
   }
   return out;
 }
@@ -169,8 +305,8 @@ export function serializeSource(migrated: MigratedSource): string {
   if (source.partOf !== undefined) {
     out.partOf = source.partOf;
   }
-  // Field order: sourceId, kind, partOf, status, case, evidenceClass, language,
-  // creator, rights, knownMemberCount, titles, identifiers, references,
+  // Field order: sourceId, kind, partOf, status, case, centrality, evidenceClass,
+  // language, creator, rights, knownExtent, titles, identifiers, references,
   // suspected, notes, repositoryRecords, publications -- status sits right after
   // partOf since both describe the Source's place in the group/lifecycle model,
   // ahead of the more descriptive/bibliographic fields; publications sits last,
@@ -181,6 +317,9 @@ export function serializeSource(migrated: MigratedSource): string {
   }
   if (source.case !== undefined) {
     out.case = source.case;
+  }
+  if (source.centrality !== undefined) {
+    out.centrality = source.centrality;
   }
   if (source.evidenceClass !== undefined) {
     out.evidenceClass = source.evidenceClass;
@@ -204,11 +343,11 @@ export function serializeSource(migrated: MigratedSource): string {
     }
     out.rights = rights;
   }
-  // knownMemberCount + suspected are group-only fields (valid on
+  // knownExtent + suspected are group-only fields (valid on
   // kind: source-group); emitted when present so a source-group's believed
   // extent and inferred gaps survive a load -> serialize round-trip.
-  if (source.knownMemberCount !== undefined) {
-    out.knownMemberCount = source.knownMemberCount;
+  if (source.knownExtent !== undefined) {
+    out.knownExtent = orderedKnownExtent(source.knownExtent);
   }
   out.titles = source.titles.map((title) =>
     title.language !== undefined
