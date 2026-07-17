@@ -27,10 +27,13 @@ Scope is PDF rendering only."
 - Q: How should page images be sourced? → A: **From `object_store` (B2) exclusively** — the
   master key + sha256 the archive already records; no source-archive ark/IIIF path. A missing
   master fails loud (an archive-completeness gap), never a silent fallback.
-- Q: How should a page with no English translation be handled? → A: **Honor an explicit
-  "untranslatable" marker.** A marked page renders facsimile + FR OCR with a blank EN column;
-  an *unmarked* missing translation fails loud. (The concrete marker representation is being
-  finalized by the translation team — see Assumptions; the requirement is representation-agnostic.)
+- Q: How should a page with no English translation be handled? → A: **Honor the explicit
+  "untranslatable" marker** the translation pipeline records. **Resolved representation
+  (translation team, merged 2026-07-17):** each page's translation artifact carries a
+  `translation` provenance label — `machine-assisted` (a real, non-empty translation) or
+  `untranslatable` (a deliberately empty one), with the invariant *empty ⟺ untranslatable*
+  enforced by `bib validate`. A page labeled `untranslatable` renders a blank EN column; a
+  page whose translation artifact is **absent entirely** is a genuine gap and fails loud.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -164,11 +167,13 @@ read, and that rebuilding from the same archive commit yields identical edition 
 - **FR-006**: The build MUST pair each page image with its corresponding OCR and translation by
   the page's position in the source's own folio sequence, correctly handling page-range extracts
   whose folio numbering (absolute) differs from their translation numbering (extract-relative).
-- **FR-007**: The build MUST recognize an explicit per-page "untranslatable" marker recorded in
-  the archive. A marked page MUST render (facsimile + any OCR) with a blank/"not translated"
-  English column and MUST NOT fail the build.
-- **FR-008**: A page with no translation that is **not** marked untranslatable MUST fail the
-  build loudly, naming the page — a genuine translation gap is never silently rendered.
+- **FR-007**: The build MUST honor the per-page untranslatable marker: a page whose translation
+  artifact carries the provenance label `translation: untranslatable` (a deliberately empty
+  translation, per the *empty ⟺ untranslatable* invariant) MUST render (facsimile + any OCR)
+  with a blank/"not translated" English column and MUST NOT fail the build.
+- **FR-008**: A page whose translation artifact is **absent entirely** (no translation
+  sidecar/text) is a genuine gap and MUST fail the build loudly, naming the page — never
+  silently rendered. (A present-but-`untranslatable`-labeled artifact is FR-007, not a gap.)
 - **FR-009**: The build MUST read a **pinned archive commit** and MUST record that commit as the
   edition's colophon archive provenance (reproducibility).
 - **FR-010**: The build MUST support both edition variants — the `parallel` (FR OCR │ EN
@@ -190,9 +195,10 @@ read, and that rebuilding from the same archive commit yields identical edition 
   ordered sequence of pages; each page carries its master-image location (`object_store` key +
   checksum), its OCR text, its translation (or an untranslatable marker), and its position in the
   source's own sequence.
-- **Untranslatable Marker**: an explicit archive record that a given page is deliberately
-  untranslatable, distinguishing it from an accidental translation gap. (Representation finalized
-  by the translation pipeline; consumed representation-agnostically.)
+- **Untranslatable Marker**: the translation artifact's `translation` provenance label
+  (`untranslatable` vs `machine-assisted`; empty ⟺ untranslatable), distinguishing a deliberately
+  untranslatable page from an accidental gap (an absent artifact). Read via the existing
+  `@/archive/provenance` `translation` field.
 - **Archive Pin**: the pinned archive commit the build reads and records in the colophon for
   reproducibility.
 - **Edition (existing view-model, reused)**: the pages + title-page + colophon model the Typst
@@ -226,12 +232,13 @@ read, and that rebuilding from the same archive commit yields identical edition 
 - **Images from `object_store` (B2) only** (decided): the source-archive ark/IIIF path is retired
   for archive-direct rendering; a not-yet-mirrored master is an archive gap to fix, not a fallback
   to invoke.
-- **Untranslatable marker representation** (open — being finalized by the translation team): the
-  concrete on-archive representation (a sentinel translation file, a folio-sidecar flag, or a
-  per-page provenance field) is pending. The requirement (FR-007/FR-008) is representation-
-  agnostic; the reader consumes whatever the translation pipeline emits. This is the one
-  documented open item and does not block authoring; it is resolved before the reader's
-  untranslatable-marker task is implemented.
+- **Untranslatable marker representation** (RESOLVED — translation team, merged 2026-07-17): the
+  marker is the translation artifact's `translation` provenance label (`machine-assisted` |
+  `untranslatable`, `TranslationLabel` in `src/translate/artifacts.ts`), derived from content at
+  the producer so *empty ⟺ untranslatable* holds by construction and is enforced by `bib
+  validate`. `@/archive/provenance.ts` already parses the `translation` label field, so the
+  archive-direct reader reads it directly: `untranslatable` → blank EN (FR-007); a wholly-absent
+  translation artifact → fail loud (FR-008).
 - **Reproducibility pin** (default): the build records the archive commit it read into the colophon
   `archiveRef`; whether the commit is taken from `CORPUS_ARCHIVE_PATH` at HEAD or from a pinned
   worktree is a plan-time mechanism, not a scope question.
@@ -249,7 +256,8 @@ read, and that rebuilding from the same archive commit yields identical edition 
   masters + `object_store` provenance the reader reads); and the acquisition adapters that
   normalize sources into the archive (`gallica-fetcher`, `source-group-acquisition`,
   `museum-acquisition-path`, `page-range-acquisition`, `archiveorg-acquisition-path`).
-- **Coordinates with**: the translation pipeline, which finalizes the explicit untranslatable-page
-  marker representation the reader consumes (FR-007/FR-008).
+- **Consumes (merged 2026-07-17)**: the translation pipeline's `translation` provenance label
+  (`machine-assisted` | `untranslatable`; `src/translate/artifacts.ts`, enforced by `bib
+  validate`) — the untranslatable marker the reader reads (FR-007/FR-008).
 - **Out of scope**: the corpus-browser site and its committed snapshot loader (`src/browser/load`)
   — untouched; a future browser+PDF loader unification, if ever wanted, is a separate item.
