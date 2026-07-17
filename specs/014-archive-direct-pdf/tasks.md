@@ -54,7 +54,7 @@ catalog-URL/ark parsed.
 ### Tests for User Story 1 ⚠️ (write first, ensure they FAIL)
 
 - [ ] T005 [P] [US1] [tier:balanced] Unit test `tests/unit/pdf/archive-edition.test.ts`: `makeArchiveEditionReader.build(sourceId, itemId)` over a fixture archive produces a well-formed `Edition` (ordered pages, `ImageAsset.objectStoreKey`+`sha256`, `ocrFrench`+`english`, colophon `archiveRef` + machine-assist) — asserting the exact `@/pdf/model` shape and `ark: null`.
-- [ ] T006 [P] [US1] [tier:balanced] Integration test `tests/integration/pdf/archive-edition.test.ts`: build a fixture-archive source end-to-end to a Typst input document with a fake `TypstRunner` + fake image fetch (`makeFakeFetch`/`FakeObjectStore`) — asserting no committed snapshot is read and the produced edition matches the fixture (SC-001).
+- [ ] T006 [P] [US1] [tier:balanced] Integration test `tests/integration/pdf/archive-edition.test.ts`: build a fixture-archive source end-to-end to a Typst input document with a fake `TypstRunner` + fake image fetch (`makeFakeFetch`/`FakeObjectStore`) — asserting no committed snapshot is read and the produced edition matches the fixture (SC-001). Cover **both variants** — a `parallel` (FR OCR │ EN) build and an `english-only` (`showFrench:false`) build — so FR-010's variant carry-through is exercised, not just assumed by reuse.
 
 ### Implementation for User Story 1
 

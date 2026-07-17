@@ -167,6 +167,7 @@ Spun out of 009's research loop (backlog TASK-32). SRCH-0013 verified that the d
 
 ## impl:feature/archive-direct-pdf
 - status: in-flight
+- analyze-clean: yes
 - spec: specs/014-archive-direct-pdf
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-17-archive-direct-pdf-design.md
