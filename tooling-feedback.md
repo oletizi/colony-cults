@@ -33,3 +33,7 @@
 
 ## session-end 2026-07-16
 - Harness global CLAUDE.md instructs using the ~/.claude agent-memory store, which directly conflicts with Constitution Principle XIII (No Agent Memory, Ever). This session re-introduced agent memory (3 Gallica-access memories) before catching it mid-define while reading the constitution; had to migrate the durable facts into AGENTS.md and delete the store. Future sessions: honor Principle XIII over the global memory instruction from the start.
+
+## session-end 2026-07-17
+- B2-direct acquisition (museum spec 011, Internet Archive spec 013) mirrored masters to B2 + recorded them in the SSOT but never wrote the archive companion records the pipeline reads -- 42 archived records' masters (incl. the de Groote book) were undiscoverable by the translator, and NO gate caught it. There was no cross-repo SSOT<->companion reconciliation; the B2-direct path silently diverged from the Gallica companion convention. Fixed by building bib validate's undiscoverable-master/orphaned-companion/checksum-drift sanity check.
+- govern --mode implement (whole-feature chunked audit-barrage) ran 40+ min across 8+ chunks and was killed; driving the adapter against the real archive.org item ('run the thing to see if it works') caught 7 real-data bugs (scandata field names, output-dir mkdir, native-DPI source, JBIG2->PNG lossless, stale-output collision, qualityAssessment persistence, loader/serializer threading) that fixtures matching the parser never could. Live verification outperformed governance for correctness here.

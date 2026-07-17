@@ -1,3 +1,59 @@
+## 2026-07-17: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 35
+  - feat(013): B2-direct acquire writes companions automatically (close the loop)
+  - feat(archive): shared companion-writer + backfill the 42 orphaned-master records
+  - feat(validate): full cross-repo archive-reconciliation sanity check
+  - feat(validate): no-orphaned-master contract — bib validate fails loud on undiscoverable masters
+  - test(013): real disk round-trip for qualityAssessment/excludedLeaves; SRCH-0013 done
+  - bibliography(PB-P055): acquire the de Groote 1880 book -> archived
+  - fix(013): thread qualityAssessment/excludedLeaves through the SSOT loader+serializer
+  - fix(013): persist qualityAssessment/excludedLeaves/metadataSnapshot onto the record (SC-003)
+  - fix(013): extractPages produces into a clean output dir (no stale-master collision)
+  - bibliography(PB-P055): approve-for-acquisition (operator approval to acquire)
+  - bibliography(PB-P055): catalog the de Groote 1880 book for IA acquisition
+  - fix(013): lossless PNG masters — no lossy transcode of archival scans (operator decision)
+  - fix(013): real-data bugs found by the live de Groote acquisition
+  - chore(013): mark T001-T054 complete; T055 remains operator-acceptance (- [~])
+  - chore(013): execute ledger — polish pass (T047,T050-T054); T001-T054 complete
+  - feat(013): polish — file-size split, coverage matrix, staging cache, research log (T047,T050-T054)
+  - chore(013): execute ledger — CLI wiring (T026-T028)
+  - feat(013): CLI wiring — bib acquire/inventory dispatch to the IA adapter (T026-T028)
+  - chore(013): execute ledger — acquire keystone (T023-T025,T036,T037,T043,T048,T049)
+  - feat(013): acquire orchestration — the integration keystone (T023-T025,T036,T037,T043,T048,T049)
+  - feat(013): image-set exploder — degraded-PDF fallback master path (T047/T048 part)
+  - chore(013): execute ledger — staging, quality-gate, snapshot
+  - feat(013): staging, quality-gate seam, snapshot recording (T020-T022,T029-T032 seam)
+  - chore(013): execute ledger — adapter skeleton, extract, fidelity
+  - feat(013): adapter skeleton + extraction engine + fidelity probe (T018-T019,T038-T042,T044-T046)
+  - chore(013): execute ledger — IA modules (T014-T017,T033-T035)
+  - feat(013): IA adapter modules — metadata, file-select, rights, scandata (T014-T017,T033-T035)
+  - chore(013): execute ledger through Phase 2 (T001-T013)
+  - feat(013): Phase 2 foundational Wave B — record fields + registry dispatch (T009,T010)
+  - feat(013): Phase 2 foundational — vocab widenings, model types, poppler runner (T005-T008,T011-T013)
+  - feat(013): Phase 1 setup — IA adapter package + test fixtures (T001-T004)
+  - tasks(013): declare model tiers on the task spine (resolve-tiers clean)
+  - analyze(013): record analyze-clean; remediate 1 HIGH + reconcile 3 spec drifts
+  - tasks(013): implement /speckit-tasks — IA adapter task spine
+  - plan(013): implement /speckit-plan — IA adapter design artifacts
+- Files changed: 92
+- Backlog touched: TASK-29, TASK-32
+
 ## 2026-07-16: Corpus-growth pass flips a Gallica measured-negative into a real Internet Archive find; design + spec the archive.org adapter (013)
 
 **Goal:** Pick up the feature's substantive mandate — corpus growth. Chose the PB-P002 Gallica discovery-leads acquisition pass; it produced an honest measured negative that the operator's skepticism then flipped into a genuine find, which pulled a new first-class repository adapter through the front door.
