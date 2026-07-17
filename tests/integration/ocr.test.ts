@@ -61,6 +61,10 @@ function fakeRunner(): OcrCommandRunner {
         await writeFile(outPath, 'FAKE OCR TEXT\n');
         return { stdout: '', stderr: '', exitCode: 0 };
       }
+      if (command === 'aspell') {
+        // No misspelled tokens echoed -> real-word ratio 1.0 (tier high).
+        return { stdout: '', stderr: '', exitCode: 0 };
+      }
       throw new Error(`fakeRunner: unexpected command "${command}"`);
     },
   };
@@ -126,6 +130,11 @@ describe('ocrIssue (T030/T033)', () => {
     expect(txtYaml).toContain('ocr_status: "searchable"');
     expect(txtYaml).toContain('format: "text/plain"');
     expect(txtYaml).toContain('rights_status: "public-domain"');
+    // Every ocr-text artifact MUST carry a computed quality block (Constitution
+    // III). The fake aspell echoed no misspellings -> ratio 1, tier high.
+    expect(txtYaml).toContain('ocr_quality:');
+    expect(txtYaml).toContain('method: "aspell-realword-ratio-v1"');
+    expect(txtYaml).toContain('tier: "high"');
 
     // Page provenance is updated from 'none' to 'searchable' (T030).
     const page1Yaml = await readFile(path.join(issueDir, 'f001.yml'), 'utf-8');

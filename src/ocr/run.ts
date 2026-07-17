@@ -13,8 +13,10 @@ import {
   readProvenance,
   writeProvenance,
   type ProvenanceFields,
+  type OcrQuality,
 } from '@/archive/provenance';
 import { execCommand } from '@/ocr/exec';
+import { assessOcrQuality } from '@/ocr/quality';
 import type { OcrCommandRunner } from '@/ocr/types';
 
 /** Default Tesseract recognition language when the caller pins none. */
@@ -59,7 +61,7 @@ export interface OcrResult {
 
 /** The real (shell-out) command runner, used by CLI wiring in production. */
 export function defaultOcrCommandRunner(): OcrCommandRunner {
-  return { run: (command, args) => execCommand(command, args) };
+  return { run: (command, args, stdin) => execCommand(command, args, stdin) };
 }
 
 /** Zero-padded page-image filenames (`f001.jpg`), in page order. */
@@ -104,12 +106,18 @@ async function markPageOcrStatus(
   }
 }
 
-/** Build the pdf-a/ocr-text provenance record, reusing a page's shared fields. */
+/**
+ * Build the pdf-a/ocr-text provenance record, reusing a page's shared fields.
+ * `ocrQuality` is REQUIRED (not defaulted), so no OCR-text provenance can be
+ * constructed without a computed fidelity score -- the type system forbids the
+ * lapse at its only producer.
+ */
 function derivedProvenance(
   base: ProvenanceFields,
   type: 'pdf-a' | 'ocr-text',
   format: string,
   retrieved: string,
+  ocrQuality: OcrQuality,
 ): ProvenanceFields {
   return {
     ...base,
@@ -122,6 +130,7 @@ function derivedProvenance(
     // (Re)derived inside storeAsset from the actual bytes and target path.
     local_path: '',
     sha256: '',
+    ocr_quality: ocrQuality,
     notes: null,
   };
 }
@@ -220,10 +229,19 @@ export async function ocrIssue(
     const basePage = await readProvenance(companionYamlPath(pageFiles[0]));
     const retrieved = ctx.clock().toISOString();
 
+    // Compute the OCR fidelity from the text just produced, and REQUIRE it in
+    // the stored provenance -- so an OCR-text artifact can never be written
+    // without its quality recorded (Constitution III).
+    const quality = await assessOcrQuality(
+      textBytes.toString('utf-8'),
+      language,
+      ctx.runner,
+    );
+
     const textResult = await storeAsset(
       textBytes,
       textTarget,
-      derivedProvenance(basePage, 'ocr-text', 'text/plain', retrieved),
+      derivedProvenance(basePage, 'ocr-text', 'text/plain', retrieved, quality),
       ctx.archiveRoot,
       { force: ctx.force },
     );
@@ -231,7 +249,8 @@ export async function ocrIssue(
     await markPageOcrStatus(pageFiles, 'searchable');
     ctx.log?.(
       `  ocr   issue.txt written for ${path.basename(issueDir)} ` +
-        `(searchable PDF derived transiently, not stored)`,
+        `(quality: ${quality.tier}, real-word ratio ${quality.ratio} [${quality.language}]; ` +
+        `searchable PDF derived transiently, not stored)`,
     );
 
     return { issueDir, text: textResult };

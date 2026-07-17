@@ -1,8 +1,13 @@
 import { execCommand } from '@/ocr/exec';
+import { aspellLanguageFor } from '@/ocr/quality';
 import type { OcrCommandRunner, PathLookup } from '@/ocr/types';
 
-/** Command-line tools (besides `tesseract` itself) required for OCR. */
-const REQUIRED_TOOLS = ['ocrmypdf', 'img2pdf', 'pdftotext'] as const;
+/**
+ * Command-line tools (besides `tesseract` itself) required for OCR. `aspell` is
+ * required because every OCR run now computes a mandatory quality score from
+ * its dictionary (`@/ocr/quality`).
+ */
+const REQUIRED_TOOLS = ['ocrmypdf', 'img2pdf', 'pdftotext', 'aspell'] as const;
 
 /** Tesseract language code the recognition data must include (FR-013). */
 const REQUIRED_LANGUAGE = 'fra';
@@ -86,6 +91,24 @@ export async function assertOcrToolchain(
     for (const lang of requiredLanguages) {
       if (!installed.includes(lang)) {
         missing.push(`tesseract language data "${lang}"`);
+      }
+    }
+  }
+
+  // The OCR quality score needs an aspell dictionary for each language it will
+  // score against (the aspell code mapped from the tesseract code).
+  if (await deps.pathLookup('aspell')) {
+    const result = await deps.run.run('aspell', ['dump', 'dicts']);
+    const available = new Set(
+      result.stdout
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0),
+    );
+    for (const lang of requiredLanguages) {
+      const aspellCode = aspellLanguageFor(lang);
+      if (!available.has(aspellCode)) {
+        missing.push(`aspell dictionary "${aspellCode}"`);
       }
     }
   }

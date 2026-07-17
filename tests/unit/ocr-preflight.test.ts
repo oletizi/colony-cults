@@ -10,9 +10,11 @@ import { assertOcrToolchain, type OcrPreflightDeps } from '@/ocr/preflight';
 function fakeDeps(options: {
   missingTools?: string[];
   langs?: string[];
+  aspellDicts?: string[];
 }): OcrPreflightDeps {
   const missingTools = new Set(options.missingTools ?? []);
   const langs = options.langs ?? ['eng', 'fra'];
+  const aspellDicts = options.aspellDicts ?? ['en', 'fr', 'it'];
   return {
     pathLookup: async (command) => !missingTools.has(command),
     run: {
@@ -23,6 +25,9 @@ function fakeDeps(options: {
             stderr: '',
             exitCode: 0,
           };
+        }
+        if (command === 'aspell' && args[0] === 'dump' && args[1] === 'dicts') {
+          return { stdout: aspellDicts.join('\n'), stderr: '', exitCode: 0 };
         }
         throw new Error(`fakeDeps: unexpected command "${command}"`);
       },
@@ -85,6 +90,27 @@ describe('assertOcrToolchain (T029/T032)', () => {
         languages: ['eng', 'fra'],
       }),
     ).rejects.toThrow(/tesseract language data "fra"/);
+  });
+
+  it('requires aspell (the OCR quality scorer)', async () => {
+    await expect(
+      assertOcrToolchain(fakeDeps({ missingTools: ['aspell'] })),
+    ).rejects.toThrow(/aspell/);
+  });
+
+  it('requires the aspell dictionary for each requested language', async () => {
+    // en dict absent -> requesting eng throws naming the aspell dict.
+    await expect(
+      assertOcrToolchain(fakeDeps({ aspellDicts: ['fr'] }), {
+        languages: ['eng'],
+      }),
+    ).rejects.toThrow(/aspell dictionary "en"/);
+    // fr present -> requesting fra resolves.
+    await expect(
+      assertOcrToolchain(fakeDeps({ aspellDicts: ['fr'] }), {
+        languages: ['fra'],
+      }),
+    ).resolves.toBeUndefined();
   });
 
   it('requires ImageMagick (magick) only when enhanceContrast is requested', async () => {
