@@ -4,8 +4,9 @@
  * `scripts/render-sample-pdf.ts` behind an injectable, fail-loud API.
  *
  * Pipeline (contracts/cli.md, contracts/typst-template.md):
- *  1. Build the pure {@link Edition} via `makeEditionBuilder` + concrete readers
- *     (committed snapshot + bibliography SSOT + pin sidecar).
+ *  1. Build the pure Edition DIRECTLY from the private archive (spec 014, T008)
+ *     via `makeArchiveEditionReader` + concrete readers (bibliography SSOT +
+ *     pin sidecar) -- no committed snapshot in the loop.
  *  2. Stage a per-source build dir under the output root; for each page fetch the
  *     print-resolution bytes via the configured `ImageByteSource`
  *     (`b2` -> sha256-verified master; `iiif` -> full-size alternate) and write
@@ -23,19 +24,18 @@ import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { resolveRepoRoot } from '@/browser/load/repo-root';
-import type { RawIssue, RawPage, RawSource } from '@/browser/model';
+import { resolveArchiveRoot } from '@/archive/location';
 import { resolvePdfConfig, type PdfImageProviderKind } from '@/pdf/config';
+import { makeArchivePinReader, type CorpusSnapshotReader } from '@/pdf/load/edition';
 import {
-  makeArchivePinReader,
-  makeCorpusSnapshotReader,
-  makeEditionBuilder,
-  requireImageSha256,
-  type CorpusSnapshotReader,
-} from '@/pdf/load/edition';
+  makeArchiveEditionReader,
+  type ArchiveEditionReader,
+} from '@/pdf/load/archive-edition';
 import { makeSourceMetaReader } from '@/pdf/load/source-meta';
 import { makeB2ImageSource } from '@/pdf/images/b2-source';
 import { makeIiifImageSource } from '@/pdf/images/iiif-source';
 import type { FetchFn, FetchResponse, ImageByteSource } from '@/pdf/images/fetch';
+import type { EditionPage } from '@/pdf/model';
 import { serializeTypstInput, toTypstInput } from '@/pdf/render/typst-input';
 import {
   defaultExecRunner,
@@ -66,7 +66,24 @@ export interface BuildItemOptions {
   fetchFn?: FetchFn;
   /** Injected Typst runner (tests supply a fake); defaults to the real shell-out runner. */
   typst?: TypstRunner;
-  /** Injected snapshot reader (tests); defaults to the concrete committed-snapshot reader. */
+  /**
+   * Explicit private archive root; overrides `COLONY_ARCHIVE_ROOT`
+   * (`resolveArchiveRoot`'s override precedence). Fail-loud if neither is set.
+   */
+  archiveRoot?: string;
+  /**
+   * Injected archive-direct Edition reader (tests); defaults to the concrete
+   * `makeArchiveEditionReader` reader (spec 014, T007) built over the resolved
+   * archive root + SSOT + pin readers.
+   */
+  editionReader?: ArchiveEditionReader;
+  /**
+   * ACCEPTED BUT IGNORED (spec 014, T008): `buildItem` no longer sources the
+   * Edition from the committed snapshot, so a caller-injected snapshot reader
+   * has nothing to feed. Kept in the type only because `batch.ts` (a separate
+   * task) still threads `opts.snapshotReader` through; remove once that
+   * caller drops it too.
+   */
   snapshotReader?: CorpusSnapshotReader;
 }
 
@@ -74,49 +91,6 @@ export interface BuildItemOptions {
 export interface BuildItemResult {
   /** Absolute path to the rendered PDF. */
   outPath: string;
-}
-
-/** Resolve the RawSource for `sourceId`, or fail loud naming it (G-2). */
-function selectSource(sources: RawSource[], sourceId: string): RawSource {
-  const source = sources.find((candidate) => candidate.sourceId === sourceId);
-  if (source === undefined) {
-    throw new Error(
-      `buildItem: unknown source ${JSON.stringify(sourceId)} -- not in the committed snapshot ` +
-        `(found: ${sources.map((s) => s.sourceId).join(', ') || 'none'}).`,
-    );
-  }
-  return source;
-}
-
-/**
- * Resolve the built unit: the issue matching `itemId` for a periodical, or the
- * monograph's single unit when `itemId === sourceId`. Fail loud naming an
- * unknown issue id (G-2).
- */
-function selectIssue(source: RawSource, itemId: string): RawIssue {
-  if (source.kind === 'monograph') {
-    if (itemId !== source.sourceId) {
-      throw new Error(
-        `buildItem: monograph ${source.sourceId} is built as a whole; itemId must equal the ` +
-          `source id, got ${JSON.stringify(itemId)}.`,
-      );
-    }
-    const unit = source.issues[0];
-    if (unit === undefined) {
-      throw new Error(
-        `buildItem: monograph ${source.sourceId} has no unit in the snapshot.`,
-      );
-    }
-    return unit;
-  }
-  const issue = source.issues.find((candidate) => candidate.issueId === itemId);
-  if (issue === undefined) {
-    throw new Error(
-      `buildItem: source ${source.sourceId} has no issue ${JSON.stringify(itemId)} ` +
-        `(found: ${source.issues.map((i) => i.issueId).join(', ') || 'none'}).`,
-    );
-  }
-  return issue;
 }
 
 /** Wrap a `FetchFn`, defaulting to a global-`fetch` adapter that yields a {@link FetchResponse}. */
@@ -187,23 +161,26 @@ function toRootRelative(repoRoot: string, absPath: string): string {
  * checksum internally (`assertMasterSha256Match`); the `iiif` alternate records
  * its own derivative checksum. Fails loud (naming the folio) on any fetch or
  * verification failure.
+ *
+ * Archive-direct (spec 014): `pages` are the `Edition`'s own `EditionPage[]`,
+ * already assembled by `ArchiveEditionReader.build`. Each page's
+ * `image.objectStoreKey`/`image.sha256` are the folio's image-master key/hash,
+ * already validated non-empty by `resolveArchiveSource` -- no re-derivation
+ * needed here. Archive-direct pages carry no per-page ark (see
+ * `@/pdf/load/archive-edition`'s module doc), so `ark` is always `null`,
+ * routing every fetch through the `b2` provider path.
  */
 async function stageImages(
   source: ImageByteSource,
-  pages: RawPage[],
+  pages: EditionPage[],
   imageDir: string,
 ): Promise<void> {
   for (const page of pages) {
     const fetched = await source.fetch({
       folioId: page.folioId,
-      ark: page.ark,
-      objectStoreKey: page.objectStoreKey ?? '',
-      // The B2 master's checksum is the folio sidecar's image-master sha256
-      // (`RawPage.imageSha256`), NOT the translation-text `provenance.sha256`.
-      // The `b2-cdn` source verifies the fetched master bytes against exactly
-      // this; the `iiif` alternate ignores it (it fetches a derivative). Fail
-      // loud (naming the folio) when it is absent -- image integrity is required.
-      sha256: requireImageSha256(page, `buildItem/stageImages folio ${page.folioId}`),
+      ark: null,
+      objectStoreKey: page.image.objectStoreKey,
+      sha256: page.image.sha256,
     });
     copyFileSync(fetched.bytesPath, path.join(imageDir, versoName(page.folioId)));
   }
@@ -228,19 +205,21 @@ export async function buildItem(
   const provider = opts.provider ?? config.imageProvider;
   const showFrench = opts.showFrench ?? config.showFrench;
 
-  // 1. Assemble the pure Edition from committed snapshot + SSOT + pin.
-  const snapshotReader = opts.snapshotReader ?? makeCorpusSnapshotReader(config.snapshotDir);
-  const rawSnapshot = snapshotReader.read(sourceId);
-  const source = selectSource(rawSnapshot.sources, sourceId);
-  const issue = selectIssue(source, itemId);
-
-  const builder = makeEditionBuilder({
-    snapshot: snapshotReader,
-    sourceMeta: makeSourceMetaReader(repoRoot),
-    pin: makeArchivePinReader(config.pinFile),
-    imageProvider: provider,
-  });
-  const edition = builder.build(sourceId, itemId);
+  // 1. Assemble the pure Edition DIRECTLY from the private archive (spec 014,
+  //    T008) -- no committed snapshot in the loop. The pin sidecar
+  //    (`config.pinFile` = `site/data/archive-source.json`) is still read for
+  //    the colophon's `archiveRef`.
+  const archiveRoot = resolveArchiveRoot(repoRoot, opts.archiveRoot, env);
+  const editionReader =
+    opts.editionReader ??
+    makeArchiveEditionReader({
+      archiveRoot,
+      repoRoot,
+      sourceMeta: makeSourceMetaReader(repoRoot),
+      pin: makeArchivePinReader(config.pinFile),
+      imageProvider: provider,
+    });
+  const edition = await editionReader.build(sourceId, itemId);
 
   // 2. Stage the per-source build dir (under the output root, itself under the
   //    repo root by default) + a per-item images dir. Everything the Typst run
@@ -256,7 +235,7 @@ export async function buildItem(
 
   const fetchFn = resolveFetchFn(opts.fetchFn);
   const imageSource = makeImageSource(provider, fetchFn, env);
-  await stageImages(imageSource, issue.pages, imageDir);
+  await stageImages(imageSource, edition.pages, imageDir);
 
   // 3. Serialize the Typst input JSON under the build dir.
   const inputPath = path.join(buildDir, `${itemId}.input.json`);

@@ -1,31 +1,44 @@
 /**
- * Batch build orchestration (T025, spec 007 US2): scale the single-item
- * `buildItem` orchestrator (`./build.ts`) across every item of one source
- * (`buildSource`) or every committed snapshot source (`buildAll`).
+ * Batch build orchestration (T025, spec 007 US2; archive-direct T009, spec
+ * 014): scale the single-item `buildItem` orchestrator (`./build.ts`) across
+ * every item of one source (`buildSource`) or every buildable source in the
+ * private archive (`buildAll`).
  *
  * G-1 (one PDF per item) is inherited from `buildItem` -- this module adds
  * enumeration (which items a source/corpus has) and G-4 (attributable,
  * record-and-continue failure, contracts/cli.md): each item is built
  * independently; a per-item failure is caught, recorded with the item id +
  * message, and does NOT abort sibling builds. `buildAll` extends the same
- * record-and-continue posture to a whole source failing (e.g. an unknown or
- * empty source) so one bad source cannot silently kill the rest of the
- * corpus batch. The CLI (`scripts/build-pdf.ts`) turns the returned failure
- * lists into the printed summary + a non-zero exit -- a batch with any
- * failure is never silently "OK".
+ * record-and-continue posture to a whole source failing (e.g. an
+ * unregistered or empty source) so one bad source cannot silently kill the
+ * rest of the corpus batch. The CLI (`scripts/build-pdf.ts`) turns the
+ * returned failure lists into the printed summary + a non-zero exit -- a
+ * batch with any failure is never silently "OK".
+ *
+ * Archive-direct (spec 014, T009): `buildSource`/`buildAll` enumerate items
+ * DIRECTLY from the private archive (`@/pdf/load/archive-source`'s
+ * `resolveArchiveSource`) -- no committed snapshot is read here anymore.
+ * `buildAll` discovers its candidate sources from the bibliography SSOT
+ * (`bibliography/sources/*.yml`), filtered to those with a registered archive
+ * layout (`@/archive/location`'s `sourceLayout`) AND an existing archive
+ * directory under the resolved archive root -- a source with nothing on disk
+ * is simply not attempted, matching the archive-direct build's own I/O
+ * boundary rather than a committed-snapshot listing.
  */
 
-import { readdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { resolveRepoRoot } from '@/browser/load/repo-root';
-import type { RawSource } from '@/browser/model';
-import { resolvePdfConfig } from '@/pdf/config';
+import { loadAllSources } from '@/bibliography/load';
+import {
+  isSourceLayoutRegistered,
+  monographDir,
+  resolveArchiveRoot,
+  sourceLayout,
+} from '@/archive/location';
 import { buildItem, type BuildItemOptions } from '@/pdf/render/build';
-import { makeCorpusSnapshotReader, type CorpusSnapshotReader } from '@/pdf/load/edition';
-
-/** Suffix of a committed per-source snapshot file (`<sourceId>.json.gz`). */
-const SNAPSHOT_SUFFIX = '.json.gz';
+import { resolveArchiveSource, type ArchiveSourceResolution } from '@/pdf/load/archive-source';
 
 /** One item's successful build. */
 export interface BatchBuiltItem {
@@ -50,49 +63,59 @@ export interface BuildSourceResult {
   failed: BatchFailedItem[];
 }
 
-/** Resolve the RawSource for `sourceId`, or fail loud naming it (G-2; mirrors build.ts's `selectSource`). */
-function selectSource(sources: RawSource[], sourceId: string): RawSource {
-  const source = sources.find((candidate) => candidate.sourceId === sourceId);
-  if (source === undefined) {
-    throw new Error(
-      `buildSource: unknown source ${JSON.stringify(sourceId)} -- not in the committed snapshot ` +
-        `(found: ${sources.map((s) => s.sourceId).join(', ') || 'none'}).`,
-    );
-  }
-  return source;
-}
-
 /**
- * Every item id a source builds to: one per issue for a periodical, or the
- * single `[sourceId]` for a monograph -- matches `buildItem`'s monograph
- * convention (itemId === sourceId; see build.ts's `selectIssue`).
+ * Every item id a source builds to, straight from its archive resolution:
+ * one per issue for a periodical, or the single `[sourceId]` for a monograph
+ * -- matches `buildItem`'s monograph convention (itemId === sourceId).
  */
-function enumerateItemIds(source: RawSource): string[] {
-  if (source.kind === 'monograph') {
-    return [source.sourceId];
+function enumerateArchiveItemIds(resolution: ArchiveSourceResolution): string[] {
+  if (resolution.kind === 'monograph') {
+    return [resolution.sourceId];
   }
-  return source.issues.map((issue) => issue.issueId);
+  return resolution.issues.map((issue) => issue.issueId);
 }
 
 /**
- * Lists every committed snapshot source id under `snapshotDirAbs` -- one per
- * `<sourceId>.json.gz` file (the pin sidecar `archive-source.json` is not a
- * source and is excluded by the `.json.gz` suffix check). Sorted for a
+ * Absolute path of a periodical source's per-source archive directory
+ * (mirrors `@/pdf/load/archive-source`'s private `resolvePeriodical` path
+ * shape -- that helper is not exported, so the shape is reproduced here for
+ * the existence check only; folio enumeration itself always goes through
+ * `resolveArchiveSource`).
+ */
+function periodicalSourceDir(sourceId: string, archiveRoot: string): string {
+  const layout = sourceLayout(sourceId);
+  return path.join(archiveRoot, 'archive', 'cases', layout.case, layout.type, layout.slug);
+}
+
+/**
+ * True when `sourceId` has a registered archive layout AND an existing
+ * archive directory under `archiveRoot` -- the discoverability test
+ * `buildAll` applies to every bibliography-listed source.
+ */
+function hasArchiveDir(sourceId: string, archiveRoot: string): boolean {
+  if (!isSourceLayoutRegistered(sourceId)) {
+    return false;
+  }
+  const layout = sourceLayout(sourceId);
+  const dir =
+    layout.kind === 'monograph'
+      ? monographDir(sourceId, archiveRoot)
+      : periodicalSourceDir(sourceId, archiveRoot);
+  return existsSync(dir);
+}
+
+/**
+ * Discover every buildable source id: every source in the bibliography SSOT
+ * (`bibliography/sources/*.yml`) that both has a registered archive layout
+ * and an existing archive directory under `archiveRoot`. Sorted for a
  * deterministic, reproducible `--all` build order (T026/SC-004).
  */
-export function listSnapshotSourceIds(snapshotDirAbs: string): string[] {
-  return readdirSync(snapshotDirAbs)
-    .filter((name) => name.endsWith(SNAPSHOT_SUFFIX))
-    .map((name) => name.slice(0, -SNAPSHOT_SUFFIX.length))
+function discoverBuildableSourceIds(repoRoot: string, archiveRoot: string): string[] {
+  const bibliographyDir = path.join(repoRoot, 'bibliography', 'sources');
+  return loadAllSources(bibliographyDir)
+    .map((loaded) => loaded.source.sourceId)
+    .filter((sourceId) => hasArchiveDir(sourceId, archiveRoot))
     .sort();
-}
-
-/** Resolve the (possibly-relative) configured snapshot dir to an absolute path. */
-function resolveSnapshotDirAbs(env: NodeJS.ProcessEnv): string {
-  const config = resolvePdfConfig(env);
-  return path.isAbsolute(config.snapshotDir)
-    ? config.snapshotDir
-    : path.join(resolveRepoRoot(), config.snapshotDir);
 }
 
 /**
@@ -102,23 +125,22 @@ function resolveSnapshotDirAbs(env: NodeJS.ProcessEnv): string {
  * item cannot prevent its siblings from building. Returns both the built
  * and failed lists -- the caller (CLI) decides how to report/exit.
  *
- * @throws Error only for a batch-level problem: an unknown `sourceId` (G-2)
- *   or a source with zero items to build. Both name the source directly
- *   rather than being folded into `failed` -- there is no sibling item in
- *   this batch to keep building.
+ * @throws Error only for a batch-level problem: no registered archive layout,
+ *   no archive directory, no folio sidecars (`resolveArchiveSource`'s own
+ *   throws surface unchanged), or an otherwise-resolved periodical with zero
+ *   issues. All name the source directly rather than being folded into
+ *   `failed` -- there is no sibling item in this batch to keep building.
  */
 export async function buildSource(
   sourceId: string,
   opts: BuildItemOptions = {},
 ): Promise<BuildSourceResult> {
   const env = opts.env ?? process.env;
-  const config = resolvePdfConfig(env);
-  const snapshotReader: CorpusSnapshotReader =
-    opts.snapshotReader ?? makeCorpusSnapshotReader(config.snapshotDir);
+  const repoRoot = resolveRepoRoot();
+  const archiveRoot = resolveArchiveRoot(repoRoot, opts.archiveRoot, env);
 
-  const rawSnapshot = snapshotReader.read(sourceId);
-  const source = selectSource(rawSnapshot.sources, sourceId);
-  const itemIds = enumerateItemIds(source);
+  const resolution = await resolveArchiveSource({ sourceId, archiveRoot });
+  const itemIds = enumerateArchiveItemIds(resolution);
   if (itemIds.length === 0) {
     throw new Error(`buildSource: source ${JSON.stringify(sourceId)} has zero items to build.`);
   }
@@ -128,10 +150,7 @@ export async function buildSource(
 
   for (const itemId of itemIds) {
     try {
-      // Reuse the same snapshotReader across every item so a batch build
-      // reads the source's snapshot file exactly once (and so an injected
-      // test fake sees a single, consistent view).
-      const { outPath } = await buildItem(sourceId, itemId, { ...opts, snapshotReader });
+      const { outPath } = await buildItem(sourceId, itemId, { ...opts, archiveRoot });
       built.push({ itemId, outPath });
     } catch (error) {
       failed.push({
@@ -145,32 +164,37 @@ export async function buildSource(
 }
 
 /**
- * Build every item of EVERY committed snapshot source (contracts/cli.md
- * `--all`). Sources are built in the deterministic (sorted) order from
- * `listSnapshotSourceIds`. A whole source failing (e.g. `buildSource`'s
- * batch-level throw for an empty source) is caught here and folded into that
- * source's own `BuildSourceResult.failed` list under a `(source ...)`
- * marker id -- G-4's attributable, record-and-continue guarantee extends to
- * the whole-corpus batch, not just to individual items within one source.
+ * Build every item of EVERY buildable source in the private archive
+ * (contracts/cli.md `--all`). Sources are built in the deterministic
+ * (sorted) order from `discoverBuildableSourceIds`. A whole source failing
+ * (e.g. `buildSource`'s batch-level throw for an empty or malformed source)
+ * is caught here and folded into that source's own `BuildSourceResult.failed`
+ * list under a `(source ...)` marker id -- G-4's attributable,
+ * record-and-continue guarantee extends to the whole-corpus batch, not just
+ * to individual items within one source.
  *
- * @throws Error if no committed snapshot sources are found under the
- *   resolved snapshot dir (a fail-loud empty-run guard -- distinct from a
- *   per-source failure, since there is nothing at all to attribute).
+ * @throws Error if no buildable sources are found under the resolved archive
+ *   root (a fail-loud empty-run guard -- distinct from a per-source failure,
+ *   since there is nothing at all to attribute).
  */
 export async function buildAll(opts: BuildItemOptions = {}): Promise<BuildSourceResult[]> {
   const env = opts.env ?? process.env;
-  const sourceIds = listSnapshotSourceIds(resolveSnapshotDirAbs(env));
+  const repoRoot = resolveRepoRoot();
+  const archiveRoot = resolveArchiveRoot(repoRoot, opts.archiveRoot, env);
+
+  const sourceIds = discoverBuildableSourceIds(repoRoot, archiveRoot);
   if (sourceIds.length === 0) {
     throw new Error(
-      'buildAll: no committed snapshot sources found (expected one or more <sourceId>.json.gz ' +
-        'files under the snapshot dir). Run "npm run site:snapshot" first.',
+      `buildAll: no buildable sources found under the archive root ${archiveRoot} (expected ` +
+        'one or more bibliography sources with a registered archive layout and an existing ' +
+        'archive directory).',
     );
   }
 
   const results: BuildSourceResult[] = [];
   for (const sourceId of sourceIds) {
     try {
-      results.push(await buildSource(sourceId, opts));
+      results.push(await buildSource(sourceId, { ...opts, archiveRoot }));
     } catch (error) {
       results.push({
         sourceId,

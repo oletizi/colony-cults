@@ -1,46 +1,58 @@
 /**
- * INTEGRATION test (T024, spec 007 US2): drives the batch build mechanism
- * (`@/pdf/render/batch`'s `buildSource`/`buildAll`) with an INJECTED fake
- * `TypstRunner` (writes a stub file -- no real `typst` binary) and a fake
- * `fetchFn` (no network) over a small multi-issue fixture, asserting:
+ * INTEGRATION test (T024, spec 007 US2; archive-direct T009, spec 014): drives
+ * the batch build mechanism (`@/pdf/render/batch`'s `buildSource`/`buildAll`)
+ * against a FIXTURE archive directory (`writeFixtureArchive`, spec 014's
+ * helper) with an INJECTED fake `TypstRunner` (writes a stub file -- no real
+ * `typst` binary) and a fake `fetchFn` serving each fixture folio's own real
+ * bytes, asserting:
  *
- *  - G-1 (one PDF per item): every SUCCESSFUL item gets exactly one written
- *    PDF, at a distinct path, with `typst compile` invoked once per item.
- *  - G-4 (attributable, record-and-continue): a deliberately-broken item (an
- *    empty-english page, mirroring the real PB-P001/1885-10-15 case) is
- *    recorded by id + reason in `failed` -- it does NOT abort or omit its
- *    healthy siblings, and `failed.length > 0` is exactly the signal
- *    `scripts/build-pdf.ts`'s `reportBatch` uses to set a non-zero exit code
- *    (never a silent "OK").
+ *  - G-1 (one PDF per item): a healthy source's one item gets exactly one
+ *    written PDF, with `typst compile` invoked once.
+ *  - G-4 (attributable, record-and-continue): a source whose archive
+ *    directory exists but has no folio sidecars at all (deliberately left
+ *    empty) is recorded -- by `buildSource` as a direct batch-level throw
+ *    naming the source, and by `buildAll` folded into that source's own
+ *    `(source ...)`-marked failure -- without aborting or omitting a healthy
+ *    sibling source.
  *
- * `sourceMeta`/`pin` are NOT injectable on `BuildItemOptions` (see
- * `@/pdf/render/build`'s `buildItem`) -- they read the real bibliography SSOT
- * (`bibliography/sources/<sourceId>.yml`) and the real committed pin
- * (`site/data/archive-source.json`). So every fixture below uses a REAL
- * source id that has a bibliography record, with a FAKE `CorpusSnapshotReader`
- * (or, for the `buildAll` describe block, real-shaped snapshot files written
- * to a scratch dir) supplying the controlled issue/page data. `--provider
- * iiif` is used throughout so no `CORPUS_CDN_BASE`/sha256-master check is
- * required (image-fetch contract's documented b2/iiif verification
- * asymmetry) -- only the fake `fetchFn`'s bytes matter.
+ * `provider: 'b2'` is used throughout, not `iiif`: archive-direct pages carry
+ * no per-page ark (`@/pdf/render/build`'s module doc), so the IIIF source
+ * would throw "no ark" on every page here. `CORPUS_CDN_BASE` is set so the b2
+ * source resolves a url, and the fake `fetchFn` serves the fixture's own
+ * bytes (keyed by folio number) so the b2 source's sha256 verification
+ * against the folio sidecar's real image-master hash succeeds.
+ *
+ * `PB-P002` (real, registered monograph -- `bibliography/sources/PB-P002.yml`
+ * + `@/archive/location`'s static `SOURCE_LAYOUTS`) is the healthy fixture
+ * source, matching `archive-edition.test.ts`'s T006 pattern. `PB-P054` (also
+ * a real registered monograph, same `case: 'port-breton'`) is reused as the
+ * deliberately-broken sibling: its archive directory is created but left
+ * empty, so `resolveArchiveSource` itself fails loud with "no folio
+ * sidecars". Sharing one case means both resolve under the SAME fixture
+ * `archiveRoot`, and since every OTHER registered source has no directory
+ * under this fresh temp root, `buildAll`'s bibliography-driven discovery sees
+ * exactly these two sources.
+ *
+ * No committed snapshot (`site/data/*.json.gz`) is read anywhere in this path
+ * -- the archive-direct `buildSource`/`buildAll` never touch it.
  */
 
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 
-import type { CorpusSnapshot, MachineAssistLabel, RawIssue, RawPage, RawSource } from '@/browser/model';
 import { resolveRepoRoot } from '@/browser/load/repo-root';
-import { writeSnapshotFile } from '@/browser/load/snapshot';
-import type { CorpusSnapshotReader } from '@/pdf/load/edition';
 import { buildAll, buildSource } from '@/pdf/render/batch';
 import type { FetchFn, FetchResponse } from '@/pdf/images/fetch';
 import type { CompileRequest, CompileResult, TypstRunner } from '@/pdf/render/typst-runner';
 
+import { writeFixtureArchive } from '../../unit/pdf/archive-fixture';
+
 // ---------------------------------------------------------------------------
-// Shared fakes: no real `typst` binary, no network.
+// Shared fakes: no real `typst` binary, no network (mirrors
+// `tests/integration/pdf/archive-edition.test.ts`'s T006 patterns -- neither
+// module exports these).
 // ---------------------------------------------------------------------------
 
 /** A fake TypstRunner that writes a stub PDF file instead of shelling `typst`. */
@@ -56,224 +68,187 @@ function fakeTypstRunner(): { runner: TypstRunner; calls: CompileRequest[] } {
   return { runner, calls };
 }
 
-/** A fake HTTP GET that returns fixed bytes for any url -- no network I/O. */
-const fakeFetchFn: FetchFn = async (): Promise<FetchResponse> => ({
-  ok: true,
-  status: 200,
-  arrayBuffer: async () => new TextEncoder().encode('fake-image-bytes').buffer,
-});
-
-const MACHINE_ASSIST: MachineAssistLabel = {
-  engine: 'claude-code-cli',
-  model: 'claude-opus-4',
-  retrieved: '2026-01-01',
-};
-
-function makePage(issueId: string, pageId: string, overrides: Partial<RawPage> = {}): RawPage {
-  return {
-    pageId,
-    folioId: overrides.folioId ?? 'f001',
-    ark: overrides.ark ?? `ark:/12148/${issueId}`,
-    objectStoreKey:
-      overrides.objectStoreKey === undefined
-        ? `object_store/${issueId}/${pageId}.jpg`
-        : overrides.objectStoreKey,
-    // Image-master hash (folio sidecar sha256); required by the Edition builder.
-    imageSha256: 'imageSha256' in overrides ? overrides.imageSha256 : `imgsha-${issueId}-${pageId}`,
-    ocrFrench: overrides.ocrFrench ?? `french ocr ${pageId}`,
-    correctedFrench: overrides.correctedFrench ?? null,
-    english: overrides.english ?? `english translation ${pageId}`,
-    ocrCondition: overrides.ocrCondition ?? null,
-    provenance: overrides.provenance ?? {
-      sourceId: 'test',
-      ark: `ark:/12148/${issueId}`,
-      date: '1900-01-01',
-      rights: 'public-domain',
-      page: pageId,
-      sha256: `sha-${issueId}-${pageId}`,
-      machineAssist: MACHINE_ASSIST,
-    },
+/**
+ * A fake HTTP GET serving each folio's real fixture image bytes at the b2 URL
+ * `buildItem` requests (`${CORPUS_CDN_BASE}/${objectStoreKey}`, per
+ * `makeB2ImageSource`). Matches the trailing `f<NNN>.jpg` the fixture always
+ * writes and looks the bytes up by that folio number -- robust to the
+ * fixture's own key format, and yields bytes whose sha256 matches the folio
+ * sidecar's recorded image-master hash.
+ */
+function makeFixtureFetch(imageBytes: Map<string, Uint8Array>): FetchFn {
+  return async (url: string): Promise<FetchResponse> => {
+    const match = /f(\d{3})\.jpg$/.exec(url);
+    const bytes = match ? imageBytes.get(match[1]) : undefined;
+    if (!bytes) {
+      return {
+        ok: false,
+        status: 404,
+        async arrayBuffer() {
+          return new ArrayBuffer(0);
+        },
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      async arrayBuffer() {
+        return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+      },
+    };
   };
 }
 
-function makeIssue(issueId: string, sequence: number, pages: RawPage[]): RawIssue {
-  return { issueId, date: '1900-01-01', sequence, pages };
+const CORPUS_CDN_BASE = 'https://cdn.test';
+
+// A real, registered monograph (@/archive/location's static SOURCE_LAYOUTS)
+// with a committed bibliography SSOT record -- both required for
+// resolveArchiveSource/buildItem to succeed against a fixture archiveRoot.
+const HEALTHY_SOURCE_ID = 'PB-P002';
+const HEALTHY_CASE = 'port-breton';
+const HEALTHY_SLUG = 'nouvelle-france-colonie-libre-port-breton';
+
+// A second real, registered monograph, same case -- deliberately left with an
+// EMPTY archive directory (no folio sidecars) to exercise the batch-level
+// (not per-item) failure path.
+const EMPTY_SOURCE_ID = 'PB-P054';
+const EMPTY_SLUG = 'cour-de-cassation-chambre-criminelle-arret-de-rejet-du-pourvoi-de-charles';
+
+/** Create `EMPTY_SOURCE_ID`'s registered archive directory, empty, under `archiveRoot`. */
+function writeEmptySiblingDir(archiveRoot: string): void {
+  const emptyDir = path.join(archiveRoot, 'archive', 'cases', HEALTHY_CASE, 'books', EMPTY_SLUG);
+  mkdirSync(emptyDir, { recursive: true });
 }
 
 // ---------------------------------------------------------------------------
-// buildSource: G-1 + G-4 over one source's issues (the bare `<sourceId>` CLI
-// selector's mechanism).
+// buildSource: G-1 over a healthy source's one item, and the batch-level
+// throw (contracts/cli.md's bare `<sourceId>` selector's mechanism).
 // ---------------------------------------------------------------------------
 
-describe('batch build (T024, US2): buildSource -- G-1 one PDF per item, G-4 attributable record-and-continue', () => {
-  // A real source id (bibliography/sources/PB-P001.yml + the real committed
-  // pin both exist) so buildItem's non-injectable sourceMeta/pin reads
-  // succeed; the ISSUES themselves are a controlled fake via snapshotReader.
-  const SOURCE_ID = 'PB-P001';
-  const HEALTHY_A = '1900-01-01_batch-test-a';
-  const BROKEN = '1900-01-02_batch-test-broken';
-  const HEALTHY_B = '1900-01-03_batch-test-b';
-
+describe('batch build (T024, US2; archive-direct T009): buildSource', () => {
   const repoRoot = resolveRepoRoot();
   const outDir = path.join(repoRoot, 'build', `pdf-batch-test-${process.pid}-${Date.now()}`);
-
-  function fakeSnapshotReader(): CorpusSnapshotReader {
-    const source: RawSource = {
-      sourceId: SOURCE_ID,
-      title: 'Batch Test Source',
-      kind: 'periodical',
-      ark: 'ark:/12148/batch-test-source',
-      rights: 'public-domain',
-      issues: [
-        makeIssue(HEALTHY_A, 1, [makePage(HEALTHY_A, 'p001')]),
-        // Deliberately broken -- an empty-english page (FR-011/G-2, mirrors
-        // the real PB-P001/1885-10-15_bpt6k56069168 incomplete issue).
-        // Placed in the MIDDLE of the list to prove record-and-continue, not
-        // just "stop before the first failure".
-        makeIssue(BROKEN, 2, [makePage(BROKEN, 'p001', { english: '   ' })]),
-        makeIssue(HEALTHY_B, 3, [makePage(HEALTHY_B, 'p001')]),
-      ],
-    };
-    return {
-      read(sourceId: string): CorpusSnapshot {
-        if (sourceId !== SOURCE_ID) {
-          throw new Error(`fake snapshot reader: no source ${sourceId}`);
-        }
-        return { sources: [source], skipped: [] };
-      },
-    };
-  }
 
   afterAll(() => {
     rmSync(outDir, { recursive: true, force: true });
   });
 
-  it('builds every healthy item, records the broken item attributably, and does not stop siblings', async () => {
-    const { runner: typst, calls } = fakeTypstRunner();
-
-    const result = await buildSource(SOURCE_ID, {
-      provider: 'iiif',
-      outDir,
-      snapshotReader: fakeSnapshotReader(),
-      fetchFn: fakeFetchFn,
-      typst,
+  it('builds the one item of a healthy monograph source straight from the archive (G-1)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: HEALTHY_CASE,
+      slug: HEALTHY_SLUG,
+      pageCount: 2,
     });
 
-    expect(result.sourceId).toBe(SOURCE_ID);
+    try {
+      const { runner: typst, calls } = fakeTypstRunner();
+      const fetchFn = makeFixtureFetch(fixture.imageBytes);
 
-    // G-1: exactly one PDF per SUCCESSFUL item -- both healthy issues built,
-    // each to a distinct, actually-written path, with `typst compile`
-    // invoked exactly once per successful item (never for the broken one).
-    expect(result.built.map((b) => b.itemId).sort()).toEqual([HEALTHY_A, HEALTHY_B].sort());
-    expect(new Set(result.built.map((b) => b.outPath)).size).toBe(result.built.length);
-    for (const item of result.built) {
-      expect(existsSync(item.outPath)).toBe(true);
+      const result = await buildSource(HEALTHY_SOURCE_ID, {
+        archiveRoot: fixture.archiveRoot,
+        provider: 'b2',
+        outDir,
+        fetchFn,
+        typst,
+        env: { ...process.env, CORPUS_CDN_BASE },
+      });
+
+      expect(result.sourceId).toBe(HEALTHY_SOURCE_ID);
+      expect(result.failed).toHaveLength(0);
+      expect(result.built).toHaveLength(1);
+      expect(result.built[0].itemId).toBe(HEALTHY_SOURCE_ID);
+      expect(existsSync(result.built[0].outPath)).toBe(true);
+      expect(calls).toHaveLength(1);
+      expect(calls[0].outPath).toBe(result.built[0].outPath);
+    } finally {
+      fixture.cleanup();
     }
-    expect(calls).toHaveLength(2);
-    expect(calls.map((c) => c.outPath).sort()).toEqual(result.built.map((b) => b.outPath).sort());
+  });
 
-    // G-4: the broken item is surfaced attributably (its own id + a reason
-    // naming the actual defect), not swallowed -- and it did NOT prevent
-    // HEALTHY_B (which comes after it) from building.
-    expect(result.failed).toHaveLength(1);
-    expect(result.failed[0].itemId).toBe(BROKEN);
-    expect(result.failed[0].error).toMatch(/english/i);
-    expect(result.failed[0].error).toMatch(new RegExp(BROKEN.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  it('throws a batch-level error naming the source when its archive directory has no folio sidecars', async () => {
+    const fixture = await writeFixtureArchive({
+      case: HEALTHY_CASE,
+      slug: HEALTHY_SLUG,
+      pageCount: 1,
+    });
 
-    // This is exactly the signal `scripts/build-pdf.ts`'s `reportBatch` uses
-    // to print "built N, failed M" and set `process.exitCode = 1` -- a batch
-    // with any failure must never look like a silent "OK".
-    expect(result.failed.length).toBeGreaterThan(0);
+    try {
+      writeEmptySiblingDir(fixture.archiveRoot);
+
+      await expect(
+        buildSource(EMPTY_SOURCE_ID, {
+          archiveRoot: fixture.archiveRoot,
+          provider: 'b2',
+          env: { ...process.env, CORPUS_CDN_BASE },
+        }),
+      ).rejects.toThrow(/no folio sidecars/i);
+    } finally {
+      fixture.cleanup();
+    }
   });
 });
 
 // ---------------------------------------------------------------------------
-// buildAll: per-source attribution across the whole committed snapshot (the
-// `--all` CLI selector's mechanism). Uses real-shaped (gzipped) snapshot
-// files written to a scratch dir -- `buildAll`'s per-source snapshotReader
-// is not independently injectable, only `env.PDF_SNAPSHOT_DIR` is.
+// buildAll: discovers every buildable source from the archive (bibliography
+// SSOT + registered layout + existing archive dir), per-source attribution
+// across the whole corpus batch (the `--all` CLI selector's mechanism).
 // ---------------------------------------------------------------------------
 
-describe('batch build: buildAll -- per-source attribution (G-1/G-4 across --all)', () => {
-  // Real bibliography ids so sourceMeta reads succeed for both.
-  const HEALTHY_SOURCE = 'PB-P002';
-  const EMPTY_SOURCE = 'PB-P007';
-
+describe('batch build: buildAll -- discovers buildable sources from the archive, per-source attribution (G-1/G-4)', () => {
   const repoRoot = resolveRepoRoot();
-  const scratchDir = mkdtempSync(path.join(tmpdir(), 'corpus-print-pdf-batch-all-'));
   const outDir = path.join(repoRoot, 'build', `pdf-batch-all-test-${process.pid}-${Date.now()}`);
 
-  beforeAll(() => {
-    const healthy: CorpusSnapshot = {
-      sources: [
-        {
-          sourceId: HEALTHY_SOURCE,
-          title: 'Batch-All Healthy Source',
-          kind: 'periodical',
-          ark: 'ark:/12148/batch-all-healthy',
-          rights: 'public-domain',
-          issues: [makeIssue('1900-02-01_all-healthy', 1, [makePage('1900-02-01_all-healthy', 'p001')])],
-        },
-      ],
-      skipped: [],
-    };
-    // Zero issues -- a whole-source, batch-level failure (buildSource's own
-    // "zero items to build" throw), NOT a per-item one -- exercises
-    // `buildAll`'s try/catch around each `buildSource` call.
-    const empty: CorpusSnapshot = {
-      sources: [
-        {
-          sourceId: EMPTY_SOURCE,
-          title: 'Batch-All Empty Source',
-          kind: 'periodical',
-          ark: 'ark:/12148/batch-all-empty',
-          rights: 'public-domain',
-          issues: [],
-        },
-      ],
-      skipped: [],
-    };
-    writeSnapshotFile(scratchDir, HEALTHY_SOURCE, healthy);
-    writeSnapshotFile(scratchDir, EMPTY_SOURCE, empty);
-    writeFileSync(
-      path.join(scratchDir, 'archive-source.json'),
-      JSON.stringify({ ref: 'test-pin-ref-batch-all' }),
-    );
-  });
-
   afterAll(() => {
-    rmSync(scratchDir, { recursive: true, force: true });
     rmSync(outDir, { recursive: true, force: true });
   });
 
-  it('builds every listed source and attributes a whole-source failure without stopping the rest', async () => {
-    const { runner: typst } = fakeTypstRunner();
-
-    const results = await buildAll({
-      provider: 'iiif',
-      outDir,
-      fetchFn: fakeFetchFn,
-      typst,
-      env: { ...process.env, PDF_SNAPSHOT_DIR: scratchDir },
+  it('builds the healthy source, attributes the empty sibling as a whole-source failure, and does not stop the rest', async () => {
+    const fixture = await writeFixtureArchive({
+      case: HEALTHY_CASE,
+      slug: HEALTHY_SLUG,
+      pageCount: 1,
     });
 
-    expect(results.map((r) => r.sourceId).sort()).toEqual([EMPTY_SOURCE, HEALTHY_SOURCE].sort());
+    try {
+      writeEmptySiblingDir(fixture.archiveRoot);
 
-    const healthy = results.find((r) => r.sourceId === HEALTHY_SOURCE);
-    if (healthy === undefined) {
-      throw new Error('test: no result for HEALTHY_SOURCE');
-    }
-    expect(healthy.built).toHaveLength(1);
-    expect(healthy.failed).toHaveLength(0);
-    expect(existsSync(healthy.built[0].outPath)).toBe(true);
+      const { runner: typst } = fakeTypstRunner();
+      const fetchFn = makeFixtureFetch(fixture.imageBytes);
 
-    const empty = results.find((r) => r.sourceId === EMPTY_SOURCE);
-    if (empty === undefined) {
-      throw new Error('test: no result for EMPTY_SOURCE');
+      const results = await buildAll({
+        archiveRoot: fixture.archiveRoot,
+        provider: 'b2',
+        outDir,
+        fetchFn,
+        typst,
+        env: { ...process.env, CORPUS_CDN_BASE },
+      });
+
+      // Only these two sources have an archive directory under this fresh
+      // temp root -- every other registered/bibliography-listed source is
+      // absent here, so discovery narrows to exactly this pair.
+      expect(results.map((r) => r.sourceId).sort()).toEqual(
+        [HEALTHY_SOURCE_ID, EMPTY_SOURCE_ID].sort(),
+      );
+
+      const healthy = results.find((r) => r.sourceId === HEALTHY_SOURCE_ID);
+      if (healthy === undefined) {
+        throw new Error('test: no result for HEALTHY_SOURCE_ID');
+      }
+      expect(healthy.built).toHaveLength(1);
+      expect(healthy.failed).toHaveLength(0);
+      expect(existsSync(healthy.built[0].outPath)).toBe(true);
+
+      const empty = results.find((r) => r.sourceId === EMPTY_SOURCE_ID);
+      if (empty === undefined) {
+        throw new Error('test: no result for EMPTY_SOURCE_ID');
+      }
+      expect(empty.built).toHaveLength(0);
+      expect(empty.failed).toHaveLength(1);
+      expect(empty.failed[0].itemId).toBe(`(source ${EMPTY_SOURCE_ID})`);
+      expect(empty.failed[0].error).toMatch(/no folio sidecars/i);
+    } finally {
+      fixture.cleanup();
     }
-    expect(empty.built).toHaveLength(0);
-    expect(empty.failed).toHaveLength(1);
-    expect(empty.failed[0].error).toMatch(/zero items/i);
-    expect(empty.failed[0].error).toMatch(new RegExp(EMPTY_SOURCE));
   });
 });

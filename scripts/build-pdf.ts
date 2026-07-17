@@ -1,17 +1,24 @@
 /**
  * scripts/build-pdf.ts
  *
- * The `pdf:build` CLI (T022/T025, spec 007, contracts/cli.md): render corpus
- * items to facing-page facsimile PDFs. Sibling to `site:snapshot` /
- * `site:export-public` in `package.json`.
+ * The `pdf:build` CLI (T022/T025, spec 007; archive-direct per spec 014,
+ * contracts/cli.md): render corpus items to facing-page facsimile PDFs.
+ * Sibling to `site:snapshot` / `site:export-public` in `package.json`.
+ *
+ * The Edition is assembled DIRECTLY from the private archive (spec 014) --
+ * NOT from the committed snapshot -- so the build requires a resolvable
+ * archive root (`--archive-root <dir>` or `COLONY_ARCHIVE_ROOT`).
  *
  *   npm run pdf:build -- <sourceId>/<issueId>   # one item (US1)
  *   npm run pdf:build -- <sourceId>             # every issue of a source (US2)
- *   npm run pdf:build -- --all                  # the whole committed snapshot (US2)
+ *   npm run pdf:build -- --all                  # every source the archive has (US2)
  *
  * Flags:
  *   --provider b2|iiif   image provider (default: config PDF_IMAGE_PROVIDER, else b2)
  *   --out <dir>          output root (default: config PDF_OUT_DIR, else build/pdf)
+ *   --archive-root <dir> private archive worktree root (default: COLONY_ARCHIVE_ROOT
+ *                        env var; fail-loud if neither is set -- see
+ *                        `@/archive/location`'s `resolveArchiveRoot`)
  *   --no-french          render the English-only *reading* recto (two English
  *                        columns, FR label dropped) instead of the default
  *                        two-column parallel FR|EN *study* recto. Overrides the
@@ -36,6 +43,7 @@ import path from 'node:path';
 
 import { execCommand } from '@/ocr/exec';
 import { resolveRepoRoot } from '@/browser/load/repo-root';
+import { resolveArchiveRoot } from '@/archive/location';
 import { buildItem } from '@/pdf/render/build';
 import { buildAll, buildSource, type BuildSourceResult } from '@/pdf/render/batch';
 import type { PdfImageProviderKind } from '@/pdf/config';
@@ -51,6 +59,11 @@ interface CliArgs {
   /** `--out` dir, or `undefined` (fall back to config default `build/pdf`). */
   out: string | undefined;
   /**
+   * `--archive-root` dir, or `undefined` (fall back to `COLONY_ARCHIVE_ROOT`;
+   * `resolveArchiveRoot` fails loud if neither is set).
+   */
+  archiveRoot: string | undefined;
+  /**
    * `--no-french` flag: when set, forces the English-only recto
    * (`showFrench=false`), overriding the `PDF_SHOW_FRENCH` env toggle. When
    * unset, `showFrench` is left to config/env (default: parallel FR|EN).
@@ -64,6 +77,7 @@ function parseArgs(argv: string[]): CliArgs {
   let all = false;
   let provider: PdfImageProviderKind | undefined;
   let out: string | undefined;
+  let archiveRoot: string | undefined;
   let noFrench = false;
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -88,6 +102,13 @@ function parseArgs(argv: string[]): CliArgs {
         throw new Error('pdf:build: --out expects a directory path.');
       }
       out = value;
+    } else if (arg === '--archive-root') {
+      const value = argv[i + 1];
+      i += 1;
+      if (value === undefined || value.trim().length === 0) {
+        throw new Error('pdf:build: --archive-root expects a directory path.');
+      }
+      archiveRoot = value;
     } else if (arg.startsWith('--')) {
       throw new Error(`pdf:build: unknown flag ${JSON.stringify(arg)}.`);
     } else if (selector === undefined) {
@@ -107,7 +128,7 @@ function parseArgs(argv: string[]): CliArgs {
     );
   }
 
-  return { selector, all, provider, out, noFrench };
+  return { selector, all, provider, out, archiveRoot, noFrench };
 }
 
 /**
@@ -124,6 +145,17 @@ async function assertTypstAvailable(): Promise<void> {
         `(exit ${result.exitCode}: ${result.stderr.trim() || result.stdout.trim() || 'no output'}).`,
     );
   }
+}
+
+/**
+ * Preflight the private archive root: fail loud, BEFORE any build work, if
+ * neither `--archive-root` nor `COLONY_ARCHIVE_ROOT` resolves an archive
+ * worktree. `resolveArchiveRoot` already fails loud when the build itself
+ * runs, but preflighting here (mirroring {@link assertTypstAvailable}) gives a
+ * clear upfront message instead of failing partway into the first item.
+ */
+function assertArchiveRootResolvable(repoRoot: string, archiveRootArg: string | undefined): void {
+  resolveArchiveRoot(repoRoot, archiveRootArg, process.env);
 }
 
 /**
@@ -166,8 +198,15 @@ async function main(): Promise<void> {
   await assertTypstAvailable();
 
   const repoRoot = resolveRepoRoot();
+
+  // Preflight: fail loud on an unresolvable archive root BEFORE any build
+  // work -- the build reads the Edition directly from the private archive
+  // (spec 014), not the committed snapshot, so it always needs a root.
+  assertArchiveRootResolvable(repoRoot, args.archiveRoot);
+
   const outLabel = args.out ?? 'build/pdf (config default)';
   const providerLabel = args.provider ?? '(config default)';
+  const archiveRootLabel = args.archiveRoot ?? 'COLONY_ARCHIVE_ROOT';
   // `--no-french` forces the English-only recto (CLI overrides the
   // PDF_SHOW_FRENCH env toggle); left unset, config/env decides.
   const showFrench = args.noFrench ? false : undefined;
@@ -175,12 +214,18 @@ async function main(): Promise<void> {
 
   if (args.all) {
     process.stdout.write(
-      `pdf:build -- all committed snapshot sources\n` +
+      `pdf:build -- all archive sources\n` +
         `  provider: ${providerLabel}\n` +
         `  edition:  ${editionLabel}\n` +
+        `  archive:  ${archiveRootLabel}\n` +
         `  out root: ${outLabel}\n\n`,
     );
-    const results = await buildAll({ provider: args.provider, outDir: args.out, showFrench });
+    const results = await buildAll({
+      provider: args.provider,
+      outDir: args.out,
+      archiveRoot: args.archiveRoot,
+      showFrench,
+    });
     reportBatch(results, repoRoot);
     return;
   }
@@ -188,7 +233,7 @@ async function main(): Promise<void> {
   if (args.selector === undefined) {
     throw new Error(
       'pdf:build: no selector given. Pass "<sourceId>" (every issue of a source), ' +
-        '"<sourceId>/<issueId>" (a single item), or --all (the whole committed snapshot).',
+        '"<sourceId>/<issueId>" (a single item), or --all (every archive source).',
     );
   }
 
@@ -199,11 +244,13 @@ async function main(): Promise<void> {
       `pdf:build -- source ${sourceId} (all issues)\n` +
         `  provider: ${providerLabel}\n` +
         `  edition:  ${editionLabel}\n` +
+        `  archive:  ${archiveRootLabel}\n` +
         `  out root: ${outLabel}\n\n`,
     );
     const result = await buildSource(sourceId, {
       provider: args.provider,
       outDir: args.out,
+      archiveRoot: args.archiveRoot,
       showFrench,
     });
     reportBatch([result], repoRoot);
@@ -223,12 +270,14 @@ async function main(): Promise<void> {
     `pdf:build -- item ${sourceId}/${itemId}\n` +
       `  provider: ${providerLabel}\n` +
       `  edition:  ${editionLabel}\n` +
+      `  archive:  ${archiveRootLabel}\n` +
       `  out root: ${outLabel}\n\n`,
   );
 
   const { outPath } = await buildItem(sourceId, itemId, {
     provider: args.provider,
     outDir: args.out,
+    archiveRoot: args.archiveRoot,
     showFrench,
   });
 
