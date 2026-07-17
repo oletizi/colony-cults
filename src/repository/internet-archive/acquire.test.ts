@@ -321,7 +321,7 @@ describe('acquire -- happy path (PDF, faithful fidelity)', () => {
     const record = pdRecord();
     const adapter = pdfPathAdapter({});
 
-    await adapter.acquire(record, {});
+    const result = await adapter.acquire(record, {});
 
     expect(record.qualityAssessment).toBeDefined();
     expect(record.qualityAssessment?.status).toBe('sound');
@@ -330,6 +330,12 @@ describe('acquire -- happy path (PDF, faithful fidelity)', () => {
     expect(record.qualityAssessment?.observedPageCount).toBe(8); // poppler.info
     // Excluded front matter (leaves 1-3) recorded on success.
     expect(record.excludedLeaves?.map((e) => e.leaf)).toEqual([1, 2, 3]);
+
+    // The durable provenance is also carried on the RESULT so the persistence
+    // layer writes it onto the record (SC-003) -- not just mutated in memory.
+    expect(result.qualityAssessment).toBe(record.qualityAssessment);
+    expect(result.excludedLeaves?.map((e) => e.leaf)).toEqual([1, 2, 3]);
+    expect(result.metadataSnapshotRef).toBeDefined();
   });
 });
 

@@ -10,7 +10,8 @@
 
 import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { CopyIdentifier } from '@/model/repository-record';
-import type { RepositoryRecord } from '@/model/repository-record';
+import type { MetadataSnapshotRef, RepositoryRecord } from '@/model/repository-record';
+import type { ExcludedLeaf, QualityAssessment } from '@/model/quality-assessment';
 import type {
   GroundedExtraction,
   GroundedField,
@@ -157,6 +158,18 @@ export interface AcquisitionResult {
   complete: boolean;
   /** Whether post-acquisition reconciliation is required. */
   reconciliationRequired: boolean;
+  /**
+   * Durable record-level provenance the adapter authored during acquire, for the
+   * persistence layer to write onto the RepositoryRecord (adapters that produce
+   * none leave these unset). The Internet Archive adapter sets all three:
+   * `qualityAssessment` (the operator's fail-closed scan judgment + approved leaf
+   * range, FR-008), `excludedLeaves` (third-party inserts omitted from the
+   * masters but retained in the source, FR-011), and `metadataSnapshotRef` (the
+   * written metadata-snapshot reference). SC-003.
+   */
+  qualityAssessment?: QualityAssessment;
+  excludedLeaves?: ExcludedLeaf[];
+  metadataSnapshotRef?: MetadataSnapshotRef;
 }
 
 /**

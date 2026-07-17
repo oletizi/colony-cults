@@ -495,5 +495,11 @@ export async function acquireInternetArchiveItem(
     metadataSnapshot,
     complete: true,
     reconciliationRequired: true,
+    // Durable provenance for the persistence layer to write onto the record
+    // (SC-003): the operator's scan judgment, the excluded third-party leaves,
+    // and the written metadata-snapshot reference.
+    qualityAssessment: assessment,
+    excludedLeaves,
+    metadataSnapshotRef: record.metadataSnapshot,
   };
 }

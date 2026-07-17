@@ -318,7 +318,22 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   if (acquisition.assets.length > 0) {
     const updatedRecords = authoredRecords.map((authored) =>
       authored.sourceArchive === record.sourceArchive
-        ? { ...authored, assets: acquisition.assets }
+        ? {
+            ...authored,
+            assets: acquisition.assets,
+            // Durable record-level provenance the adapter authored (SC-003):
+            // written only when the adapter produced it (Gallica/museum leave
+            // these unset, so `...authored` preserves whatever was there).
+            ...(acquisition.qualityAssessment !== undefined
+              ? { qualityAssessment: acquisition.qualityAssessment }
+              : {}),
+            ...(acquisition.excludedLeaves !== undefined
+              ? { excludedLeaves: acquisition.excludedLeaves }
+              : {}),
+            ...(acquisition.metadataSnapshotRef !== undefined
+              ? { metadataSnapshot: acquisition.metadataSnapshotRef }
+              : {}),
+          }
         : authored,
     );
     writeSourceFile(input.sourcesDir, { source, records: updatedRecords });
