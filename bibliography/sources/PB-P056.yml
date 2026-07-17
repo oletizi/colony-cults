@@ -1,0 +1,66 @@
+sourceId: PB-P056
+kind: monograph
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: book
+language: English
+creator: Frederick Chudleigh Clifford
+rights:
+  status: public-domain
+  basis: >-
+    Frederick Chudleigh Clifford, "Richmond River District of New South Wales.
+    New Italy: a brief sketch of a new and thriving colony, founded and
+    established by the Italian immigrants who were sufferers by the Marquis de
+    Ray's New Ireland colonization scheme", Sydney: Charles Potter, Government
+    Printer, 1889. Public domain: (1) Australia — a NSW Government Printer
+    imprint, i.e. Crown copyright, which for a published literary work subsists
+    50 years from first publication under the Copyright Act 1968 (Cth) s180 (1889
+    + 50 = expired 1939); independently, any life+70 term for an author active as
+    an adult in 1889 is long elapsed. Pre-1955 Australian material is out of
+    copyright. (2) United States — published in 1889, before 1929, so public
+    domain in the U.S., where the Internet Archive scan (from the State Library
+    of Pennsylvania) is hosted. The digitised copy is a faithful photographic
+    reproduction of a public-domain work and is not independently
+    re-copyrightable (the *Bridgeman* principle).
+  determinedAt: 2026-07-17
+titles:
+  - text: "Richmond River District of New South Wales. New Italy: a brief sketch of a new and thriving colony, founded and established by the Italian immigrants who were sufferers by the Marquis de Ray's New Ireland colonization scheme"
+    role: canonical
+  - text: "New Italy: a brief sketch of a new and thriving colony"
+    role: archive
+notes: >-
+  F. C. Clifford's 1889 descriptive sketch of the NEW ITALY settlement (Richmond
+  River district, Northern Rivers, NSW) — the colony founded by the ~200 Italian
+  immigrant families who survived the Marquis de Rays / Port-Breton expedition.
+  A first-hand CONTEMPORARY account of the survivors' community, 8 years after
+  the disaster, published by the NSW Government Printer (Charles Potter). The
+  New-Italy-aftermath counterpart to the affair's promotional/legal imprints:
+  the first held source describing what became of the survivors, distinct from
+  the de Rays promotional matter (PB-P002/P055) and the New Italy Museum's
+  physical-only survivor writings (PB-P006). Found + verified via SRCH-0014
+  (2026-07-17): Internet Archive item richmondriverdis00clif — mediatype texts,
+  source PDF + _jp2.zip page-image set, public-domain by 1889 publication age.
+  Not on Gallica; reached via the shipped Internet Archive acquisition adapter
+  (spec 013), as with PB-P055. Raw archive.org search + item metadata captures
+  persisted under bibliography/repository-responses/PB-P055
+  (ia-search-*-2026-07-17.json, ia-metadata-richmondriverdis00clif-2026-07-17.json).
+repositoryRecords:
+  - sourceArchive: Internet Archive
+    status: to-collect
+    originalUrl: https://archive.org/details/richmondriverdis00clif
+    identifiers:
+      - type: ia-item
+        value: richmondriverdis00clif
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: >-
+        1889 NSW Government Printer imprint (F. C. Clifford). Public domain in
+        Australia — Crown copyright in a published literary work subsists 50
+        years from first publication (Copyright Act 1968 (Cth) s180): 1889 + 50
+        = expired 1939; and out of copyright as pre-1955 Australian material.
+        Public domain in the United States (published before 1929), where the
+        Internet Archive scan is hosted. The faithful photographic reproduction
+        is not independently re-copyrightable (Bridgeman).
+      rightsJurisdiction: AU/US
+      assessedBy: operator
+      assessedAt: 2026-07-17T12:00:00.000Z
