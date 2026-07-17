@@ -8,6 +8,7 @@
  */
 
 import type { GraceWindowConfig, QuerySummary } from '@/sourcequery/types';
+import { PAPERS_PAST } from '@/sourcequery/sources/papers-past';
 
 /** Per-source configuration for the Source Query Client. */
 export interface SourceConfig {
@@ -70,3 +71,7 @@ export function getSourceConfig(id: string): SourceConfig {
   }
   return config;
 }
+
+// Auto-register known sources. papers-past.ts imports `SourceConfig` type-only
+// (erased at runtime), so this value-level import here is not circular.
+registerSource(PAPERS_PAST);
