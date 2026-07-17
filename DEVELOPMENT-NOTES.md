@@ -1,3 +1,43 @@
+## 2026-07-17: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 19
+  - feat(014 T006): TailscaleRunner interface + FakeTailscaleRunner
+  - feat(014 T005,T009): BrowserSession interface + FakeBrowserSession + persistence tests
+  - feat(014 T008): capture + block-evidence persistence (fail-loud)
+  - feat(014 T004): SourceConfig type + registry + grace defaults
+  - feat(014 T002): core sourcequery type definitions
+  - test(014 T003): scaffold sourcequery test dirs + shared fakes placeholder
+  - feat(014 T001): add playwright dependency + scaffold src/sourcequery
+  - tasks(014): fold FR-009 into T012 (valid T-ids for resolve-tiers)
+  - analyze(014): remediate FR-009 coverage gap + record analyze-clean
+  - tasks(014-source-query-client): 29 tier-tagged tasks via /speckit-tasks
+  - plan(014-source-query-client): plan + research + data-model + contracts + quickstart
+  - clarify(014): exit-node approval is agent-mediated in-session
+  - spec(014-source-query-client): author feature spec via /speckit-specify + create roadmap node
+  - docs(design): source-query-client — policy-as-code for polite/frugal source access
+  - refactor(skill): mandate ONE governed real-browser mechanism for every source query
+  - feat(skill): enshrine Principle-XII politeness/frugality as /fetching-online-sources
+  - research(SRCH-0017): remediate Principle-XII politeness lapse in the Italian-axis reconnaissance
+  - research(SRCH-0017): Italian-language discovery axis (TASK-38) — measured negative on acquirable primary; French record is primary
+  - chore(backlog): capture 4 untried discovery axes (TASK-38..41)
+- Files changed: 44
+- Backlog touched: TASK-38, TASK-39, TASK-40, TASK-41, TASK-42
+
 ## 2026-07-17: Close the "victim voice" gap — first New Italy aftermath source + 3 contemporary press reports held; IA adapter generalized for newspapers; OCR cleanup made multi-language
 
 **Goal:** Started as a research question — does the corpus hold survivor accounts or contemporary *press* coverage of the Port-Breton affair? — and became the work that answer demanded: acquire real sources on the victim-voice / aftermath axes (where the corpus held nothing), and build the tooling their acquisition required.

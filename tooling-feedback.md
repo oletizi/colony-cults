@@ -41,3 +41,6 @@
 ## session-end 2026-07-17
 - bib acquire --dry-run requires COLONY_S3_* env (resolveObjectStoreConfig) even though a dry-run never uploads to B2 — hit 'required environment variable COLONY_S3_BUCKET is not set' on the first dry-run; had to source .env for a no-upload examine step.
 - IA acquire auto-cleans the staging dir on success, so post-hoc OCR verification of the mirrored master had no local input (silently produced 0 hits); had to download the master back from B2 to verify. A --keep-staging flag (or verifying against B2) would help.
+
+## session-end 2026-07-17
+- stackctl resolve-tiers rejects a task id with a letter suffix (e.g. T009a inserted between T009 and T010) as 'line NN: task checkbox has no T-id' — inserting a task mid-list after /speckit-analyze forces either a full renumber or folding the work into a sibling; supporting Txxx-suffix ids (or naming the offending id) would smooth the analyze-remediation seam.
