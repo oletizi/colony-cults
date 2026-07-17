@@ -204,6 +204,16 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
       notes,
     });
 
+    // For a B2-direct acquire (museum / Internet Archive), give runAcquire the
+    // archive-clone root + object-store coordinates so it writes the mirrored
+    // masters' companions (the discovery layer) -- so an acquisition can never
+    // again produce object-store masters with no companions (the
+    // `undiscoverable-master` sanity check). A Gallica-only acquire builds
+    // neither B2-direct adapter and writes its own companions via the fetcher,
+    // so these stay unset (no object-store config needed).
+    const isB2Direct = museumAdapter !== undefined || internetArchiveAdapter !== undefined;
+    const objectStoreConfig = isB2Direct ? resolveObjectStoreConfig() : undefined;
+
     const result = await runAcquire({
       sourcesDir,
       sourceId: id,
@@ -216,6 +226,16 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
       fetch: runFetchSource,
       museumAdapter,
       internetArchiveAdapter,
+      ...(isB2Direct && objectStoreConfig !== undefined
+        ? {
+            companionArchiveRoot: resolveArchiveRoot(repoRoot),
+            companionObjectStore: {
+              provider: objectStoreConfig.provider,
+              bucket: objectStoreConfig.bucket,
+              endpoint: objectStoreConfig.endpoint,
+            },
+          }
+        : {}),
     });
     const mode = dryRun ? ' (dry-run)' : '';
     const identifier = result.ark ?? result.accession ?? result.iaItem ?? '(no copy identifier)';

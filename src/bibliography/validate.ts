@@ -15,6 +15,8 @@ import {
   validateSourceThreads,
   validateVocab,
 } from '@/bibliography/validate-checks';
+import type { CompanionRef } from '@/bibliography/validate-companion-coverage';
+import { validateArchiveReconciliation } from '@/bibliography/validate-companion-coverage';
 import { validateCoverageFields } from '@/bibliography/validate-coverage-checks';
 import { buildScopeResolutionContext, validateSearchLogScopes } from '@/bibliography/validate-search-log';
 import { loadScopesRegistry, threadIdSet } from '@/bibliography/scopes-registry';
@@ -56,7 +58,10 @@ export type ValidationFindingKind =
   | 'search-log-scope-unresolved'
   | 'source-thread-unresolved'
   | 'duplicate-publication'
-  | 'publication-manifest-missing';
+  | 'publication-manifest-missing'
+  | 'undiscoverable-master'
+  | 'orphaned-companion'
+  | 'checksum-drift';
 
 /**
  * One `bib validate` finding. Findings are DATA, not errors -- `validate`
@@ -205,6 +210,15 @@ export interface ValidateOptions {
   repoRoot?: string;
   /** Loaded search-log entries for the scope-resolution check; when absent, that check is skipped. */
   searchLog?: readonly SearchLogEntry[];
+  /**
+   * Committed archive companion records indexed by `object_store.key` (from
+   * `archive/**\/*.yml`), for the cross-repo archive-reconciliation checks
+   * (`undiscoverable-master` / `orphaned-companion` / `checksum-drift`). Absent
+   * ⇒ those checks are skipped (no archive access to reconcile against). An
+   * EMPTY map is NOT the same as absent -- it means "archive scanned, zero
+   * companions found", a real violation for any record with object-store masters.
+   */
+  archiveCompanions?: ReadonlyMap<string, CompanionRef>;
 }
 
 /**
@@ -246,6 +260,9 @@ export function validate(model: CanonicalModel, opts?: ValidateOptions): Validat
   if (opts?.repoRoot !== undefined) {
     findings.push(...validateViewDrift(model, { repoRoot: opts.repoRoot }));
     findings.push(...validatePublicationManifests(model, { repoRoot: opts.repoRoot }));
+  }
+  if (opts?.archiveCompanions !== undefined) {
+    findings.push(...validateArchiveReconciliation(model, opts.archiveCompanions));
   }
   return findings;
 }

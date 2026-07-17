@@ -1,5 +1,7 @@
 import { loadAllSources } from '@/bibliography/load';
 import { writeSourceFile } from '@/bibliography/source-writer';
+import { writeRecordCompanions } from '@/archive/write-record-companions';
+import type { CompanionObjectStore } from '@/archive/write-record-companions';
 import { isFetchableWork } from '@/bibliography/scope';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { RepositoryAdapterRegistry } from '@/repository/registry';
@@ -94,6 +96,17 @@ export interface AcquireInput {
   checkpointEvery?: number;
   /** The injected shipped fetcher (see {@link FetchSourceFn}). REQUIRED -- no fallback fetch path exists. */
   fetch: FetchSourceFn;
+  /**
+   * The private archive-clone root, for writing the B2-direct masters' archive
+   * COMPANIONS on acquire (spec 013). When present together with
+   * {@link AcquireInput.companionObjectStore}, a B2-direct acquire (museum /
+   * Internet Archive) writes the `f###.yml`/`<sha>.yml` companions that make its
+   * masters discoverable -- closing the loop the `undiscoverable-master` sanity
+   * check enforces. Absent (e.g. tests) ⇒ companion-writing is skipped.
+   */
+  companionArchiveRoot?: string;
+  /** Object-store coordinates recorded on each companion (with {@link AcquireInput.companionArchiveRoot}). */
+  companionObjectStore?: CompanionObjectStore;
   /**
    * The injected museum adapter ({@link NewItalyMuseumAdapter}), registered
    * ALONGSIDE the Gallica adapter so an `accession` record dispatches to it.
@@ -337,6 +350,31 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
         : authored,
     );
     writeSourceFile(input.sourcesDir, { source, records: updatedRecords });
+
+    // Close the B2-direct loop: write the archive companions for the mirrored
+    // masters, so they are DISCOVERABLE by the pipeline (spec 013). Gallica
+    // reaches here with `assets: []` (handled by the enclosing guard) and writes
+    // its own companions via the fetcher, so this only fires for the B2-direct
+    // adapters. Skipped when the archive/object-store coordinates are absent.
+    if (input.companionArchiveRoot !== undefined && input.companionObjectStore !== undefined) {
+      const acquiredRecord: RepositoryRecord = {
+        ...record,
+        assets: acquisition.assets,
+        ...(acquisition.qualityAssessment !== undefined
+          ? { qualityAssessment: acquisition.qualityAssessment }
+          : {}),
+        ...(acquisition.excludedLeaves !== undefined
+          ? { excludedLeaves: acquisition.excludedLeaves }
+          : {}),
+      };
+      await writeRecordCompanions({
+        source,
+        record: acquiredRecord,
+        archiveRoot: input.companionArchiveRoot,
+        objectStore: input.companionObjectStore,
+        now: acquisition.qualityAssessment?.assessedAt ?? new Date().toISOString(),
+      });
+    }
   }
 
   // `adapter.acquire` succeeded, so the record carried the identifier its

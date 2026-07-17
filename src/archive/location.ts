@@ -50,6 +50,15 @@ const SOURCE_LAYOUTS: Readonly<Record<string, SourceLayout>> = {
     slug: 'baudouin-aventure-port-breton-1883',
     kind: 'monograph',
   },
+  // The de Groote 1880 book, acquired via the Internet Archive adapter (spec 013).
+  // Registered so `sourceLayout` resolves it for the translator/OCR the same way
+  // its companions are filed (matches deriveSourceLayout's slug for this title).
+  'PB-P055': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'nouvelle-france-colonie-libre-de-port-breton-oceanie-uvre-de-colonisation',
+    kind: 'monograph',
+  },
 };
 
 /**
