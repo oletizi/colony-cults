@@ -1,0 +1,470 @@
+sourceId: PB-P056
+kind: monograph
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: book
+language: English
+creator: Frederick Chudleigh Clifford
+rights:
+  status: public-domain
+  basis: "Frederick Chudleigh Clifford, \"Richmond River District of New South Wales. New Italy: a brief sketch of a new and thriving colony, founded and established by the Italian immigrants who were sufferers by the Marquis de Ray's New Ireland colonization scheme\", Sydney: Charles Potter, Government Printer, 1889. Public domain: (1) Australia — a NSW Government Printer imprint, i.e. Crown copyright, which for a published literary work subsists 50 years from first publication under the Copyright Act 1968 (Cth) s180 (1889 + 50 = expired 1939); independently, any life+70 term for an author active as an adult in 1889 is long elapsed. Pre-1955 Australian material is out of copyright. (2) United States — published in 1889, before 1929, so public domain in the U.S., where the Internet Archive scan (from the State Library of Pennsylvania) is hosted. The digitised copy is a faithful photographic reproduction of a public-domain work and is not independently re-copyrightable (the *Bridgeman* principle)."
+  determinedAt: 2026-07-17
+titles:
+  - text: "Richmond River District of New South Wales. New Italy: a brief sketch of a new and thriving colony, founded and established by the Italian immigrants who were sufferers by the Marquis de Ray's New Ireland colonization scheme"
+    role: canonical
+  - text: "New Italy: a brief sketch of a new and thriving colony"
+    role: archive
+notes: "F. C. Clifford's 1889 descriptive sketch of the NEW ITALY settlement (Richmond River district, Northern Rivers, NSW) — the colony founded by the ~200 Italian immigrant families who survived the Marquis de Rays / Port-Breton expedition. A first-hand CONTEMPORARY account of the survivors' community, 8 years after the disaster, published by the NSW Government Printer (Charles Potter). The New-Italy-aftermath counterpart to the affair's promotional/legal imprints: the first held source describing what became of the survivors, distinct from the de Rays promotional matter (PB-P002/P055) and the New Italy Museum's physical-only survivor writings (PB-P006). Found + verified via SRCH-0014 (2026-07-17): Internet Archive item richmondriverdis00clif — mediatype texts, source PDF + _jp2.zip page-image set, public-domain by 1889 publication age. Not on Gallica; reached via the shipped Internet Archive acquisition adapter (spec 013), as with PB-P055. Raw archive.org search + item metadata captures persisted under bibliography/repository-responses/PB-P055 (ia-search-*-2026-07-17.json, ia-metadata-richmondriverdis00clif-2026-07-17.json)."
+repositoryRecords:
+  - sourceArchive: Internet Archive
+    status: archived
+    originalUrl: https://archive.org/details/richmondriverdis00clif
+    identifiers:
+      - type: ia-item
+        value: richmondriverdis00clif
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: "1889 NSW Government Printer imprint (F. C. Clifford). Public domain in Australia — Crown copyright in a published literary work subsists 50 years from first publication (Copyright Act 1968 (Cth) s180): 1889 + 50 = expired 1939; and out of copyright as pre-1955 Australian material. Public domain in the United States (published before 1929), where the Internet Archive scan is hosted. The faithful photographic reproduction is not independently re-copyrightable (Bridgeman)."
+      rightsJurisdiction: AU/US
+      assessedBy: operator
+      assessedAt: 2026-07-17T12:00:00.000Z
+    assets:
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif.pdf
+        mediaType: application/pdf
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/source/fc4050eb48f40f89347ff7ccec98b0f9342bb44cbe8e7f1e47a9142bdf748749.pdf
+        checksum: fc4050eb48f40f89347ff7ccec98b0f9342bb44cbe8e7f1e47a9142bdf748749
+        byteLength: 2844910
+        provenancePath: archive/internet-archive/richmondriverdis00clif/source/fc4050eb48f40f89347ff7ccec98b0f9342bb44cbe8e7f1e47a9142bdf748749.yml
+        role: repository-source
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/1-ae2dd8e0dc3afde1da7d9f22e97c1d51198459046aebe112e2e15a852ec6059d.png
+        checksum: ae2dd8e0dc3afde1da7d9f22e97c1d51198459046aebe112e2e15a852ec6059d
+        byteLength: 5963576
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/1-ae2dd8e0dc3afde1da7d9f22e97c1d51198459046aebe112e2e15a852ec6059d.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/2-254c831652bc94ab924906878fee000a78a38b9421d5ceda33d49ebfd3f54b93.png
+        checksum: 254c831652bc94ab924906878fee000a78a38b9421d5ceda33d49ebfd3f54b93
+        byteLength: 5896258
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/2-254c831652bc94ab924906878fee000a78a38b9421d5ceda33d49ebfd3f54b93.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/3-c375ed3cdd4a72e9aab57576580ef3b44f9afbe72ca43cde4aa099f876ba1f96.png
+        checksum: c375ed3cdd4a72e9aab57576580ef3b44f9afbe72ca43cde4aa099f876ba1f96
+        byteLength: 3287883
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/3-c375ed3cdd4a72e9aab57576580ef3b44f9afbe72ca43cde4aa099f876ba1f96.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/4-77f7b19e744c043c6abb18b8d3d772a51b2566e0e462a6b4c584b0567f621d8f.png
+        checksum: 77f7b19e744c043c6abb18b8d3d772a51b2566e0e462a6b4c584b0567f621d8f
+        byteLength: 1089478
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/4-77f7b19e744c043c6abb18b8d3d772a51b2566e0e462a6b4c584b0567f621d8f.yml
+        role: page-master
+        sequence: 4
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/5-70b7771e3f6d50a8a73bb2dbc76c1bc6df5705cfacd69cb08dae598b1d678d52.png
+        checksum: 70b7771e3f6d50a8a73bb2dbc76c1bc6df5705cfacd69cb08dae598b1d678d52
+        byteLength: 1473047
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/5-70b7771e3f6d50a8a73bb2dbc76c1bc6df5705cfacd69cb08dae598b1d678d52.yml
+        role: page-master
+        sequence: 5
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/6-cb31a724a2f083fa52b5be1f305cbe48a6668ba51e0e3ef20b8bbe9304006326.png
+        checksum: cb31a724a2f083fa52b5be1f305cbe48a6668ba51e0e3ef20b8bbe9304006326
+        byteLength: 3695599
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/6-cb31a724a2f083fa52b5be1f305cbe48a6668ba51e0e3ef20b8bbe9304006326.yml
+        role: page-master
+        sequence: 6
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/7-0e76365554329f0c961ac0cf8ed73580c12f39866e277fb70d40effecb270996.png
+        checksum: 0e76365554329f0c961ac0cf8ed73580c12f39866e277fb70d40effecb270996
+        byteLength: 3003387
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/7-0e76365554329f0c961ac0cf8ed73580c12f39866e277fb70d40effecb270996.yml
+        role: page-master
+        sequence: 7
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/8-b1d0f3e49ac05c5bc4e054a6a641a68cb8ba514820befe5b9971ae510170ae11.png
+        checksum: b1d0f3e49ac05c5bc4e054a6a641a68cb8ba514820befe5b9971ae510170ae11
+        byteLength: 3176133
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/8-b1d0f3e49ac05c5bc4e054a6a641a68cb8ba514820befe5b9971ae510170ae11.yml
+        role: page-master
+        sequence: 8
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/9-b1e0332d29431364a1eb8b05491f2cff1528dd3d9c9749eebca855efde7f59f0.png
+        checksum: b1e0332d29431364a1eb8b05491f2cff1528dd3d9c9749eebca855efde7f59f0
+        byteLength: 2944440
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/9-b1e0332d29431364a1eb8b05491f2cff1528dd3d9c9749eebca855efde7f59f0.yml
+        role: page-master
+        sequence: 9
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/10-7bf71d1b3cb1d64de18304e0e68dc7f4e4f07962b40ea7a56b0191008cc7401f.png
+        checksum: 7bf71d1b3cb1d64de18304e0e68dc7f4e4f07962b40ea7a56b0191008cc7401f
+        byteLength: 4147539
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/10-7bf71d1b3cb1d64de18304e0e68dc7f4e4f07962b40ea7a56b0191008cc7401f.yml
+        role: page-master
+        sequence: 10
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/11-fa157bbd8d5d503797e6ada7d7970edd4190770b813f37eb76c4fed81b22835f.png
+        checksum: fa157bbd8d5d503797e6ada7d7970edd4190770b813f37eb76c4fed81b22835f
+        byteLength: 2983428
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/11-fa157bbd8d5d503797e6ada7d7970edd4190770b813f37eb76c4fed81b22835f.yml
+        role: page-master
+        sequence: 11
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/12-14d59078a5a7373ec3dee4c3499c5eac84034c711a78f0cd0de8e0bab84678c1.png
+        checksum: 14d59078a5a7373ec3dee4c3499c5eac84034c711a78f0cd0de8e0bab84678c1
+        byteLength: 2130642
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/12-14d59078a5a7373ec3dee4c3499c5eac84034c711a78f0cd0de8e0bab84678c1.yml
+        role: page-master
+        sequence: 12
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/13-e6545e8a1f8449dad6ab5f50d89601266d3c310dac64527638f91e4bd70ec42c.png
+        checksum: e6545e8a1f8449dad6ab5f50d89601266d3c310dac64527638f91e4bd70ec42c
+        byteLength: 2739862
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/13-e6545e8a1f8449dad6ab5f50d89601266d3c310dac64527638f91e4bd70ec42c.yml
+        role: page-master
+        sequence: 13
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/14-09100f415a0ab7dc953e197042812093e695dbaec375d0e2f5e13a938d16ab1d.png
+        checksum: 09100f415a0ab7dc953e197042812093e695dbaec375d0e2f5e13a938d16ab1d
+        byteLength: 5226732
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/14-09100f415a0ab7dc953e197042812093e695dbaec375d0e2f5e13a938d16ab1d.yml
+        role: page-master
+        sequence: 14
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/15-c9f09002a182aae52386ac7679a5cacd3d030a2cf024d28d3d3b4a9d012426fd.png
+        checksum: c9f09002a182aae52386ac7679a5cacd3d030a2cf024d28d3d3b4a9d012426fd
+        byteLength: 6726728
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/15-c9f09002a182aae52386ac7679a5cacd3d030a2cf024d28d3d3b4a9d012426fd.yml
+        role: page-master
+        sequence: 15
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/16-dfc66e5de9caf0b8e7461182f0097cfa6a60aa7ad14a2c1ba2c386d0c89653fb.png
+        checksum: dfc66e5de9caf0b8e7461182f0097cfa6a60aa7ad14a2c1ba2c386d0c89653fb
+        byteLength: 5956580
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/16-dfc66e5de9caf0b8e7461182f0097cfa6a60aa7ad14a2c1ba2c386d0c89653fb.yml
+        role: page-master
+        sequence: 16
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/17-2c74cf84fd47ada50408f98125514acb902ab3c05ce573a18682b457306484a4.png
+        checksum: 2c74cf84fd47ada50408f98125514acb902ab3c05ce573a18682b457306484a4
+        byteLength: 5869637
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/17-2c74cf84fd47ada50408f98125514acb902ab3c05ce573a18682b457306484a4.yml
+        role: page-master
+        sequence: 17
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/18-73822ae9a6d7de5eeca9dda188d68e13374aa9ed3eb7342ae23b07d3357ffb5e.png
+        checksum: 73822ae9a6d7de5eeca9dda188d68e13374aa9ed3eb7342ae23b07d3357ffb5e
+        byteLength: 6026951
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/18-73822ae9a6d7de5eeca9dda188d68e13374aa9ed3eb7342ae23b07d3357ffb5e.yml
+        role: page-master
+        sequence: 18
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/19-9b59ad9b9f24e99a1089dbebcf4d889b76ffe63f824b96bc5eb35f8fdbba3ac2.png
+        checksum: 9b59ad9b9f24e99a1089dbebcf4d889b76ffe63f824b96bc5eb35f8fdbba3ac2
+        byteLength: 7067553
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/19-9b59ad9b9f24e99a1089dbebcf4d889b76ffe63f824b96bc5eb35f8fdbba3ac2.yml
+        role: page-master
+        sequence: 19
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/20-a404d6c0a8b119a590a93b077c2ce902516f8e57f2ad1fb5204040c5ec5b73ad.png
+        checksum: a404d6c0a8b119a590a93b077c2ce902516f8e57f2ad1fb5204040c5ec5b73ad
+        byteLength: 5634464
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/20-a404d6c0a8b119a590a93b077c2ce902516f8e57f2ad1fb5204040c5ec5b73ad.yml
+        role: page-master
+        sequence: 20
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/21-d07bbc1fe44cca02be32aba23170246ea7a9563dec1a4132c4892d39e54ce2dc.png
+        checksum: d07bbc1fe44cca02be32aba23170246ea7a9563dec1a4132c4892d39e54ce2dc
+        byteLength: 5601613
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/21-d07bbc1fe44cca02be32aba23170246ea7a9563dec1a4132c4892d39e54ce2dc.yml
+        role: page-master
+        sequence: 21
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/22-6aa630b924f6e197f1dd654fa75545d8bd9c031e24d6354359b34f9462ba7209.png
+        checksum: 6aa630b924f6e197f1dd654fa75545d8bd9c031e24d6354359b34f9462ba7209
+        byteLength: 6170668
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/22-6aa630b924f6e197f1dd654fa75545d8bd9c031e24d6354359b34f9462ba7209.yml
+        role: page-master
+        sequence: 22
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/23-e8af68e9d0f2bea855ad7bd65902491bd19acd8acc66107a56b51aa32b17881c.png
+        checksum: e8af68e9d0f2bea855ad7bd65902491bd19acd8acc66107a56b51aa32b17881c
+        byteLength: 6985244
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/23-e8af68e9d0f2bea855ad7bd65902491bd19acd8acc66107a56b51aa32b17881c.yml
+        role: page-master
+        sequence: 23
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/24-82efd463c04c99d0c5f6b19cfec6b51657654a6e40d66c187558cbad813d074d.png
+        checksum: 82efd463c04c99d0c5f6b19cfec6b51657654a6e40d66c187558cbad813d074d
+        byteLength: 5975276
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/24-82efd463c04c99d0c5f6b19cfec6b51657654a6e40d66c187558cbad813d074d.yml
+        role: page-master
+        sequence: 24
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/25-250b09762949413c654da2f3ce98f98a52be2224d85612692eeef468065f3e68.png
+        checksum: 250b09762949413c654da2f3ce98f98a52be2224d85612692eeef468065f3e68
+        byteLength: 6218717
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/25-250b09762949413c654da2f3ce98f98a52be2224d85612692eeef468065f3e68.yml
+        role: page-master
+        sequence: 25
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/26-2a062570cf1de67fa6e45b1ddfa29f5f990b318dd54e4c8eea97e2fae69c9517.png
+        checksum: 2a062570cf1de67fa6e45b1ddfa29f5f990b318dd54e4c8eea97e2fae69c9517
+        byteLength: 5877660
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/26-2a062570cf1de67fa6e45b1ddfa29f5f990b318dd54e4c8eea97e2fae69c9517.yml
+        role: page-master
+        sequence: 26
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/27-83e74bb88f963d292a0712b9579414094a15d534116ba03067ec6be3e93c045d.png
+        checksum: 83e74bb88f963d292a0712b9579414094a15d534116ba03067ec6be3e93c045d
+        byteLength: 6823444
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/27-83e74bb88f963d292a0712b9579414094a15d534116ba03067ec6be3e93c045d.yml
+        role: page-master
+        sequence: 27
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/28-8382d940f0d5e1f76a48ec48790488ae706cf45dbb8e8bc0531cd8c3eb5cbf92.png
+        checksum: 8382d940f0d5e1f76a48ec48790488ae706cf45dbb8e8bc0531cd8c3eb5cbf92
+        byteLength: 5936659
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/28-8382d940f0d5e1f76a48ec48790488ae706cf45dbb8e8bc0531cd8c3eb5cbf92.yml
+        role: page-master
+        sequence: 28
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/29-570e6cf6511523688631ab95d0b396ee6b95027c338aa2b0e02c316cc1150ba6.png
+        checksum: 570e6cf6511523688631ab95d0b396ee6b95027c338aa2b0e02c316cc1150ba6
+        byteLength: 6418973
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/29-570e6cf6511523688631ab95d0b396ee6b95027c338aa2b0e02c316cc1150ba6.yml
+        role: page-master
+        sequence: 29
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/30-bbd13785775d7db6ae7876b62591c4400c0852f0549c28d4013e2e454e2f9a25.png
+        checksum: bbd13785775d7db6ae7876b62591c4400c0852f0549c28d4013e2e454e2f9a25
+        byteLength: 5801454
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/30-bbd13785775d7db6ae7876b62591c4400c0852f0549c28d4013e2e454e2f9a25.yml
+        role: page-master
+        sequence: 30
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/31-368cce1f4a18360abd86f4eacee267d403fd5cae68d163d73a7ee6919c4e97c7.png
+        checksum: 368cce1f4a18360abd86f4eacee267d403fd5cae68d163d73a7ee6919c4e97c7
+        byteLength: 6799520
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/31-368cce1f4a18360abd86f4eacee267d403fd5cae68d163d73a7ee6919c4e97c7.yml
+        role: page-master
+        sequence: 31
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/32-29e29e1615fb85b06008d0d982e67f7ddb441bf654efc852de07d0110edd2eb5.png
+        checksum: 29e29e1615fb85b06008d0d982e67f7ddb441bf654efc852de07d0110edd2eb5
+        byteLength: 6362926
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/32-29e29e1615fb85b06008d0d982e67f7ddb441bf654efc852de07d0110edd2eb5.yml
+        role: page-master
+        sequence: 32
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/33-f30a98fefc3a003fb5cb7e19d1328198ef43c068fb9b87975deb1a8e971ec7f3.png
+        checksum: f30a98fefc3a003fb5cb7e19d1328198ef43c068fb9b87975deb1a8e971ec7f3
+        byteLength: 7015926
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/33-f30a98fefc3a003fb5cb7e19d1328198ef43c068fb9b87975deb1a8e971ec7f3.yml
+        role: page-master
+        sequence: 33
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/34-4f5f4a2aba1e3beb572924943d7be2e19ed804b93c8268f12efd0f333c21b7f1.png
+        checksum: 4f5f4a2aba1e3beb572924943d7be2e19ed804b93c8268f12efd0f333c21b7f1
+        byteLength: 6141590
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/34-4f5f4a2aba1e3beb572924943d7be2e19ed804b93c8268f12efd0f333c21b7f1.yml
+        role: page-master
+        sequence: 34
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/35-86b8a8bac7c9ff8201eb9e7e677c4dc1307b827986a93de6e46bb3e6410d6857.png
+        checksum: 86b8a8bac7c9ff8201eb9e7e677c4dc1307b827986a93de6e46bb3e6410d6857
+        byteLength: 6327470
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/35-86b8a8bac7c9ff8201eb9e7e677c4dc1307b827986a93de6e46bb3e6410d6857.yml
+        role: page-master
+        sequence: 35
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/36-d84d060e86937f7c3d8c44356607fd960a458da49732fe76a199c9091f61aba9.png
+        checksum: d84d060e86937f7c3d8c44356607fd960a458da49732fe76a199c9091f61aba9
+        byteLength: 6287209
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/36-d84d060e86937f7c3d8c44356607fd960a458da49732fe76a199c9091f61aba9.yml
+        role: page-master
+        sequence: 36
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/37-3418387d942b53ed22bda9762eb94dc6b2853ca1c3652120bd74c9666b5e0c48.png
+        checksum: 3418387d942b53ed22bda9762eb94dc6b2853ca1c3652120bd74c9666b5e0c48
+        byteLength: 6521200
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/37-3418387d942b53ed22bda9762eb94dc6b2853ca1c3652120bd74c9666b5e0c48.yml
+        role: page-master
+        sequence: 37
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/38-4cf36175eb064df557b55a9217b16aa953340a91e647b31e37896e6b59023968.png
+        checksum: 4cf36175eb064df557b55a9217b16aa953340a91e647b31e37896e6b59023968
+        byteLength: 6130350
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/38-4cf36175eb064df557b55a9217b16aa953340a91e647b31e37896e6b59023968.yml
+        role: page-master
+        sequence: 38
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/39-694f5ad0191c35b971d3084435103d1ee895e1f792f77097bcf411d6075e6276.png
+        checksum: 694f5ad0191c35b971d3084435103d1ee895e1f792f77097bcf411d6075e6276
+        byteLength: 7315718
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/39-694f5ad0191c35b971d3084435103d1ee895e1f792f77097bcf411d6075e6276.yml
+        role: page-master
+        sequence: 39
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/40-4ff44cf77aedc53e59e2069f8219e72090e487dd70e0e62bb24234eb0ef0f2ac.png
+        checksum: 4ff44cf77aedc53e59e2069f8219e72090e487dd70e0e62bb24234eb0ef0f2ac
+        byteLength: 6499500
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/40-4ff44cf77aedc53e59e2069f8219e72090e487dd70e0e62bb24234eb0ef0f2ac.yml
+        role: page-master
+        sequence: 40
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/41-9693061c10e78440b3c99cb8a3e2e6589cd100fb003436c14e9cc5cbeccce185.png
+        checksum: 9693061c10e78440b3c99cb8a3e2e6589cd100fb003436c14e9cc5cbeccce185
+        byteLength: 7091500
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/41-9693061c10e78440b3c99cb8a3e2e6589cd100fb003436c14e9cc5cbeccce185.yml
+        role: page-master
+        sequence: 41
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/42-783da02b08f873a83334621bbe6a23e30257837ff215232c69fbdfef7f166c0d.png
+        checksum: 783da02b08f873a83334621bbe6a23e30257837ff215232c69fbdfef7f166c0d
+        byteLength: 6129959
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/42-783da02b08f873a83334621bbe6a23e30257837ff215232c69fbdfef7f166c0d.yml
+        role: page-master
+        sequence: 42
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/43-e280d215b7874d5e9e62b2771dc4d4b7b55c89bf3ba9034189785df01457ac4e.png
+        checksum: e280d215b7874d5e9e62b2771dc4d4b7b55c89bf3ba9034189785df01457ac4e
+        byteLength: 6758853
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/43-e280d215b7874d5e9e62b2771dc4d4b7b55c89bf3ba9034189785df01457ac4e.yml
+        role: page-master
+        sequence: 43
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/44-3f39534a1322ec8f0cbf527d03e45b66996f2bda9eeaaf8a6d74ebff665bf97e.png
+        checksum: 3f39534a1322ec8f0cbf527d03e45b66996f2bda9eeaaf8a6d74ebff665bf97e
+        byteLength: 7425764
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/44-3f39534a1322ec8f0cbf527d03e45b66996f2bda9eeaaf8a6d74ebff665bf97e.yml
+        role: page-master
+        sequence: 44
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/45-412d88e3de0878431cfb7ce3fb522d8e009dffd48a351fbc2abd748cee7c6c5c.png
+        checksum: 412d88e3de0878431cfb7ce3fb522d8e009dffd48a351fbc2abd748cee7c6c5c
+        byteLength: 3315478
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/45-412d88e3de0878431cfb7ce3fb522d8e009dffd48a351fbc2abd748cee7c6c5c.yml
+        role: page-master
+        sequence: 45
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/46-b4ae50bdd01449358868ae407b8de127f0d2dde879fca3b2fa4f5acb089fa5bc.png
+        checksum: b4ae50bdd01449358868ae407b8de127f0d2dde879fca3b2fa4f5acb089fa5bc
+        byteLength: 2525700
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/46-b4ae50bdd01449358868ae407b8de127f0d2dde879fca3b2fa4f5acb089fa5bc.yml
+        role: page-master
+        sequence: 46
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/47-d4fe1c37e96fb7192f6e03fc687e2d556e0d2af81c639b172490e6d70b68ea2c.png
+        checksum: d4fe1c37e96fb7192f6e03fc687e2d556e0d2af81c639b172490e6d70b68ea2c
+        byteLength: 3385068
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/47-d4fe1c37e96fb7192f6e03fc687e2d556e0d2af81c639b172490e6d70b68ea2c.yml
+        role: page-master
+        sequence: 47
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/48-a00b5cc701479fedf335ff927bb282901b4c7649808e1e19e453d6ac7df6c74c.png
+        checksum: a00b5cc701479fedf335ff927bb282901b4c7649808e1e19e453d6ac7df6c74c
+        byteLength: 819919
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/48-a00b5cc701479fedf335ff927bb282901b4c7649808e1e19e453d6ac7df6c74c.yml
+        role: page-master
+        sequence: 48
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/49-3c2060911ce4bf655707cf01907b25aac1cfb7f86d30329e4679d2de0e70b295.png
+        checksum: 3c2060911ce4bf655707cf01907b25aac1cfb7f86d30329e4679d2de0e70b295
+        byteLength: 1671954
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/49-3c2060911ce4bf655707cf01907b25aac1cfb7f86d30329e4679d2de0e70b295.yml
+        role: page-master
+        sequence: 49
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/50-2f2f3b4d4a2d771d2d14a4bc50af72ae3498263be7172860dafbf16a04c563bc.png
+        checksum: 2f2f3b4d4a2d771d2d14a4bc50af72ae3498263be7172860dafbf16a04c563bc
+        byteLength: 3391017
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/50-2f2f3b4d4a2d771d2d14a4bc50af72ae3498263be7172860dafbf16a04c563bc.yml
+        role: page-master
+        sequence: 50
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/51-46d2397f0d07d1f7c8080d894fac73a75feb342eac9865e6c8ff7591c5773bee.png
+        checksum: 46d2397f0d07d1f7c8080d894fac73a75feb342eac9865e6c8ff7591c5773bee
+        byteLength: 6038583
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/51-46d2397f0d07d1f7c8080d894fac73a75feb342eac9865e6c8ff7591c5773bee.yml
+        role: page-master
+        sequence: 51
+      - sourceUrl: https://archive.org/download/richmondriverdis00clif/richmondriverdis00clif_jp2.zip
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/richmondriverdis00clif/pages/52-29c2c08a6c3e67ada9cb81816ece689f3bac141b4f70de993a1a7c2e0addb6ea.png
+        checksum: 29c2c08a6c3e67ada9cb81816ece689f3bac141b4f70de993a1a7c2e0addb6ea
+        byteLength: 5457595
+        provenancePath: archive/internet-archive/richmondriverdis00clif/pages/52-29c2c08a6c3e67ada9cb81816ece689f3bac141b4f70de993a1a7c2e0addb6ea.yml
+        role: page-master
+        sequence: 52
+    qualityAssessment:
+      status: sound
+      assessedBy: operator
+      assessedAt: 2026-07-17T07:11:01.490Z
+      sourceFileChecksum: fc4050eb48f40f89347ff7ccec98b0f9342bb44cbe8e7f1e47a9142bdf748749
+      expectedPageCount: 56
+      observedPageCount: 54
+      approvedLeafRange:
+        start: 2
+        end: 53
+      notes: New Italy aftermath sketch (Clifford 1889). Scandata-seeded 52-leaf content range accepted; the 4 excluded cover/blank leaves are preserved in the source PDF asset. Reused retained staging from the dry-run (no re-download).
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P056/richmondriverdis00clif-20260717T071057259Z.json
+      retrievedAt: 2026-07-17T07:10:57.259Z
+      endpoint: https://archive.org/metadata/richmondriverdis00clif
+      normalizationVersion: 1

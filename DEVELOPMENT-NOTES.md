@@ -1,3 +1,67 @@
+## 2026-07-17: Implement + live-acquire the Internet Archive adapter (spec 013) — de Groote book enters the corpus; a class-wide archive-bookkeeping failure surfaces and is made mechanically impossible
+
+**Goal:** Execute spec 013 (the Internet Archive acquisition adapter) through the stack-control front door, then actually acquire the de Groote 1880 book — real corpus growth, not just a shipped adapter.
+
+**Accomplished:**
+- **Implemented spec 013 end-to-end through the front door** (extend → plan → tasks → analyze → execute): 54 tasks via model-sized subagent dispatch (haiku/sonnet/opus per declared `[tier:]`), test-first, committed per boundary with a durable ledger. Delivered the **third first-class `RepositoryAdapter`** (`internet-archive`, `ia-item` copies): fail-closed rights gate → frugal one-download staging → operator quality gate → evidence-selected master (dimension-ratio probe) → strict page-to-leaf extraction → **lossless PNG** masters → B2 → reconcile. Full suite green.
+- **Live-acquired the de Groote 1880 book as PB-P055 → `archived`.** 419 lossless PNG page-masters (leaves 3–421; Google's EN/FR digitization preamble excluded from masters, retained in the source PDF) + the source PDF to B2; `reconcile` verified 420/420 in the object store; durable `qualityAssessment`. Fidelity measured **1.0** on the real scan → the frugal explode-PDF path (no 58 MB `_tif.zip` fetch). The central de Groote imprint, unreachable via Gallica, is now held — the session's corpus-growth win.
+- **Running it against the real archive.org item caught 7 real-data bugs** fixtures could not: scandata field names (`origWidth`/`origHeight`), missing output-dir `mkdir`, rasterise-DPI derived from scandata page-size instead of the embedded image `x-ppi`, `pdfimages -all` writing unusable JBIG2 streams (→ `-png`), stale-output collision on re-acquire, and the `qualityAssessment`/`excludedLeaves` persistence + loader/serializer threading (SC-003).
+- **Built the archive-bookkeeping sanity check + repaired the full damage.** `bib validate` now reconciles the SSOT (this repo) against the archive companions (the archive repo) **bidirectionally** (`undiscoverable-master` / `orphaned-companion` / `checksum-drift`) and fails loud. Its first run exposed **42 records** with orphaned masters — the de Groote book AND every New Italy Museum acquisition since spec 011. Backfilled **461 companions**, wired the B2-direct adapters to auto-write companions on acquire (proven end-to-end: deleted `f419.yml`, re-acquired, the adapter recreated it). Merged everything to `main` (PRs #44, #45) + the companions to the archive repo's `main`.
+
+**Didn't Work:**
+- **The B2-direct acquisition path never wrote archive companions.** Museum (spec 011) and IA (spec 013) mirrored masters to B2 + recorded them in the SSOT but skipped the `f###.yml` companions the pipeline (translator/OCR/browser/coverage) actually reads — so acquired masters were **undiscoverable**, and the translator couldn't find the de Groote book. Latent since spec 011 across 41 museum records; nobody noticed because museum photos aren't translated. No gate caught it.
+- **The whole-feature govern was impractical.** `govern --mode implement` ran 40+ min across 8+ chunks (one degraded on a sonnet timeout) and was killed — too slow/heavy to be the working correctness gate for this session.
+
+**Course Corrections:**
+- **Killed govern in favor of "run the thing to see if it works"** (operator call). Driving the adapter against the real item was the stronger audit — it found the 7 bugs above; governance had surfaced only low-severity notes in the chunks it completed.
+- **Master format → lossless PNG, no lossy transcode** (operator call). These are 600-DPI bitonal scans where JPEG both artifacts line art and is *larger* than a 1-bit PNG. `image/png` masters, `.png` keys, `image-set-png` path.
+- **Fix the bookkeeping failure contract-first** (operator, emphatically): don't hand-patch PB-P055 — START with a mechanically-enforceable sanity checker that screams when the books don't balance, watch it bark on the full damage, then fix until it's quiet. That reframing turned a one-off patch into a permanent guarantee and exposed the 41 hidden museum cases.
+
+**Insights:**
+- **Live verification against the real artifact catches a class of bugs fixtures structurally cannot** — real-data shape (scandata element names, JBIG2 encoding, Google's dual-image pages, the `_tif.zip`-not-`_jp2.zip` reality). When fixtures are authored to match the parser, they validate the parser against itself. "Run the thing" beats green tests for correctness confidence on an integration with a live source.
+- **Two-representation drift is the deep failure mode.** The SSOT records the masters; the archive companions are what every consumer reads; nothing reconciled them. A B2-direct adapter that skipped companion-writing produced "archived" work no one could find — bytes safe, discoverability zero. The durable fix is a mechanical **cross-repo reconciliation that fails loud** (basic record-keeping made enforceable), plus writing the companion in the same step that records the master.
+- **Absence of a consumer ≠ correctness.** The companion gap sat silent for 41 museum records because no downstream job exercised them; the first *text* acquisition (de Groote, which gets translated) is what finally surfaced it. A gate that only fires when something breaks downstream is not a gate — the sanity check now fires on the SSOT↔archive mismatch itself, before any consumer.
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 35
+  - feat(013): B2-direct acquire writes companions automatically (close the loop)
+  - feat(archive): shared companion-writer + backfill the 42 orphaned-master records
+  - feat(validate): full cross-repo archive-reconciliation sanity check
+  - feat(validate): no-orphaned-master contract — bib validate fails loud on undiscoverable masters
+  - test(013): real disk round-trip for qualityAssessment/excludedLeaves; SRCH-0013 done
+  - bibliography(PB-P055): acquire the de Groote 1880 book -> archived
+  - fix(013): thread qualityAssessment/excludedLeaves through the SSOT loader+serializer
+  - fix(013): persist qualityAssessment/excludedLeaves/metadataSnapshot onto the record (SC-003)
+  - fix(013): extractPages produces into a clean output dir (no stale-master collision)
+  - bibliography(PB-P055): approve-for-acquisition (operator approval to acquire)
+  - bibliography(PB-P055): catalog the de Groote 1880 book for IA acquisition
+  - fix(013): lossless PNG masters — no lossy transcode of archival scans (operator decision)
+  - fix(013): real-data bugs found by the live de Groote acquisition
+  - chore(013): mark T001-T054 complete; T055 remains operator-acceptance (- [~])
+  - chore(013): execute ledger — polish pass (T047,T050-T054); T001-T054 complete
+  - feat(013): polish — file-size split, coverage matrix, staging cache, research log (T047,T050-T054)
+  - chore(013): execute ledger — CLI wiring (T026-T028)
+  - feat(013): CLI wiring — bib acquire/inventory dispatch to the IA adapter (T026-T028)
+  - chore(013): execute ledger — acquire keystone (T023-T025,T036,T037,T043,T048,T049)
+  - feat(013): acquire orchestration — the integration keystone (T023-T025,T036,T037,T043,T048,T049)
+  - feat(013): image-set exploder — degraded-PDF fallback master path (T047/T048 part)
+  - chore(013): execute ledger — staging, quality-gate, snapshot
+  - feat(013): staging, quality-gate seam, snapshot recording (T020-T022,T029-T032 seam)
+  - chore(013): execute ledger — adapter skeleton, extract, fidelity
+  - feat(013): adapter skeleton + extraction engine + fidelity probe (T018-T019,T038-T042,T044-T046)
+  - chore(013): execute ledger — IA modules (T014-T017,T033-T035)
+  - feat(013): IA adapter modules — metadata, file-select, rights, scandata (T014-T017,T033-T035)
+  - chore(013): execute ledger through Phase 2 (T001-T013)
+  - feat(013): Phase 2 foundational Wave B — record fields + registry dispatch (T009,T010)
+  - feat(013): Phase 2 foundational — vocab widenings, model types, poppler runner (T005-T008,T011-T013)
+  - feat(013): Phase 1 setup — IA adapter package + test fixtures (T001-T004)
+  - tasks(013): declare model tiers on the task spine (resolve-tiers clean)
+  - analyze(013): record analyze-clean; remediate 1 HIGH + reconcile 3 spec drifts
+  - tasks(013): implement /speckit-tasks — IA adapter task spine
+  - plan(013): implement /speckit-plan — IA adapter design artifacts
+- Files changed: 92
+- Backlog touched: TASK-29, TASK-32
+
 ## 2026-07-16: Corpus-growth pass flips a Gallica measured-negative into a real Internet Archive find; design + spec the archive.org adapter (013)
 
 **Goal:** Pick up the feature's substantive mandate — corpus growth. Chose the PB-P002 Gallica discovery-leads acquisition pass; it produced an honest measured negative that the operator's skepticism then flipped into a genuine find, which pulled a new first-class repository adapter through the front door.

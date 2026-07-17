@@ -125,7 +125,7 @@ export function parseScandata(xml: string): ScandataLeaf[] {
     );
   }
 
-  return rawPages.map((rawPage, index) => {
+  const leaves = rawPages.map((rawPage, index) => {
     const ctx = `scandata XML > book > pageData > page[${index}]`;
     const page = requireRecord(rawPage, ctx);
 
@@ -143,6 +143,19 @@ export function parseScandata(xml: string): ScandataLeaf[] {
     }
     return leaf;
   });
+
+  // Normalize leaf numbering to 1-based positional (leaf N <-> PDF page N).
+  // archive.org scandata numbers leaves from 1 for most books (e.g. de Groote),
+  // but from 0 for many newspaper issues (China Mail, Hong Kong Daily Press).
+  // The whole adapter -- proposeReadingRange, assessFidelity, extractPages,
+  // explodeImageSet -- assumes 1-based leaves, so a 0-based item would map its
+  // first leaf to a non-existent PDF page 0 and fail the range checks. Shift a
+  // 0-based set up by one; leave an already-1-based set untouched.
+  const minLeafNum = Math.min(...leaves.map((leaf) => leaf.leafNum));
+  if (minLeafNum === 0) {
+    return leaves.map((leaf) => ({ ...leaf, leafNum: leaf.leafNum + 1 }));
+  }
+  return leaves;
 }
 
 /**
