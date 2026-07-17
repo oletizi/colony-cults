@@ -22,6 +22,7 @@ import { buildViewRegistry, readViewIfExists } from '@/bibliography/regenerate';
 import type { ViewInstance } from '@/bibliography/regenerate';
 import { validate } from '@/bibliography/validate';
 import type { ValidationFinding } from '@/bibliography/validate';
+import { collectCompanionObjectKeys } from '@/bibliography/validate-companion-coverage';
 import { loadSearchLogForValidate } from '@/bibliography/validate-search-log';
 import { resolveArchiveRoot, sourceLayout } from '@/archive/location';
 import type { AssetProvenance } from '@/bibliography/provenance-read';
@@ -351,7 +352,10 @@ async function runValidate(rest: string[]): Promise<number> {
     );
     const censusByKey = gatherCensusForAll(loaded, repoRoot);
     const model = deriveModel(loaded, provenanceBySource, censusByKey);
-    findings = validate(model, { repoRoot, searchLog });
+    // The no-orphaned-master contract: every SSOT object-store master must have
+    // a committed companion in the archive repo, else it is undiscoverable.
+    const archiveCompanionKeys = collectCompanionObjectKeys(archiveRoot);
+    findings = validate(model, { repoRoot, searchLog, archiveCompanionKeys });
   } catch (error) {
     console.error(`bib validate: ${describeError(error)}`);
     return 2;
