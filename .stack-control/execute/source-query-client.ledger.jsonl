@@ -7,3 +7,8 @@
 {"id":"T005","tierLabel":"balanced","model":"sonnet","commit":"pending","reviewClean":true}
 {"id":"T009","tierLabel":"balanced","model":"sonnet","commit":"pending","reviewClean":true}
 {"id":"T006","tierLabel":"balanced","model":"sonnet","commit":"pending","reviewClean":true}
+{"id":"T010","tierLabel":"powerful","model":"opus","commit":"a50be5e","reviewClean":true}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commit":"1dcda49","reviewClean":true}
+{"id":"T012","tierLabel":"powerful","model":"opus","commit":"ab69709","reviewClean":true}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commit":"f5d4c79","reviewClean":true}
+{"id":"T016","tierLabel":"balanced","model":"sonnet","commit":"ed6651a","reviewClean":true}
