@@ -8,6 +8,12 @@
 
 **Input**: Approved design doc `docs/superpowers/specs/2026-07-17-source-query-client-design.md`. Originates from the `/fetching-online-sources` skill work: three same-session lapses proved discipline-only enforcement is insufficient, so the politeness/frugality mandate is moved into code.
 
+## Clarifications
+
+### Session 2026-07-17
+
+- Q: How does the operator express approval for an exit-node switch at runtime? → A: The approval is **agent-mediated in-session** — the client emits its permission request and STOPS (returns control to the in-session agent rather than blocking on a TTY); the agent presents the request to the operator, who approves or declines in conversation; on approval the agent re-invokes the client with the approved node to perform the switch.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A query against a source is governed by code, not discipline (Priority: P1)
@@ -37,7 +43,7 @@ A query hits a hard block (WAF challenge page, 403/429, or a dropped connection)
 
 **Acceptance Scenarios**:
 
-1. **Given** a hard block, **When** the client cannot proceed on the current origin, **Then** it persists the block evidence, does NOT switch, and emits an operator-permission request containing: source, block-evidence path, current origin, a proposed geo-appropriate exit node (from the enumerated node list), the exact switch command, an explicit host-wide-impact warning, and the pre-planned minimal query set it intends to run.
+1. **Given** a hard block, **When** the client cannot proceed on the current origin, **Then** it persists the block evidence, does NOT switch, emits an operator-permission request containing: source, block-evidence path, current origin, a proposed geo-appropriate exit node (from the enumerated node list), the exact switch command, an explicit host-wide-impact warning, and the pre-planned minimal query set — and STOPS, returning control to the in-session agent (it does not block on a TTY); the agent presents the request to the operator and relays the decision.
 2. **Given** the operator does not approve, **When** the pass ends, **Then** no exit-node change has occurred and the host routing is unchanged.
 3. **Given** the operator approves, **When** the switch proceeds, **Then** the client performs the switch, waits a configured settle delay, runs ONLY the pre-planned minimal set under extra-slow pacing, stops at the configured window bound (time and/or request-count), persists each page, and then restores the host's prior exit-node state.
 4. **Given** a completed or aborted escalation, **When** the pass ends, **Then** the host's exit-node state equals its pre-escalation state.
@@ -91,8 +97,8 @@ The `/fetching-online-sources` skill and the CLAUDE.md commandment are updated s
 **Exit-node escalation (operator-gated)**
 
 - **FR-010**: On a hard block (WAF challenge / 403 / 429 / connection drop) that only a network-origin change could resolve, the client MUST persist the block evidence and STOP; it MUST NOT switch exit nodes autonomously.
-- **FR-011**: The client MUST emit an operator-permission request containing: source, block-evidence path, current origin, a proposed geo-appropriate exit node (from the enumerated node list), the exact switch command, an explicit host-wide-impact warning, and the pre-planned minimal query set.
-- **FR-012**: Only on explicit operator approval MAY a switch occur. On approval the client MUST perform the switch, apply a configured settle delay, execute ONLY the pre-planned minimal set under extra-slow pacing, stop at the configured window bound (time and/or request-count), and persist each page.
+- **FR-011**: The client MUST emit an operator-permission request containing: source, block-evidence path, current origin, a proposed geo-appropriate exit node (from the enumerated node list), the exact switch command, an explicit host-wide-impact warning, and the pre-planned minimal query set — and MUST then STOP, returning control to the in-session agent (it MUST NOT block on a TTY prompt). The in-session agent presents this request to the operator and relays the operator's decision.
+- **FR-012**: Only on explicit operator approval — given by the operator in-session and relayed by the agent (a subsequent client invocation naming the approved node) — MAY a switch occur. On approval the client MUST perform the switch, apply a configured settle delay, execute ONLY the pre-planned minimal set under extra-slow pacing, stop at the configured window bound (time and/or request-count), and persist each page.
 - **FR-013**: After a completed or aborted escalation, the client MUST restore the host's prior exit-node state.
 - **FR-014**: The client MUST limit escalation to one node change per pass unless the operator re-approves ("sparingly").
 - **FR-015**: The exit-node code path MUST be exercised in automated tests only through an injectable fake runner; it MUST NEVER switch the real host during tests.
