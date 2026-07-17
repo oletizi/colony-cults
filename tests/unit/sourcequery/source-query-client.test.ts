@@ -133,6 +133,36 @@ describe('sourcequery/SourceQueryClient', () => {
     expect(browser.isOpen).toBe(false);
   });
 
+  it('non-empty result on a derived-facts-only source: persists NOTHING, returns derived facts + attribution (FR-009)', async () => {
+    const { readdirSync } = await import('node:fs');
+    const html =
+      '<html><body><ul class="results"><li>Hit</li></ul><span>2 results</span></body></html>';
+    const candidates = [
+      { title: 'Hit One', ref: 'r1' },
+      { title: 'Hit Two', ref: 'r2' },
+    ];
+    const config = makeConfig(() => ({ count: 2, candidates }), {
+      retention: 'derived-facts-only',
+      attribution: 'Data sourced from Fixture; reproduced under fair use.',
+    });
+    const url = config.buildQueryUrl('trove hits', 1);
+    const page: PageResult = { status: 200, html, snapshotMarkdown: '# 2 results', errored: false };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const client = makeClient(config, browser);
+
+    const result = await client.query('fixture', 'trove hits');
+
+    expect(result.retention).toBe('derived-facts-only');
+    expect(result.summary.count).toBe(2);
+    if (result.retention !== 'derived-facts-only') throw new Error('expected derived-facts-only');
+    expect(result.derivedFacts).toEqual(candidates);
+    expect(result.attribution).toBe('Data sourced from Fixture; reproduced under fair use.');
+    // Retention-forbidden: NO bytes written under the (temp) cwd tree, even
+    // though the result was non-empty (grounded facts must not leak to disk).
+    expect(readdirSync(tempDir)).toEqual([]);
+    expect(browser.isOpen).toBe(false);
+  });
+
   it('hard block page (HTTP 403): rejects (escalation not wired) and still closes the session', async () => {
     const config = makeConfig(() => ({ count: 0, candidates: [] }));
     const url = config.buildQueryUrl('blocked', 1);
