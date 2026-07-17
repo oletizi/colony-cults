@@ -1,0 +1,65 @@
+sourceId: PB-P055
+kind: monograph
+case: port-breton
+evidenceClass: book
+language: French
+creator: P. de Groote
+rights:
+  status: public-domain
+  basis: >-
+    P. de Groote, "Nouvelle-France : Colonie libre de Port-Breton, Océanie —
+    œuvre de colonisation agricole", Paris, Société générale de librairie
+    catholique, 1880; ~368 p. Public domain: (1) France, life+70 — a work
+    published in 1880 by an adult author whose death long predates 1955 (the
+    term is long expired; the author's exact death year is not independently
+    established here, but an 1880 imprint places it far outside any live term);
+    (2) United States — published before 1929, so public domain in the U.S.,
+    where the Google/University-of-Michigan scan is hosted. The Internet
+    Archive records possible-copyright-status = NOT_IN_COPYRIGHT, which
+    corroborates. The digitised copy is a faithful photographic reproduction of
+    a public-domain work and is not independently re-copyrightable (the
+    *Bridgeman* principle); the Google "for non-commercial use" scanner notice
+    is preserved as evidence and does not create a copyright in the underlying
+    public-domain work.
+  determinedAt: 2026-07-16
+titles:
+  - text: "Nouvelle-France : Colonie libre de Port-Breton, Océanie : œuvre de colonisation agricole"
+    role: canonical
+  - text: "Nouvelle-France: Colonie libre de Port-Breton, Océanie"
+    role: archive
+notes: >-
+  P. de Groote's 368-p. promotional BOOK for the Port-Breton / Nouvelle-France
+  colony (Paris, Société générale de librairie catholique, 1880) — a central
+  affair imprint and a long-standing Phase-2 acquisition goal. DISTINCT from
+  PB-P002, the marquis de Rays's separate 20-p. 1879 PROSPECTUS held via Gallica
+  (the two share mirror-image titles, the root of a long-running conflation; see
+  PB-P002 notes). Verified real, digitised, and public-domain on the Internet
+  Archive by SRCH-0013 (2026-07-16): item nouvellefrancec00groogoog, a Google
+  Books scan from the University of Michigan (imagecount 421 ≈ 368 text pages +
+  plates), possible-copyright-status NOT_IN_COPYRIGHT. Not on Gallica (SRCH-0012
+  measured negative), so it is reached via the shipped Internet Archive
+  acquisition adapter (spec 013) rather than the Gallica fetcher. Raw archive.org
+  metadata + search captures persisted under
+  bibliography/repository-responses/PB-P002/archiveorg-*-2026-07-16.json (filed
+  there because the verification was scoped to the PB-P002 conflation question).
+repositoryRecords:
+  - sourceArchive: Internet Archive
+    status: to-collect
+    originalUrl: https://archive.org/details/nouvellefrancec00groogoog
+    identifiers:
+      - type: ia-item
+        value: nouvellefrancec00groogoog
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: >-
+        1880 French colonisation book (P. de Groote); public domain in France
+        (life+70, long expired for an 1880 imprint) and in the United States
+        (published before 1929), where the Google/U-Michigan scan is hosted.
+        Internet Archive possible-copyright-status = NOT_IN_COPYRIGHT
+        corroborates. The faithful photographic reproduction is not
+        independently re-copyrightable (Bridgeman); the Google non-commercial-use
+        scanner notice is preserved as evidence and evaluated, not treated as a
+        copyright in the underlying public-domain work.
+      rightsJurisdiction: FR/US
+      assessedBy: operator
+      assessedAt: 2026-07-16T18:45:00.000Z
