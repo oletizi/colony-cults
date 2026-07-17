@@ -59,6 +59,16 @@ const SOURCE_LAYOUTS: Readonly<Record<string, SourceLayout>> = {
     slug: 'nouvelle-france-colonie-libre-de-port-breton-oceanie-uvre-de-colonisation',
     kind: 'monograph',
   },
+  // The Cour de cassation extract (an excerpt within a larger serial fascicule,
+  // acquired page-range-only via spec 012's `fetch-source --pages`). Registered
+  // so `sourceLayout` resolves it for the translator/OCR; slug verified against
+  // the archive clone's on-disk directory (folio sidecar `id: "PB-P054"`).
+  'PB-P054': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'cour-de-cassation-chambre-criminelle-arret-de-rejet-du-pourvoi-de-charles',
+    kind: 'monograph',
+  },
 };
 
 /**
