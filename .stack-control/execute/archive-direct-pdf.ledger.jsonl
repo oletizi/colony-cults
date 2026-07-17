@@ -19,3 +19,4 @@
 {"id":"T019","tierLabel":"balanced","model":"sonnet","commitRange":"a38eb11..0114452","reviewClean":true,"note":"full-suite green + module sizes <=500"}
 {"id":"T020","tierLabel":"powerful","model":"n/a","commitRange":"","reviewClean":false,"note":"DEFERRED [~] operator live acceptance (real PB-P055/P054 build against archive clone)"}
 {"id":"govern","tierLabel":"n/a","model":"barrage+override","commitRange":"","reviewClean":true,"note":"barrage killed (env, no fleet findings); controller review -> TASK-38/39 backlog; converged via --override; graduated"}
+{"id":"T020","tierLabel":"powerful","model":"operator+controller","commitRange":"2caaa46..ecb36b4","reviewClean":true,"note":"live acceptance: PB-P054 + PB-P055 built to real PDFs; 2 bugs found+fixed (blank-OCR, PNG masters)"}
