@@ -31,7 +31,6 @@ description: "Task list for Source Query Client"
 - [ ] T007 [P] [tier:fast] Add injectable clock/sleep helpers in src/sourcequery/clock.ts mirroring src/gallica/http-client.ts (real + fake).
 - [ ] T008 [tier:balanced] Implement persistence in src/sourcequery/persistence.ts (write raw HTML + a11y snapshot under bibliography/repository-responses/<source>/<slug>-<UTC>.{html,md}; block-<UTC> variant; slug/path builders); persistence failure throws.
 - [ ] T009 [P] [tier:balanced] Unit test persistence in tests/unit/sourcequery/persistence.test.ts (writes both artifacts before returning; throws on unwritable dir — persist-before-return / fail-loud, SC-001).
-- [ ] T009a [tier:balanced] Implement the `retention: 'derived-facts-only'` branch (FR-009) in src/sourcequery/frugality.ts + source-query-client.ts: for a retention-forbidden source, persist NOTHING and return derived facts + attribution (still paced + bounded); unit-test it in tests/unit/sourcequery/frugality.test.ts (no capture written; attribution present).
 
 ---
 
@@ -42,12 +41,12 @@ description: "Task list for Source Query Client"
 
 - [ ] T010 [P] [US1] [tier:powerful] Implement block/result/empty classification in src/sourcequery/block-detection.ts per research R1 (positive-signal-only block; legit empty ≠ block; needs resultSelector + status + fingerprints).
 - [ ] T011 [P] [US1] [tier:balanced] Implement PolitenessPolicy in src/sourcequery/politeness-policy.ts (single session; min inter-navigation interval reusing src/gallica/rate-limiter.ts).
-- [ ] T012 [US1] [tier:powerful] Implement Frugality in src/sourcequery/frugality.ts: persistThenParse(pageResult, config) → persist (T008), parse summary from the PERSISTED copy, verify-in-code that the count string is a literal substring of the persisted bytes (ungrounded → throw, FR-007/SC-002).
+- [ ] T012 [US1] [tier:powerful] Implement Frugality in src/sourcequery/frugality.ts: persistThenParse(pageResult, config) → persist (T008), parse summary from the PERSISTED copy, verify-in-code that the count string is a literal substring of the persisted bytes (ungrounded → throw, FR-007/SC-002). ALSO implement the `retention: 'derived-facts-only'` branch (FR-009): for a retention-forbidden source (Trove-class) persist NOTHING and return derived facts + attribution (still paced + bounded).
 - [ ] T013 [US1] [tier:balanced] Implement the real BrowserSession in src/sourcequery/browser-session.ts using Playwright launchPersistentContext({ channel: 'chrome' }, genuine Chrome UA; headed-first with headless:'new' fallback; launch failure throws — research R2).
 - [ ] T014 [US1] [tier:powerful] Implement SourceQueryClient (result/empty happy path) in src/sourcequery/source-query-client.ts: open → navigate → persist → classify → (result|empty) → grounded QueryResult; always close(); constructor-injected browser/clock/sleep/registry.
 - [ ] T015 [US1] [tier:balanced] Add the `bib query-source` CLI verb in src/cli/bib-query-source.ts per contracts/cli-query-source.md (args/flags; JSON QueryResult on stdout; fail-loud non-zero on persistence/launch/ungrounded).
 - [ ] T016 [P] [US1] [tier:balanced] Register a Papers Past SourceConfig (paperspast.natlib.govt.nz/newspapers: buildQueryUrl, resultSelector, parseSummary) in src/sourcequery/source-config.ts (research R3).
-- [ ] T017 [P] [US1] [tier:balanced] Unit tests for US1 in tests/unit/sourcequery/source-query-client.test.ts + block-detection.test.ts (result vs legit-empty via FakeBrowserSession; grounded summary; ungrounded fails loud).
+- [ ] T017 [P] [US1] [tier:balanced] Unit tests for US1 in tests/unit/sourcequery/source-query-client.test.ts + block-detection.test.ts + frugality.test.ts (result vs legit-empty via FakeBrowserSession; grounded summary; ungrounded fails loud; a `derived-facts-only` source persists NO capture and returns attribution — FR-009).
 - [ ] T018 [US1] [tier:powerful] Env-gated integration test in tests/integration/sourcequery/fixture.test.ts against a local fixture server (static results + challenge pages): result page → persisted capture + grounded summary; no host mutation (FakeTailscaleRunner). (quickstart Scenario 3)
 
 **Checkpoint**: US1 is an independently shippable MVP — governed queries against non-walled sources, fully code-enforced.
@@ -110,4 +109,4 @@ MVP = Phase 1 → 2 → 3 (US1): a fully code-enforced governed query for non-wa
 
 ## Format Validation
 
-All 30 tasks follow `- [ ] Txxx [P?] [US?] [tier:X] <description + file path>`; setup/foundational/polish carry no story label; every story task carries [US n]; every task carries a tier.
+All 29 tasks follow `- [ ] Txxx [P?] [US?] [tier:X] <description + file path>`; setup/foundational/polish carry no story label; every story task carries [US n]; every task carries a tier.
