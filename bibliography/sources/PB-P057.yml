@@ -7,51 +7,54 @@ language: English
 creator: The China Mail (Hong Kong)
 rights:
   status: public-domain
-  basis: >-
-    The China Mail (Hong Kong English-language daily), issue of 16 October 1880 —
-    a report, relayed via the steamer Glenroy from the "Sea Islands", on the
-    collapse of the Marquis de Rays / Port-Breton (New Ireland) colony. Public
-    domain: (1) publication age — an 1880 newspaper of anonymous news/cable
-    reports; any conceivable term (author's life+70, or a publication-based
-    term) is long elapsed, and it is pre-1955 material; (2) United States —
-    published in 1880, before 1929, so public domain in the U.S., where the
-    Internet Archive scan is hosted. The faithful photographic reproduction is
-    not independently re-copyrightable (the *Bridgeman* principle).
+  basis: "The China Mail (Hong Kong English-language daily), issue of 16 October 1880 — a report, relayed via the steamer Glenroy from the \"Sea Islands\", on the collapse of the Marquis de Rays / Port-Breton (New Ireland) colony. Public domain: (1) publication age — an 1880 newspaper of anonymous news/cable reports; any conceivable term (author's life+70, or a publication-based term) is long elapsed, and it is pre-1955 material; (2) United States — published in 1880, before 1929, so public domain in the U.S., where the Internet Archive scan is hosted. The faithful photographic reproduction is not independently re-copyrightable (the *Bridgeman* principle)."
   determinedAt: 2026-07-17
 titles:
-  - text: "The China Mail (Hong Kong), 16 October 1880 — report on the wreck of the Marquis de Rays / Port-Breton colony at New Ireland"
+  - text: The China Mail (Hong Kong), 16 October 1880 — report on the wreck of the Marquis de Rays / Port-Breton colony at New Ireland
     role: canonical
-notes: >-
-  A contemporary Asian-English-press report of the Port-Breton disaster — among
-  the earliest (Oct 1880), relayed from the Sea Islands via the steamer Glenroy:
-  the "quixotic undertaking of the Marquis de Rays, a Legitimist, who thought of
-  forming a New France" in the New Britain / New Ireland archipelago; colonists
-  dead, survivors "in huts more miserable and filthy than those of the lowest
-  natives", flour and bread casks scattered on the beach. Part of the third
-  contemporary-press thread (Asian-English) identified in SRCH-0015 — distinct
-  from PB-P005 (Australian / Trove) and PB-P004 (French legal). Verified genuine
-  via OCR (SRCH-0015) and located to a single self-contained page via a page +
-  jump analysis on the cleaned OCR (no article jump; see
-  repository-responses/PB-P055/ia-press-clean-NPCM18801016-2026-07-17.txt).
-  ACQUISITION: only the affair leaf (page 2 of 6) is mirrored as a page-master
-  via the spec-013 IA adapter's --approved-range; the full issue is preserved as
-  the source PDF. Item metadata + page-structured OCR captures under
-  repository-responses/PB-P055 (ia-*-NPCM18801016-*).
+notes: "A contemporary Asian-English-press report of the Port-Breton disaster — among the earliest (Oct 1880), relayed from the Sea Islands via the steamer Glenroy: the \"quixotic undertaking of the Marquis de Rays, a Legitimist, who thought of forming a New France\" in the New Britain / New Ireland archipelago; colonists dead, survivors \"in huts more miserable and filthy than those of the lowest natives\", flour and bread casks scattered on the beach. Part of the third contemporary-press thread (Asian-English) identified in SRCH-0015 — distinct from PB-P005 (Australian / Trove) and PB-P004 (French legal). Verified genuine via OCR (SRCH-0015) and located to a single self-contained page via a page + jump analysis on the cleaned OCR (no article jump; see repository-responses/PB-P055/ia-press-clean-NPCM18801016-2026-07-17.txt). ACQUISITION: only the affair leaf (page 2 of 6) is mirrored as a page-master via the spec-013 IA adapter's --approved-range; the full issue is preserved as the source PDF. Item metadata + page-structured OCR captures under repository-responses/PB-P055 (ia-*-NPCM18801016-*)."
 repositoryRecords:
   - sourceArchive: Internet Archive
-    status: to-collect
+    status: archived
     originalUrl: https://archive.org/details/NPCM18801016
     identifiers:
       - type: ia-item
         value: NPCM18801016
     rightsAssessment:
       rightsStatus: public-domain
-      rightsBasis: >-
-        1880 Hong Kong English-language newspaper (The China Mail); public domain
-        by publication age (anonymous 1880 news reports; any term long expired;
-        pre-1955) and in the United States (published before 1929), where the
-        Internet Archive scan is hosted. Faithful photographic reproduction not
-        independently re-copyrightable (Bridgeman).
+      rightsBasis: 1880 Hong Kong English-language newspaper (The China Mail); public domain by publication age (anonymous 1880 news reports; any term long expired; pre-1955) and in the United States (published before 1929), where the Internet Archive scan is hosted. Faithful photographic reproduction not independently re-copyrightable (Bridgeman).
       rightsJurisdiction: HK/US
       assessedBy: operator
       assessedAt: 2026-07-17T12:00:00.000Z
+    assets:
+      - sourceUrl: https://archive.org/download/NPCM18801016/NPCM18801016.pdf
+        mediaType: application/pdf
+        objectStoreKey: archive/internet-archive/NPCM18801016/source/3db5323178edc42abcce5f7013e6fa50ac631cacfa0d817301971bb07ee8a3c2.pdf
+        checksum: 3db5323178edc42abcce5f7013e6fa50ac631cacfa0d817301971bb07ee8a3c2
+        byteLength: 3767271
+        provenancePath: archive/internet-archive/NPCM18801016/source/3db5323178edc42abcce5f7013e6fa50ac631cacfa0d817301971bb07ee8a3c2.yml
+        role: repository-source
+      - sourceUrl: https://archive.org/download/NPCM18801016/NPCM18801016.pdf
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/NPCM18801016/pages/1-a53a34c530f271b06e0cb7c41e2cd2f35acb5c200d4095b16259ef5b2be62caa.png
+        checksum: a53a34c530f271b06e0cb7c41e2cd2f35acb5c200d4095b16259ef5b2be62caa
+        byteLength: 504361
+        provenancePath: archive/internet-archive/NPCM18801016/pages/1-a53a34c530f271b06e0cb7c41e2cd2f35acb5c200d4095b16259ef5b2be62caa.yml
+        role: page-master
+        sequence: 1
+    qualityAssessment:
+      status: sound
+      assessedBy: operator
+      assessedAt: 2026-07-17T08:22:45.913Z
+      sourceFileChecksum: 3db5323178edc42abcce5f7013e6fa50ac631cacfa0d817301971bb07ee8a3c2
+      expectedPageCount: 6
+      observedPageCount: 6
+      approvedLeafRange:
+        start: 2
+        end: 2
+      notes: "Page-range acquisition: only the affair leaf 2 is mirrored as a page-master; full issue preserved as source PDF (TASK-37)."
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P057/NPCM18801016-20260717T082241867Z.json
+      retrievedAt: 2026-07-17T08:22:41.867Z
+      endpoint: https://archive.org/metadata/NPCM18801016
+      normalizationVersion: 1

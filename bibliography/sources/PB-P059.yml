@@ -7,53 +7,54 @@ language: English
 creator: Hong Kong Daily Press
 rights:
   status: public-domain
-  basis: >-
-    The Hong Kong Daily Press (English-language daily), issue of 16 July 1883 —
-    the cabled report "TRIAL OF THE MARQUIS DE RAYS" (Paris, 12 June), a précis of
-    the whole Port-Breton fraud prosecution and its human toll. Public domain: (1)
-    publication age — an 1883 newspaper of anonymous cable reports; any conceivable
-    term is long elapsed, and it is pre-1955 material; (2) United States — published
-    in 1883, before 1929, so public domain in the U.S., where the Internet Archive
-    scan is hosted. The faithful photographic reproduction is not independently
-    re-copyrightable (the *Bridgeman* principle).
+  basis: 'The Hong Kong Daily Press (English-language daily), issue of 16 July 1883 — the cabled report "TRIAL OF THE MARQUIS DE RAYS" (Paris, 12 June), a précis of the whole Port-Breton fraud prosecution and its human toll. Public domain: (1) publication age — an 1883 newspaper of anonymous cable reports; any conceivable term is long elapsed, and it is pre-1955 material; (2) United States — published in 1883, before 1929, so public domain in the U.S., where the Internet Archive scan is hosted. The faithful photographic reproduction is not independently re-copyrightable (the *Bridgeman* principle).'
   determinedAt: 2026-07-17
 titles:
-  - text: "The Hong Kong Daily Press, 16 July 1883 — \"Trial of the Marquis de Rays\" (Paris, 12 June cable)"
+  - text: The Hong Kong Daily Press, 16 July 1883 — "Trial of the Marquis de Rays" (Paris, 12 June cable)
     role: canonical
-notes: >-
-  A contemporary Asian-English-press report of the de Rays trial and the full
-  scheme's toll: "The trial began to-day of the Marquis De Rays and seventeen
-  others, charged with manslaughter, fraud and infringement of the... emigration
-  laws"; 5,000,000 francs subscribed, "the Marquis pocketed 2,000,000"; 700,000
-  hectares sold though the island held only 7,000; "four old sailing ships... the
-  majority of whom perished"; "thirty emigrants died during the passage, 250 more
-  died from hunger and disease after reaching Port Breton and five others were
-  captured and eaten by natives... Only 100 of the unfortunate people succeeded in
-  reaching a friendly country." A press complement to the French legal record
-  (PB-P004 / PB-P054) and part of the third contemporary-press thread
-  (Asian-English) identified in SRCH-0015. Verified genuine via OCR (SRCH-0015);
-  located to a single self-contained page (page 3 of 4) via a page + jump analysis
-  on the cleaned OCR (the report concludes and is followed by an unrelated West
-  Africa item — no jump; see
-  repository-responses/PB-P055/ia-press-clean-NPDP18830716-2026-07-17.txt).
-  ACQUISITION: only the affair leaf (page 3) is mirrored as a page-master via the
-  spec-013 IA adapter's --approved-range; the full issue is preserved as the source
-  PDF. Captures under repository-responses/PB-P055 (ia-*-NPDP18830716-*).
+notes: "A contemporary Asian-English-press report of the de Rays trial and the full scheme's toll: \"The trial began to-day of the Marquis De Rays and seventeen others, charged with manslaughter, fraud and infringement of the... emigration laws\"; 5,000,000 francs subscribed, \"the Marquis pocketed 2,000,000\"; 700,000 hectares sold though the island held only 7,000; \"four old sailing ships... the majority of whom perished\"; \"thirty emigrants died during the passage, 250 more died from hunger and disease after reaching Port Breton and five others were captured and eaten by natives... Only 100 of the unfortunate people succeeded in reaching a friendly country.\" A press complement to the French legal record (PB-P004 / PB-P054) and part of the third contemporary-press thread (Asian-English) identified in SRCH-0015. Verified genuine via OCR (SRCH-0015); located to a single self-contained page (page 3 of 4) via a page + jump analysis on the cleaned OCR (the report concludes and is followed by an unrelated West Africa item — no jump; see repository-responses/PB-P055/ia-press-clean-NPDP18830716-2026-07-17.txt). ACQUISITION: only the affair leaf (page 3) is mirrored as a page-master via the spec-013 IA adapter's --approved-range; the full issue is preserved as the source PDF. Captures under repository-responses/PB-P055 (ia-*-NPDP18830716-*)."
 repositoryRecords:
   - sourceArchive: Internet Archive
-    status: to-collect
+    status: archived
     originalUrl: https://archive.org/details/NPDP18830716
     identifiers:
       - type: ia-item
         value: NPDP18830716
     rightsAssessment:
       rightsStatus: public-domain
-      rightsBasis: >-
-        1883 Hong Kong English-language newspaper (Hong Kong Daily Press); public
-        domain by publication age (anonymous 1883 cable reports; any term long
-        expired; pre-1955) and in the United States (published before 1929), where
-        the Internet Archive scan is hosted. Faithful photographic reproduction not
-        independently re-copyrightable (Bridgeman).
+      rightsBasis: 1883 Hong Kong English-language newspaper (Hong Kong Daily Press); public domain by publication age (anonymous 1883 cable reports; any term long expired; pre-1955) and in the United States (published before 1929), where the Internet Archive scan is hosted. Faithful photographic reproduction not independently re-copyrightable (Bridgeman).
       rightsJurisdiction: HK/US
       assessedBy: operator
       assessedAt: 2026-07-17T12:00:00.000Z
+    assets:
+      - sourceUrl: https://archive.org/download/NPDP18830716/NPDP18830716.pdf
+        mediaType: application/pdf
+        objectStoreKey: archive/internet-archive/NPDP18830716/source/7bc8290c8d66900109ddd2ab5f7ebede2424eead5a8be477e25933b4b4bf6ec4.pdf
+        checksum: 7bc8290c8d66900109ddd2ab5f7ebede2424eead5a8be477e25933b4b4bf6ec4
+        byteLength: 2617157
+        provenancePath: archive/internet-archive/NPDP18830716/source/7bc8290c8d66900109ddd2ab5f7ebede2424eead5a8be477e25933b4b4bf6ec4.yml
+        role: repository-source
+      - sourceUrl: https://archive.org/download/NPDP18830716/NPDP18830716.pdf
+        mediaType: image/png
+        objectStoreKey: archive/internet-archive/NPDP18830716/pages/1-ca6a9570931616c08eca60f703851b4f295d8b763dabfe237c177303580c77ba.png
+        checksum: ca6a9570931616c08eca60f703851b4f295d8b763dabfe237c177303580c77ba
+        byteLength: 759605
+        provenancePath: archive/internet-archive/NPDP18830716/pages/1-ca6a9570931616c08eca60f703851b4f295d8b763dabfe237c177303580c77ba.yml
+        role: page-master
+        sequence: 1
+    qualityAssessment:
+      status: sound
+      assessedBy: operator
+      assessedAt: 2026-07-17T08:22:56.928Z
+      sourceFileChecksum: 7bc8290c8d66900109ddd2ab5f7ebede2424eead5a8be477e25933b4b4bf6ec4
+      expectedPageCount: 4
+      observedPageCount: 4
+      approvedLeafRange:
+        start: 3
+        end: 3
+      notes: "Page-range acquisition: only the affair leaf 3 is mirrored as a page-master; full issue preserved as source PDF (TASK-37)."
+    metadataSnapshot:
+      path: bibliography/repository-responses/PB-P059/NPDP18830716-20260717T082255299Z.json
+      retrievedAt: 2026-07-17T08:22:55.299Z
+      endpoint: https://archive.org/metadata/NPDP18830716
+      normalizationVersion: 1
