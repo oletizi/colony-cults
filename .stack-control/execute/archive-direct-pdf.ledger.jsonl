@@ -1,0 +1,20 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"15e9846..4f67281","reviewClean":true,"note":"fixture-archive test helper"}
+{"id":"T002","tierLabel":"balanced","model":"sonnet","commitRange":"15e9846..4f67281","reviewClean":true,"note":"source-layout registration (PB-P054 added)"}
+{"id":"T003","tierLabel":"balanced","model":"sonnet","commitRange":"4f67281..4546c65","reviewClean":true,"note":"archive-source folio enumeration + positional ordering"}
+{"id":"T004","tierLabel":"powerful","model":"opus","commitRange":"4546c65..b569546","reviewClean":true,"note":"archive-page OCR+translation+untranslatable-marker+positional"}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commitRange":"b569546..ba7a189","reviewClean":true,"note":"archive-edition unit test"}
+{"id":"T007","tierLabel":"powerful","model":"opus","commitRange":"b569546..ba7a189","reviewClean":true,"note":"archive-edition orchestrator; NOTE title-date=acquisition fallback (review)"}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"ba7a189..a38eb11","reviewClean":true,"note":"end-to-end integration test (both variants, no snapshot)"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"ba7a189..a38eb11","reviewClean":true,"note":"wire build.ts buildItem to archive-edition reader"}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"ba7a189..a38eb11","reviewClean":true,"note":"wire batch.ts archive enumeration; drop listSnapshotSourceIds"}
+{"id":"T010","tierLabel":"balanced","model":"sonnet","commitRange":"ba7a189..a38eb11","reviewClean":true,"note":"pdf:build verb --archive-root + preflight"}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"a38eb11..0114452","reviewClean":true,"note":"extract alignment test (SC-002)"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"a38eb11..0114452","reviewClean":true,"note":"translation coverage guard (orphan-translation fail-loud)"}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"a38eb11..0114452","reviewClean":true,"note":"untranslatable proofs (SC-004)"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"a38eb11..0114452","reviewClean":true,"note":"blank-EN acceptance verified (in T007, no change)"}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commitRange":"a38eb11..0114452","reviewClean":true,"note":"reproducibility pin proof (SC-005)"}
+{"id":"T016","tierLabel":"balanced","model":"sonnet","commitRange":"a38eb11..0114452","reviewClean":true,"note":"archiveRef-from-pin verified (in T007, no change)"}
+{"id":"T017","tierLabel":"balanced","model":"sonnet","commitRange":"a38eb11..0114452","reviewClean":true,"note":"image sha256 verification proofs (SC-003)"}
+{"id":"T018","tierLabel":"fast","model":"haiku","commitRange":"a38eb11..0114452","reviewClean":true,"note":"README archive-direct pdf:build"}
+{"id":"T019","tierLabel":"balanced","model":"sonnet","commitRange":"a38eb11..0114452","reviewClean":true,"note":"full-suite green + module sizes <=500"}
+{"id":"T020","tierLabel":"powerful","model":"n/a","commitRange":"","reviewClean":false,"note":"DEFERRED [~] operator live acceptance (real PB-P055/P054 build against archive clone)"}
