@@ -35,7 +35,7 @@
  * process itself.
  */
 
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { PageImageInfo, PopplerRunner } from '@/pdf/poppler/runner';
 import type {
@@ -209,9 +209,15 @@ export async function extractPages(params: ExtractParams): Promise<ExtractionRes
     );
   }
 
-  // The poppler writers (`pdfimages`/`pdftoppm`) do NOT create their output
-  // directory -- a missing `outDir` makes them exit non-zero ("Could not write
-  // image"). Create it up front so extraction writes into a real directory.
+  // Produce into a CLEAN output directory. The poppler writers append their own
+  // suffix (`page-0001-000.png`), so a stale master left from an earlier run at a
+  // DIFFERENT approved range (whose leaf->logicalPage mapping differs) would leave
+  // a second `page-0001-*.png` and make the caller's produced-file resolution
+  // ambiguous. Masters are cheap, deterministic re-derivations of the cached PDF,
+  // so clearing + recreating outDir each run is correct (it does NOT re-download).
+  // The poppler writers also do not create outDir themselves (a missing dir makes
+  // them exit "Could not write image"), so the mkdir is required regardless.
+  await rm(outDir, { recursive: true, force: true });
   await mkdir(outDir, { recursive: true });
 
   // Index scandata dims by leaf number for coverage + native-DPI lookup.

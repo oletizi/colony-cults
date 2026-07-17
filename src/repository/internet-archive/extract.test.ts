@@ -226,6 +226,22 @@ describe('extractPages -- rasterise DPI comes from the embedded image resolution
   });
 });
 
+describe('extractPages -- produces into a CLEAN output dir (no stale-master collision on re-run)', () => {
+  it('removes stale masters left in outDir by an earlier run before extracting', async () => {
+    const { writeFileSync, mkdirSync, existsSync } = await import('node:fs');
+    mkdirSync(OUT, { recursive: true });
+    const stale = join(OUT, 'page-0001-999.png'); // a leftover from an earlier, differently-ranged run
+    writeFileSync(stale, new Uint8Array([1, 2, 3]));
+    expect(existsSync(stale)).toBe(true);
+
+    const rows = [coveringRow(4, '10')];
+    const { poppler } = fakePoppler(rows);
+    await extractPages({ pdfPath: PDF, approvedRange: { start: 4, end: 4 }, scanLeaves: [scanLeaf(4)], outDir: OUT, poppler });
+
+    expect(existsSync(stale)).toBe(false); // cleared before extraction
+  });
+});
+
 describe('extractPages -- T040: produced count != approved range → throws', () => {
   it('throws (fail loud, SC-005) when an approved leaf is also flagged excluded and would be skipped', async () => {
     // approvedRange 4..8 == 5 leaves expected; but leaf 6 is (mis)flagged as an
