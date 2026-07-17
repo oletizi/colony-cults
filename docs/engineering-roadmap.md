@@ -167,4 +167,5 @@ Spun out of 009's research loop (backlog TASK-32). SRCH-0013 verified that the d
 
 ## impl:feature/source-query-client
 - status: planned
+- analyze-clean: yes
 - spec: specs/014-source-query-client

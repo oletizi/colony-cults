@@ -31,6 +31,7 @@ description: "Task list for Source Query Client"
 - [ ] T007 [P] [tier:fast] Add injectable clock/sleep helpers in src/sourcequery/clock.ts mirroring src/gallica/http-client.ts (real + fake).
 - [ ] T008 [tier:balanced] Implement persistence in src/sourcequery/persistence.ts (write raw HTML + a11y snapshot under bibliography/repository-responses/<source>/<slug>-<UTC>.{html,md}; block-<UTC> variant; slug/path builders); persistence failure throws.
 - [ ] T009 [P] [tier:balanced] Unit test persistence in tests/unit/sourcequery/persistence.test.ts (writes both artifacts before returning; throws on unwritable dir — persist-before-return / fail-loud, SC-001).
+- [ ] T009a [tier:balanced] Implement the `retention: 'derived-facts-only'` branch (FR-009) in src/sourcequery/frugality.ts + source-query-client.ts: for a retention-forbidden source, persist NOTHING and return derived facts + attribution (still paced + bounded); unit-test it in tests/unit/sourcequery/frugality.test.ts (no capture written; attribution present).
 
 ---
 
@@ -62,7 +63,7 @@ description: "Task list for Source Query Client"
 - [ ] T020 [US2] [tier:powerful] Implement OperatorPermissionRequest construction + the STOP behavior in src/sourcequery/exit-node-policy.ts and src/sourcequery/source-query-client.ts: on a detected block, persist BlockEvidence (T008) then return the request; NEVER switch autonomously (FR-010/FR-011).
 - [ ] T021 [US2] [tier:powerful] Implement runApprovedSwitch in src/sourcequery/exit-node-policy.ts: setExitNode(node) → settle → run only the minimal set under extra-slow pacing → stop at window bound (time/count) → persist each page → restore prior exit state; one switch per pass (FR-012/FR-013/FR-014).
 - [ ] T022 [US2] [tier:balanced] Wire the `--approve-exit-node <node>` flag + exit code 3 (unapproved escalation) into src/cli/bib-query-source.ts per contracts/cli-query-source.md.
-- [ ] T023 [P] [US2] [tier:powerful] Unit tests for US2 in tests/unit/sourcequery/exit-node-policy.test.ts (permission-request contents; no autonomous switch; approved switch calls setExitNode once, applies grace bounds, persists each page, and restores prior state — SC-003/SC-004; escalation budget of 1/pass).
+- [ ] T023 [P] [US2] [tier:powerful] Unit tests for US2 in tests/unit/sourcequery/exit-node-policy.test.ts (permission-request contents; no autonomous switch; approved switch calls setExitNode once, applies grace bounds, persists each page, and restores prior state — SC-003/SC-004; escalation budget of 1/pass; AND the no-usable-node / Tailscale-unavailable path reports honestly and stops without switching — spec Edge Case).
 - [ ] T024 [P] [US2] [tier:balanced] Extend the fixture integration test: challenge page → exit 3 + OperatorPermissionRequest + persisted block-* evidence, and FakeTailscaleRunner records no set until approval (quickstart Scenario 3/4).
 
 **Checkpoint**: US1 + US2 = the full governed mechanism including the walled-source backstop.
@@ -109,4 +110,4 @@ MVP = Phase 1 → 2 → 3 (US1): a fully code-enforced governed query for non-wa
 
 ## Format Validation
 
-All 29 tasks follow `- [ ] Txxx [P?] [US?] [tier:X] <description + file path>`; setup/foundational/polish carry no story label; every story task carries [US n]; every task carries a tier.
+All 30 tasks follow `- [ ] Txxx [P?] [US?] [tier:X] <description + file path>`; setup/foundational/polish carry no story label; every story task carries [US n]; every task carries a tier.
