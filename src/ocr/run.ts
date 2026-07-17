@@ -130,6 +130,11 @@ function derivedProvenance(
     // (Re)derived inside storeAsset from the actual bytes and target path.
     local_path: '',
     sha256: '',
+    // A derived, git-stored OCR asset has NO object-store master of its own.
+    // Overriding the base page's `object_store` (copied by the spread) is what
+    // keeps the text sidecar from falsely claiming the IMAGE's object key --
+    // which otherwise mismatches the SSOT's image sha256 (a `checksum-drift`).
+    object_store: null,
     ocr_quality: ocrQuality,
     notes: null,
   };

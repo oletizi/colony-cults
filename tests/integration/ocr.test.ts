@@ -219,6 +219,36 @@ describe('ocrIssue (T030/T033)', () => {
     }
   });
 
+  it('nulls object_store on the OCR-text sidecar even when the page image has one', async () => {
+    // The base page IS an object-store master (its companion carries a real
+    // object_store block); the derived OCR text must NOT inherit that key --
+    // else its (text) sha256 mismatches the image key's sha (checksum-drift).
+    const pageWithStore: ProvenanceFields = {
+      ...BASE_PAGE_PROVENANCE,
+      object_store: {
+        provider: 'backblaze-b2',
+        bucket: 'colony-cults',
+        key: 'archive/cases/x/f001.jpg',
+        endpoint: 'https://s3.us-west-004.backblazeb2.com',
+      },
+    };
+    await writeProvenance(path.join(issueDir, 'f001.yml'), pageWithStore);
+    await writeProvenance(path.join(issueDir, 'f002.yml'), pageWithStore);
+
+    await ocrIssue(issueDir, {
+      runner: fakeRunner(),
+      archiveRoot,
+      clock: () => new Date('2026-07-17T00:00:00.000Z'),
+    });
+
+    const txtYaml = await readFile(
+      path.join(issueDir, 'issue.txt.yml'),
+      'utf-8',
+    );
+    expect(txtYaml).toContain('object_store: null');
+    expect(txtYaml).not.toContain('key: "archive/cases/x/f001.jpg"');
+  });
+
   it('passes the pinned language to ocrmypdf (default fra unchanged)', async () => {
     await writePageProvenance(issueDir, [1, 2]);
     const calls: Array<{ command: string; args: string[] }> = [];
