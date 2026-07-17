@@ -13,3 +13,6 @@
 {"id":"T013","tierLabel":"balanced","model":"sonnet","commit":"f5d4c79","reviewClean":true}
 {"id":"T016","tierLabel":"balanced","model":"sonnet","commit":"ed6651a","reviewClean":true}
 {"id":"T014","tierLabel":"powerful","model":"opus","commit":"87b746b","reviewClean":true}
+{"id":"T017","tierLabel":"balanced","model":"sonnet","commit":"f717f71","reviewClean":true}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commit":"8128f97","reviewClean":true}
+{"id":"T018","tierLabel":"powerful","model":"opus","commit":"33a37b7","reviewClean":true}
