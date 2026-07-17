@@ -164,6 +164,34 @@ describe('translateIssue (T016/T017/T019)', () => {
     expect((await readFile(blankEn, 'utf-8')).trim()).toBe('');
   });
 
+  it('records an OCR-garbage illustration/plate page as blank (word-content, not raw alnum)', async () => {
+    // A map/plate page whose OCR is dense NON-WORD noise: dozens of stray
+    // letters (clearing any raw-alnum threshold) but no real words. The engine
+    // returns empty for such a page; measuring word-content keeps it from ever
+    // reaching the engine (regression guard for PB-P055 page 299).
+    const real1 =
+      'Ceci est une vraie page de journal avec suffisamment de contenu textuel a traduire pour depasser le seuil.';
+    const real2 =
+      'Une deuxieme page reelle contenant assez de mots pour etre traitee normalement par le moteur de traduction.';
+    const plate = '31 œo<zœ..oz«ä. « LNVL IND l: .Ëm.r. 31 3HAVH % ANV mŒm ŒDO& PŒO& ZOPuŒŒ — —- .-';
+    writeFileSync(
+      path.join(fetched.issueDir, 'issue.txt'),
+      `${real1}\f${real2}\f${plate}`,
+    );
+
+    const { ctx, calls } = buildCtx(fetched);
+    const result = await translateIssue(fetched.issueArk, ctx);
+
+    expect(result.outcome).toBe('translated');
+    expect(result.pagesDone).toBe(3);
+    // Only the 2 real pages reach the engine (2 passes each = 4 calls); the
+    // garbage plate is recorded blank, never sent (so no empty-output failure).
+    expect(calls).toHaveLength(4);
+    const plateEn = path.join(fetched.issueDir, 'translation', 'p003.en.txt');
+    expect(existsSync(plateEn)).toBe(true);
+    expect((await readFile(plateEn, 'utf-8')).trim()).toBe('');
+  });
+
   it('translates when the object-store migration removed local images (f###.yml only, no f###.jpg)', async () => {
     // The migration moves page images to external storage and removes the
     // local .jpg, keeping the f###.yml companions. BOTH the rights gate and the
