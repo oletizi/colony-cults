@@ -1,6 +1,6 @@
 ---
 name: "fetching-online-sources"
-description: "Use when about to make ANY HTTP request to an external online source or repository during corpus work — discovery search, reconnaissance, metadata lookup, OCR read, or asset download (Gallica, Internet Archive, Trove, Papers Past, Chronicling America, library/museum/newspaper portals, or any source website whose content you will cite). Trigger symptoms of an imminent violation: reaching for WebFetch, WebSearch-to-fetch-content, or curl on a source URL; fetching a page you will not save; telling yourself 'it is just a quick public GET'."
+description: "Use when about to make ANY query against an external online source or repository during corpus work — discovery search, reconnaissance, metadata lookup, OCR/content read, or checking whether a source holds something (Gallica, Internet Archive, Trove, Papers Past, Chronicling America, DigitalNZ, library/museum/newspaper/parliamentary portals, or any source whose content you will cite). Trigger symptoms of an imminent violation: reaching for WebFetch, WebSearch-for-content, curl, the raw HttpClient, or an ad-hoc/ungoverned browser call against a source URL; fetching a page you will not save; telling yourself 'it is just a quick check' or 'this source is walled so I'll improvise' or 'a browser is overkill here'."
 metadata:
   author: "colony-cults"
   enforces: "constitution Principle XII (Respect the Source); DECISIONS.md store-raw-responses"
@@ -8,45 +8,59 @@ user-invocable: true
 disable-model-invocation: false
 ---
 
-# Fetching Online Sources (Frugal, Polite Access)
+# Fetching Online Sources (Governed Real-Browser Access)
 
 ## Overview
 
-Every request to an external source/repository during corpus work MUST go through the shipped rate-limited client AND MUST persist its raw response before analysis. This operationalizes constitution **Principle XII** (Respect the Source) + the DECISIONS.md store-raw-responses convention. External archives (Gallica, Internet Archive, Trove, Papers Past, Chronicling America, museum/library portals) have hair-trigger rate limits and finite goodwill — a wasted or impolite request risks the block that ends the work.
+EVERY query against an external source/repository during corpus work goes through ONE mechanism: a **governed real-browser session** (the Playwright MCP browser), with the raw page content persisted before analysis. No exceptions. No second channel. This operationalizes constitution **Principle XII** (Respect the Source) + the DECISIONS.md store-raw-responses convention.
 
-**Violating the letter of this rule is violating the spirit of it.**
+A real browser is the only mechanism that works UNIFORMLY across every source — it renders JS, carries cookies, and clears the WAF/challenge walls (Incapsula, Anubis, Cloudflare) that a headless client structurally cannot — so there is never a "the mechanism failed, let me reach for another tool" moment. The Trove wall (SRCH-0016) was cleared exactly this way. One mechanism means zero tool-choice decisions, and the tool-choice decision is where every lapse has come from.
 
-## The mandate (non-negotiable)
+**Violating the letter of this rule is violating the spirit of it. "The source is walled" / "it's just a quick check" / "the API is cleaner" / "a browser is overkill" are NOT exceptions — they are the rationalizations this skill exists to stop.**
 
-1. **Politeness — the shipped client, never an ad-hoc tool.** All source HTTP goes through `src/gallica/http-client.ts` `HttpClient` (descriptive contactable User-Agent, ~1 req/s, exponential backoff, honors Retry-After). NEVER `curl`, `WebFetch`, or `WebSearch`-to-fetch-content against a source URL — each bypasses the politeness envelope.
-2. **Frugality — persist before analysis.** Write each raw response under `bibliography/repository-responses/<source>/` BEFORE parsing it. Raw repository data is precious; never analyze a response you did not save. Waived only per-source when a ToS forbids retention (e.g. Trove — see DECISIONS.md); then record derived facts + attribution instead.
-3. **Never waste a request.** No estimate-only dry-run that pings then discards. Reconnaissance uses the narrowest bounded calls. A "dry run" downloads once, keeps locally, verifies, uploads only if good.
-4. **Verify claims against persisted evidence.** Every fact you put in the search-log must be grep-traceable in a persisted response. An unpersisted snippet is unverifiable — never rest a claim on it.
-5. **Disclose lapses.** If you slip, disclose + remediate in the search-log note (SRCH-00NN): re-fetch through the client, persist, re-verify.
+## The one sanctioned mechanism
 
-## The compliant recipe
+Query every source with a **real browser** (Playwright MCP: `browser_navigate`, `browser_snapshot`, `browser_evaluate`, ...), governed by:
 
-Write a one-off discovery script (scratchpad, NOT committed — per the SRCH-0014/0015 precedent) that: constructs the source's native API/query URL; fetches each via `new HttpClient({ userAgent: '...(research; contact ...)' })`; writes the raw body under `bibliography/repository-responses/<source>/` BEFORE any parsing; prints a compact summary for offline analysis.
+1. **Persist before analysis.** Before reading or parsing anything, save the page's raw content (accessibility snapshot AND/OR full HTML) under `bibliography/repository-responses/<source>/<slug>-<UTC>.{md,html}`. Never analyze a page you did not save. Every fact you later cite MUST be grep-traceable in a persisted capture.
+2. **Frugal.** Narrowest bounded queries; read the result count / first page — do not walk pagination unless the task truly requires it. Never make a query whose result you discard. No estimate-only pings.
+3. **Polite.** One browser session; pace navigations; no paywall/login circumvention; obey each source's ToS. Where a ToS forbids retention (e.g. Trove — DECISIONS.md), persist NOTHING and record only derived facts + attribution instead.
+4. **Close the session** (`browser_close`) when the pass is done.
 
-`WebSearch` is allowed for INITIAL lead-discovery only (finding what/where exists) — never to pull source content, OCR, metadata, or any page you will cite.
+## Forbidden — every other channel, no exceptions
+
+NEVER query a source with any of these. Each is a violation — even "just once", even for a "public GET", even when the browser seems like overkill:
+
+- `curl` / any shell HTTP against a source URL
+- `WebFetch` against a source/repository page
+- `WebSearch` to pull source content, OCR, metadata, or any page you will cite
+- the raw `HttpClient` for a source query
+- an ad-hoc browser call made OUTSIDE this governed persist-first process (a browser peek you do not save is still a violation)
+
+`WebSearch` is permitted for ONE narrow thing: locating that a source exists / its URL. That is not a query against the source, and you may never cite content from the search snippet.
+
+(Bulk asset acquisition — mirroring a public-domain document for the corpus — is the separate shipped acquire pipeline, already Principle-XII-governed. This skill governs QUERIES: search, reconnaissance, metadata, content reads.)
+
+## If the mechanism seems not to fit
+
+That feeling is the hole you keep climbing through. Do NOT improvise another tool. STOP and fix THIS skill (add the governed handling for the new case), then query through it. The mandated mechanism is never the thing you route around.
 
 ## Rationalization table
 
 | Excuse | Reality |
 |--------|---------|
-| "It's a public GET endpoint" | Still a source with finite goodwill; still bypasses the envelope. Route it through the client. |
-| "It's just a quick reconnaissance check" | Reconnaissance is explicitly in scope (Principle XII). Narrowest bounded calls, through the client. |
-| "WebFetch/curl is right there / easier" | Ease is the trap. The client is one small script. |
-| "The source didn't rate-limit me" | You can't predict the trigger — a baseline agent got 403/503 from LoC on a 'quick' pass. |
-| "I'll persist it later" | Persist BEFORE analysis. A response you analyzed but didn't save is unverifiable. |
-| "It's a search engine, not the source" | WebSearch for leads is fine; fetching source CONTENT is not. |
+| "The source is walled — the browser/client can't, so I'll improvise" | The governed real browser IS the wall-clearing mechanism. Use it. If it genuinely cannot, fix the skill — never improvise a side channel. |
+| "It's just a quick reconnaissance check" | Reconnaissance is in scope. One bounded browser query, persisted. |
+| "It's a public GET / the API is cleaner than a browser" | The uniform mechanism removes the tool-choice that keeps producing lapses. Browser, no exceptions. |
+| "A browser is overkill for this one" | "Overkill" is how the exception starts. There are none. |
+| "I'll persist it later" | Persist BEFORE analysis. An unsaved page is unverifiable. |
+| "I just need to verify one claim" | Verifying a claim IS a source query. Governed browser, persisted. |
 
 ## Red flags — STOP
 
-- About to type `curl` against a source URL
-- About to call `WebFetch` on a repository/source page
-- About to call `WebSearch` to pull article / OCR / metadata content
-- About to analyze a response you did not save to disk
-- Telling yourself "just this once, it's a quick check"
+- About to call `WebFetch`, `curl`, `HttpClient`, or `WebSearch`-for-content on a source
+- About to make a browser call without saving the page first
+- Telling yourself the source is walled / the browser is overkill / it's just a quick check
+- About to analyze a page you did not persist
 
-**All of these mean: stop, write the HttpClient script, persist the raw response before analyzing it.**
+**All of these mean: stop, open the governed browser session, persist the raw page, THEN analyze.**
