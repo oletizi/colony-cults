@@ -4,12 +4,14 @@
  * coverage roll-ups. Each card echoes the landing's `.entry` (white bg, hairline
  * `--rule` border, subtle shadow) and carries the page's SIGNATURE, "the stamped
  * gap": oxide (`--oxide`, the archive's critical-marks-only hand) is spent ONLY
- * on missing evidence -- the literal `unknown`, and a `gap` that is `unknown` or
- * a positive count. A `gap` of `0` is fully held and reads `--ink`, never oxide.
- * Everything else -- held/believed counts, lifecycle chips -- stays quiet.
+ * on genuinely-open evidence -- a positive numeric `gap` and an `unexamined`
+ * extent (the not-yet-assessed state; INV-2, specs/011). A measured count and a
+ * `gap` of `0` read quiet `--ink`; an `irreducible` extent (a settled "unbounded"
+ * determination, not an open to-do) reads quiet `--slate` with its basis. The
+ * `knownExtent` basis and `+N adjacent` (corpus-adjacent members) stay quiet too.
  *
  * NO percentage, ratio, or progress bar renders here (design non-negotiable):
- * every gap is a count or the literal word `unknown`.
+ * every gap is a count or a state word (`unexamined` / `irreducible`).
  */
 import type { WorkBundleCoverage } from '@/bibliography/coverage/coverage-model';
 
@@ -67,22 +69,35 @@ const cards = workBundles.map((coverage) => {
 
         <p class="camp__extent">
           <span class="held">{coverage.actualMemberCount} {coverage.actualMemberCount === 1 ? 'member' : 'members'}</span>
+          {coverage.adjacentMemberCount > 0 ? (
+            <>
+              <span class="camp__sep" aria-hidden="true">·</span>
+              <span class="camp__adjacent">+{coverage.adjacentMemberCount} adjacent</span>
+            </>
+          ) : null}
           <span class="camp__sep" aria-hidden="true">·</span>
-          {coverage.knownMemberCount === 'unknown' ? (
-            <>believed extent <span class="unknown">unknown</span></>
+          {coverage.knownExtent.state === 'measured' ? (
+            <>
+              believed extent <span class="held">{coverage.knownExtent.count}</span>
+              <span class="camp__sep" aria-hidden="true">·</span>
+              gap {coverage.gap === 0 ? (
+                <span class="held">0</span>
+              ) : (
+                <span class="gap">{coverage.gap}</span>
+              )}
+            </>
+          ) : coverage.knownExtent.state === 'unexamined' ? (
+            <>believed extent <span class="unknown">unexamined</span></>
           ) : (
-            <>{coverage.knownMemberCount} believed</>
-          )}
-          <span class="camp__sep" aria-hidden="true">·</span>
-          gap {coverage.gap === 0 ? (
-            <span class="held">0</span>
-          ) : (
-            <span class="gap">{coverage.gap}</span>
+            <>believed extent <span class="camp__irreducible">irreducible</span></>
           )}
         </p>
+        {coverage.knownExtent.state !== 'unexamined' ? (
+          <p class="camp__basis">{coverage.knownExtent.basis}</p>
+        ) : null}
 
         {coverage.membersByLifecycleState.length === 0 ? (
-          <p class="camp__empty">No members catalogued yet.</p>
+          <p class="camp__empty">No central members catalogued yet.</p>
         ) : (
           <p class="camp__states">
             {coverage.membersByLifecycleState.map((bucket) => (
@@ -128,8 +143,9 @@ const cards = workBundles.map((coverage) => {
     margin: 0;
   }
 
-  /* The stamped gap: gaps + the literal `unknown` are the only oxide marks.
-     `.held` keeps a fully-held count (and a gap of 0) in quiet ink. */
+  /* The stamped gap: a positive numeric gap and an `unexamined` extent (the
+     not-yet-assessed state, successor to the old `unknown`) are the only oxide
+     marks. `.held` keeps a measured count (and a gap of 0) in quiet ink. */
   .gap {
     color: var(--oxide);
   }
@@ -142,6 +158,27 @@ const cards = workBundles.map((coverage) => {
 
   .held {
     color: var(--ink);
+  }
+
+  /* `irreducible` is a SETTLED determination (the extent is fundamentally
+     unbounded), not an open to-do -- so it stays quiet in --slate, never oxide;
+     its basis line explains why. `+N adjacent` (corpus-adjacent, non-central
+     members) is context, kept quiet. */
+  .camp__irreducible {
+    color: var(--slate);
+  }
+
+  .camp__adjacent {
+    color: var(--faint);
+  }
+
+  .camp__basis {
+    font-family: var(--grote);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--faint);
+    margin: 8px 0 0;
+    max-width: 72ch;
   }
 
   /* One card per work-bundle -- the landing `.entry` shell (white leaf, hairline

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Extent + resolution — mockup</title>
+<style>
+  :root{--paper:#e4e3dd;--ink:#17150f;--vellum:#f3f0e7;--slate:#33404a;--oxide:#9a3324;--rule:#c7c4b8;--faint:#7c7a70;
+    --serif:"Iowan Old Style","Palatino Linotype",Georgia,serif;--didone:"Playfair Display","Didot",Georgia,serif;
+    --grote:"Neue Haas Grotesk Text","Helvetica Neue",Arial,sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;}
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--grote);line-height:1.5}
+  .wrap{max-width:940px;margin:0 auto;padding:48px 28px}
+  .sec__label{display:flex;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--rule)}
+  .sec__count{margin-left:auto;color:var(--faint)}
+  .unknown{color:var(--oxide);font-variant:small-caps;letter-spacing:.06em}
+  .gap{color:var(--oxide)} .held{color:var(--ink)}
+  /* work-bundle card */
+  .camp{padding:22px 24px 18px;border:1px solid var(--rule);background:#fff;box-shadow:0 1px 0 var(--rule),0 18px 38px -32px rgba(23,21,15,.4);margin-bottom:16px}
+  .camp__head{display:flex;align-items:baseline;gap:14px}
+  .camp__title{font-family:var(--didone);font-weight:400;font-size:clamp(22px,3.4vw,30px);line-height:1.06;margin:0}
+  .camp__id{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--faint);white-space:nowrap}
+  .camp__extent{font-family:var(--mono);font-size:13px;color:var(--slate);margin:16px 0 0;padding-top:14px;border-top:1px solid var(--rule)}
+  .camp__sep{color:var(--rule);margin:0 8px}
+  .camp__adjacent{color:var(--faint)}
+  .camp__irreducible{color:var(--slate)}       /* irreducible = settled determination, NOT oxide */
+  .camp__basis{font-family:var(--grote);font-size:12.5px;line-height:1.5;color:var(--faint);margin:8px 0 0;max-width:70ch}
+  .camp__states{font-family:var(--mono);font-size:12px;color:var(--faint);margin:10px 0 0;display:flex;flex-wrap:wrap;gap:6px 14px}
+  .camp__states b{color:var(--ink)}
+  /* register */
+  .reg__group{margin-bottom:26px}
+  .reg__group-h{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--slate);margin:0 0 12px}
+  .reg__entry{padding:12px 0;border-top:1px solid var(--rule);display:grid;grid-template-columns:150px 1fr;gap:4px 18px}
+  .reg__tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+  .reg__tag--open{color:var(--oxide)}          /* only unexamined = open gap */
+  .reg__tag--resolved{color:var(--faint)}
+  .reg__work{font-family:var(--serif);font-size:16px;color:var(--ink);margin:0}
+  .reg__basis{font-family:var(--grote);font-size:13px;color:var(--slate);margin:4px 0 0}
+  .reg__disp{font-family:var(--mono);font-size:11px;color:var(--faint);margin:6px 0 0}
+  .reg__disp a{border-bottom:1px solid var(--rule);text-decoration:none}
+  .reg__disp a:hover{border-bottom-color:var(--oxide);color:var(--oxide)}
+  .reg__owner{font-family:var(--mono);font-size:11px;color:var(--faint);margin:6px 0 0}
+</style></head>
+<body><div class="wrap">
+
+  <!-- WORK-BUNDLE COVERAGE -->
+  <section>
+    <p class="sec__label">Work-bundle coverage<span class="sec__count">2 work-bundles</span></p>
+
+    <!-- PB-P004: extent unexamined (oxide), adjacent 0 -->
+    <article class="camp">
+      <div class="camp__head"><h2 class="camp__title">French trial and legal proceedings relating to the Marquis de Rays</h2><span class="camp__id">PB-P004</span></div>
+      <p class="camp__extent">7 members<span class="camp__sep">·</span>believed extent <span class="unknown">unexamined</span></p>
+      <p class="camp__states"><span><b>6</b> approved for acquisition</span><span><b>1</b> discovered</span></p>
+    </article>
+
+    <!-- PB-P006: extent irreducible (quiet slate + basis), 0 central + 37 adjacent -->
+    <article class="camp">
+      <div class="camp__head"><h2 class="camp__title">New Italy Museum and survivor materials</h2><span class="camp__id">PB-P006</span></div>
+      <p class="camp__extent">0 members<span class="camp__sep">·</span><span class="camp__adjacent">+37 adjacent</span><span class="camp__sep">·</span>believed extent <span class="camp__irreducible">irreducible</span></p>
+      <p class="camp__basis">The New Italy Museum holding is a heterogeneous, changing collection of settler photographs and documents with no stable finite public-domain boundary; the identified public-domain acquisition candidates are named in the suspected leads, but the campaign's extent itself is unbounded.</p>
+      <p class="camp__states"><span>No central members catalogued yet.</span></p>
+    </article>
+
+    <!-- illustrative measured card to check the numeric-gap treatment -->
+    <article class="camp">
+      <div class="camp__head"><h2 class="camp__title">(illustrative measured bundle)</h2><span class="camp__id">PB-Pxxx</span></div>
+      <p class="camp__extent">3 members<span class="camp__sep">·</span>believed extent <span class="held">5</span><span class="camp__sep">·</span>gap <span class="gap">2</span></p>
+      <p class="camp__basis">Basis: a contemporary catalogue lists five items in the series.</p>
+    </article>
+  </section>
+
+  <!-- UNRESOLVED REFERENCES / REGISTER -->
+  <section style="margin-top:44px">
+    <p class="sec__label">Unresolved references<span class="sec__count">1 open · 4 resolved</span></p>
+    <div class="reg__group">
+      <p class="reg__group-h">French trial and legal proceedings · PB-P004</p>
+
+      <!-- OPEN (unexamined) — oxide -->
+      <div class="reg__entry">
+        <span class="reg__tag reg__tag--open">Suspected gap</span>
+        <div>
+          <p class="reg__work">The official French court decisions in the de Rays fraud prosecution (Seine jugement 1884, Cour de Paris arrêt 14 May 1884, cassation).</p>
+          <p class="reg__basis">Distinct from the published pleadings the bundle already holds — these are the courts' own decisions.</p>
+          <p class="reg__owner">owner PB-P004</p>
+        </div>
+      </div>
+
+      <!-- inventoried — resolved, quiet, linked -->
+      <div class="reg__entry">
+        <span class="reg__tag reg__tag--resolved">Inventoried</span>
+        <div>
+          <p class="reg__work">Las Cases appeal pleading for the de Rays defence.</p>
+          <p class="reg__disp">inventoried as <a href="/sources/PB-P008/">PB-P008</a> · 2026-07-13</p>
+          <p class="reg__owner">owner PB-P004</p>
+        </div>
+      </div>
+
+      <!-- unavailable — resolved, quiet -->
+      <div class="reg__entry">
+        <span class="reg__tag reg__tag--resolved">Unavailable</span>
+        <div>
+          <p class="reg__work">Physical Cour de Paris appeal-court case dossier (Archives de Paris / Archives nationales).</p>
+          <p class="reg__disp">unavailable — not digitized; may hold no separately publishable work · 2026-07-14</p>
+          <p class="reg__owner">owner PB-P004</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="reg__group">
+      <p class="reg__group-h">New Italy Museum and survivor materials · PB-P006</p>
+
+      <!-- excluded — resolved, quiet -->
+      <div class="reg__entry">
+        <span class="reg__tag reg__tag--resolved">Excluded</span>
+        <div>
+          <p class="reg__work">Pre-1955 photographs of early New Italy settlement.</p>
+          <p class="reg__disp">excluded — copyright status unresolved for the specific plates located · 2026-07-15</p>
+          <p class="reg__owner">owner PB-P006</p>
+        </div>
+      </div>
+
+      <!-- identified — candidate named, quiet -->
+      <div class="reg__entry">
+        <span class="reg__tag reg__tag--resolved">Identified</span>
+        <div>
+          <p class="reg__work">Survivor account: the Clifford 1889 New Italy sketch.</p>
+          <p class="reg__disp">identified — candidate SLQ ark:/… · 2026-07-16</p>
+          <p class="reg__owner">owner PB-P006</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div></body></html>
