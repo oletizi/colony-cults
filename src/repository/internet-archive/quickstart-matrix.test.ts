@@ -47,7 +47,7 @@ const FULLY_COVERED_ROWS: readonly CoverageRow[] = [
     scenario: 'Resolve ambiguous PDFs -- throws (US5 / FR-003 / SC-006)',
     file: 'adapter.test.ts',
     itTitles: [
-      'throws when the item exposes two equally-eligible page-image PDFs',
+      'throws when the item exposes two Image Container PDF masters (genuine ambiguity)',
       'throws when the item exposes only an OCR-only PDF (no page-image PDF)',
     ],
   },

@@ -65,19 +65,35 @@ function isTifImageSet(file: ItemFile): boolean {
  * format marker) is rejected whenever an eligible page-image PDF exists;
  * if no PDF is page-image-eligible, this throws rather than falling back to
  * an OCR-only file.
+ *
+ * When more than one page-image PDF is eligible, prefer the canonical
+ * page-image master -- the `Image Container PDF` (full-page raster scans) --
+ * over a supplementary `Additional Text PDF`/`Text PDF` (a searchable-text
+ * derivative). Newspaper items commonly carry BOTH; a book typically carries
+ * only one (de Groote: Image Container only; Clifford: Text PDF only). This
+ * preference is a principled selection rule, not a guess. Only when the
+ * preference cannot single out exactly one master -- several eligible PDFs
+ * with zero or multiple `Image Container PDF`s -- is the choice genuinely
+ * ambiguous, and the selection fails loud (IA-INV-A).
  */
 function selectPdf(files: readonly ItemFile[]): ItemFile {
   const pdfFiles = files.filter(isPdfFile);
   const eligible = pdfFiles.filter((file) => !isRestricted(file) && isPageImagePdf(file));
 
-  if (eligible.length > 1) {
-    throw new Error(
-      'selectSourceFiles: ambiguous page-image PDF selection -- multiple equally-eligible PDFs found: ' +
-        eligible.map((file) => `${file.name} (${file.format})`).join(', '),
-    );
-  }
   if (eligible.length === 1) {
     return eligible[0];
+  }
+
+  if (eligible.length > 1) {
+    const imageContainers = eligible.filter((file) => file.format.includes('Image Container PDF'));
+    if (imageContainers.length === 1) {
+      return imageContainers[0];
+    }
+    throw new Error(
+      'selectSourceFiles: ambiguous page-image PDF selection -- multiple equally-eligible PDFs found ' +
+        'with no single "Image Container PDF" master to prefer: ' +
+        eligible.map((file) => `${file.name} (${file.format})`).join(', '),
+    );
   }
 
   if (pdfFiles.length === 0) {

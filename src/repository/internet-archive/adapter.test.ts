@@ -80,10 +80,9 @@ function fixtureFiles(): unknown[] {
 
 /**
  * A synthetic response, otherwise identical to the real de Groote fixture, whose
- * `files[]` carries TWO equally-eligible page-image PDFs (the real item's
- * `Image Container PDF` plus a second, synthetic `Text PDF`) -- both marked
- * eligible by `selectSourceFiles`' `PAGE_IMAGE_PDF_FORMAT_MARKERS`, so selection
- * is ambiguous (FR-003 / SC-006 / IA-INV-A).
+ * `files[]` carries TWO `Image Container PDF` masters (the real item's plus a
+ * synthetic second one). The Image-Container preference cannot single one out,
+ * so selection is genuinely ambiguous and fails loud (FR-003 / SC-006 / IA-INV-A).
  */
 function ambiguousPdfResponse(): string {
   const parsed: unknown = JSON.parse(FIXTURE_TEXT);
@@ -92,10 +91,28 @@ function ambiguousPdfResponse(): string {
   }
   const extraPdf = {
     name: `${ITEM_ID}_alt.pdf`,
-    format: 'Text PDF',
+    format: 'Image Container PDF',
     source: 'derivative',
   };
   return JSON.stringify({ ...parsed, files: [...fixtureFiles(), extraPdf] });
+}
+
+/**
+ * A synthetic response with the NEWSPAPER shape: the real `Image Container PDF`
+ * master plus a supplementary `Additional Text PDF` overlay. `selectSourceFiles`
+ * prefers the Image Container master, so `resolve` SUCCEEDS (no false ambiguity).
+ */
+function newspaperShapeResponse(): string {
+  const parsed: unknown = JSON.parse(FIXTURE_TEXT);
+  if (!isRecord(parsed)) {
+    throw new Error('test setup: fixture did not parse to an object');
+  }
+  const textPdf = {
+    name: `${ITEM_ID}_text.pdf`,
+    format: 'Additional Text PDF',
+    source: 'derivative',
+  };
+  return JSON.stringify({ ...parsed, files: [...fixtureFiles(), textPdf] });
 }
 
 /**
@@ -193,9 +210,17 @@ describe('InternetArchiveAdapter.resolve -- file-select failures surfaced end-to
   // -- not just the module underneath it -- using the real fixture's shape plus one
   // crafted `files[]` entry, via the same fake-`ArchiveHttpClient` pattern used above.
 
-  it('throws when the item exposes two equally-eligible page-image PDFs', async () => {
+  it('throws when the item exposes two Image Container PDF masters (genuine ambiguity)', async () => {
     const adapter = new InternetArchiveAdapter({ client: fakeClient(ambiguousPdfResponse()) });
     await expect(adapter.resolve(LOCATOR, {})).rejects.toThrow(/ambiguous/i);
+  });
+
+  it('prefers the Image Container master over an Additional Text PDF (newspaper shape)', async () => {
+    const adapter = new InternetArchiveAdapter({ client: fakeClient(newspaperShapeResponse()) });
+    const item = await adapter.resolve(LOCATOR, {});
+    const pdfLocator = item.assetLocators.find((a) => a.role === 'pdf');
+    expect(pdfLocator?.url).toContain(`${ITEM_ID}.pdf`);
+    expect(pdfLocator?.url).not.toContain('_text.pdf');
   });
 
   it('throws when the item exposes only an OCR-only PDF (no page-image PDF)', async () => {

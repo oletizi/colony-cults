@@ -56,10 +56,35 @@ describe('selectSourceFiles -- real fixture metadata-nouvellefrancec00groogoog.j
 });
 
 describe('selectSourceFiles -- crafted ambiguity/absence cases', () => {
-  it('throws when two equally-eligible page-image PDFs exist', () => {
+  it('prefers the Image Container PDF over an Additional Text PDF when both exist (newspaper shape)', () => {
     const files: ItemFile[] = [
       { name: 'item.pdf', format: 'Image Container PDF', source: 'original' },
-      { name: 'item_alt.pdf', format: 'Text PDF', source: 'derivative' },
+      { name: 'item_text.pdf', format: 'Additional Text PDF', source: 'derivative' },
+    ];
+    const selected = selectSourceFiles(files);
+    expect(selected.pdf.name).toBe('item.pdf');
+    expect(selected.pdf.format).toBe('Image Container PDF');
+  });
+
+  it('accepts a lone Text PDF as the page-image master (Clifford shape)', () => {
+    const files: ItemFile[] = [
+      { name: 'item_text.pdf', format: 'Text PDF', source: 'derivative' },
+    ];
+    expect(selectSourceFiles(files).pdf.name).toBe('item_text.pdf');
+  });
+
+  it('still throws when two eligible PDFs exist but neither is an Image Container master', () => {
+    const files: ItemFile[] = [
+      { name: 'a_text.pdf', format: 'Text PDF', source: 'derivative' },
+      { name: 'b_text.pdf', format: 'Additional Text PDF', source: 'derivative' },
+    ];
+    expect(() => selectSourceFiles(files)).toThrow(/ambiguous/i);
+  });
+
+  it('still throws when two Image Container PDFs exist (genuine ambiguity)', () => {
+    const files: ItemFile[] = [
+      { name: 'a.pdf', format: 'Image Container PDF', source: 'original' },
+      { name: 'b.pdf', format: 'Image Container PDF', source: 'derivative' },
     ];
     expect(() => selectSourceFiles(files)).toThrow(/ambiguous/i);
   });
