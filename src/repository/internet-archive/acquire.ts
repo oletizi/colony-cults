@@ -301,7 +301,7 @@ async function produceMasters(params: {
   });
   const masters: ProducedMaster[] = imageSetMasters.map((master) => ({
     logicalPage: master.logicalPage,
-    filePath: master.jpegPath,
+    filePath: master.pngPath,
     sourceUrl: imageSetUrl,
     provenance: master.provenance,
   }));
@@ -340,7 +340,7 @@ async function assembleUploadItems(params: {
     const key = pageMasterObjectKey(itemId, master.logicalPage, checksum);
     const asset: AcquiredAsset = {
       sourceUrl: master.sourceUrl,
-      mediaType: 'image/jpeg',
+      mediaType: 'image/png',
       objectStoreKey: key,
       checksum,
       byteLength: bytes.byteLength,
@@ -348,7 +348,7 @@ async function assembleUploadItems(params: {
       role: 'page-master',
       sequence: master.logicalPage,
     };
-    items.push({ asset, bytes, contentType: 'image/jpeg' });
+    items.push({ asset, bytes, contentType: 'image/png' });
   }
   return items;
 }

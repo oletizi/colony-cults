@@ -166,12 +166,18 @@ export class PopplerRunnerImpl implements PopplerRunner {
   }
 
   async extractImage(pdfPath: string, page: number, outPrefix: string): Promise<void> {
+    // `-png`, NOT `-all`: `-all` preserves the embedded encoding, which for a
+    // Google bitonal scan is JBIG2 -- pdfimages then writes raw `.jb2e`/`.jb2g`
+    // streams that no viewer can open. `-png` decodes the embedded image to a
+    // viewable, PIXEL-EXACT (lossless) PNG at the image's native resolution --
+    // a 1-bit PNG for a bitonal scan, RGB for a color image. No re-sampling, no
+    // lossy transcode.
     await runOrThrow(this.run, 'pdfimages', [
       '-f',
       String(page),
       '-l',
       String(page),
-      '-all',
+      '-png',
       pdfPath,
       outPrefix,
     ]);

@@ -180,7 +180,7 @@ describe('sourceObjectKey', () => {
 describe('pageMasterObjectKey', () => {
   it('produces the exact documented page-master key', () => {
     expect(pageMasterObjectKey('nouvellefrancec00groogoog', 12, 'deadbeef')).toBe(
-      'archive/internet-archive/nouvellefrancec00groogoog/pages/12-deadbeef.jpg',
+      'archive/internet-archive/nouvellefrancec00groogoog/pages/12-deadbeef.png',
     );
   });
 });

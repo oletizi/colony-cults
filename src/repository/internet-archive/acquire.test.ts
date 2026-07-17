@@ -304,7 +304,7 @@ describe('acquire -- happy path (PDF, faithful fidelity)', () => {
     expect(source).toHaveLength(1);
     expect(pageMasters).toHaveLength(5);
     expect(source[0].mediaType).toBe('application/pdf');
-    expect(pageMasters.every((a) => a.mediaType === 'image/jpeg')).toBe(true);
+    expect(pageMasters.every((a) => a.mediaType === 'image/png')).toBe(true);
     expect(pageMasters.map((a) => a.sequence)).toEqual([1, 2, 3, 4, 5]);
 
     // Exactly one PUT per asset (nothing pre-existing in this store).
@@ -445,7 +445,7 @@ describe('acquire -- fidelity image-set branch (FR-009 / US5 AC-2)', () => {
 
     const pageMasters = result.assets.filter((a) => a.role === 'page-master');
     expect(pageMasters).toHaveLength(5);
-    expect(pageMasters.every((a) => a.mediaType === 'image/jpeg')).toBe(true);
+    expect(pageMasters.every((a) => a.mediaType === 'image/png')).toBe(true);
     expect(puts).toHaveLength(6);
   });
 });

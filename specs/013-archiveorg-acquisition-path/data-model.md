@@ -112,9 +112,9 @@ export function isAcquiredAssetRole(v: string): v is AcquiredAssetRole { /* ... 
 > loud on an unknown value — the value-channel the narrowing opened.
 
 Per acquisition: exactly one `repository-source` asset (mediaType `application/pdf`) + N `page-master`
-assets (mediaType `image/jpeg`, `sequence` = logical page order). Downstream corpus tools consume only
-`page-master` assets. Each master additionally carries **per-page method provenance** on its
-`provenancePath` record (below).
+assets (mediaType `image/png` — **lossless**, no lossy transcode of the archival scans; `sequence` =
+logical page order). Downstream corpus tools consume only `page-master` assets. Each master additionally
+carries **per-page method provenance** on its `provenancePath` record (below).
 
 ### Per-page method provenance (recorded on each `page-master`'s provenance record)
 
@@ -122,13 +122,17 @@ assets (mediaType `image/jpeg`, `sequence` = logical page order). Downstream cor
 export interface PageMethodProvenance {
   leaf: number;                        // source-PDF leaf index
   logicalPage: number;                 // reading order (== AcquiredAsset.sequence)
-  method: 'pdfimages-lossless' | 'pdftoppm-rasterised';
-  sourcePdfObject?: string;            // when pdfimages-lossless — the image object id
-  resolutionDpi?: number;              // when pdftoppm-rasterised — the DPI used
+  method: 'pdfimages-lossless' | 'pdftoppm-rasterised' | 'image-set-png';
+  sourcePdfObject?: string;            // when pdfimages-lossless — the image object id (decoded to PNG via `pdfimages -png`)
+  resolutionDpi?: number;              // when pdftoppm-rasterised — the DPI used (from the embedded image x-ppi)
+  sourceImage?: string;                // when image-set-png — the source zip entry name
 }
 ```
 
-Exactly one of `sourcePdfObject` / `resolutionDpi` is set per the method (fail loud otherwise).
+The method-keyed field is set per the method (fail loud otherwise). All masters are lossless PNG:
+single-image pages are decoded pixel-exact (`pdfimages -png`, a 1-bit PNG for bitonal scans); multi-image
+/ composite pages are rendered at their native resolution (`pdftoppm -png` at the embedded image's
+`x-ppi`); the image-set fallback converts each scan image to PNG. No lossy transcode.
 
 ### Metadata snapshot (reuse `src/sourcegroup/snapshot.ts`)
 
@@ -164,7 +168,7 @@ Mirrors the museum layout (`archive/museum/new-italy-museum/<accession>/…`):
 
 ```text
 archive/internet-archive/<item-id>/source/<sha256>.pdf              # repository-source
-archive/internet-archive/<item-id>/pages/<logicalPage>-<sha256>.jpg # page-master (one per approved page)
+archive/internet-archive/<item-id>/pages/<logicalPage>-<sha256>.png # page-master (one per approved page)
 ```
 
 ## Validation rules (test targets)

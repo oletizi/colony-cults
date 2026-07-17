@@ -5,7 +5,7 @@
  * This is the fallback master path taken when the fidelity probe judged the
  * staged source PDF materially degraded: instead of extracting/rasterising
  * from the PDF, a staged full-resolution scan-image set (`<id>_tif.zip` or
- * `<id>_jp2.zip`) is exploded into per-page JPEG masters for the approved leaf
+ * `<id>_jp2.zip`) is exploded into per-page PNG masters for the approved leaf
  * range.
  *
  * NO real `unzip` / `magick` process is ever spawned: every test injects FAKE
@@ -72,7 +72,7 @@ async function seedExtractedImages(
 }
 
 describe('explodeImageSet — happy path (US5 AC-2)', () => {
-  it('explodes a 3-leaf approved range into 3 per-page JPEG masters with image-set-jpeg provenance', async () => {
+  it('explodes a 3-leaf approved range into 3 per-page PNG masters with image-set-png provenance', async () => {
     await seedExtractedImages(ITEM, 'tif', [3, 4, 5]);
     const unzipCalls: RecordedCall[] = [];
     const convertCalls: RecordedCall[] = [];
@@ -96,9 +96,9 @@ describe('explodeImageSet — happy path (US5 AC-2)', () => {
       [5, 3],
     ]);
 
-    // Every master carries image-set-jpeg provenance with the zero-padded source entry name.
+    // Every master carries image-set-png provenance with the zero-padded source entry name.
     for (const master of masters) {
-      expect(master.provenance.method).toBe('image-set-jpeg');
+      expect(master.provenance.method).toBe('image-set-png');
       expect(master.provenance.sourcePdfObject).toBeUndefined();
       expect(master.provenance.resolutionDpi).toBeUndefined();
       expect(master.provenance.leaf).toBe(master.leaf);
@@ -121,14 +121,14 @@ describe('explodeImageSet — happy path (US5 AC-2)', () => {
     expect(convertCalls[0].command).toBe('magick');
     expect(convertCalls[0].args).toEqual([
       join(outDir, `${ITEM}_tif`, `${ITEM}_0003.tif`),
-      join(outDir, 'pages', '1.jpg'),
+      join(outDir, 'pages', '1.png'),
     ]);
     expect(convertCalls[2].args).toEqual([
       join(outDir, `${ITEM}_tif`, `${ITEM}_0005.tif`),
-      join(outDir, 'pages', '3.jpg'),
+      join(outDir, 'pages', '3.png'),
     ]);
-    expect(masters[0].jpegPath).toBe(join(outDir, 'pages', '1.jpg'));
-    expect(masters[2].jpegPath).toBe(join(outDir, 'pages', '3.jpg'));
+    expect(masters[0].pngPath).toBe(join(outDir, 'pages', '1.png'));
+    expect(masters[2].pngPath).toBe(join(outDir, 'pages', '3.png'));
   });
 
   it('handles a jp2 image set with the .jp2 extension', async () => {

@@ -56,11 +56,11 @@ export interface ExcludedLeaf {
  *     object id) — the PDF lossless-extraction path;
  *   - `pdftoppm-rasterised` carries `resolutionDpi` (the DPI used to rasterise
  *     the page) — the PDF rasterise path;
- *   - `image-set-jpeg` carries `sourceImage` (the zip entry name the master
+ *   - `image-set-png` carries `sourceImage` (the zip entry name the master
  *     was converted from) — the fidelity-triggered image-set fallback path
  *     (FR-009 / US5 AC-2), taken when the fidelity probe judged the source PDF
  *     materially degraded and a full-resolution scan-image set is exploded
- *     into per-page JPEG masters instead.
+ *     into per-page PNG masters instead.
  *
  * See specs/013-archiveorg-acquisition-path/data-model.md § Per-page method provenance.
  */
@@ -70,11 +70,11 @@ export interface PageMethodProvenance {
   /** Reading order (== `AcquiredAsset.sequence`). */
   logicalPage: number;
   /** How the page-master image was produced. */
-  method: 'pdfimages-lossless' | 'pdftoppm-rasterised' | 'image-set-jpeg';
+  method: 'pdfimages-lossless' | 'pdftoppm-rasterised' | 'image-set-png';
   /** Set when `method` is `pdfimages-lossless`: the extracted image object id. */
   sourcePdfObject?: string;
   /** Set when `method` is `pdftoppm-rasterised`: the DPI used to rasterise the page. */
   resolutionDpi?: number;
-  /** Set when `method` is `image-set-jpeg`: the source image-set zip entry name. */
+  /** Set when `method` is `image-set-png`: the source image-set zip entry name. */
   sourceImage?: string;
 }

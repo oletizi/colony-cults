@@ -5,7 +5,7 @@
  * This is the path taken when the fidelity probe judged the staged source PDF
  * MATERIALLY DEGRADED: rather than extracting/rasterising page-masters from the
  * degraded PDF, we explode a staged full-resolution scan-image SET into per-page
- * JPEG masters for the operator-approved leaf range.
+ * PNG masters for the operator-approved leaf range.
  *
  * A sibling module fetches the image-set zip to a staged path; THIS module takes
  * that `zipPath` and never fetches anything.
@@ -30,7 +30,7 @@
  *
  * COMPOSITION + DI (Principle VI): the two external tools this module needs —
  * `unzip` (extract the archive) and `magick`/`convert` (ImageMagick, TIFF/JP2 →
- * JPEG) — are shelled out to ONLY through injected {@link CommandRunner}s, the
+ * PNG) — are shelled out to ONLY through injected {@link CommandRunner}s, the
  * same runner shape `@/pdf/poppler/runner` uses over `@/ocr/exec`'s
  * `execCommand`. Tests inject fakes and spawn NO real process.
  *
@@ -49,15 +49,15 @@ import type { ExecResult } from '@/ocr/exec';
 import type { CommandRunner } from '@/pdf/poppler/runner';
 import type { LeafRange, PageMethodProvenance } from '@/model/quality-assessment';
 
-/** One produced per-page JPEG master, with its source leaf, reading order, and provenance. */
+/** One produced per-page PNG master, with its source leaf, reading order, and provenance. */
 export interface ImageSetMaster {
   /** 1-based source leaf this master was produced from. */
   leaf: number;
   /** Reading order within the approved range (1..N == `AcquiredAsset.sequence`). */
   logicalPage: number;
-  /** Absolute path to the converted per-page JPEG master under `<outDir>/pages`. */
-  jpegPath: string;
-  /** How the master was produced: always `image-set-jpeg`, carrying `sourceImage`. */
+  /** Absolute path to the converted per-page PNG master under `<outDir>/pages`. */
+  pngPath: string;
+  /** How the master was produced: always `image-set-png`, carrying `sourceImage`. */
   provenance: PageMethodProvenance;
 }
 
@@ -71,7 +71,7 @@ export interface ExplodeImageSetParams {
   approvedRange: LeafRange;
   /** Which set was selected: `tif` (`<id>_tif.zip`) or `jp2` (`<id>_jp2.zip`). */
   extension: 'tif' | 'jp2';
-  /** Staging directory the extracted images + converted `pages/<n>.jpg` land under. */
+  /** Staging directory the extracted images + converted `pages/<n>.png` land under. */
   outDir: string;
   /** Injected `unzip` runner (tests inject a fake; the real impl composes `execCommand`). */
   unzip: CommandRunner;
@@ -117,7 +117,7 @@ function entryName(itemId: string, extension: 'tif' | 'jp2', leaf: number): stri
 }
 
 /**
- * Explode a staged image-set archive into per-page JPEG masters for
+ * Explode a staged image-set archive into per-page PNG masters for
  * `approvedRange`. See the module header for the layout convention + fail-loud
  * rules.
  */
@@ -137,7 +137,7 @@ export async function explodeImageSet(
   // Extract the archive into the staging dir (one invocation).
   await runOrThrow(unzip, UNZIP, ['-o', zipPath, '-d', outDir]);
 
-  // Per-page JPEG masters land under <outDir>/pages.
+  // Per-page PNG masters land under <outDir>/pages.
   const pagesDir = join(outDir, 'pages');
   await mkdir(pagesDir, { recursive: true });
 
@@ -159,16 +159,19 @@ export async function explodeImageSet(
       );
     }
 
-    const jpegPath = join(pagesDir, `${logicalPage}.jpg`);
-    await runOrThrow(convert, MAGICK, [inputPath, jpegPath]);
+    // Lossless PNG master (no lossy transcode of the archival scan). ImageMagick
+    // decodes the TIFF/JP2 and writes PNG; for a bitonal scan this is a small
+    // 1-bit PNG, for a photographic page a full-depth PNG.
+    const pngPath = join(pagesDir, `${logicalPage}.png`);
+    await runOrThrow(convert, MAGICK, [inputPath, pngPath]);
 
     const provenance: PageMethodProvenance = {
       leaf,
       logicalPage,
-      method: 'image-set-jpeg',
+      method: 'image-set-png',
       sourceImage: entry,
     };
-    masters.push({ leaf, logicalPage, jpegPath, provenance });
+    masters.push({ leaf, logicalPage, pngPath, provenance });
   }
 
   if (masters.length !== expectedCount) {

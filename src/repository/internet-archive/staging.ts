@@ -164,9 +164,12 @@ export function sourceObjectKey(itemId: string, sha256: string): string {
 }
 
 /**
- * The object-store key for one page-master image, per data-model.md §
- * "Object-store key layout":
- * `archive/internet-archive/<item-id>/pages/<logicalPage>-<sha256>.jpg`.
+ * The object-store key for one page-master image:
+ * `archive/internet-archive/<item-id>/pages/<logicalPage>-<sha256>.png`.
+ *
+ * Masters are lossless PNG (pixel-exact decoded scans -- no lossy transcode of
+ * archival originals; a 1-bit PNG is both more faithful and smaller than JPEG
+ * for the bitonal text scans these items are).
  */
 export function pageMasterObjectKey(itemId: string, logicalPage: number, sha256: string): string {
   if (itemId.trim().length === 0) {
@@ -180,5 +183,5 @@ export function pageMasterObjectKey(itemId: string, logicalPage: number, sha256:
   if (sha256.trim().length === 0) {
     throw new Error('pageMasterObjectKey: sha256 is required.');
   }
-  return `${KEY_PREFIX}/${itemId}/pages/${logicalPage}-${sha256}.jpg`;
+  return `${KEY_PREFIX}/${itemId}/pages/${logicalPage}-${sha256}.png`;
 }

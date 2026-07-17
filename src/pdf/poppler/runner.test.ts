@@ -166,14 +166,14 @@ describe('PopplerRunnerImpl.info', () => {
 });
 
 describe('PopplerRunnerImpl.extractImage', () => {
-  it('invokes pdfimages with -f/-l/-all for a single page, lossless extraction', async () => {
+  it('invokes pdfimages with -f/-l/-png for a single page, lossless decoded extraction', async () => {
     const { run, calls } = fakeRunner({ stdout: '', stderr: '', exitCode: 0 });
     const runner = new PopplerRunnerImpl(run);
 
     await runner.extractImage('/path/to/doc.pdf', 3, '/out/doc-p3');
 
     expect(calls).toEqual([
-      { command: 'pdfimages', args: ['-f', '3', '-l', '3', '-all', '/path/to/doc.pdf', '/out/doc-p3'] },
+      { command: 'pdfimages', args: ['-f', '3', '-l', '3', '-png', '/path/to/doc.pdf', '/out/doc-p3'] },
     ]);
   });
 
