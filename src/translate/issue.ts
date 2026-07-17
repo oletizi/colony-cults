@@ -370,7 +370,10 @@ export async function translateIssue(
 
     try {
       // Both passes must succeed before either artifact is written (FR-013).
-      const corrected = await cleanupPage(ctx.engine, pages[i - 1], model);
+      // This pipeline is French-source (cleanup -> FR->EN translate, emitting
+      // issue.fr.txt/issue.en.txt), so cleanup stays in French; generalizing
+      // the pipeline's source language is separate, larger work.
+      const corrected = await cleanupPage(ctx.engine, pages[i - 1], 'French', model);
       const english = await translatePage(ctx.engine, corrected, model);
       await persist(corrected, frPath, base, 'corrected-french', model, ctx);
       await persist(english, enPath, base, 'english', model, ctx);

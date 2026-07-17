@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cleanupPage } from '@/translate/cleanup';
+import { cleanupPage, buildCleanupInstruction } from '@/translate/cleanup';
 import type { TranslationEngine } from '@/engine/types';
 import { TRANSFORMATION_SYSTEM_PROMPT } from '@/claude/client';
 
@@ -42,7 +42,7 @@ describe('cleanupPage (T014)', () => {
   it('returns the fake claude client output', async () => {
     const { claude } = fakeClaudeCli('Ceci est un exemple de texte OCR brutal avec des coupures de lignes.');
 
-    const result = await cleanupPage(claude, rawText, 'some-model');
+    const result = await cleanupPage(claude, rawText, 'French', 'some-model');
 
     expect(result).toBe(
       'Ceci est un exemple de texte OCR brutal avec des coupures de lignes.',
@@ -52,7 +52,7 @@ describe('cleanupPage (T014)', () => {
   it('forwards the raw page text unchanged as sourceText and forwards the model', async () => {
     const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
-    await cleanupPage(claude, rawText, 'some-model');
+    await cleanupPage(claude, rawText, 'French', 'some-model');
 
     expect(calls).toHaveLength(1);
     expect(calls[0].sourceText).toBe(rawText);
@@ -62,7 +62,7 @@ describe('cleanupPage (T014)', () => {
   it('omits the model when none is given', async () => {
     const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
-    await cleanupPage(claude, rawText);
+    await cleanupPage(claude, rawText, 'French');
 
     expect(calls[0].model).toBeUndefined();
   });
@@ -70,7 +70,7 @@ describe('cleanupPage (T014)', () => {
   it('builds a prompt instructing dehyphenation of line-broken words', async () => {
     const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
-    await cleanupPage(claude, rawText);
+    await cleanupPage(claude, rawText, 'French');
 
     expect(calls[0].prompt).toMatch(/dehyphenate/i);
   });
@@ -78,7 +78,7 @@ describe('cleanupPage (T014)', () => {
   it('builds a prompt instructing joining broken lines into natural paragraphs', async () => {
     const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
-    await cleanupPage(claude, rawText);
+    await cleanupPage(claude, rawText, 'French');
 
     expect(calls[0].prompt).toMatch(/join.*lines?/i);
   });
@@ -86,7 +86,7 @@ describe('cleanupPage (T014)', () => {
   it('builds a prompt instructing repair of obvious OCR scan errors', async () => {
     const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
-    await cleanupPage(claude, rawText);
+    await cleanupPage(claude, rawText, 'French');
 
     expect(calls[0].prompt).toMatch(/scan error/i);
   });
@@ -94,7 +94,7 @@ describe('cleanupPage (T014)', () => {
   it('builds a prompt instructing removal of OCR condition/artifact markers', async () => {
     const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
-    await cleanupPage(claude, rawText);
+    await cleanupPage(claude, rawText, 'French');
 
     expect(calls[0].prompt).toMatch(/condition marker/i);
   });
@@ -102,7 +102,7 @@ describe('cleanupPage (T014)', () => {
   it('builds a prompt that requires faithfulness -- no translate/summarize/add/remove', async () => {
     const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
-    await cleanupPage(claude, rawText);
+    await cleanupPage(claude, rawText, 'French');
 
     expect(calls[0].prompt).toMatch(/do not translate/i);
     expect(calls[0].prompt).toMatch(/faithful/i);
@@ -111,7 +111,7 @@ describe('cleanupPage (T014)', () => {
   it('builds a prompt that requires outputting only the corrected French text', async () => {
     const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
-    await cleanupPage(claude, rawText);
+    await cleanupPage(claude, rawText, 'French');
 
     expect(calls[0].prompt).toMatch(/corrected french text and nothing else/i);
     expect(calls[0].prompt).toMatch(/no preamble/i);
@@ -120,9 +120,50 @@ describe('cleanupPage (T014)', () => {
   it('appends the output-only transformation system prompt', async () => {
     const { claude, calls } = fakeClaudeCli(CANNED_FR);
 
-    await cleanupPage(claude, rawText, 'some-model');
+    await cleanupPage(claude, rawText, 'French', 'some-model');
 
     expect(calls[0].systemPrompt).toBe(TRANSFORMATION_SYSTEM_PROMPT);
     expect(calls[0].systemPrompt).toMatch(/never write any preamble/i);
+  });
+
+  it('threads the language through to the built instruction', async () => {
+    const { claude, calls } = fakeClaudeCli(CANNED_FR);
+
+    await cleanupPage(claude, rawText, 'English');
+
+    expect(calls[0].prompt).toContain('raw English OCR');
+    expect(calls[0].prompt).not.toContain('French');
+  });
+});
+
+describe('buildCleanupInstruction', () => {
+  it('templates the source language into the instruction (English)', () => {
+    const en = buildCleanupInstruction('English');
+    expect(en).toContain('raw English OCR');
+    expect(en).toContain('faithful English transcription');
+    expect(en).toContain('corrected English text');
+    // No other language leaks in -- the pass must stay in the source language.
+    expect(en).not.toContain('French');
+    expect(en).not.toContain('Italian');
+  });
+
+  it('works for Italian without leaking other languages', () => {
+    const italian = buildCleanupInstruction('Italian');
+    expect(italian).toContain('faithful Italian transcription');
+    expect(italian).not.toContain('English');
+    expect(italian).not.toContain('French');
+  });
+
+  it('preserves the existing French behaviour', () => {
+    expect(buildCleanupInstruction('French')).toContain('faithful French transcription');
+  });
+
+  it('trims surrounding whitespace in the language', () => {
+    expect(buildCleanupInstruction('  English  ')).toContain('raw English OCR');
+  });
+
+  it('throws on an empty/whitespace language (no default)', () => {
+    expect(() => buildCleanupInstruction('   ')).toThrow(/language is required/);
+    expect(() => buildCleanupInstruction('')).toThrow(/language is required/);
   });
 });
