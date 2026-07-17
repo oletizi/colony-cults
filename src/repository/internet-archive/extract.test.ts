@@ -13,7 +13,10 @@
  * `.../overlay-page.pdf`) exercised by `src/pdf/poppler/runner.test.ts`.
  */
 
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { PageImageInfo, PopplerRunner } from '@/pdf/poppler/runner';
 import type { ScandataLeaf } from '@/repository/internet-archive/scandata';
 import { extractPages } from '@/repository/internet-archive/extract';
@@ -71,7 +74,10 @@ function scanLeaf(leafNum: number, pageType = 'Normal'): ScandataLeaf {
 }
 
 const PDF = '/staging/nouvellefrancec00groogoog.pdf';
-const OUT = '/staging/pages';
+// A real writable dir: extractPages now mkdir's its outDir (the poppler writers
+// need it to exist), so a fake path like "/staging/pages" no longer works.
+const OUT = join(mkdtempSync(join(tmpdir(), 'ia-extract-test-')), 'pages');
+afterEach(() => rmSync(OUT, { recursive: true, force: true }));
 
 describe('extractPages -- T038: single page-covering image → pdfimages-lossless', () => {
   it('routes three single-covering leaves to lossless extraction with sourcePdfObject provenance', async () => {
@@ -174,6 +180,49 @@ describe('extractPages -- T039: overlay / multi / inset page → pdftoppm-raster
     expect(calls).toEqual([
       { fn: 'rasterise', pdfPath: PDF, page: 7, dpi: 300, outPrefix: result.pages[0].outputPath },
     ]);
+  });
+});
+
+describe('extractPages -- rasterise DPI comes from the embedded image resolution, not scandata page size', () => {
+  it('rasterises at the largest embedded-image x-ppi (native scan resolution), overriding a misleading scandata page size', async () => {
+    // The real de Groote case: a page holds a 600-DPI bitonal scan (3180x5114)
+    // PLUS a small color image -> two rows -> rasterise. The scandata page size
+    // for that leaf (here a deliberately-misleading small 1010x1438) would derive
+    // ~131 DPI and DOWNSAMPLE the 600-DPI scan ~5x. The x-ppi from pdfimages must
+    // win so the master is rendered at the scan's true resolution.
+    const rows: PageImageInfo[] = [
+      { page: 4, num: 0, width: 3180, height: 5114, objectId: '19', xPpi: 600 },
+      { page: 4, num: 1, width: 414, height: 566, objectId: '20', xPpi: 150 },
+    ];
+    const { poppler, calls } = fakePoppler(rows);
+
+    const result = await extractPages({
+      pdfPath: PDF,
+      approvedRange: { start: 4, end: 4 },
+      scanLeaves: [{ leafNum: 4, pageType: 'Normal', width: 1010, height: 1438 }],
+      outDir: OUT,
+      poppler,
+    });
+
+    expect(result.pages[0].provenance.method).toBe('pdftoppm-rasterised');
+    expect(result.pages[0].provenance.resolutionDpi).toBe(600); // max x-ppi, NOT 131 from scandata
+    expect(calls.map((c) => [c.fn, c.page, c.dpi])).toEqual([['rasterise', 4, 600]]);
+  });
+
+  it('falls back to the scandata-derived DPI when no image reports an x-ppi', async () => {
+    const rows: PageImageInfo[] = [
+      { page: 4, num: 0, width: 3180, height: 5114, objectId: '19' }, // no xPpi
+      { page: 4, num: 1, width: 414, height: 566, objectId: '20' },
+    ];
+    const { poppler } = fakePoppler(rows);
+    const result = await extractPages({
+      pdfPath: PDF,
+      approvedRange: { start: 4, end: 4 },
+      scanLeaves: [scanLeaf(4)], // longest edge 3300 → 300 DPI
+      outDir: OUT,
+      poppler,
+    });
+    expect(result.pages[0].provenance.resolutionDpi).toBe(300);
   });
 });
 

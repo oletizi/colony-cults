@@ -35,6 +35,7 @@
  * process itself.
  */
 
+import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { PageImageInfo, PopplerRunner } from '@/pdf/poppler/runner';
 import type {
@@ -120,10 +121,22 @@ function scanLongestEdge(dims: ScandataLeaf | undefined): number | undefined {
 }
 
 /**
- * Native rasterise DPI derived from the recorded scan dimensions, or the
- * {@link DEFAULT_RASTER_DPI} fallback when the leaf has no usable dimensions.
+ * Native rasterise DPI for a page. PREFERS the actual embedded-image resolution
+ * that poppler reports (`pdfimages -list`'s `x-ppi`, the largest across the
+ * page's images) -- so a Google-style page whose 600-DPI scan is stored as one
+ * image is rasterised at ~600 DPI, not downsampled. This is the authoritative
+ * source because it is measured from the image bytes themselves; the recorded
+ * `scandata` page size is only a fallback (it can disagree with the embedded
+ * image, as the de Groote item's leaf 4 does). Falls back to the scandata-
+ * derived DPI, then to {@link DEFAULT_RASTER_DPI}, when no ppi is reported.
  */
-function deriveNativeDpi(dims: ScandataLeaf | undefined): number {
+function deriveNativeDpi(rows: readonly PageImageInfo[], dims: ScandataLeaf | undefined): number {
+  const ppis = rows
+    .map((row) => row.xPpi)
+    .filter((value): value is number => typeof value === 'number' && value > 0);
+  if (ppis.length > 0) {
+    return Math.max(...ppis);
+  }
   const longest = scanLongestEdge(dims);
   if (longest === undefined) {
     return DEFAULT_RASTER_DPI;
@@ -155,7 +168,7 @@ function decideMethod(rows: PageImageInfo[], dims: ScandataLeaf | undefined): Pa
   if (rows.length === 1 && coversPage(rows[0], dims)) {
     return { method: 'pdfimages-lossless', sourcePdfObject: rows[0].objectId };
   }
-  return { method: 'pdftoppm-rasterised', resolutionDpi: deriveNativeDpi(dims) };
+  return { method: 'pdftoppm-rasterised', resolutionDpi: deriveNativeDpi(rows, dims) };
 }
 
 /** Map a scandata `pageType` to the closed {@link ExcludedLeaf} classification vocabulary. */
@@ -195,6 +208,11 @@ export async function extractPages(params: ExtractParams): Promise<ExtractionRes
         'expected 1-based integers with start <= end.',
     );
   }
+
+  // The poppler writers (`pdfimages`/`pdftoppm`) do NOT create their output
+  // directory -- a missing `outDir` makes them exit non-zero ("Could not write
+  // image"). Create it up front so extraction writes into a real directory.
+  await mkdir(outDir, { recursive: true });
 
   // Index scandata dims by leaf number for coverage + native-DPI lookup.
   const dimsByLeaf = new Map<number, ScandataLeaf>();

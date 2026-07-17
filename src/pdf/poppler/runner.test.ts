@@ -74,8 +74,8 @@ describe('PopplerRunnerImpl.imagesList', () => {
     const result = await runner.imagesList('single-image-page.pdf');
 
     expect(result).toEqual([
-      { page: 1, num: 0, width: 64, height: 96, objectId: '10' },
-      { page: 2, num: 1, width: 64, height: 96, objectId: '2' },
+      { page: 1, num: 0, width: 64, height: 96, objectId: '10', xPpi: 96 },
+      { page: 2, num: 1, width: 64, height: 96, objectId: '2', xPpi: 96 },
     ]);
   });
 
@@ -86,8 +86,8 @@ describe('PopplerRunnerImpl.imagesList', () => {
     const result = await runner.imagesList('overlay-page.pdf');
 
     expect(result).toEqual([
-      { page: 1, num: 0, width: 64, height: 96, objectId: '5' },
-      { page: 2, num: 1, width: 64, height: 96, objectId: '5' },
+      { page: 1, num: 0, width: 64, height: 96, objectId: '5', xPpi: 46 },
+      { page: 2, num: 1, width: 64, height: 96, objectId: '5', xPpi: 46 },
     ]);
   });
 

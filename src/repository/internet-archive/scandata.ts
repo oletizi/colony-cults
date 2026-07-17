@@ -35,10 +35,42 @@ export interface ScandataLeaf {
   leafNum: number;
   /** Archive.org's page classification, e.g. `Cover`, `Title`, `Color Card`, `Normal`. */
   pageType: string;
-  /** Recorded scan width in pixels (`<originalWidth>`), when present. */
+  /** Recorded scan width in pixels (`<origWidth>`, else the `<cropBox><w>`), when present. */
   width?: number;
-  /** Recorded scan height in pixels (`<originalHeight>`), when present. */
+  /** Recorded scan height in pixels (`<origHeight>`, else the `<cropBox><h>`), when present. */
   height?: number;
+}
+
+/**
+ * Read a recorded scan dimension from a `<page>` leaf. Real Internet Archive
+ * scandata records the scan pixel size as `<origWidth>`/`<origHeight>` (the
+ * shape the de Groote item and IA's current scandata export use); older
+ * exports used `<originalWidth>`/`<originalHeight>`; both fall back to the
+ * `<cropBox>`'s `<w>`/`<h>`. Returns `undefined` when none is present rather
+ * than fabricating a dimension (Principle V) -- an absent dimension is handled
+ * downstream by the fidelity probe, which fails loud on no usable overlap.
+ */
+function leafDimension(
+  page: Record<string, unknown>,
+  ctx: string,
+  which: 'width' | 'height',
+): number | undefined {
+  const orig = which === 'width' ? 'origWidth' : 'origHeight';
+  const original = which === 'width' ? 'originalWidth' : 'originalHeight';
+  const cropKey = which === 'width' ? 'w' : 'h';
+  if (page[orig] !== undefined) {
+    return childNumber(page, orig, ctx);
+  }
+  if (page[original] !== undefined) {
+    return childNumber(page, original, ctx);
+  }
+  if (page.cropBox !== undefined) {
+    const crop = childRecord(page, 'cropBox', ctx);
+    if (crop[cropKey] !== undefined) {
+      return childNumber(crop, cropKey, `${ctx} > cropBox`);
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -101,11 +133,13 @@ export function parseScandata(xml: string): ScandataLeaf[] {
     const pageType = childString(page, 'pageType', ctx);
 
     const leaf: ScandataLeaf = { leafNum, pageType };
-    if (page.originalWidth !== undefined) {
-      leaf.width = childNumber(page, 'originalWidth', ctx);
+    const width = leafDimension(page, ctx, 'width');
+    if (width !== undefined) {
+      leaf.width = width;
     }
-    if (page.originalHeight !== undefined) {
-      leaf.height = childNumber(page, 'originalHeight', ctx);
+    const height = leafDimension(page, ctx, 'height');
+    if (height !== undefined) {
+      leaf.height = height;
     }
     return leaf;
   });

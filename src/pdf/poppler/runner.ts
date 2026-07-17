@@ -32,6 +32,13 @@ export interface PageImageInfo {
    * identifier, never arithmetic.
    */
   objectId: string;
+  /**
+   * The image's horizontal resolution in pixels-per-inch (poppler's `x-ppi`
+   * column) -- the embedded image's ACTUAL scan resolution, used to rasterise
+   * a multi-image page at native DPI rather than downsampling. `undefined` when
+   * poppler reports no ppi (e.g. `0`), so callers fall back explicitly.
+   */
+  xPpi?: number;
 }
 
 /** The minimal command-runner surface this wrapper depends on -- `execCommand`'s shape, minus `stdin`. */
@@ -65,6 +72,9 @@ const COL_NUM = 1;
 const COL_WIDTH = 3;
 const COL_HEIGHT = 4;
 const COL_OBJECT = 10;
+// object ID spans two tokens (object number + generation, index 10 + 11), so
+// the resolution columns follow at 12 (x-ppi) / 13 (y-ppi).
+const COL_XPPI = 12;
 
 /** Run `command args` via the injected runner, throwing a descriptive error on a non-zero exit. */
 async function runOrThrow(
@@ -124,13 +134,20 @@ export class PopplerRunnerImpl implements PopplerRunner {
             `(expected at least ${IMAGES_LIST_COLUMN_COUNT}): "${line.trim()}"`,
         );
       }
-      return {
+      const xPpi = parseIntColumn('pdfimages -list', tokens[COL_XPPI], 'x-ppi', pdfPath);
+      const row: PageImageInfo = {
         page: parseIntColumn('pdfimages -list', tokens[COL_PAGE], 'page', pdfPath),
         num: parseIntColumn('pdfimages -list', tokens[COL_NUM], 'num', pdfPath),
         width: parseIntColumn('pdfimages -list', tokens[COL_WIDTH], 'width', pdfPath),
         height: parseIntColumn('pdfimages -list', tokens[COL_HEIGHT], 'height', pdfPath),
         objectId: tokens[COL_OBJECT],
       };
+      // poppler prints `0` ppi when it cannot determine resolution -- treat that
+      // as "unknown" rather than a real 0-DPI value the caller might rasterise at.
+      if (xPpi > 0) {
+        row.xPpi = xPpi;
+      }
+      return row;
     });
   }
 
