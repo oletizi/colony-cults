@@ -1,18 +1,32 @@
-## 2026-07-17: <!-- session title -->
+## 2026-07-17: Close the "victim voice" gap — first New Italy aftermath source + 3 contemporary press reports held; IA adapter generalized for newspapers; OCR cleanup made multi-language
 
-**Goal:** <!-- compose: what we set out to do -->
+**Goal:** Started as a research question — does the corpus hold survivor accounts or contemporary *press* coverage of the Port-Breton affair? — and became the work that answer demanded: acquire real sources on the victim-voice / aftermath axes (where the corpus held nothing), and build the tooling their acquisition required.
 
 **Accomplished:**
-- <!-- compose -->
+- **Four new held sources on the press/aftermath axes.** **PB-P056** — F. C. Clifford, *"New Italy: a brief sketch…"* (NSW Government Printer, 1889), the **first held source describing the survivors' settlement**; full IA acquire, 52 lossless masters + source PDF → `archived`. **PB-P057/058/059** — three verified contemporary **Asian-English press** reports (China Mail 1880 disaster eyewitness, China Mail 1882 "Colony of Port Breton", Hong Kong Daily Press 1883 "Trial of the Marquis de Rays"), each **page-range-acquired** (only the affair leaf mirrored; full issue preserved as source PDF) and **OCR-verified against the actual B2 master**.
+- **Three search-log records.** SRCH-0014 (broad IA affair+aftermath discovery — found Clifford + the press candidates), SRCH-0015 (OCR-verified 3 of 4 press candidates genuine, 1 rejected), SRCH-0016 (**measured** the Trove Australian-press residual via the web interface — 2,450 / 1,039 / 1,880 — turning the "irreducible" classification from assertion into numbers).
+- **Two shipped capability improvements, both tested.** (1) **Multi-language OCR cleanup** — `cleanupPage` was French-only ("corrected French text"); now `buildCleanupInstruction(language)` templates the source language, so English/Italian sources clean faithfully. (2) **IA newspaper-issue support** — two adapter fixes: prefer the `Image Container PDF` master over the `Additional Text PDF` overlay, and normalize 0-based scandata leaf numbering to 1-based (leaf N ↔ PDF page N).
+- **Governance decisions recorded durably.** Reviewed the full Trove API ToS + general ToS/Copyright: the store-raw-responses convention is a **waivable frugality convenience** (waived for Trove, whose API caps metadata caching at 30 days — incompatible with a permanent public repo) — recorded in DECISIONS.md; Trove discovery goes web-first with derived-facts-only + attribution, content out-of-band.
+- **Merged to `main` (PR #46).**
 
 **Didn't Work:**
-- <!-- compose -->
+- **The IA adapter was silently book-shaped and broke twice on newspaper items** — dual-PDF ambiguity (Image Container + Additional Text), then 0-based scandata leaf numbering. Both were legitimate fixes, but each surfaced only through a **live acquisition failure**, not a test; the adapter's own fixtures were book-authored.
+- **First OCR verification was a false signal.** It found zero affair terms on the acquired leaves — not because of a wrong page, but because IA **auto-cleans the staging dir on success**, so I was OCR-ing nonexistent files. And plain tesseract couldn't read the faint 1880s newsprint at all until contrast-enhanced.
+- **Trove is behind an Anubis anti-bot wall** — WebFetch (and web.archive.org) can't reach it; the API + general ToS came from the operator + secondary sources. The public *search* interface, however, loaded fine in a real browser (Playwright cleared Anubis).
+- **My own frugality lapses** — fetched the same `djvu.xml` twice (parsed and discarded the first), and a missing `curl -L` wasted a round of OCR fetches — both against the project's own store-responses discipline.
 
 **Course Corrections:**
-- <!-- compose -->
+- **Operator reframed TASK-37 to page-range acquisition** (one affair leaf each, not whole issues), which then required proving no article-*jump* before trusting a single leaf — settled by cleaning the OCR and re-checking.
+- **"We need to support multiple languages anyway"** — turned a scratch English-prompt hack into a proper language-aware `cleanupPage`.
+- **"Your recommendation"** on the file-select invariant — fixed the adapter (Image-Container preference) rather than work around a deliberate fail-loud test; updated the tests that encoded the old behavior.
+- **The operator's contrast suggestion cracked verification** — plain tesseract failed; grayscale + contrast-stretch made the B2 masters legible and confirmed the leaf-numbering fix end-to-end.
+- Saved a durable **memory** (persist-on-first-fetch) after being called out on the re-fetch twice.
 
 **Insights:**
-- <!-- compose -->
+- **"Victim voice" was the corpus's structural gap.** The affair was thoroughly documented from the promoters' and the courts' side, but held **zero** survivor / aftermath / independent-press coverage. This session put the first aftermath source (Clifford 1889) and the first contemporary press (three reports spanning disaster → conditions → trial) into the archive — a real shift in *whose account* it holds.
+- **A different document class exposes hidden specialization.** Every book-shaped assumption in the IA adapter (single PDF, 1-based scandata) held for de Groote/Clifford and broke for newspapers. Same lesson as last session's "run the thing," now: real *breadth* (a new source type), not just a new instance, is what finds the latent assumptions.
+- **Verify against the durable artifact, never transient staging.** The first verification "passed" as 0-hits on auto-cleaned staging — a false all-clear. Downloading the real B2 master and contrast-enhancing it was the honest check, and it's what actually confirmed no off-by-one.
+- **A source's terms can be structurally incompatible with a permanent public archive.** Trove's 30-day metadata-cache clause vs. our commit-everything convention is a genuine conflict; the resolution is to separate *principles* from *conveniences* and waive the convenience per-source, recording only derived facts.
 
 **Quantitative (auto-derived from git; verify before publishing):**
 - Commits: 15
