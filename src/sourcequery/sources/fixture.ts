@@ -13,16 +13,17 @@
  * of "one source of truth" for the fixture config shape; callers still
  * `registerSource(...)` the built config once the port is known.
  *
- * NOTE on the import below: `SourceConfig` is imported type-only so this
- * module has no runtime dependency on `@/sourcequery/source-config` (the
- * type import is erased by the compiler), matching the pattern in
- * `papers-past.ts`. Unlike `papers-past.ts`, this module is NOT imported by
- * `source-config.ts` for auto-registration -- fixture configs are built and
- * registered on demand by tests, not shipped as a live source.
+ * NOTE on the imports below: `SourceConfig` is imported type-only (erased by
+ * the compiler) and the one value needed, `DEFAULT_GRACE`, comes from the leaf
+ * `@/sourcequery/grace` module, so this module has NO runtime dependency on
+ * `@/sourcequery/source-config` — matching the pattern in `papers-past.ts`.
+ * Unlike `papers-past.ts`, this module is NOT imported by `source-config.ts`
+ * for auto-registration -- fixture configs are built and registered on demand
+ * by tests, not shipped as a live source.
  */
 
 import type { SourceConfig } from '@/sourcequery/source-config';
-import { DEFAULT_GRACE } from '@/sourcequery/source-config';
+import { DEFAULT_GRACE } from '@/sourcequery/grace';
 import type { Candidate, QuerySummary } from '@/sourcequery/types';
 import { parse } from 'node-html-parser';
 

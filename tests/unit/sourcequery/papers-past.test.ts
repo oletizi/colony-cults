@@ -84,6 +84,28 @@ describe('sourcequery/sources/papers-past', () => {
       expect(FIXTURE_HTML.includes(String(summary.count))).toBe(true);
     });
 
+    it('parses a thousands-separated count without truncating (12,345 -> 12345)', () => {
+      const html = `
+        <div class="results-count">12,345 results for &quot;war&quot;</div>
+        <div class="search-results">
+          <div class="result"><a href="/newspapers/X.1">A</a></div>
+        </div>
+      `;
+      const summary = PAPERS_PAST.parseSummary(html);
+      // A naive /\d+/ on "12,345" would truncate to 12 (silent wrong data).
+      expect(summary.count).toBe(12345);
+    });
+
+    it('parses a multi-group thousands-separated count (1,234,567 -> 1234567)', () => {
+      const html = `
+        <div class="results-count">1,234,567 results</div>
+        <div class="search-results">
+          <div class="result"><a href="/newspapers/X.1">A</a></div>
+        </div>
+      `;
+      expect(PAPERS_PAST.parseSummary(html).count).toBe(1234567);
+    });
+
     it('extracts first-page candidates (title, ref, date) from the fixture', () => {
       const summary = PAPERS_PAST.parseSummary(FIXTURE_HTML);
       expect(summary.candidates).toEqual([

@@ -10,6 +10,11 @@
 import type { GraceWindowConfig, QuerySummary } from '@/sourcequery/types';
 import { PAPERS_PAST } from '@/sourcequery/sources/papers-past';
 
+// Re-exported from the leaf `grace` module so existing importers of
+// `DEFAULT_GRACE` from `source-config` keep working, while the actual
+// definition lives outside the circular value-import path (see grace.ts).
+export { DEFAULT_GRACE } from '@/sourcequery/grace';
+
 /** Per-source configuration for the Source Query Client. */
 export interface SourceConfig {
   /** Source key; also the `repository-responses/<id>/` directory name. */
@@ -33,17 +38,6 @@ export interface SourceConfig {
   /** Post-switch grace-window discipline. */
   grace: GraceWindowConfig;
 }
-
-/**
- * Conservative default grace-window parameters (research R6).
- * Per-source configs may override any of these.
- */
-export const DEFAULT_GRACE: GraceWindowConfig = {
-  settleMs: 8000,
-  extraSlowIntervalMs: 15000,
-  maxRequests: 3,
-  maxWindowMs: 60000,
-};
 
 /**
  * Source registry: source id -> SourceConfig.

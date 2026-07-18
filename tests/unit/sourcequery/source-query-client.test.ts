@@ -214,8 +214,10 @@ describe('sourcequery/SourceQueryClient', () => {
       errored: false,
     };
     const browser = new FakeBrowserSession({ responses: { [url]: page } });
-    const nzNode = makeExitNode({ hostname: 'nz-1', country: 'New Zealand', online: true });
-    const usNode = makeExitNode({ hostname: 'us-1', country: 'United States', online: true });
+    // Distinct IPs per candidate so an IP-keyed dedup/selection regression is
+    // caught (a shared default IP would mask it).
+    const nzNode = makeExitNode({ ip: '100.64.0.11', hostname: 'nz-1', country: 'New Zealand', online: true });
+    const usNode = makeExitNode({ ip: '100.64.0.12', hostname: 'us-1', country: 'United States', online: true });
     const runner = new FakeTailscaleRunner([usNode, nzNode], 'prior-node.example.ts.net');
     const client = makeClient(config, browser, runner);
 

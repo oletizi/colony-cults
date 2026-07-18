@@ -161,7 +161,7 @@ d('SourceQueryClient end-to-end against a local fixture server', () => {
         id: FIXTURE_CHALLENGE_ID,
         baseUrl,
         path: '/challenge',
-        // Matches CHALLENGE_NODE's country below, so selectNode's geo-match
+        // Matches ESCALATION_NODE's country above, so selectNode's geo-match
         // branch is exercised (not just the "only one online node" fallback).
         preferredGeo: 'NZ',
       }),

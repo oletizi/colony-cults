@@ -8,12 +8,17 @@
  *   written to disk BEFORE any parsing (R5). Parsing then reads the PERSISTED
  *   copy back (not the live DOM), so the returned fact and the saved evidence
  *   are the same bytes (R7). Every summary fact must be grep-traceable in that
- *   persisted capture: we assert the count's plain-digit string is a literal
- *   substring of the persisted bytes and THROW when it is not (fail-loud).
+ *   persisted capture: we assert the count's digit sequence — allowing a single
+ *   optional thousands separator between digits so a real "12,345" grounds a
+ *   parsed `12345` — is present in the persisted bytes and THROW when it is not
+ *   (fail-loud, separator-tolerant but still tied to the exact number).
  *
  * - `'derived-facts-only'` (retention-forbidden sources, e.g. Trove — FR-009):
  *   NOTHING is persisted. We parse the in-memory HTML and return only derived
- *   facts plus the required attribution; no raw bytes are retained.
+ *   facts plus the required attribution; no raw bytes are retained. The SAME
+ *   separator-tolerant grounding still applies against the in-memory fetched
+ *   bytes: the count must be traceable in what was fetched, even though nothing
+ *   is written to disk. We THROW when it is not.
  *
  * `capturedAtUtc` is always caller-supplied (never generated here) so the
  * module stays deterministic and testable.
@@ -21,6 +26,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { persistCapture } from '@/sourcequery/persistence';
+import { isCountGrounded } from '@/sourcequery/grounding';
 import type { SourceConfig } from '@/sourcequery/source-config';
 import type { PageResult, QueryResult } from '@/sourcequery/types';
 
@@ -54,6 +60,16 @@ export async function persistThenParse(args: PersistThenParseArgs): Promise<Quer
   if (config.retention === 'derived-facts-only') {
     // Retention-forbidden source (FR-009): persist nothing, write no files.
     const summary = config.parseSummary(pageResult.html);
+    // Grounding still applies (R7/FR-007): the count must be traceable in the
+    // fetched bytes even though nothing is persisted. Separator-tolerant match
+    // so a real "12,345" grounds a parsed 12345; THROW when absent (fail-loud).
+    if (!isCountGrounded(pageResult.html, summary.count)) {
+      throw new Error(
+        `frugality: ungrounded count "${summary.count}" for derived-facts-only source ` +
+          `"${config.id}" query "${query}": its digit sequence (allowing thousands separators) ` +
+          `is not present in the fetched HTML bytes (verify-in-code grounding, FR-007).`,
+      );
+    }
     return {
       summary,
       derivedFacts: summary.candidates,
@@ -81,20 +97,18 @@ export async function persistThenParse(args: PersistThenParseArgs): Promise<Quer
   const persistedHtml = await readFile(capture.htmlPath, 'utf-8');
   const summary = config.parseSummary(persistedHtml);
 
-  // Verify-in-code grounding (R7 / FR-007): the count's plain-digit string form
-  // (`String(count)`) MUST appear literally in the persisted bytes. Source
-  // `parseSummary` implementations are therefore responsible for yielding a
-  // count whose `String(count)` form is present in the HTML (e.g. extract plain
-  // digits; stripping any thousands separators is the source config's job). If
-  // the value is not grep-traceable in the saved capture we THROW rather than
+  // Verify-in-code grounding (R7 / FR-007): the count's digit sequence MUST be
+  // present in the persisted bytes. The match is separator-tolerant — it allows
+  // a single optional thousands separator between digits — so a count parsed
+  // from a real "12,345" (yielding 12345) still grounds against those bytes,
+  // while remaining tied to the EXACT number (a different value cannot match).
+  // If the value is not traceable in the saved capture we THROW rather than
   // return an ungrounded fact.
-  const countString = String(summary.count);
-  if (!persistedHtml.includes(countString)) {
+  if (!isCountGrounded(persistedHtml, summary.count)) {
     throw new Error(
-      `frugality: ungrounded count "${countString}" for source "${config.id}" query "${query}": ` +
-        `its String(count) form is not a literal substring of the persisted capture at ` +
-        `${capture.htmlPath}. A source parseSummary MUST yield a count whose String(count) ` +
-        `form appears literally in the persisted bytes (verify-in-code grounding, FR-007).`,
+      `frugality: ungrounded count "${summary.count}" for source "${config.id}" query "${query}": ` +
+        `its digit sequence (allowing thousands separators) is not present in the persisted ` +
+        `capture at ${capture.htmlPath} (verify-in-code grounding, FR-007).`,
     );
   }
 

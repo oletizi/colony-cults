@@ -8,15 +8,19 @@
  * this task's scope. Treat `RESULT_SELECTOR` as PROVISIONAL until that smoke
  * run confirms it.
  *
- * NOTE on the import below: `SourceConfig` is imported type-only so this
- * module has no runtime dependency on `@/sourcequery/source-config` (the
- * type import is erased by the compiler). `source-config.ts` imports this
- * module's `PAPERS_PAST` value at its own bottom to auto-register it, so a
- * value-level import here would create a runtime circular dependency.
+ * NOTE on the imports below: this module has NO runtime dependency on
+ * `@/sourcequery/source-config`. `SourceConfig` is imported from it type-only
+ * (erased by the compiler), and the one value it needs, `DEFAULT_GRACE`, comes
+ * from the leaf `@/sourcequery/grace` module instead. This matters because
+ * `source-config.ts` value-imports this module's `PAPERS_PAST` at its own
+ * bottom to auto-register it; a value-level import back into `source-config`
+ * here would create a runtime circular dependency. Pulling `DEFAULT_GRACE`
+ * from `grace` (which depends only on `types`) keeps that cycle broken.
  */
 
 import type { SourceConfig } from '@/sourcequery/source-config';
-import { DEFAULT_GRACE } from '@/sourcequery/source-config';
+import { DEFAULT_GRACE } from '@/sourcequery/grace';
+import { isCountGrounded } from '@/sourcequery/grounding';
 import type { Candidate, QuerySummary } from '@/sourcequery/types';
 import { parse } from 'node-html-parser';
 
@@ -31,10 +35,15 @@ function buildQueryUrl(query: string, page?: number): string {
 }
 
 /**
- * Extracts the plain-digit result count from the `.results-count` element.
- * Throws (fail-loud, Principle V) rather than guessing when the count
- * element or a digit sequence within it is absent, or when the parsed count
- * cannot be found literally in the HTML bytes (grounding, FR-007).
+ * Extracts the result count from the `.results-count` element.
+ *
+ * Thousands separators are stripped BEFORE parsing so `"12,345 results"` yields
+ * `12345` (not `12` — a naive `\d+` match would silently truncate at the first
+ * comma and return wrong data). Throws (fail-loud, Principle V) rather than
+ * guessing when the count element or a digit sequence within it is absent, or
+ * when the parsed count is not traceable in the HTML bytes. Grounding is
+ * separator-tolerant (via {@link isCountGrounded}) so a count parsed from a
+ * separated form like "12,345" still grounds against those same bytes.
  */
 function parseCount(html: string, root: ReturnType<typeof parse>): number {
   const countEl = root.querySelector(COUNT_SELECTOR);
@@ -43,17 +52,20 @@ function parseCount(html: string, root: ReturnType<typeof parse>): number {
       `papers-past parseSummary: no element matching "${COUNT_SELECTOR}" found; cannot determine result count.`
     );
   }
-  const match = countEl.text.match(/\d+/);
+  // Drop a single thousands separator (comma/space) that sits between digits,
+  // then read the leading digit run: "12,345 results" -> "12345 results" -> 12345.
+  const normalized = countEl.text.replace(/[,\s](?=\d)/g, '');
+  const match = normalized.match(/\d+/);
   if (!match) {
     throw new Error(
       `papers-past parseSummary: no digit sequence found in count element text "${countEl.text}".`
     );
   }
   const count = Number.parseInt(match[0], 10);
-  if (!html.includes(String(count))) {
+  if (!isCountGrounded(html, count)) {
     throw new Error(
-      `papers-past parseSummary: ungrounded count "${count}" - its String(count) form is not a ` +
-        `literal substring of the parsed HTML.`
+      `papers-past parseSummary: ungrounded count "${count}" - its digit sequence (allowing ` +
+        `thousands separators) is not present in the parsed HTML.`
     );
   }
   return count;
