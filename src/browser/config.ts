@@ -51,7 +51,17 @@ export function resolveConfig(env: NodeJS.ProcessEnv = process.env): LoadConfig 
   const sourcesRaw = env.CORPUS_SOURCES?.trim();
   const sources = sourcesRaw
     ? sourcesRaw.split(',').map((s) => s.trim())
-    : ['PB-P001', 'PB-P002', 'PB-P003', 'PB-P007', 'PB-P008', 'PB-P009', 'PB-P010', 'PB-P011'];
+    : [
+        'PB-P001',
+        'PB-P002',
+        'PB-P003',
+        'PB-P007',
+        'PB-P008',
+        'PB-P009',
+        'PB-P010',
+        'PB-P011',
+        'PB-P055',
+      ];
 
   const providerKind = env.CORPUS_IMAGE_PROVIDER?.trim() ?? 'source-iiif';
 

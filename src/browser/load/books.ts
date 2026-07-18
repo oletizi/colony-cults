@@ -25,6 +25,7 @@ import { parse as parseYaml } from 'yaml';
 
 import type { LoadedSource } from '@/bibliography/load';
 import type { IssueDir } from '@/browser/load/issues';
+import { parseSourceIdentifier } from '@/browser/load/source-identifier';
 
 /** `fNNN.yml` per-folio image sidecar name. */
 const FOLIO_SIDECAR_PATTERN = /^f(\d+)\.yml$/;
@@ -100,7 +101,7 @@ export function resolveMonographUnit(archiveRoot: string, loaded: LoadedSource):
       issueId: name,
       dir,
       date: deriveBookDate(source.notes, sidecar),
-      ark: parseArkFromCatalogUrl(sidecar.catalogUrl, dir),
+      ark: parseSourceIdentifier(sidecar.catalogUrl),
     };
   }
 
@@ -188,26 +189,6 @@ function deriveBookDate(notes: string | undefined, sidecar: FolioSidecar): strin
     `loadCorpus(${sidecar.id}): cannot derive the book's date -- no "Years:" note in the SSOT, ` +
       'no <dc:date> in the folio sidecar catalog metadata, and no parseable "retrieved" timestamp.'
   );
-}
-
-/**
- * Parses the book/issue ark from a Gallica `catalog_url`
- * (`https://gallica.bnf.fr/ark:/12148/bpt6k58039518` -> `ark:/12148/bpt6k58039518`).
- * The SAME derivation the per-page provenance uses (see
- * `@/browser/load/translation`), so the resolved unit ark and the page
- * provenance ark agree.
- *
- * @throws Error if `catalogUrl` contains no parseable ark.
- */
-function parseArkFromCatalogUrl(catalogUrl: string, bookDir: string): string {
-  const match = catalogUrl.match(/ark:\/\S+/);
-  if (match === null) {
-    throw new Error(
-      `loadCorpus: folio sidecar in ${bookDir} has a "catalog_url" ` +
-        `(${JSON.stringify(catalogUrl)}) with no parseable ark.`
-    );
-  }
-  return match[0];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
