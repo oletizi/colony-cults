@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { runQuerySourceCli } from '@/cli/bib-query-source';
+import { parseQuerySourceArgs, runQuerySourceCli } from '@/cli/bib-query-source';
 
 /**
  * `bib query-source` CLI arg-parsing paths (T015,
@@ -62,5 +62,31 @@ describe('bib query-source CLI (arg parsing)', () => {
   it('never writes to stdout on a usage error', async () => {
     await runQuerySourceCli(['papers-past']);
     expect(logSpy).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * `--approve-exit-node <node>` parsing (T022, US2 escalation contract,
+ * FR-012). Exercised at the `parseQuerySourceArgs` level, exported
+ * specifically so this flows-into-`QuerySourceArgs` assertion is direct —
+ * the exit-3 / grace-pass behaviors themselves need a real browser / injected
+ * client and are covered at the `SourceQueryClient` level (T023) and the
+ * env-gated integration test (T024), not here.
+ */
+describe('bib query-source CLI (--approve-exit-node parsing)', () => {
+  it('is undefined when --approve-exit-node is absent', () => {
+    const args = parseQuerySourceArgs(['papers-past', '--query', 'x']);
+    expect(args.approveExitNode).toBeUndefined();
+  });
+
+  it('flows --approve-exit-node <node> into QuerySourceArgs.approveExitNode', () => {
+    const args = parseQuerySourceArgs([
+      'papers-past',
+      '--query',
+      'x',
+      '--approve-exit-node',
+      'nz-akl-01',
+    ]);
+    expect(args.approveExitNode).toBe('nz-akl-01');
   });
 });
