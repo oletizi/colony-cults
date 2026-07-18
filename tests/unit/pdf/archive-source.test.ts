@@ -166,4 +166,80 @@ describe('resolveArchiveSource', () => {
       fixture.cleanup();
     }
   });
+
+  it('resolves readingLanguage "english" for an all-English source (FR-001)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: FULL_SOURCE_CASE,
+      slug: FULL_SOURCE_SLUG,
+      pageCount: 3,
+      language: 'English',
+    });
+    try {
+      const resolution = await resolveArchiveSource({
+        sourceId: FULL_SOURCE_ID,
+        archiveRoot: fixture.archiveRoot,
+      });
+
+      expect(resolution.readingLanguage).toBe('english');
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('resolves readingLanguage "french" for an all-French source (FR-001)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: FULL_SOURCE_CASE,
+      slug: FULL_SOURCE_SLUG,
+      pageCount: 3,
+      language: 'French',
+    });
+    try {
+      const resolution = await resolveArchiveSource({
+        sourceId: FULL_SOURCE_ID,
+        archiveRoot: fixture.archiveRoot,
+      });
+
+      expect(resolution.readingLanguage).toBe('french');
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('fails loud naming the offending value for an unsupported reading language (FR-006)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: FULL_SOURCE_CASE,
+      slug: FULL_SOURCE_SLUG,
+      pageCount: 2,
+      language: 'Spanish',
+    });
+    try {
+      await expect(
+        resolveArchiveSource({
+          sourceId: FULL_SOURCE_ID,
+          archiveRoot: fixture.archiveRoot,
+        }),
+      ).rejects.toThrow(/Spanish/);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('fails loud naming the source for a mixed-language source (FR-006a)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: FULL_SOURCE_CASE,
+      slug: FULL_SOURCE_SLUG,
+      pageCount: 2,
+      pages: [{ language: 'English' }, { language: 'French' }],
+    });
+    try {
+      await expect(
+        resolveArchiveSource({
+          sourceId: FULL_SOURCE_ID,
+          archiveRoot: fixture.archiveRoot,
+        }),
+      ).rejects.toThrow(new RegExp(FULL_SOURCE_ID));
+    } finally {
+      fixture.cleanup();
+    }
+  });
 });

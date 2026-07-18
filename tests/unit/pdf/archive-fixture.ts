@@ -40,6 +40,14 @@ export interface FixturePageConfig {
    * entirely, fixture the fail-loud absent-translation case.
    */
   omitTranslationArtifact?: boolean;
+
+  /**
+   * Per-folio provenance `language` override. Defaults to the fixture's
+   * top-level `language` option (or `French`). Set on individual pages to
+   * fixture a mixed-language source (some folios `English`, some `French`) --
+   * the reading-language resolution's fail-loud case (FR-006a).
+   */
+  language?: string;
 }
 
 /**
@@ -218,7 +226,7 @@ export async function writeFixtureArchive(
         title: `${opts.slug} folio ${folioStr}`,
         type: 'page-image',
         case: opts.case,
-        language,
+        language: pageConfig.language ?? language,
         source_archive: sourceArchive,
         catalog_url: catalogUrl,
         original_url: `${catalogUrl}/f${folioNum}`,

@@ -22,6 +22,15 @@ import { readProvenance } from '@/archive/provenance';
 /** Folio sidecar filename shape: `fNNN.yml` (digits preserve their zero-padding). */
 const FOLIO_SIDECAR_PATTERN = /^f(\d+)\.yml$/;
 
+/**
+ * The per-source reading-language signal that selects the edition path
+ * (spec 015): `french` is the existing FR-OCR │ EN-translation path,
+ * `english` is the English-OCR-as-recto path. Derived from folio provenance
+ * `language`, matched case-insensitively against the full words
+ * "French"/"English" -- see {@link resolveArchiveSource}.
+ */
+export type ReadingLanguage = 'french' | 'english';
+
 /** English translation artifact filename shape: `pNNN.en.txt`. */
 const TRANSLATION_EN_PATTERN = /^p(\d+)\.en\.txt$/;
 
@@ -61,6 +70,11 @@ export interface MonographSourceResolution {
   pageDir: string;
   /** This source's folios, ordered by position. */
   folios: ArchivePageSource[];
+  /**
+   * The source's reading-language path, resolved ONCE from folio provenance
+   * `language` and consistent across every folio (spec 015, FR-001/FR-006a).
+   */
+  readingLanguage: ReadingLanguage;
 }
 
 /** A resolved periodical source: one archive directory per issue. */
@@ -69,6 +83,12 @@ export interface PeriodicalSourceResolution {
   kind: 'periodical';
   /** The source's issues, in `enumerateIssueDirs` order (date, then ark). */
   issues: ArchiveIssueSource[];
+  /**
+   * The source's reading-language path, resolved ONCE from folio provenance
+   * `language` and consistent across every folio of every issue (spec 015,
+   * FR-001/FR-006a).
+   */
+  readingLanguage: ReadingLanguage;
 }
 
 /** The result of resolving a source to its archive directory/directories. */
@@ -87,9 +107,18 @@ function trimmedOrEmpty(value: string | undefined): string {
   return value === undefined ? '' : value.trim();
 }
 
+/** One directory's enumerated folios plus each folio's raw provenance `language`. */
+interface EnumerateFoliosResult {
+  /** This directory's folios, ordered by position. */
+  folios: ArchivePageSource[];
+  /** Each folio's raw (un-normalized) provenance `language`, same order as `folios`. */
+  languages: string[];
+}
+
 /**
  * Enumerate one directory's folio sidecars into an ordered, provenance-backed
- * `ArchivePageSource[]`.
+ * `ArchivePageSource[]`, alongside each folio's raw `language` value (the
+ * reading-language derivation input, spec 015).
  *
  * @throws Error if `pageDir` has no folio sidecars, if any folio's
  *   provenance is unreadable or missing `object_store.key` / `sha256`, or if
@@ -99,7 +128,10 @@ function trimmedOrEmpty(value: string | undefined): string {
  *   folio/position (and `sourceId`) so a fail-loud condition is immediately
  *   actionable.
  */
-async function enumerateFolios(pageDir: string, sourceId: string): Promise<ArchivePageSource[]> {
+async function enumerateFolios(
+  pageDir: string,
+  sourceId: string,
+): Promise<EnumerateFoliosResult> {
   const entries = readdirSync(pageDir);
   const matches: Array<{ folioNum: number; folioId: string; fileName: string }> = [];
   for (const name of entries) {
@@ -120,6 +152,7 @@ async function enumerateFolios(pageDir: string, sourceId: string): Promise<Archi
   matches.sort((a, b) => a.folioNum - b.folioNum);
 
   const folios: ArchivePageSource[] = [];
+  const languages: string[] = [];
   for (let index = 0; index < matches.length; index += 1) {
     const { folioId, fileName } = matches[index];
     const yamlPath = path.join(pageDir, fileName);
@@ -157,11 +190,60 @@ async function enumerateFolios(pageDir: string, sourceId: string): Promise<Archi
       imageSha256,
       pageDir,
     });
+    languages.push(provenance.language);
   }
 
   checkTranslationCoverage(pageDir, sourceId, folios.length);
 
-  return folios;
+  return { folios, languages };
+}
+
+/**
+ * Normalize one folio's raw provenance `language` to a {@link ReadingLanguage},
+ * matched case-insensitively against the full words "French"/"English" (spec
+ * 015 open question V1: the archive carries the full word, not a code).
+ *
+ * @throws Error naming `sourceId` and the offending raw value when `value` is
+ *   neither French nor English (FR-006).
+ */
+function normalizeReadingLanguage(value: string, sourceId: string): ReadingLanguage {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'english') {
+    return 'english';
+  }
+  if (normalized === 'french') {
+    return 'french';
+  }
+  throw new Error(
+    `resolveArchiveSource: source "${sourceId}" has an unsupported reading language ` +
+      `${JSON.stringify(value)} (folio provenance "language") -- only "French" and "English" ` +
+      `are supported.`,
+  );
+}
+
+/**
+ * Derive a source's single {@link ReadingLanguage} from every one of its
+ * folios' raw provenance `language` values (spec 015, FR-001). The reading
+ * language is resolved ONCE per source and MUST be consistent across all
+ * folios -- a periodical's folios span every issue's directory, so callers
+ * pass the full cross-issue list.
+ *
+ * @throws Error naming `sourceId` and the offending value when any folio's
+ *   language is unsupported (FR-006), or naming `sourceId` and the distinct
+ *   values found when the source's folios disagree on language (FR-006a).
+ */
+function deriveReadingLanguage(languages: readonly string[], sourceId: string): ReadingLanguage {
+  const resolved = languages.map((language) => normalizeReadingLanguage(language, sourceId));
+  const distinct = Array.from(new Set(resolved));
+  if (distinct.length > 1) {
+    const distinctRaw = Array.from(new Set(languages));
+    throw new Error(
+      `resolveArchiveSource: source "${sourceId}" has a mixed reading language across its ` +
+        `folios (${distinctRaw.map((value) => JSON.stringify(value)).join(', ')}) -- a source's ` +
+        `reading language must be resolved once and be consistent across all of its folios.`,
+    );
+  }
+  return distinct[0];
 }
 
 /**
@@ -219,8 +301,9 @@ async function resolveMonograph(
       `resolveArchiveSource: monograph source "${sourceId}" has no archive directory at ${pageDir}`,
     );
   }
-  const folios = await enumerateFolios(pageDir, sourceId);
-  return { sourceId, kind: 'monograph', pageDir, folios };
+  const { folios, languages } = await enumerateFolios(pageDir, sourceId);
+  const readingLanguage = deriveReadingLanguage(languages, sourceId);
+  return { sourceId, kind: 'monograph', pageDir, folios, readingLanguage };
 }
 
 /**
@@ -251,11 +334,17 @@ async function resolvePeriodical(
 
   const issueDirs = enumerateIssueDirs(periodicalDir, sourceId);
   const issues: ArchiveIssueSource[] = [];
+  const allLanguages: string[] = [];
   for (const issue of issueDirs) {
-    const folios = await enumerateFolios(issue.dir, sourceId);
+    const { folios, languages } = await enumerateFolios(issue.dir, sourceId);
     issues.push({ issueId: issue.issueId, pageDir: issue.dir, folios });
+    allLanguages.push(...languages);
   }
-  return { sourceId, kind: 'periodical', issues };
+  // Consistency is checked across the WHOLE source (every issue's folios), not
+  // per-issue -- a mixed-language source is an archive-data error regardless
+  // of which issue the disagreeing folios fall in (FR-006a).
+  const readingLanguage = deriveReadingLanguage(allLanguages, sourceId);
+  return { sourceId, kind: 'periodical', issues, readingLanguage };
 }
 
 /**
