@@ -1,21 +1,31 @@
 /**
  * Per-page content assembly for the archive-direct PDF reader (spec 014,
- * Decision 4 / FR-006/FR-007/FR-008/FR-011).
+ * Decision 4 / FR-006/FR-007/FR-008/FR-011; spec 015 English-source routing,
+ * FR-002/FR-003/FR-004/FR-007).
  *
  * Given one {@link ArchivePageSource} (a folio at a known POSITION in its
  * source's sorted folio sequence) plus the source's already-split `issue.txt`
- * OCR segments, this reads the page's OCR French, its English translation, and
- * the translation-provenance marker into one {@link ArchivePageContent}.
+ * OCR segments, this branches on the source's {@link ReadingLanguage}:
  *
- * The load-bearing fix: the page id (`pNNN`) is derived from the folio's
- * POSITION, never its absolute number -- so a page-range extract (folios
- * `f048..f050`) maps to `p001..p003`, resolving the mapping bug in
+ *  - FRENCH path (unchanged from spec 014): reads the page's OCR French, its
+ *    English translation, and the translation-provenance marker.
+ *  - ENGLISH path (spec 015): reads the page's OCR text (corrected
+ *    `pNNN.fr.txt` if present, else the positional `issue.txt` segment) as the
+ *    reading recto -- `resolveTranslation` is never called, no `translation/`
+ *    artifact is read. See `specs/015-english-source-pdf/contracts/
+ *    reader-language-routing.md` for the field-placement contract.
+ *
+ * The load-bearing fix (spec 014): the page id (`pNNN`) is derived from the
+ * folio's POSITION, never its absolute number -- so a page-range extract
+ * (folios `f048..f050`) maps to `p001..p003`, resolving the mapping bug in
  * `@/browser/load/translation` (which keys `fNNN -> p<folioNum>`).
  *
- * Fail-loud, no fallbacks: an absent translation artifact or an inconsistent
- * label/text pairing throws naming the page. Empty OCR throws too -- UNLESS the
- * page is `untranslatable` (a blank/cover/plate page has neither OCR nor
- * translation, and renders as a blank recto).
+ * Fail-loud, no fallbacks: on the FRENCH path, an absent translation artifact
+ * or an inconsistent label/text pairing throws naming the page; empty OCR
+ * throws too -- UNLESS the page is `untranslatable` (a blank/cover/plate page
+ * has neither OCR nor translation, and renders as a blank recto). On the
+ * ENGLISH path, empty/absent OCR always throws naming the page -- an English
+ * page has no `untranslatable` dimension (FR-007).
  */
 
 import { existsSync } from 'node:fs';
@@ -24,7 +34,7 @@ import path from 'node:path';
 
 import type { ProvenanceFields } from '@/archive/provenance';
 import { readProvenance } from '@/archive/provenance';
-import type { ArchivePageSource } from '@/pdf/load/archive-source';
+import type { ArchivePageSource, ReadingLanguage } from '@/pdf/load/archive-source';
 import type { MachineAssistLabel } from '@/pdf/model';
 
 /** The two provenance translation labels this reader understands (FR-007). */
@@ -41,21 +51,41 @@ export interface ArchivePageContent {
   /** Folio id as it appears in the sidecar filename, e.g. `f048`. */
   folioId: string;
   /**
-   * Corrected French if present, else the position-th `issue.txt` segment.
-   * Non-empty for a normal page; empty ONLY for an `untranslatable` blank/cover
-   * page (which has neither OCR nor translation).
+   * FRENCH path: corrected French if present, else the position-th
+   * `issue.txt` segment. Non-empty for a normal page; empty ONLY for an
+   * `untranslatable` blank/cover page (which has neither OCR nor translation).
+   *
+   * ENGLISH path (spec 015): always `""` -- there is no French OCR on this
+   * path, and the english-only Typst variant does not render this field.
    */
   ocrFrench: string;
   /**
-   * The English translation. Empty string ONLY for an `untranslatable`-labeled
-   * page (the blank-column marker, FR-007); non-empty otherwise.
+   * FRENCH path: the English translation. Empty string ONLY for an
+   * `untranslatable`-labeled page (the blank-column marker, FR-007);
+   * non-empty otherwise.
+   *
+   * ENGLISH path (spec 015): the page's OCR text (corrected `pNNN.fr.txt` if
+   * present, else the positional `issue.txt` segment) -- the reading recto.
+   * This is the load-bearing placement: the english-only Typst variant
+   * (`showFrench = false`) renders `english` as the single reading column, so
+   * the English OCR MUST be carried here (never `ocrFrench`) to render.
    */
   english: string;
-  /** True when the page's translation artifact is labeled `untranslatable`. */
+  /**
+   * True when the page's translation artifact is labeled `untranslatable`
+   * (FRENCH path only). Always `false` on the ENGLISH path -- an English page
+   * has no translation dimension.
+   */
   untranslatable: boolean;
-  /** The machine-assist label from the EN sidecar, or `null` (honest absence). */
+  /**
+   * The machine-assist label from the EN sidecar, or `null` (honest absence).
+   * Always `null` on the ENGLISH path -- no translation is performed there.
+   */
   machineAssist: MachineAssistLabel | null;
-  /** Surfaced OCR-condition apparatus note from the folio provenance, or `null`. */
+  /**
+   * Surfaced OCR-condition apparatus note from the folio provenance, or
+   * `null`. Carried through unchanged on both the FRENCH and ENGLISH paths.
+   */
   ocrCondition: string | null;
 }
 
@@ -103,12 +133,17 @@ function deriveOcrCondition(prov: ProvenanceFields): string | null {
 }
 
 /**
- * Resolve the OCR French: corrected `pNNN.fr.txt` if present, else the segment.
+ * Resolve the page's OCR text: corrected `pNNN.fr.txt` if present, else the
+ * segment. Shared by both reading-language paths: the FRENCH path uses the
+ * result as `ocrFrench`; the ENGLISH path (spec 015) uses the identical
+ * corrected-then-positional resolution as the reading recto (`english`) --
+ * see `resolveArchiveSource` FR-004.
  *
- * `allowEmpty` is true for an `untranslatable`-labeled page: a blank / cover /
- * plate page legitimately has NO OCR text (and no translation), so an empty OCR
- * is the blank-recto marker, not a gap. For a `machine-assisted` page (real
- * translated text), empty OCR is a genuine gap and fails loud.
+ * `allowEmpty` is true for an `untranslatable`-labeled page (FRENCH path
+ * only): a blank / cover / plate page legitimately has NO OCR text (and no
+ * translation), so an empty OCR is the blank-recto marker, not a gap. For a
+ * `machine-assisted` page (real translated text) or any ENGLISH-path page,
+ * empty OCR is a genuine gap and fails loud (FR-007).
  */
 async function resolveOcrFrench(
   translationDir: string,
@@ -204,24 +239,27 @@ function interpretLabel(
   return { english: rawEnglish, untranslatable: false, provenance };
 }
 
+/** The folio's surfaced OCR-condition apparatus note, shared by both reading-language paths. */
+async function resolveOcrCondition(page: ArchivePageSource): Promise<string | null> {
+  const folioSidecarPath = path.join(page.pageDir, `${page.folioId}.yml`);
+  return existsSync(folioSidecarPath)
+    ? deriveOcrCondition(await readProvenance(folioSidecarPath))
+    : null;
+}
+
 /**
- * Assemble one page's content, keyed by the folio's POSITION.
- *
- * @param page - the folio source (carries `position`, `folioId`, `pageDir`).
- * @param issueOcrSegments - the source's `issue.txt` split ONCE by the caller
- *   (`splitIssueOcr(...).map(p => p.ocrFrench)`); the `position`-th segment is
- *   the OCR fallback when no corrected `pNNN.fr.txt` exists.
+ * FRENCH path (spec 014, unchanged): FR-OCR left column, required EN
+ * translation right column.
  *
  * @throws Error, naming the page, on an absent translation artifact (FR-008),
  *   an inconsistent label/text pairing, or empty OCR French.
  */
-export async function loadArchivePage(
+async function loadFrenchPage(
+  pageId: string,
   page: ArchivePageSource,
+  translationDir: string,
   issueOcrSegments: string[],
 ): Promise<ArchivePageContent> {
-  const pageId = pageIdForPosition(page.position);
-  const translationDir = path.join(page.pageDir, 'translation');
-
   // Resolve the translation FIRST: an `untranslatable` page (a blank/cover/plate)
   // legitimately has no OCR either, so its untranslatable status governs whether
   // an empty OCR is tolerated (blank recto) or a fail-loud gap.
@@ -240,11 +278,6 @@ export async function loadArchivePage(
     untranslatable,
   );
 
-  const folioSidecarPath = path.join(page.pageDir, `${page.folioId}.yml`);
-  const ocrCondition = existsSync(folioSidecarPath)
-    ? deriveOcrCondition(await readProvenance(folioSidecarPath))
-    : null;
-
   return {
     pageId,
     folioId: page.folioId,
@@ -252,6 +285,72 @@ export async function loadArchivePage(
     english,
     untranslatable,
     machineAssist: deriveMachineAssist(provenance),
-    ocrCondition,
+    ocrCondition: await resolveOcrCondition(page),
   };
+}
+
+/**
+ * ENGLISH path (spec 015, FR-002/FR-003/FR-004): the page's OCR text IS the
+ * reading recto -- `resolveTranslation` is never called, no `translation/
+ * pNNN.en.txt` is read. The English OCR is carried in `english` (not
+ * `ocrFrench`), since the english-only Typst variant renders `english` as the
+ * single reading column (see `ArchivePageContent.english` doc).
+ *
+ * @throws Error, naming the page, when the resolved English OCR is
+ *   empty/absent (FR-007 / contract C5) -- an English page has no
+ *   `untranslatable` dimension, so the blank-recto tolerance never applies.
+ */
+async function loadEnglishPage(
+  pageId: string,
+  page: ArchivePageSource,
+  translationDir: string,
+  issueOcrSegments: string[],
+): Promise<ArchivePageContent> {
+  const english = await resolveOcrFrench(
+    translationDir,
+    pageId,
+    page.folioId,
+    issueOcrSegments,
+    page.position,
+    false, // allowEmpty=false: no untranslatable dimension on the English path (FR-007).
+  );
+
+  return {
+    pageId,
+    folioId: page.folioId,
+    ocrFrench: '',
+    english,
+    untranslatable: false,
+    machineAssist: null,
+    ocrCondition: await resolveOcrCondition(page),
+  };
+}
+
+/**
+ * Assemble one page's content, keyed by the folio's POSITION, branching on
+ * the source's {@link ReadingLanguage} (spec 015, FR-001/FR-002/FR-005).
+ *
+ * @param page - the folio source (carries `position`, `folioId`, `pageDir`).
+ * @param issueOcrSegments - the source's `issue.txt` split ONCE by the caller
+ *   (`splitIssueOcr(...).map(p => p.ocrFrench)`); the `position`-th segment is
+ *   the OCR fallback when no corrected `pNNN.fr.txt` exists.
+ * @param readingLanguage - the source's resolved reading-language path
+ *   (`resolveArchiveSource`'s `readingLanguage`). Required -- no default, so a
+ *   caller can never silently fall onto one path.
+ *
+ * @throws Error, naming the page, on a FRENCH-path absent translation
+ *   artifact (FR-008), an inconsistent label/text pairing, or empty OCR
+ *   French; or on an ENGLISH-path page with empty/absent OCR (FR-007).
+ */
+export async function loadArchivePage(
+  page: ArchivePageSource,
+  issueOcrSegments: string[],
+  readingLanguage: ReadingLanguage,
+): Promise<ArchivePageContent> {
+  const pageId = pageIdForPosition(page.position);
+  const translationDir = path.join(page.pageDir, 'translation');
+
+  return readingLanguage === 'english'
+    ? loadEnglishPage(pageId, page, translationDir, issueOcrSegments)
+    : loadFrenchPage(pageId, page, translationDir, issueOcrSegments);
 }

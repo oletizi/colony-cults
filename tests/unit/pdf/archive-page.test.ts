@@ -47,7 +47,7 @@ describe('loadArchivePage', () => {
       const folios = await foliosOf(FULL_SOURCE_ID, fixture.archiveRoot);
       const segments = await readSegments(fixture.sourceDir);
 
-      const content = await loadArchivePage(folios[0], segments);
+      const content = await loadArchivePage(folios[0], segments, 'french');
 
       expect(content.pageId).toBe('p001');
       expect(content.folioId).toBe('f001');
@@ -75,7 +75,7 @@ describe('loadArchivePage', () => {
       const folios = await foliosOf(FULL_SOURCE_ID, fixture.archiveRoot);
       const segments = await readSegments(fixture.sourceDir);
 
-      const content = await loadArchivePage(folios[0], segments);
+      const content = await loadArchivePage(folios[0], segments, 'french');
 
       expect(content.english).toBe('');
       expect(content.untranslatable).toBe(true);
@@ -96,7 +96,7 @@ describe('loadArchivePage', () => {
       const folios = await foliosOf(FULL_SOURCE_ID, fixture.archiveRoot);
       const segments = await readSegments(fixture.sourceDir);
 
-      await expect(loadArchivePage(folios[0], segments)).rejects.toThrow(/p001/);
+      await expect(loadArchivePage(folios[0], segments, 'french')).rejects.toThrow(/p001/);
     } finally {
       fixture.cleanup();
     }
@@ -119,7 +119,7 @@ describe('loadArchivePage', () => {
       const folios = await foliosOf(FULL_SOURCE_ID, fixture.archiveRoot);
       const segments = await readSegments(fixture.sourceDir);
 
-      await expect(loadArchivePage(folios[0], segments)).rejects.toThrow(/p001/);
+      await expect(loadArchivePage(folios[0], segments, 'french')).rejects.toThrow(/p001/);
     } finally {
       fixture.cleanup();
     }
@@ -139,7 +139,7 @@ describe('loadArchivePage', () => {
       expect(folios[0].folioId).toBe('f048');
       expect(folios[0].position).toBe(1);
 
-      const content = await loadArchivePage(folios[0], segments);
+      const content = await loadArchivePage(folios[0], segments, 'french');
 
       expect(content.pageId).toBe('p001');
       expect(content.folioId).toBe('f048');
@@ -147,6 +147,78 @@ describe('loadArchivePage', () => {
       // extract-relative page number (001) and the absolute folio (f048).
       expect(content.english).toBe('English translation for page 001 (folio f048)');
       expect(content.untranslatable).toBe(false);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('English path (spec 015, FR-002/FR-004): english = positional OCR, ocrFrench "", machineAssist null, untranslatable false, no translation dir read', async () => {
+    const fixture = await writeFixtureArchive({
+      case: FULL_SOURCE_CASE,
+      slug: FULL_SOURCE_SLUG,
+      pageCount: 1,
+      language: 'English',
+      omitTranslationDir: true,
+    });
+    try {
+      const folios = await foliosOf(FULL_SOURCE_ID, fixture.archiveRoot);
+      const segments = await readSegments(fixture.sourceDir);
+      expect(segments[0].length).toBeGreaterThan(0);
+
+      const content = await loadArchivePage(folios[0], segments, 'english');
+
+      expect(content.pageId).toBe('p001');
+      expect(content.english).toBe(segments[0]);
+      expect(content.ocrFrench).toBe('');
+      expect(content.machineAssist).toBeNull();
+      expect(content.untranslatable).toBe(false);
+      // No translation/ dir exists at all in this fixture (omitTranslationDir),
+      // so a non-throwing read here is itself proof no translation artifact
+      // (pNNN.en.txt / pNNN.fr.txt) was required or read.
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('English path fails loud naming the page when OCR is empty and no corrected pNNN.fr.txt exists (FR-007 / C5)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: FULL_SOURCE_CASE,
+      slug: FULL_SOURCE_SLUG,
+      pageCount: 2,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [{ ocrFrench: '' }, {}],
+    });
+    try {
+      const folios = await foliosOf(FULL_SOURCE_ID, fixture.archiveRoot);
+      const segments = await readSegments(fixture.sourceDir);
+      expect(segments[0]).toBe('');
+
+      await expect(loadArchivePage(folios[0], segments, 'english')).rejects.toThrow(/p001/);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('French path (spec 015 US2 regression): loadArchivePage(..., "french") assembles identically to the pre-feature shape', async () => {
+    const fixture = await writeFixtureArchive({
+      case: FULL_SOURCE_CASE,
+      slug: FULL_SOURCE_SLUG,
+      pageCount: 3,
+    });
+    try {
+      const folios = await foliosOf(FULL_SOURCE_ID, fixture.archiveRoot);
+      const segments = await readSegments(fixture.sourceDir);
+
+      const content = await loadArchivePage(folios[0], segments, 'french');
+
+      expect(content.pageId).toBe('p001');
+      expect(content.folioId).toBe('f001');
+      expect(content.ocrFrench.length).toBeGreaterThan(0);
+      expect(content.english).toBe('English translation for page 001 (folio f001)');
+      expect(content.untranslatable).toBe(false);
+      expect(content.machineAssist).not.toBeNull();
+      expect(content.ocrCondition).toBeNull();
     } finally {
       fixture.cleanup();
     }

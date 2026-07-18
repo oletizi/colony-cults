@@ -56,7 +56,7 @@ describe('loadArchivePage: untranslatable marker (SC-004, FR-007/FR-008)', () =>
       const folios = await foliosOf(SOURCE_ID, fixture.archiveRoot);
       const segments = await readSegments(fixture.sourceDir);
 
-      const content = await loadArchivePage(folios[0], segments);
+      const content = await loadArchivePage(folios[0], segments, 'french');
 
       expect(content.english).toBe('');
       expect(content.untranslatable).toBe(true);
@@ -79,7 +79,7 @@ describe('loadArchivePage: untranslatable marker (SC-004, FR-007/FR-008)', () =>
       const folios = await foliosOf(SOURCE_ID, fixture.archiveRoot);
       const segments = await readSegments(fixture.sourceDir);
 
-      await expect(loadArchivePage(folios[0], segments)).rejects.toThrow(/p001/);
+      await expect(loadArchivePage(folios[0], segments, 'french')).rejects.toThrow(/p001/);
     } finally {
       fixture.cleanup();
     }
@@ -103,7 +103,7 @@ describe('loadArchivePage: untranslatable marker (SC-004, FR-007/FR-008)', () =>
       const folios = await foliosOf(SOURCE_ID, fixture.archiveRoot);
       const segments = await readSegments(fixture.sourceDir);
 
-      await expect(loadArchivePage(folios[0], segments)).rejects.toThrow(/p001/);
+      await expect(loadArchivePage(folios[0], segments, 'french')).rejects.toThrow(/p001/);
     } finally {
       fixture.cleanup();
     }
@@ -120,8 +120,8 @@ describe('loadArchivePage: untranslatable marker (SC-004, FR-007/FR-008)', () =>
       const folios = await foliosOf(SOURCE_ID, fixture.archiveRoot);
       const segments = await readSegments(fixture.sourceDir);
 
-      const normalContent = await loadArchivePage(folios[0], segments);
-      const untranslatableContent = await loadArchivePage(folios[1], segments);
+      const normalContent = await loadArchivePage(folios[0], segments, 'french');
+      const untranslatableContent = await loadArchivePage(folios[1], segments, 'french');
 
       expect(normalContent.english.length).toBeGreaterThan(0);
       expect(normalContent.untranslatable).toBe(false);

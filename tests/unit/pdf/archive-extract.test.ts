@@ -78,7 +78,7 @@ describe('page-range extract alignment (SC-002)', () => {
 
       const [f048, f049, f050] = folios;
 
-      const p001 = await loadArchivePage(f048, segments);
+      const p001 = await loadArchivePage(f048, segments, 'french');
       expect(f048.folioId).toBe('f048');
       expect(f048.position).toBe(1);
       expect(p001.pageId).toBe('p001');
@@ -88,14 +88,14 @@ describe('page-range extract alignment (SC-002)', () => {
       // page number and the absolute folio, so this pins the alignment.
       expect(p001.english).toBe('English translation for page 001 (folio f048)');
 
-      const p002 = await loadArchivePage(f049, segments);
+      const p002 = await loadArchivePage(f049, segments, 'french');
       expect(f049.folioId).toBe('f049');
       expect(f049.position).toBe(2);
       expect(p002.pageId).toBe('p002');
       expect(p002.folioId).toBe('f049');
       expect(p002.english).toBe('English translation for page 002 (folio f049)');
 
-      const p003 = await loadArchivePage(f050, segments);
+      const p003 = await loadArchivePage(f050, segments, 'french');
       expect(f050.folioId).toBe('f050');
       expect(f050.position).toBe(3);
       expect(p003.pageId).toBe('p003');
@@ -125,7 +125,7 @@ describe('folio<->translation coverage guard (T012)', () => {
       const segments = await readSegments(fixture.sourceDir);
 
       // f049 (position 2) has no translation artifact at all.
-      await expect(loadArchivePage(folios[1], segments)).rejects.toThrow(/p002/);
+      await expect(loadArchivePage(folios[1], segments, 'french')).rejects.toThrow(/p002/);
     } finally {
       fixture.cleanup();
     }

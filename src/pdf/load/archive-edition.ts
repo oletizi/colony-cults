@@ -42,7 +42,7 @@ import type {
 } from '@/pdf/model';
 import type { ArchivePageContent } from '@/pdf/load/archive-page';
 import { loadArchivePage } from '@/pdf/load/archive-page';
-import type { ArchivePageSource } from '@/pdf/load/archive-source';
+import type { ArchivePageSource, ReadingLanguage } from '@/pdf/load/archive-source';
 import { resolveArchiveSource } from '@/pdf/load/archive-source';
 import { assembleColophon } from '@/pdf/load/colophon';
 import type { ColophonPageInput } from '@/pdf/load/colophon';
@@ -92,11 +92,18 @@ function requireNonEmpty(value: string, label: string, context: string): string 
   return value;
 }
 
-/** The selected built unit: its ordered folios, its dir, and its Edition kind. */
+/** The selected built unit: its ordered folios, its dir, its Edition kind, and its reading language. */
 interface SelectedUnit {
   folios: ArchivePageSource[];
   pageDir: string;
   kind: Edition['kind'];
+  /**
+   * The source's resolved reading-language path (spec 015, FR-001), threaded
+   * into every `loadArchivePage` call so per-page assembly branches without
+   * re-deriving it. Source-level (from `resolveArchiveSource`), so it is the
+   * same for every folio/issue of this unit.
+   */
+  readingLanguage: ReadingLanguage;
 }
 
 /**
@@ -119,7 +126,12 @@ async function selectUnit(
           `id, got ${JSON.stringify(itemId)}.`,
       );
     }
-    return { folios: resolution.folios, pageDir: resolution.pageDir, kind: 'monograph' };
+    return {
+      folios: resolution.folios,
+      pageDir: resolution.pageDir,
+      kind: 'monograph',
+      readingLanguage: resolution.readingLanguage,
+    };
   }
 
   const issue = resolution.issues.find((candidate) => candidate.issueId === itemId);
@@ -129,7 +141,12 @@ async function selectUnit(
         `(found: ${resolution.issues.map((i) => i.issueId).join(', ') || 'none'}).`,
     );
   }
-  return { folios: issue.folios, pageDir: issue.pageDir, kind: 'issue' };
+  return {
+    folios: issue.folios,
+    pageDir: issue.pageDir,
+    kind: 'issue',
+    readingLanguage: resolution.readingLanguage,
+  };
 }
 
 /**
@@ -256,7 +273,7 @@ export function makeArchiveEditionReader(deps: ArchiveEditionReaderDeps): Archiv
       const segments = splitIssueOcr(issueText).map((page) => page.ocrFrench);
 
       const contents = await Promise.all(
-        unit.folios.map((folio) => loadArchivePage(folio, segments)),
+        unit.folios.map((folio) => loadArchivePage(folio, segments, unit.readingLanguage)),
       );
       const pages: EditionPage[] = unit.folios.map((folio, index) =>
         toEditionPage(folio, contents[index], provider),
