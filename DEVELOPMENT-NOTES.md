@@ -654,3 +654,4 @@ workflow(graduate): impl:feature/corpus-print-pdf merging -> validating
 workflow(graduate): impl:feature/edition-publishing merging -> validating
 workflow(graduate): impl:feature/coverage-web-view merging -> validating
 workflow(graduate): impl:feature/corpus-model-coherence merging -> validating
+workflow(graduate): impl:feature/archive-direct-pdf merging -> validating
