@@ -62,6 +62,7 @@ const corpusSnapshotReader: CorpusSnapshotReader = {
           sourceId: SOURCE_ID,
           title: 'Idempotency Test Source',
           kind: 'periodical' as const,
+          language: 'French' as const,
           ark: 'ark:/12148/idempotent-test',
           rights: 'public-domain',
           issues: ISSUE_IDS.map((issueId, i) => ({

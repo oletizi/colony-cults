@@ -61,6 +61,7 @@ function makeSnapshot(overrides: {
     sourceId: SOURCE_ID,
     title: overrides.title ?? 'Le Petit Journal',
     kind: overrides.kind ?? 'periodical',
+    language: 'French',
     ark: 'ark:/12148/source',
     rights: overrides.rights ?? 'public-domain',
     issues: overrides.issues ?? [issue],

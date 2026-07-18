@@ -61,6 +61,9 @@ export function resolveConfig(env: NodeJS.ProcessEnv = process.env): LoadConfig 
         'PB-P010',
         'PB-P011',
         'PB-P055',
+        'PB-P057',
+        'PB-P058',
+        'PB-P059',
       ];
 
   const providerKind = env.CORPUS_IMAGE_PROVIDER?.trim() ?? 'source-iiif';

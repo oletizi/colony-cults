@@ -1,31 +1,48 @@
 ---
 /**
- * The translation pane -- the critical frame's voice, set cool (slate ground,
- * grotesque / mono). For an English-speaking reader this is the PRIMARY text of
- * the page, so it LEADS the text column next to the scan (the warm French
- * readings are folded beneath it). It is explicitly marked as machine-assisted
- * and not human-reviewed, so the apparatus never lets the machine reading pass
- * for an authoritative one. Line breaks are preserved.
+ * The English reading pane -- the critical frame's voice, set cool (slate
+ * ground, grotesque / mono). For an English-speaking reader this is the PRIMARY
+ * text of the page, so it LEADS the text column next to the scan.
+ *
+ * Two roles (single-language sources, spec: english-sources):
+ *  - `translation` (default): a French source's machine English TRANSLATION.
+ *    Labelled "Translation · English" and stamped machine-assisted / not
+ *    human-reviewed, so the apparatus never lets the machine reading pass for an
+ *    authoritative one. The warm French source readings fold beneath it.
+ *  - `source`: an ENGLISH-language source's own text (transcribed from the
+ *    scan) -- it is NOT a translation, so it is labelled simply "English" and
+ *    carries no machine-translation stamp; the scan beside it is the authority.
+ *
+ * Line breaks are preserved.
  */
 interface Props {
   english: string;
+  /** `translation` = a machine English translation; `source` = the source's own English text. */
+  role?: 'translation' | 'source';
 }
-const { english } = Astro.props;
+const { english, role = 'translation' } = Astro.props;
 const text = english.trim();
 const hasText = text.length > 0;
+const isSource = role === 'source';
+const ariaLabel = isSource ? 'English text' : 'Translation into English';
+const emptyMessage = isSource
+  ? 'No transcribed text for this page.'
+  : 'No English translation is available for this page.';
 ---
 
-<section class="translation" aria-label="Translation into English">
+<section class="translation" aria-label={ariaLabel}>
   <p class="translation__label" data-pagefind-ignore>
     <span class="translation__lede-mark">Reading</span>
-    Translation&nbsp;· English
+    {isSource ? 'English' : <>Translation&nbsp;· English</>}
   </p>
   {hasText ? (
     <div class="translation__body">{text}</div>
   ) : (
-    <p class="translation__empty">No English translation is available for this page.</p>
+    <p class="translation__empty">{emptyMessage}</p>
   )}
-  <p class="translation__stamp" data-pagefind-ignore>machine-assisted · not human-reviewed</p>
+  {isSource ? null : (
+    <p class="translation__stamp" data-pagefind-ignore>machine-assisted · not human-reviewed</p>
+  )}
 </section>
 
 <style>

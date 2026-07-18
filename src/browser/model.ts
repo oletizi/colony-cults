@@ -60,6 +60,19 @@ export interface LoadResult {
 export type SourceKind = 'periodical' | 'monograph';
 
 /**
+ * A source's language, resolved from its folio sidecars' `language` field.
+ *
+ * A `'French'` source is the original parallel-text shape: a FRENCH source
+ * layer (`ocrFrench` / optional `correctedFrench`) plus a required ENGLISH
+ * translation (`english`, from the `translation/` layer). An `'English'`
+ * source is a single-language English clipping (e.g. an English-language
+ * newspaper): its reading text IS its OCR (`english`), it has NO French source
+ * layer (`ocrFrench` is `''`, `correctedFrench` is `null`) and NO `translation/`
+ * layer (nothing to translate).
+ */
+export type SourceLanguage = 'French' | 'English';
+
+/**
  * One bibliographic source (e.g. a periodical) and its issues.
  *
  * Validation: `ark` required when the active {@link ImageProviderConfig} is
@@ -72,6 +85,13 @@ export interface SourceView {
   title: string;
   /** SSOT `kind` (`'periodical'` or `'monograph'`). */
   kind: SourceKind;
+  /**
+   * The source language (from the folio sidecars' `language` field). `'French'`
+   * carries a French source layer + a required English translation; `'English'`
+   * is a single-language English clipping whose reading text is its OCR and
+   * which has no French source layer and no translation requirement.
+   */
+  language: SourceLanguage;
   /** Archival identifier (SSOT repository record / page sidecars); used by the `source-iiif` provider. */
   ark: string;
   /** Rights determination, e.g. `public-domain`. */
@@ -114,11 +134,20 @@ export interface PageView {
   folioId: string;
   /** Resolved by the active {@link ImageProviderConfig}. */
   image: ImageDescriptor;
-  /** Raw French OCR for this page (a form-feed segment of `issue.txt`); may be noisy. */
+  /**
+   * The FRENCH source layer: raw French OCR (a form-feed segment of `issue.txt`);
+   * may be noisy. `''` for an English source, which has no French source layer.
+   */
   ocrFrench: string;
-  /** Corrected French (`translation/pNNN.fr.txt`) when present. */
+  /**
+   * The FRENCH source layer, corrected (`translation/pNNN.fr.txt`) when present.
+   * `null` for an English source, which has no French source layer.
+   */
   correctedFrench: string | null;
-  /** English translation (`translation/pNNN.en.txt`). */
+  /**
+   * The page's ENGLISH reading text: the translation for a French source, the
+   * transcription (the `issue.txt` OCR segment) for an English source.
+   */
   english: string;
   /** The provenance-rail facts. */
   provenance: ProvenanceRecord;
@@ -244,11 +273,21 @@ export interface RawPage {
    * introduced (so those older snapshots still parse).
    */
   imageSha256?: string | null;
-  /** Raw French OCR for this page (a form-feed segment of `issue.txt`); may be noisy. */
+  /**
+   * The FRENCH source layer: raw French OCR (a form-feed segment of `issue.txt`);
+   * may be noisy. `''` for an English source, which has no French source layer.
+   */
   ocrFrench: string;
-  /** Corrected French (`translation/pNNN.fr.txt`) when present. */
+  /**
+   * The FRENCH source layer, corrected (`translation/pNNN.fr.txt`) when present.
+   * `null` for an English source, which has no French source layer.
+   */
   correctedFrench: string | null;
-  /** English translation (`translation/pNNN.en.txt`). */
+  /**
+   * The page's ENGLISH reading text: the translation (`translation/pNNN.en.txt`)
+   * for a French source, the transcription (the `issue.txt` OCR segment) for an
+   * English source.
+   */
   english: string;
   /** A surfaced OCR-condition note when detected, else `null`. */
   ocrCondition: string | null;
@@ -276,6 +315,13 @@ export interface RawSource {
   title: string;
   /** SSOT `kind` (`'periodical'` or `'monograph'`). */
   kind: SourceKind;
+  /**
+   * The source language (from the folio sidecars' `language` field). `'French'`
+   * carries a French source layer + a required English translation; `'English'`
+   * is a single-language English clipping whose reading text is its OCR and
+   * which has no French source layer and no translation requirement.
+   */
+  language: SourceLanguage;
   /** Source-level archival identifier. */
   ark: string;
   /** Rights determination, e.g. `public-domain`. */

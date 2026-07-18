@@ -12,7 +12,7 @@
  * substitutes nothing. The full monospace provenance-rail signature and the
  * embedded display face are US4 -- this is the structural reading view.
  */
-import type { PageView, SourceKind } from '@/browser/model';
+import type { PageView, SourceKind, SourceLanguage } from '@/browser/model';
 import FacsimileViewer from './FacsimileViewer.astro';
 import SourcePane from './SourcePane.astro';
 import TranslationPane from './TranslationPane.astro';
@@ -25,6 +25,13 @@ interface Props {
   sourceTitle: string;
   /** Whether this source is a periodical (issue-framed) or a monograph (book-framed). */
   kind: SourceKind;
+  /**
+   * The source language. `'French'` shows the machine English translation
+   * leading, with the French source readings folded beneath. `'English'` is a
+   * single-language source: its own English text reads beside the scan and there
+   * is no French source pane.
+   */
+  language: SourceLanguage;
   issueDate: string;
   page: PageView;
   /** 1-based position of this page within its issue. */
@@ -41,6 +48,7 @@ const {
   sourceId,
   sourceTitle,
   kind,
+  language,
   issueDate,
   page,
   positionInIssue,
@@ -52,6 +60,9 @@ const {
 } = Astro.props;
 
 const isBook = kind === 'monograph';
+// An English-language source has no French source layer: its own English text
+// reads beside the scan, with no folded French readings.
+const isEnglishSource = language === 'English';
 const pageLabel = `p.${positionInIssue}`;
 // A book page is placed within the whole volume ("p. N / 32"); a periodical page
 // is placed within its dated issue. Frame every label the same way.
@@ -119,12 +130,18 @@ const provenanceLabel = isBook
         data-pagefind-meta="title[data-title]"
         data-title={searchTitle}
       >
-        <TranslationPane english={page.english} />
-        <SourcePane
-          ocrFrench={page.ocrFrench}
-          correctedFrench={page.correctedFrench}
-          ocrCondition={page.ocrCondition}
-        />
+        {isEnglishSource ? (
+          <TranslationPane english={page.english} role="source" />
+        ) : (
+          <>
+            <TranslationPane english={page.english} />
+            <SourcePane
+              ocrFrench={page.ocrFrench}
+              correctedFrench={page.correctedFrench}
+              ocrCondition={page.ocrCondition}
+            />
+          </>
+        )}
       </div>
     </div>
 
