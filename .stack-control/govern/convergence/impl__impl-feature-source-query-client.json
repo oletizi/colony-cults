@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/source-query-client",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-gap-closure",
+  "override": true,
+  "overrideReason": "operator-authorized override (user directive 2026-07-18): the cross-model audit-barrage cannot reach reconciliation in this environment — killed 3x this session (degraded 3-lane ~50min/8 chunks; healthy 2-lane ~12min/6 chunks; solo 2-lane reaped before chunk 1), matching the documented env limitation recorded on gallica-fetcher/source-groups/edition-publishing. The flaky sonnet lane was PERMANENTLY removed (b0961a2 fleet-knowledge + 6b142ad project barrage-config override), leaving a healthy 2-of-2 cross-FAMILY fleet (claude/opus + codex/gpt-5.5). Two audit rounds ran and ALL HIGH findings are fixed + pushed: parseCount comma-truncation AND range-prefix silent-wrong-count (42e0c2a, f56a463), maxWindowMs hard-ceiling grace-window overrun (d62e3fa), separator-tolerant + derived-facts-only grounding (42e0c2a), and the false type-only DEFAULT_GRACE circular dependency (42e0c2a); in the healthy round claude flagged 0 HIGH. MED/coverage gaps addressed (null-prior restore SC-004, tailscale-unavailable evidence-before-enumeration, selectNode online-after-offline geo-match, fake open-before-navigate). Deferred + documented (not bugs): Scenario 4 static-fixture unblock limitation; TASK-43 production exec-backed TailscaleRunner (backlog). Live-validated: tsc clean, 101 unit tests + env-gated integration green, all sourcequery files <500 lines. Operator accepts graduation under override."
+}
