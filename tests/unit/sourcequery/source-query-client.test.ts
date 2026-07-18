@@ -5,7 +5,13 @@ import path from 'node:path';
 import { SourceQueryClient } from '@/sourcequery/source-query-client';
 import type { SourceConfig } from '@/sourcequery/source-config';
 import { DEFAULT_GRACE } from '@/sourcequery/source-config';
-import type { PageResult, QuerySummary } from '@/sourcequery/types';
+import type {
+  ExitNode,
+  OperatorPermissionRequest,
+  PageResult,
+  QueryResult,
+  QuerySummary,
+} from '@/sourcequery/types';
 import { createFakeClock } from '@/sourcequery/clock';
 import { FakeBrowserSession, FakeTailscaleRunner } from './fakes';
 
@@ -34,16 +40,39 @@ function makeConfig(
   };
 }
 
-/** Build a client whose config resolves to `config` for any source id. */
-function makeClient(config: SourceConfig, browser: FakeBrowserSession) {
+/**
+ * Build a client whose config resolves to `config` for any source id. An
+ * optional node-carrying {@link FakeTailscaleRunner} lets block-path tests
+ * drive exit-node enumeration/selection; the default is an empty runner (the
+ * happy-path tests never touch it).
+ */
+function makeClient(
+  config: SourceConfig,
+  browser: FakeBrowserSession,
+  tailscale: FakeTailscaleRunner = new FakeTailscaleRunner(),
+) {
   const { clock, sleep } = createFakeClock(0);
   return new SourceQueryClient({
     browser,
-    tailscale: new FakeTailscaleRunner(),
+    tailscale,
     clock,
     sleep,
     resolveConfig: () => config,
   });
+}
+
+function isPermissionRequest(
+  value: QueryResult | OperatorPermissionRequest,
+): value is OperatorPermissionRequest {
+  return 'blockEvidence' in value && 'proposedNode' in value && 'switchCommand' in value;
+}
+
+/** Narrow a query outcome to a {@link QueryResult}, failing loud otherwise. */
+function asQueryResult(value: QueryResult | OperatorPermissionRequest): QueryResult {
+  if (isPermissionRequest(value)) {
+    throw new Error('expected a QueryResult, got an OperatorPermissionRequest');
+  }
+  return value;
 }
 
 describe('sourcequery/SourceQueryClient', () => {
@@ -76,7 +105,7 @@ describe('sourcequery/SourceQueryClient', () => {
     const browser = new FakeBrowserSession({ responses: { [url]: page } });
     const client = makeClient(config, browser);
 
-    const result = await client.query('fixture', 'gold rush');
+    const result = asQueryResult(await client.query('fixture', 'gold rush'));
 
     expect(result.retention).toBe('persist');
     expect(result.summary.count).toBe(3);
@@ -98,7 +127,7 @@ describe('sourcequery/SourceQueryClient', () => {
     const browser = new FakeBrowserSession({ responses: { [url]: page } });
     const client = makeClient(config, browser);
 
-    const result = await client.query('fixture', 'no such thing');
+    const result = asQueryResult(await client.query('fixture', 'no such thing'));
 
     expect(result.retention).toBe('persist');
     expect(result.summary.count).toBe(0);
@@ -121,7 +150,7 @@ describe('sourcequery/SourceQueryClient', () => {
     const browser = new FakeBrowserSession({ responses: { [url]: page } });
     const client = makeClient(config, browser);
 
-    const result = await client.query('fixture', 'trove empty');
+    const result = asQueryResult(await client.query('fixture', 'trove empty'));
 
     expect(result.retention).toBe('derived-facts-only');
     expect(result.summary.count).toBe(0);
@@ -150,7 +179,7 @@ describe('sourcequery/SourceQueryClient', () => {
     const browser = new FakeBrowserSession({ responses: { [url]: page } });
     const client = makeClient(config, browser);
 
-    const result = await client.query('fixture', 'trove hits');
+    const result = asQueryResult(await client.query('fixture', 'trove hits'));
 
     expect(result.retention).toBe('derived-facts-only');
     expect(result.summary.count).toBe(2);
@@ -163,7 +192,55 @@ describe('sourcequery/SourceQueryClient', () => {
     expect(browser.isOpen).toBe(false);
   });
 
-  it('hard block page (HTTP 403): rejects (escalation not wired) and still closes the session', async () => {
+  const makeExitNode = (overrides: Partial<ExitNode>): ExitNode => ({
+    ip: '100.64.0.1',
+    hostname: 'node-default',
+    country: 'New Zealand',
+    city: 'Wellington',
+    online: true,
+    ...overrides,
+  });
+
+  it('hard block (HTTP 403) with a usable node: persists evidence, RETURNS an OperatorPermissionRequest, NEVER switches, closes the session', async () => {
+    const config = makeConfig(() => ({ count: 0, candidates: [] }), {
+      id: 'fixture',
+      preferredGeo: 'New Zealand',
+    });
+    const url = config.buildQueryUrl('blocked', 1);
+    const page: PageResult = {
+      status: 403,
+      html: '<html><body>Forbidden</body></html>',
+      snapshotMarkdown: '# Forbidden',
+      errored: false,
+    };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const nzNode = makeExitNode({ hostname: 'nz-1', country: 'New Zealand', online: true });
+    const usNode = makeExitNode({ hostname: 'us-1', country: 'United States', online: true });
+    const runner = new FakeTailscaleRunner([usNode, nzNode], 'prior-node.example.ts.net');
+    const client = makeClient(config, browser, runner);
+
+    const outcome = await client.query('fixture', 'blocked');
+
+    if (!isPermissionRequest(outcome)) {
+      throw new Error('expected an OperatorPermissionRequest');
+    }
+    expect(outcome.source).toBe('fixture');
+    // Block evidence persisted FIRST, and its file exists on disk.
+    expect(outcome.blockEvidence.kind).toBe('status');
+    expect(outcome.blockEvidence.detail).toBe('HTTP 403');
+    expect(existsSync(outcome.blockEvidence.evidencePath)).toBe(true);
+    // Geo-selected the NZ node (preferredGeo match).
+    expect(outcome.proposedNode.hostname).toBe('nz-1');
+    expect(outcome.currentOrigin).toBe('prior-node.example.ts.net');
+    expect(outcome.switchCommand).toBe('tailscale set --exit-node=nz-1');
+    expect(outcome.minimalQueryPlan).toEqual([url]);
+    expect(outcome.hostImpactWarning.length).toBeGreaterThan(0);
+    // SC-003: NO autonomous exit-node switch happened.
+    expect(runner.setCalls).toEqual([]);
+    expect(browser.isOpen).toBe(false);
+  });
+
+  it('hard block with NO usable exit node: rejects, persists evidence, never switches, closes the session', async () => {
     const config = makeConfig(() => ({ count: 0, candidates: [] }));
     const url = config.buildQueryUrl('blocked', 1);
     const page: PageResult = {
@@ -173,9 +250,36 @@ describe('sourcequery/SourceQueryClient', () => {
       errored: false,
     };
     const browser = new FakeBrowserSession({ responses: { [url]: page } });
-    const client = makeClient(config, browser);
+    // Only offline nodes => selectNode returns null.
+    const runner = new FakeTailscaleRunner([makeExitNode({ hostname: 'off-1', online: false })]);
+    const client = makeClient(config, browser, runner);
 
-    await expect(client.query('fixture', 'blocked')).rejects.toThrow(/block|escalation|T020|US2/i);
+    await expect(client.query('fixture', 'blocked')).rejects.toThrow(/no usable exit node/i);
+    // Evidence was still persisted before the honest stop.
+    expect(existsSync(path.join(tempDir, 'bibliography', 'repository-responses', 'fixture'))).toBe(true);
+    expect(runner.setCalls).toEqual([]);
+    expect(browser.isOpen).toBe(false);
+  });
+
+  it('hard block while Tailscale is unavailable: rejects honestly, never switches, closes the session', async () => {
+    const config = makeConfig(() => ({ count: 0, candidates: [] }));
+    const url = config.buildQueryUrl('blocked', 1);
+    const page: PageResult = {
+      status: 403,
+      html: '<html><body>Forbidden</body></html>',
+      snapshotMarkdown: '# Forbidden',
+      errored: false,
+    };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const runner = new FakeTailscaleRunner();
+    // Simulate Tailscale unavailable: enumeration rejects.
+    runner.listExitNodes = async () => {
+      throw new Error('tailscale CLI not found');
+    };
+    const client = makeClient(config, browser, runner);
+
+    await expect(client.query('fixture', 'blocked')).rejects.toThrow(/tailscale/i);
+    expect(runner.setCalls).toEqual([]);
     expect(browser.isOpen).toBe(false);
   });
 

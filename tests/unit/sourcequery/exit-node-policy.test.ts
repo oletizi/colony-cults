@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { ExitNodePolicy } from '@/sourcequery/exit-node-policy';
 import { createFakeClock } from '@/sourcequery/clock';
-import type { ExitNode } from '@/sourcequery/types';
+import type { BlockEvidence, ExitNode, HostExitState } from '@/sourcequery/types';
 import { FakeTailscaleRunner } from './fakes';
+
+function makeBlockEvidence(overrides: Partial<BlockEvidence> = {}): BlockEvidence {
+  return {
+    kind: 'status',
+    detail: 'HTTP 403',
+    evidencePath: '/tmp/block-2026.html',
+    capturedAtUtc: '2026-07-17T00:00:00.000Z',
+    ...overrides,
+  };
+}
 
 function makeNode(overrides: Partial<ExitNode>): ExitNode {
   return {
@@ -139,6 +149,109 @@ describe('ExitNodePolicy', () => {
       const selected = policy.selectNode(nodes, 'New Zealand');
 
       expect(selected?.hostname).toBe('au-online');
+    });
+  });
+
+  describe('buildPermissionRequest', () => {
+    const proposedNode = makeNode({
+      hostname: 'nz-1',
+      ip: '100.64.0.9',
+      country: 'New Zealand',
+    });
+    const blockEvidence = makeBlockEvidence();
+
+    it('populates all seven fields, passing through source/blockEvidence/proposedNode/minimalQueryPlan', () => {
+      const { policy } = makePolicy([proposedNode]);
+      const currentState: HostExitState = { priorExitNode: null };
+      const plan = ['https://source.test/search?q=x'];
+
+      const request = policy.buildPermissionRequest({
+        source: 'papers-past',
+        blockEvidence,
+        currentState,
+        proposedNode,
+        minimalQueryPlan: plan,
+      });
+
+      expect(request.source).toBe('papers-past');
+      expect(request.blockEvidence).toBe(blockEvidence);
+      expect(request.proposedNode).toBe(proposedNode);
+      expect(request.minimalQueryPlan).toBe(plan);
+      expect(request.currentOrigin).toBeDefined();
+      expect(request.switchCommand).toBeDefined();
+      expect(request.hostImpactWarning).toBeDefined();
+    });
+
+    it("currentOrigin is 'direct' when priorExitNode is null", () => {
+      const { policy } = makePolicy([proposedNode]);
+
+      const request = policy.buildPermissionRequest({
+        source: 'papers-past',
+        blockEvidence,
+        currentState: { priorExitNode: null },
+        proposedNode,
+        minimalQueryPlan: [],
+      });
+
+      expect(request.currentOrigin).toBe('direct');
+    });
+
+    it('currentOrigin equals the prior exit node when one is set', () => {
+      const { policy } = makePolicy([proposedNode]);
+
+      const request = policy.buildPermissionRequest({
+        source: 'papers-past',
+        blockEvidence,
+        currentState: { priorExitNode: 'us-9.example.ts.net' },
+        proposedNode,
+        minimalQueryPlan: [],
+      });
+
+      expect(request.currentOrigin).toBe('us-9.example.ts.net');
+    });
+
+    it('switchCommand uses the hostname when present', () => {
+      const { policy } = makePolicy([proposedNode]);
+
+      const request = policy.buildPermissionRequest({
+        source: 'papers-past',
+        blockEvidence,
+        currentState: { priorExitNode: null },
+        proposedNode,
+        minimalQueryPlan: [],
+      });
+
+      expect(request.switchCommand).toBe('tailscale set --exit-node=nz-1');
+    });
+
+    it('switchCommand falls back to the ip when hostname is empty', () => {
+      const noHostname = makeNode({ hostname: '', ip: '100.64.0.42' });
+      const { policy } = makePolicy([noHostname]);
+
+      const request = policy.buildPermissionRequest({
+        source: 'papers-past',
+        blockEvidence,
+        currentState: { priorExitNode: null },
+        proposedNode: noHostname,
+        minimalQueryPlan: [],
+      });
+
+      expect(request.switchCommand).toBe('tailscale set --exit-node=100.64.0.42');
+    });
+
+    it('hostImpactWarning is non-empty and warns the whole host is rerouted', () => {
+      const { policy } = makePolicy([proposedNode]);
+
+      const request = policy.buildPermissionRequest({
+        source: 'papers-past',
+        blockEvidence,
+        currentState: { priorExitNode: null },
+        proposedNode,
+        minimalQueryPlan: [],
+      });
+
+      expect(request.hostImpactWarning.length).toBeGreaterThan(0);
+      expect(request.hostImpactWarning.toLowerCase()).toContain('host');
     });
   });
 });

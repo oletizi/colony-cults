@@ -220,6 +220,11 @@ d('SourceQueryClient end-to-end against a local fixture server', () => {
 
       const result = await client.query(FIXTURE_LOCAL_ID, 'ballarat');
 
+      // A result page yields a QueryResult, never an escalation.
+      if ('blockEvidence' in result) {
+        throw new Error('expected a QueryResult, not an OperatorPermissionRequest');
+      }
+
       // Retention + grounded count.
       expect(result.retention).toBe('persist');
       if (result.retention !== 'persist') {
@@ -256,7 +261,8 @@ d('SourceQueryClient end-to-end against a local fixture server', () => {
         sleep: realSleep,
       });
 
-      // A detected hard block THROWS in the MVP (escalation is T020, not wired).
+      // A detected hard block with no usable exit node (the fake carries none)
+      // reports honestly and STOPS — it throws rather than switching (SC-003).
       await expect(client.query(FIXTURE_CHALLENGE_ID, 'ballarat')).rejects.toThrow(
         /hard block/i,
       );

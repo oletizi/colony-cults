@@ -8,9 +8,11 @@
  * Scope boundaries (fail-loud, Principle V — never fabricate a result):
  * - Multi-page walking (`pages > 1`) is a later enhancement and THROWS here
  *   rather than silently returning only page 1.
- * - The hard-block -> exit-node-escalation path (US2 / T020) is NOT wired here.
- *   A detected block THROWS a descriptive error; it never persists block
- *   evidence or builds an OperatorPermissionRequest (that is T020).
+ * - On a hard block (US2 / T020) the pass persists block evidence FIRST, then
+ *   either RETURNS an `OperatorPermissionRequest` (a usable exit node exists)
+ *   or THROWS an honest fail-loud error (Tailscale unavailable, or no usable
+ *   node). It NEVER switches the exit node autonomously — that only happens on
+ *   explicit operator approval (T021 / FR-011 / SC-003).
  *
  * The injected `Clock` is the ONE allowed place to form the `capturedAtUtc`
  * timestamp (this is the composition layer); the library core modules
@@ -26,13 +28,20 @@ import { getSourceConfig } from '@/sourcequery/source-config';
 import { PolitenessPolicy } from '@/sourcequery/politeness-policy';
 import { classify } from '@/sourcequery/block-detection';
 import { persistThenParse } from '@/sourcequery/frugality';
-import { persistCapture } from '@/sourcequery/persistence';
-import type { QueryResult } from '@/sourcequery/types';
+import { persistCapture, persistBlockEvidence } from '@/sourcequery/persistence';
+import { ExitNodePolicy } from '@/sourcequery/exit-node-policy';
+import { describeError } from '@/bibliography/load-primitives';
+import type {
+  ExitNode,
+  HostExitState,
+  OperatorPermissionRequest,
+  QueryResult,
+} from '@/sourcequery/types';
 
 /** Constructor-injected dependencies (interface-first; no class inheritance). */
 export interface SourceQueryClientDeps {
   browser: BrowserSession;
-  /** Stored for US2 (exit-node escalation); unused on the happy path. */
+  /** Drives the ExitNodePolicy used on the hard-block escalation path (US2). */
   tailscale: TailscaleRunner;
   clock: Clock;
   sleep: Sleep;
@@ -49,32 +58,38 @@ export interface QueryOptions {
 /** Orchestrates one governed query pass and returns a grounded QueryResult. */
 export class SourceQueryClient {
   private readonly browser: BrowserSession;
-  private readonly tailscale: TailscaleRunner;
   private readonly clock: Clock;
   private readonly sleep: Sleep;
   private readonly resolveConfig: (id: string) => SourceConfig;
+  private readonly exitNodePolicy: ExitNodePolicy;
 
   constructor(deps: SourceQueryClientDeps) {
     this.browser = deps.browser;
-    this.tailscale = deps.tailscale;
     this.clock = deps.clock;
     this.sleep = deps.sleep;
     this.resolveConfig = deps.resolveConfig ?? getSourceConfig;
-  }
-
-  /** The injected TailscaleRunner reserved for US2 (T020) exit-node escalation. */
-  get exitNodeRunner(): TailscaleRunner {
-    return this.tailscale;
+    this.exitNodePolicy = new ExitNodePolicy({
+      tailscale: deps.tailscale,
+      clock: deps.clock,
+      sleep: deps.sleep,
+    });
   }
 
   /**
    * Run one query pass for `sourceId` + `text`. Returns a grounded
-   * `QueryResult` on a result or legitimate-empty page. Throws (fail-loud) on
-   * a hard block (escalation is a later task), on an unsupported `pages > 1`
-   * request, or on any grounding/persistence failure. The browser session is
-   * ALWAYS closed, even on throw.
+   * `QueryResult` on a result or legitimate-empty page, or an
+   * `OperatorPermissionRequest` on a hard block where a usable exit node
+   * exists (after persisting block evidence). Throws (fail-loud) on a hard
+   * block where Tailscale is unavailable or no usable node exists, on an
+   * unsupported `pages > 1` request, or on any grounding/persistence failure.
+   * The browser session is ALWAYS closed, even on throw. NEVER switches the
+   * exit node autonomously (FR-011 / SC-003).
    */
-  async query(sourceId: string, text: string, opts?: QueryOptions): Promise<QueryResult> {
+  async query(
+    sourceId: string,
+    text: string,
+    opts?: QueryOptions,
+  ): Promise<QueryResult | OperatorPermissionRequest> {
     const config = this.resolveConfig(sourceId);
 
     const pages = opts?.pages ?? 1;
@@ -104,12 +119,56 @@ export class SourceQueryClient {
       const classification = classify(pageResult, config);
 
       if (classification.outcome === 'block') {
-        throw new Error(
-          `SourceQueryClient: hard block detected (kind="${classification.kind}", ` +
-            `detail="${classification.detail}") for source "${config.id}" query "${text}". ` +
-            'Hard-block exit-node escalation is handled by a later task (US2 / T020) and is ' +
-            'not wired in this MVP. Refusing to fabricate a result.',
-        );
+        // FR-010: persist block evidence FIRST — an OperatorPermissionRequest is
+        // never raised, and no honest stop is reported, without proof on disk.
+        const blockEvidence = await persistBlockEvidence({
+          source: config.id,
+          kind: classification.kind,
+          detail: classification.detail,
+          html: pageResult.html,
+          snapshotMarkdown: pageResult.snapshotMarkdown,
+          capturedAtUtc,
+        });
+
+        // Enumerate exit nodes and capture the host's prior state. If EITHER
+        // fails, Tailscale is unavailable: report honestly and STOP — never
+        // switch (fail-loud, Principle V; FR-011/SC-003).
+        let nodes: ExitNode[];
+        let currentState: HostExitState;
+        try {
+          nodes = await this.exitNodePolicy.enumerate();
+          currentState = await this.exitNodePolicy.captureCurrentState();
+        } catch (error) {
+          throw new Error(
+            `SourceQueryClient: hard block detected (kind="${classification.kind}", ` +
+              `detail="${classification.detail}") for source "${config.id}" query "${text}", ` +
+              'but Tailscale is unavailable (no exit nodes available / Tailscale unavailable): ' +
+              `${describeError(error)}. Reporting honestly and stopping — NO exit-node switch. ` +
+              `Block evidence persisted at ${blockEvidence.evidencePath}.`,
+          );
+        }
+
+        const node = this.exitNodePolicy.selectNode(nodes, config.preferredGeo);
+        if (node === null) {
+          throw new Error(
+            `SourceQueryClient: hard block detected (kind="${classification.kind}", ` +
+              `detail="${classification.detail}") for source "${config.id}" query "${text}", ` +
+              'but there is no usable exit node (no online candidate). Reporting honestly and ' +
+              'stopping — NO exit-node switch (fail-loud, Principle V). Block evidence persisted ' +
+              `at ${blockEvidence.evidencePath}.`,
+          );
+        }
+
+        // A usable node exists: build the escalation and STOP. The switch NEVER
+        // happens autonomously here — only on explicit operator approval (T021 /
+        // FR-011 / SC-003).
+        return this.exitNodePolicy.buildPermissionRequest({
+          source: config.id,
+          blockEvidence,
+          currentState,
+          proposedNode: node,
+          minimalQueryPlan: [url],
+        });
       }
 
       if (classification.outcome === 'result') {

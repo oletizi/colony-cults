@@ -12,7 +12,12 @@
  */
 import type { Clock, Sleep } from '@/sourcequery/clock';
 import type { TailscaleRunner } from '@/sourcequery/tailscale-runner';
-import type { ExitNode, HostExitState } from '@/sourcequery/types';
+import type {
+  BlockEvidence,
+  ExitNode,
+  HostExitState,
+  OperatorPermissionRequest,
+} from '@/sourcequery/types';
 
 /** Constructor dependencies for {@link ExitNodePolicy}. */
 export interface ExitNodePolicyDeps {
@@ -68,5 +73,35 @@ export class ExitNodePolicy {
       }
     }
     return online[0];
+  }
+
+  /**
+   * Build the {@link OperatorPermissionRequest} presented to the operator when
+   * a hard block is met and a usable exit node exists (FR-010/FR-011). This is
+   * a PURE function: it performs no host interaction and NEVER switches the
+   * exit node — the switch only happens later on explicit operator approval
+   * (T021 / SC-003). It merely describes the proposed switch (its command and
+   * whole-host impact) so the operator can decide.
+   */
+  buildPermissionRequest(args: {
+    source: string;
+    blockEvidence: BlockEvidence;
+    currentState: HostExitState;
+    proposedNode: ExitNode;
+    minimalQueryPlan: string[];
+  }): OperatorPermissionRequest {
+    const target = args.proposedNode.hostname || args.proposedNode.ip;
+    return {
+      source: args.source,
+      blockEvidence: args.blockEvidence,
+      currentOrigin: args.currentState.priorExitNode ?? 'direct',
+      proposedNode: args.proposedNode,
+      switchCommand: `tailscale set --exit-node=${target}`,
+      hostImpactWarning:
+        'Approving this switch reroutes the ENTIRE host machine’s network traffic ' +
+        `through exit node ${target}, not just this one query. All other processes on ` +
+        'this host will egress via that node until the exit node is restored.',
+      minimalQueryPlan: args.minimalQueryPlan,
+    };
   }
 }
