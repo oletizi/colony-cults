@@ -35,15 +35,53 @@ function buildQueryUrl(query: string, page?: number): string {
 }
 
 /**
- * Extracts the result count from the `.results-count` element.
- *
- * Thousands separators are stripped BEFORE parsing so `"12,345 results"` yields
- * `12345` (not `12` — a naive `\d+` match would silently truncate at the first
- * comma and return wrong data). Throws (fail-loud, Principle V) rather than
- * guessing when the count element or a digit sequence within it is absent, or
- * when the parsed count is not traceable in the HTML bytes. Grounding is
- * separator-tolerant (via {@link isCountGrounded}) so a count parsed from a
- * separated form like "12,345" still grounds against those same bytes.
+ * A number token: a comma-grouped total (`12,345`) or a plain digit run (`42`).
+ * Papers Past renders NZ-locale comma grouping; the pattern accepts both.
+ */
+const NUMBER_TOKEN = '\\d{1,3}(?:,\\d{3})+|\\d+';
+
+/**
+ * Selects the TOTAL result count from the `.results-count` element text,
+ * robustly across the shapes Papers Past can render:
+ *   "42 results"                  -> 42        (single number)
+ *   "12,345 results"              -> 12345     (comma-grouped total)
+ *   "1 - 10 of 12,345 results"    -> 12345     (range prefix; total follows "of")
+ *   "1 - 10 results"              -> THROW     (a page range with no total —
+ *                                               refuse to guess which number is
+ *                                               the total; fail-loud, Principle V)
+ * A naive "first digit run" read returns `1` for the range shape (the range
+ * START, not the total) and grounds spuriously — the silent-wrong-data bug this
+ * guards against.
+ */
+function selectTotalCount(text: string): number {
+  // Prefer an explicit total after "of" (the range-prefix shape).
+  const ofMatch = text.match(new RegExp(`\\bof\\s+(${NUMBER_TOKEN})`, 'i'));
+  if (ofMatch) {
+    return Number.parseInt(ofMatch[1].replace(/,/g, ''), 10);
+  }
+  const tokens = text.match(new RegExp(NUMBER_TOKEN, 'g'));
+  if (!tokens || tokens.length === 0) {
+    throw new Error(
+      `papers-past parseSummary: no digit sequence found in count element text "${text}".`
+    );
+  }
+  if (tokens.length > 1) {
+    throw new Error(
+      `papers-past parseSummary: ambiguous count text "${text}" — multiple numbers and no ` +
+        `"of <total>" disambiguator; refusing to guess which is the total (fail-loud).`
+    );
+  }
+  return Number.parseInt(tokens[0].replace(/,/g, ''), 10);
+}
+
+/**
+ * Extracts the result count from the `.results-count` element (see
+ * {@link selectTotalCount} for the shapes handled). Throws (fail-loud,
+ * Principle V) when the count element is absent, no digit sequence is present,
+ * the count text is ambiguous, or the parsed count is not traceable in the HTML
+ * bytes. Grounding is separator-tolerant (via {@link isCountGrounded}) so a
+ * count parsed from a grouped form like "12,345" still grounds against those
+ * same bytes.
  */
 function parseCount(html: string, root: ReturnType<typeof parse>): number {
   const countEl = root.querySelector(COUNT_SELECTOR);
@@ -52,16 +90,7 @@ function parseCount(html: string, root: ReturnType<typeof parse>): number {
       `papers-past parseSummary: no element matching "${COUNT_SELECTOR}" found; cannot determine result count.`
     );
   }
-  // Drop a single thousands separator (comma/space) that sits between digits,
-  // then read the leading digit run: "12,345 results" -> "12345 results" -> 12345.
-  const normalized = countEl.text.replace(/[,\s](?=\d)/g, '');
-  const match = normalized.match(/\d+/);
-  if (!match) {
-    throw new Error(
-      `papers-past parseSummary: no digit sequence found in count element text "${countEl.text}".`
-    );
-  }
-  const count = Number.parseInt(match[0], 10);
+  const count = selectTotalCount(countEl.text);
   if (!isCountGrounded(html, count)) {
     throw new Error(
       `papers-past parseSummary: ungrounded count "${count}" - its digit sequence (allowing ` +

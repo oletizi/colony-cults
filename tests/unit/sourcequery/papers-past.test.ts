@@ -135,5 +135,33 @@ describe('sourcequery/sources/papers-past', () => {
       `;
       expect(() => PAPERS_PAST.parseSummary(html)).toThrow();
     });
+
+    it('extracts the total after "of" from a range-prefix count ("1 - 10 of 12,345 results" -> 12345, not the range start)', () => {
+      const html = `
+        <div class="results-count">1 - 10 of 12,345 results for &quot;war&quot;</div>
+        <div class="search-results">
+          <div class="result"><a href="/newspapers/X.1">A</a></div>
+        </div>
+      `;
+      const summary = PAPERS_PAST.parseSummary(html);
+      // A naive "first digit run" read would return 1 (the range START), not
+      // the total after "of" — the silent-wrong-data bug this guards against.
+      expect(summary.count).toBe(12345);
+      // Grounding requires the parsed total's digit sequence to be present in
+      // the HTML bytes.
+      expect(html.includes('12,345')).toBe(true);
+    });
+
+    it('throws (ambiguous) on a page-range count with no total ("1 - 10 results")', () => {
+      const html = `
+        <div class="results-count">1 - 10 results</div>
+        <div class="search-results">
+          <div class="result"><a href="/newspapers/X.1">A</a></div>
+        </div>
+      `;
+      // Two numbers (1, 10), no "of <total>" disambiguator: refuses to guess
+      // which is the total (fail-loud, Principle V).
+      expect(() => PAPERS_PAST.parseSummary(html)).toThrow(/ambiguous/i);
+    });
   });
 });

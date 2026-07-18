@@ -283,6 +283,14 @@ describe('sourcequery/SourceQueryClient', () => {
     await expect(client.query('fixture', 'blocked')).rejects.toThrow(/tailscale/i);
     expect(runner.setCalls).toEqual([]);
     expect(browser.isOpen).toBe(false);
+    // Block evidence was persisted BEFORE enumeration failed (FR-010): the
+    // block-*.html file must exist on disk even though the pass ultimately
+    // threw due to Tailscale being unavailable.
+    const { readdirSync } = await import('node:fs');
+    const evidenceDir = path.join(tempDir, 'bibliography', 'repository-responses', 'fixture');
+    expect(existsSync(evidenceDir)).toBe(true);
+    const evidenceFiles = readdirSync(evidenceDir);
+    expect(evidenceFiles.some((file) => /^block-.*\.html$/.test(file))).toBe(true);
   });
 
   it('ungrounded result: rejects via Frugality grounding, session closed', async () => {
@@ -338,6 +346,32 @@ describe('sourcequery/SourceQueryClient', () => {
       expect(runner.setCalls[1]).toBe('prior-node.example.ts.net');
       // Grace run does not use PolitenessPolicy; it navigates the single planned url.
       expect(browser.navigateCalls).toEqual([url]);
+      expect(browser.isOpen).toBe(false);
+    });
+
+    it('null prior exit node (fresh host, no active exit node before the switch): restores via the empty-string "clear to direct" call (SC-004)', async () => {
+      const html =
+        '<html><body><ul class="results"><li>Hit</li></ul><span>3 results</span></body></html>';
+      const config = makeConfig(() => ({ count: 3, candidates: [{ title: 'Hit', ref: 'r1' }] }), {
+        grace: { ...DEFAULT_GRACE, maxRequests: 3, maxWindowMs: 10_000_000 },
+      });
+      const url = config.buildQueryUrl('gold rush', 1);
+      const page: PageResult = { status: 200, html, snapshotMarkdown: '# 3 results', errored: false };
+      const browser = new FakeBrowserSession({ responses: { [url]: page } });
+      const nzNode = makeExitNode({ hostname: 'nz-1', ip: '100.64.0.9', country: 'New Zealand' });
+      // No prior exit node (fresh host): initialCurrentExitNode is null.
+      const runner = new FakeTailscaleRunner([nzNode], null);
+      const client = makeClient(config, browser, runner);
+
+      const result = asQueryResult(
+        await client.query('fixture', 'gold rush', { approveExitNode: 'nz-1' }),
+      );
+
+      expect(result.summary.count).toBe(3);
+      // priorState.priorExitNode ?? '' — with a null prior, the restore call
+      // must be the empty-string "clear to direct" representation, never left
+      // switched on the exit node (SC-004).
+      expect(runner.setCalls).toEqual(['nz-1', '']);
       expect(browser.isOpen).toBe(false);
     });
 
