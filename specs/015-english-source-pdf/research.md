@@ -75,7 +75,11 @@ implementation-time verifications.
 - **V2 — recto column header copy**: Whether the english-only recto header should
   read "Transcription" vs "Translation" for an OCR-transcription recto. A
   template-copy nicety, not structural; the english-only variant already renders
-  a single reading column. Decide during implementation / defer to a follow-up.
+  a single reading column. **Operator decision (2026-07-18): DEFERRED to a
+  follow-up** — out of scope for this feature by the operator's call (not an
+  agent scope-cut; Constitution XIV). No task in this spec covers V2. If the
+  header copy is later changed, that copy/typography work goes through
+  `/frontend-design:frontend-design` (Principle XI).
 
 ## Reuse inventory (what already exists, unchanged)
 

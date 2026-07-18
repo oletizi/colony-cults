@@ -25,12 +25,23 @@ reading language MUST be consistent across a source's folios;
   else the positional `issue.txt` segment (position = folio's sorted index).
 - **Does NOT read** any `translation/pNNN.en.txt` / `.yml` — `resolveTranslation`
   is **not called** on this path.
-- **Produces** an `ArchivePageContent` whose rendered recto reading text is the
-  English OCR (placed so the existing english-only Typst variant draws it as a
-  single reading column over the verso facsimile), with:
+- **Produces** an `ArchivePageContent` with:
+  - `english` = the resolved English OCR text. **This is the load-bearing
+    placement**: the english-only Typst variant (`showFrench = false` in
+    `@/pdf/render/typst-input`) renders the `english` field as the single reading
+    column and drops the FR label, so the English OCR MUST be carried in `english`
+    (not `ocrFrench`) for it to render as the reading recto. Verified against
+    `typst-input.ts` (`TypstRecto.english` is the reading column in english-only
+    mode; `ocrFrench` is "carried … harmless when unused").
+  - `ocrFrench = ""` — there is no French OCR on this path; the english-only
+    variant does not render it. (Non-empty would be dead data, never displayed.)
   - `machineAssist = null`
   - `untranslatable = false`
   - `ocrCondition` = the folio's OCR apparatus note (carried through unchanged).
+
+  The empty-OCR fail-loud check below is performed on the resolved English OCR
+  **before** it is placed in `english` (the French path's empty-check reads
+  `ocrFrench`; the English path checks the value it puts in `english`).
 
 **Fail-loud**: an English page with neither a corrected `pNNN.fr.txt` nor a
 positional `issue.txt` segment (empty/absent OCR) → throw naming the page. (The

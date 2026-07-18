@@ -18,7 +18,7 @@ Files touched: `src/pdf/load/archive-source.ts`, `archive-page.ts`,
 
 ## Phase 2: Foundational (blocking — shared by all stories)
 
-- [ ] T002 [tier:balanced] Add reading-language resolution to `src/pdf/load/archive-source.ts`: a typed `ReadingLanguage = 'french' | 'english'` derived from each folio's provenance `language` (case-insensitive per T001), surfaced on the source resolution. Fail loud, naming the source + offending value, on (a) an unrecognized non-FR/EN language and (b) a source whose folios disagree on language (mixed). Keep the file ≤500 lines.
+- [ ] T002 [tier:balanced] Add reading-language resolution to `src/pdf/load/archive-source.ts`: a typed `ReadingLanguage = 'french' | 'english'` derived from each folio's provenance `language` (case-insensitive per T001), surfaced on the source resolution. Fail loud, naming the source + offending value, on (a) an unrecognized non-FR/EN language (FR-006) and (b) a source whose folios disagree on language (mixed) (FR-006a). Keep the file ≤500 lines.
 - [ ] T003 [tier:balanced] Extend `tests/unit/pdf/archive-fixture.ts` to emit an English-source fixture: `language: English` in every folio sidecar, `issue.txt` OCR present, and **no** `translation/` directory. Add an option to set a per-folio OCR-condition (sub-high quality tier) for the low-fidelity-caveat test, and an option for a non-FR/EN language value.
 
 ## Phase 3: User Story 1 — English source builds, OCR as reading recto (Priority: P1)
@@ -27,7 +27,7 @@ Files touched: `src/pdf/load/archive-source.ts`, `archive-page.ts`,
 
 **Independent test**: Assemble the English fixture → an `Edition` whose recto reading text is the English OCR at the correct position, with no translation artifact read.
 
-- [ ] T004 [tier:balanced] [US1] In `src/pdf/load/archive-page.ts`, branch `loadArchivePage` on the source's reading language. English path: read the OCR (corrected `pNNN.fr.txt` if present, else the positional `issue.txt` segment) as the recto reading text, **do not call `resolveTranslation`**, and place the OCR in the `ArchivePageContent` field(s) so the existing english-only Typst variant renders it as the single reading column (per `contracts/reader-language-routing.md`). Set `machineAssist = null`, `untranslatable = false`; carry `ocrCondition` through unchanged. French path unchanged.
+- [ ] T004 [tier:balanced] [US1] In `src/pdf/load/archive-page.ts`, branch `loadArchivePage` on the source's reading language. English path: read the OCR (corrected `pNNN.fr.txt` if present, else the positional `issue.txt` segment) as the recto reading text, **do not call `resolveTranslation`**, and place the English OCR in the **`english`** field with **`ocrFrench = ""`** — the english-only Typst variant (`showFrench = false`) renders `english` as the single reading column and drops `ocrFrench` (verified in `@/pdf/render/typst-input`; per `contracts/reader-language-routing.md`). Set `machineAssist = null`, `untranslatable = false`; carry `ocrCondition` through unchanged. The empty-OCR fail-loud (T007/FR-007) checks the resolved English OCR before it is placed in `english`. French path unchanged.
 - [ ] T005 [tier:balanced] [US1] In `src/pdf/load/archive-edition.ts`, thread the reading language from the source resolution (T002) into per-page assembly and route English sources to the english-only edition variant. Keep `archiveRef`/reproducibility and folio/image machinery unchanged. Extract a helper if the file nears 500 lines.
 - [ ] T006 [tier:fast] [US1] Unit test in `tests/unit/pdf/archive-page.test.ts`: the English fixture assembles; recto reading text equals each page's positional OCR (C1, C2); no `translation/pNNN.en.txt` is read; `machineAssist` is null and `untranslatable` false on English pages.
 - [ ] T007 [tier:fast] [US1] Unit test: an English fixture page with an empty OCR segment and no corrected `pNNN.fr.txt` makes `loadArchivePage` **throw naming the page** (C5, FR-007) — the blank-recto tolerance does not apply on the English path.
@@ -39,7 +39,7 @@ Files touched: `src/pdf/load/archive-source.ts`, `archive-page.ts`,
 **Independent test**: French fixture builds identically; French fixture with a missing translation still throws FR-008.
 
 - [ ] T008 [tier:fast] [US2] Regression test in `tests/unit/pdf/archive-page.test.ts`: an unchanged French fixture assembles identically (FR-OCR + EN-translation); a French fixture with a genuinely missing `pNNN.en.txt` still throws the FR-008 translation-gap error naming the page (C3).
-- [ ] T009 [tier:fast] [US2] Test in `tests/unit/pdf/archive-source.test.ts` (or the resolution test): a source whose `language` is neither French nor English **fails loud** naming the value (C4, FR-006); a mixed-language source fails loud.
+- [ ] T009 [tier:fast] [US2] Test in `tests/unit/pdf/archive-source.test.ts` (or the resolution test): a source whose `language` is neither French nor English **fails loud** naming the value (C4, FR-006); a mixed-language source fails loud naming the source (FR-006a).
 
 ## Phase 5: User Story 3 — Honest OCR-transcription colophon (Priority: P2)
 

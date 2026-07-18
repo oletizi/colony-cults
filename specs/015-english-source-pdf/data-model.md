@@ -39,18 +39,18 @@ path its fields carry English-source meaning:
 
 | Field | French path (existing) | English path (this feature) |
 |-------|------------------------|-----------------------------|
-| `ocrFrench` | French OCR (recto left col / parallel source) | the English OCR (reused as the OCR-text carrier) OR the recto text — implementation places the English OCR so the english-only variant renders it as the reading recto |
-| `english` | EN translation (recto reading col) | the English OCR reading text (english-only recto), OR left empty if `ocrFrench` carries it — the placement MUST make the english-only variant draw the English OCR as the single reading column |
+| `ocrFrench` | French OCR (recto left col / parallel source) | **`""`** — no French OCR on this path; the english-only variant does not render this field |
+| `english` | EN translation (recto reading col) | **the English OCR reading text** — the english-only variant (`showFrench = false`) renders `english` as the single reading column, so the English OCR is carried here |
 | `untranslatable` | `true` only for a marked blank page | not applicable (no translation dimension) — `false` |
 | `machineAssist` | translation engine/model/date, or null | **null** (no translation performed) |
 | `ocrCondition` | OCR apparatus note or null | **carried through unchanged** (low-fidelity caveat surfaces here) |
 
-> The precise field placement (which of `ocrFrench`/`english` carries the English
-> OCR for the english-only variant) is fixed in the contract + tasks so the
-> existing Typst english-only template renders a single reading column of the
-> English OCR over the verso facsimile with no template change. The invariant:
-> **the rendered recto reading text is the English OCR; no translation artifact
-> is read.**
+> **Field placement (resolved, not deferred):** the English OCR is carried in the
+> `english` field, because the existing english-only Typst variant renders
+> `TypstRecto.english` as the reading column and drops `ocrFrench` (verified in
+> `@/pdf/render/typst-input`). `ocrFrench` is set to `""`. No template change. The
+> invariant: **the rendered recto reading text is the English OCR; no translation
+> artifact is read.**
 
 ## Edition / Colophon (existing — English-source semantics)
 
