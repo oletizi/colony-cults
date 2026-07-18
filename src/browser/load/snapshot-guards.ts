@@ -14,6 +14,7 @@ import type {
   RawPage,
   RawSource,
   SkippedIssue,
+  SourceLanguage,
 } from '@/browser/model';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -151,6 +152,25 @@ function parseRawIssue(value: unknown, where: string): RawIssue {
   };
 }
 
+/**
+ * Parses the source `language` with back-compat: an ABSENT field defaults to
+ * `'French'` (older committed snapshots predate the field and carry no
+ * language). A PRESENT field must be exactly `'French'` or `'English'`, else
+ * throws. Never fabricates otherwise.
+ */
+function parseSourceLanguage(value: unknown, where: string): SourceLanguage {
+  if (value === undefined) {
+    return 'French';
+  }
+  if (value === 'French' || value === 'English') {
+    return value;
+  }
+  throw new Error(
+    `snapshot: unsupported source language ${JSON.stringify(value)} at ${where}.language ` +
+      '(expected "French" or "English").'
+  );
+}
+
 function parseRawSource(value: unknown, where: string): RawSource {
   const record = requireRecord(value, where);
   const kind = requireString(record, 'kind', where);
@@ -160,6 +180,7 @@ function parseRawSource(value: unknown, where: string): RawSource {
         '(expected "periodical" or "monograph").'
     );
   }
+  const language = parseSourceLanguage(record.language, where);
   const issues = requireArray(record.issues, `${where}.issues`).map((issue, i) =>
     parseRawIssue(issue, `${where}.issues[${i}]`)
   );
@@ -167,6 +188,7 @@ function parseRawSource(value: unknown, where: string): RawSource {
     sourceId: requireString(record, 'sourceId', where),
     title: requireString(record, 'title', where),
     kind,
+    language,
     ark: requireString(record, 'ark', where),
     rights: requireString(record, 'rights', where),
     issues,

@@ -122,6 +122,7 @@ describe('batch build (T024, US2): buildSource -- G-1 one PDF per item, G-4 attr
       sourceId: SOURCE_ID,
       title: 'Batch Test Source',
       kind: 'periodical',
+      language: 'French',
       ark: 'ark:/12148/batch-test-source',
       rights: 'public-domain',
       issues: [
@@ -210,6 +211,7 @@ describe('batch build: buildAll -- per-source attribution (G-1/G-4 across --all)
           sourceId: HEALTHY_SOURCE,
           title: 'Batch-All Healthy Source',
           kind: 'periodical',
+          language: 'French',
           ark: 'ark:/12148/batch-all-healthy',
           rights: 'public-domain',
           issues: [makeIssue('1900-02-01_all-healthy', 1, [makePage('1900-02-01_all-healthy', 'p001')])],
@@ -226,6 +228,7 @@ describe('batch build: buildAll -- per-source attribution (G-1/G-4 across --all)
           sourceId: EMPTY_SOURCE,
           title: 'Batch-All Empty Source',
           kind: 'periodical',
+          language: 'French',
           ark: 'ark:/12148/batch-all-empty',
           rights: 'public-domain',
           issues: [],

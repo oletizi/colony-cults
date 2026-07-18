@@ -24,6 +24,7 @@ import type {
   RawSource,
   SkippedIssue,
   SourceKind,
+  SourceLanguage,
 } from '@/browser/model';
 import { loadSourceFile } from '@/bibliography/load';
 import type { LoadedSource } from '@/bibliography/load';
@@ -31,7 +32,11 @@ import type { CopyIdentifier } from '@/model/repository-record';
 import { enumerateIssueDirs, resolveNewspapersDir } from '@/browser/load/issues';
 import type { IssueDir } from '@/browser/load/issues';
 import { resolveMonographUnit } from '@/browser/load/books';
-import { buildRawIssuePages, detectNotCollected } from '@/browser/load/pages';
+import {
+  buildRawIssuePages,
+  detectNotCollected,
+  resolveSourceLanguage,
+} from '@/browser/load/pages';
 
 /** The holding-archive label whose record carries the source-level Gallica ark. */
 const GALLICA_ARCHIVE_LABEL = 'Gallica / BnF';
@@ -117,6 +122,12 @@ function loadSource(
     );
   }
 
+  // The source language is per-source: resolve it ONCE from the FIRST issue's
+  // first folio sidecar (`fNNN.yml` `language`). Robust default is 'French'
+  // (the original parallel-text shape) when the field is absent/unexpected.
+  const language: SourceLanguage =
+    issueDirs.length > 0 ? resolveSourceLanguage(issueDirs[0].dir) : 'French';
+
   const issues: RawIssue[] = [];
   const skipped: SkippedIssue[] = [];
 
@@ -124,7 +135,7 @@ function loadSource(
     // Pre-check the whole-layer-absent conditions BEFORE the per-page load
     // (which throws on any present-but-partial layer). A not-collected issue
     // is skipped and reported; only a collected-but-corrupt one throws.
-    const reason = detectNotCollected(issueDir.dir);
+    const reason = detectNotCollected(issueDir.dir, language);
     if (reason !== null) {
       // eslint-disable-next-line no-console -- deliberate build-visible skip report (no silent caps).
       console.warn(`loadCorpus(${sourceId}): SKIP issue ${issueDir.issueId} -- ${reason}`);
@@ -132,7 +143,7 @@ function loadSource(
       continue;
     }
     // sequence numbers are contiguous over the LOADED (complete) issues.
-    issues.push(buildRawIssue(sourceId, issueDir, issues.length));
+    issues.push(buildRawIssue(sourceId, issueDir, issues.length, language));
   }
 
   const rights = deriveRights(sourceId, issues);
@@ -142,6 +153,7 @@ function loadSource(
       sourceId,
       title,
       kind,
+      language,
       ark,
       rights,
       issues,
@@ -150,8 +162,13 @@ function loadSource(
   };
 }
 
-function buildRawIssue(sourceId: string, issueDir: IssueDir, index: number): RawIssue {
-  const pages = buildRawIssuePages(sourceId, issueDir);
+function buildRawIssue(
+  sourceId: string,
+  issueDir: IssueDir,
+  index: number,
+  language: SourceLanguage
+): RawIssue {
+  const pages = buildRawIssuePages(sourceId, issueDir, language);
   return {
     issueId: issueDir.issueId,
     date: issueDir.date,

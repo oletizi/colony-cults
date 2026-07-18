@@ -52,6 +52,7 @@ const PERIODICAL_SOURCE: RawSource = {
   sourceId: SOURCE_ID,
   title: 'Resolve Test Source',
   kind: 'periodical',
+  language: 'French',
   ark: 'ark:/12148/resolve-test-source',
   rights: 'public-domain',
   issues: [
@@ -65,6 +66,7 @@ const MONOGRAPH_SOURCE: RawSource = {
   sourceId: MONOGRAPH_ID,
   title: 'Resolve Test Monograph',
   kind: 'monograph',
+  language: 'French',
   ark: 'ark:/12148/resolve-test-monograph',
   rights: 'public-domain',
   issues: [makeIssue(MONOGRAPH_ID, 1)],

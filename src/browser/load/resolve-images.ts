@@ -48,6 +48,7 @@ function resolveSource(source: RawSource, provider: ImageSourceProvider): Source
     sourceId: source.sourceId,
     title: source.title,
     kind: source.kind,
+    language: source.language,
     ark: source.ark,
     rights: source.rights,
     issues: source.issues.map((issue) => resolveIssue(issue, provider)),
