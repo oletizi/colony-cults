@@ -33,11 +33,11 @@ The client enforces four governance points IN CODE:
 3. **Polite.** One browser session; the client paces navigations; no paywall/login circumvention; obeys each source's ToS. Where a ToS forbids retention (e.g. Trove — DECISIONS.md), the client persists NOTHING and records only derived facts + attribution instead.
 4. **Graceful escalation.** On a hard block (WAF challenge beyond operator clearance), the client persists block evidence under `bibliography/repository-responses/<source>/` and STOPS with an operator-permission request (exit code 3), rather than switching autonomously to another tool or trying a workaround.
 
-## Governed manual fallback (unregistered sources)
+## Unregistered sources — register a `SourceConfig`, never a fallback
 
-The Playwright MCP browser (`browser_navigate`, `browser_snapshot`, `browser_evaluate`, `browser_close`) remains available ONLY as a governed fallback for a source not yet wired as a `SourceConfig` in the client. Even in this case, the same persist-first discipline applies: save the raw page under `bibliography/repository-responses/<source>/` BEFORE analysis.
+There is NO fallback. The client is the only path (SC-005), for EVERY source — registered or not. When a source is not yet wired as a `SourceConfig`, the sanctioned response is to **register one**, NOT to hand-drive the Playwright MCP browser (or any other tool) around the client. A "manual fallback" is exactly the tool-choice escape hatch this discipline exists to close — "no exceptions" means no exceptions.
 
-**The correct response to "the client doesn't support this source yet" is to register a `SourceConfig` (or fix the skill), NOT to route around the client by using the browser for a source it already supports.**
+Bootstrapping a new source needs no side channel: write a best-guess `SourceConfig` (buildQueryUrl + a provisional `resultSelector`) and run `bib query-source`. The client **persists the raw page before it does anything else** — even when classification then fails on a wrong selector — so you read the actual markup out of the persisted capture under `bibliography/repository-responses/<source>/`, correct the config, and re-run. The client's own persist-first behavior is the bootstrap; the MCP browser is not needed and not sanctioned.
 
 ## Forbidden — every other channel, no exceptions
 
@@ -48,7 +48,7 @@ NEVER query a source with any of these. Each is a violation — even "just once"
 - `WebSearch` to pull source content, OCR, metadata, or any page you will cite
 - the raw `HttpClient` for a source query
 - an ad-hoc browser call made OUTSIDE this governed persist-first process (a browser peek you do not save is still a violation)
-- reaching for the Playwright MCP browser (or any other tool) for a source the client already supports, instead of `bib query-source`
+- reaching for the Playwright MCP browser (or any other tool) for ANY source — registered or not — instead of `bib query-source` (an unregistered source means "register a `SourceConfig`", never "hand-drive the browser")
 
 `WebSearch` is permitted for ONE narrow thing: locating that a source exists / its URL. That is not a query against the source, and you may never cite content from the search snippet.
 
@@ -56,7 +56,7 @@ NEVER query a source with any of these. Each is a violation — even "just once"
 
 ## If the mechanism seems not to fit
 
-That feeling is the hole you keep climbing through. Do NOT improvise another tool. STOP and fix THIS skill (add the governed handling for the new case), then query through it. The mandated mechanism is never the thing you route around.
+That feeling is the hole you keep climbing through. Do NOT improvise another tool. STOP and fix the mechanism — register a `SourceConfig` for the new source (bootstrapping it from the client's persist-first raw capture), or fix this skill — then query through the client. The mandated mechanism is never the thing you route around.
 
 ## Rationalization table
 
@@ -68,13 +68,14 @@ That feeling is the hole you keep climbing through. Do NOT improvise another too
 | "A browser is overkill for this one" | "Overkill" is how the exception starts. There are none. |
 | "I'll persist it later" | Persist BEFORE analysis. An unsaved page is unverifiable. |
 | "I just need to verify one claim" | Verifying a claim IS a source query. Use `bib query-source`, persisted. |
-| "I'll just use the MCP browser directly, it's faster" | The client IS the governed browser plus the code-enforced persist/ground/pace/escalate discipline. Use `bib query-source`; the raw browser is a fallback for unregistered sources only. |
+| "I'll just use the MCP browser directly, it's faster" | The client IS the governed browser plus the code-enforced persist/ground/pace/escalate discipline. Use `bib query-source`. There is no MCP-browser fallback — for an unregistered source, register a `SourceConfig`. |
+| "The source isn't registered yet, so the client can't — I'll drive the browser by hand" | Register a `SourceConfig` and run the client (it persists the raw page even on a wrong selector, so you bootstrap the config from that capture). Hand-driving the browser is the escape hatch "no exceptions" forbids. |
 
 ## Red flags — STOP
 
 - About to call `WebFetch`, `curl`, `HttpClient`, or `WebSearch`-for-content on a source
 - About to make a browser call without saving the page first
-- About to drive the Playwright MCP browser (or any tool) for a source `bib query-source` supports, instead of the client
+- About to drive the Playwright MCP browser (or any tool) for ANY source, instead of the client — including an unregistered one (that means "register a `SourceConfig`", not "hand-drive the browser")
 - Telling yourself the source is walled / the browser is overkill / it's just a quick check
 - About to analyze a page you did not persist
 

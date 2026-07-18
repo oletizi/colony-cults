@@ -53,15 +53,15 @@ A query hits a hard block (WAF challenge page, 403/429, or a dropped connection)
 
 ### User Story 3 - The skill and commandment point at the client (Priority: P3)
 
-The `/fetching-online-sources` skill and the CLAUDE.md commandment are updated so the single sanctioned mechanism is the shipped client, with the Playwright MCP browser demoted to a manual fallback for cases the client genuinely cannot handle. An agent reading the skill is directed to the command, and the rationalization table / red flags name "reaching for the MCP browser or any tool instead of the client" as the violation.
+The `/fetching-online-sources` skill and the CLAUDE.md commandment are updated so the single sanctioned mechanism is the shipped client — the ONLY path, for every source, with no MCP-browser fallback (SC-005). An unregistered source is handled by registering a `SourceConfig` (the client persists the raw page even on a wrong selector, so the config is bootstrapped from that capture), never by hand-driving the browser. An agent reading the skill is directed to the command, and the rationalization table / red flags name "reaching for the MCP browser or any tool instead of the client" as the violation.
 
 **Why this priority**: The code makes the sanctioned path enforceable, but the agent still must choose it; the skill covers that seam. It depends on the client existing, so it lands last.
 
-**Independent Test**: Read the updated skill + commandment; confirm they name the client as the mechanism, demote the MCP browser to fallback, and that the skill's guidance and the client's behavior are consistent (no contradictions).
+**Independent Test**: Read the updated skill + commandment; confirm they name the client as the sole mechanism, name the MCP browser as NOT a query path (an unregistered source means registering a `SourceConfig`), and that the skill's guidance and the client's behavior are consistent (no contradictions — in particular "no exceptions / no second channel" is not undercut by a sanctioned fallback).
 
 **Acceptance Scenarios**:
 
-1. **Given** the updated skill, **When** an agent consults it before a source query, **Then** it is directed to the shipped client as the one mechanism, with the MCP browser named as a governed manual fallback only.
+1. **Given** the updated skill, **When** an agent consults it before a source query, **Then** it is directed to the shipped client as the one mechanism, with the MCP browser named as NOT a query path — an unregistered source is handled by registering a `SourceConfig`, not by a fallback.
 2. **Given** the updated commandment, **When** it is read, **Then** it points at the client and lists the forbidden ad-hoc channels (curl, WebFetch, WebSearch-for-content, raw HttpClient, ungoverned browser calls).
 
 ---
@@ -82,7 +82,7 @@ The `/fetching-online-sources` skill and the CLAUDE.md commandment are updated s
 **Mechanism & governance**
 
 - **FR-001**: The system MUST provide one shipped, code-enforced mechanism (a `SourceQueryClient`, invoked via a CLI verb) for every query against an external source — discovery search, reconnaissance, metadata lookup, content/OCR read, holdings check.
-- **FR-002**: The client MUST drive its own real browser (real Chrome channel + persistent profile) as the query transport; the Playwright MCP browser is demoted to a manual fallback and is not part of the code path.
+- **FR-002**: The client MUST drive its own real browser (real Chrome channel + persistent profile) as the query transport; the Playwright MCP browser is not part of the code path and is not a sanctioned query channel (there is no fallback).
 - **FR-003**: The client MUST hold a single browser session per pass and separate consecutive navigations by at least a configured minimum interval (reusing the existing rate limiter).
 - **FR-004**: The client MUST use a genuine Chrome User-Agent (wall-clearing); politeness/contactability is carried by low rate, ToS honoring, and a documented repo contact — not a bot-flagging descriptive UA.
 
@@ -109,7 +109,7 @@ The `/fetching-online-sources` skill and the CLAUDE.md commandment are updated s
 
 **Integration**
 
-- **FR-017**: The `/fetching-online-sources` skill and the CLAUDE.md commandment MUST be updated to name the shipped client as the single sanctioned mechanism, demote the MCP browser to a governed manual fallback, and keep the skill's guidance consistent with the client's behavior.
+- **FR-017**: The `/fetching-online-sources` skill and the CLAUDE.md commandment MUST be updated to name the shipped client as the single sanctioned mechanism and the ONLY query path with no MCP-browser fallback (an unregistered source is handled by registering a `SourceConfig`, bootstrapped from the client's persist-first raw capture), and MUST keep the skill's guidance internally consistent (the "no exceptions / no second channel" mandate is not undercut by a sanctioned fallback).
 
 **Testability**
 
