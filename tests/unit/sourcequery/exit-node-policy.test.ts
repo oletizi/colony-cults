@@ -422,5 +422,30 @@ describe('ExitNodePolicy', () => {
       expect(runner.setCalls).toEqual(['nz-1', 'prior-node.example.ts.net']);
       expect(runner.setCalls[1]).toBe('prior-node.example.ts.net');
     });
+
+    it('escalation budget = 1/pass: issues exactly ONE switch regardless of plan length (FR-014)', async () => {
+      const { policy, runner } = makeTimedPolicy('prior-node.example.ts.net');
+      const node = makeNode({ hostname: 'nz-1', ip: '100.64.0.9' });
+      // A long plan whose every url is reached (bounds generous enough to run all).
+      const plan = ['https://s/a', 'https://s/b', 'https://s/c', 'https://s/d', 'https://s/e'];
+      const grace = makeGrace({ maxRequests: 100, maxWindowMs: 10_000_000 });
+
+      const { results, ranAll } = await policy.runApprovedSwitch({
+        node,
+        priorState: { priorExitNode: 'prior-node.example.ts.net' },
+        plan,
+        grace,
+        runOne: async (url) => makeQueryResult(url),
+      });
+
+      // Every planned url ran under the single approval.
+      expect(results).toHaveLength(plan.length);
+      expect(ranAll).toBe(true);
+      // Exactly ONE node change (+ the mandatory restore) across the whole pass:
+      // no per-url or per-block re-switching. The budget is one switch per pass.
+      expect(runner.setCalls).toEqual(['nz-1', 'prior-node.example.ts.net']);
+      const switchCalls = runner.setCalls.filter((v) => v === 'nz-1');
+      expect(switchCalls).toHaveLength(1);
+    });
   });
 });
