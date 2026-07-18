@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 
-import type { ProvenanceFields } from '@/archive/provenance';
+import type { OcrQuality, ProvenanceFields } from '@/archive/provenance';
 import { serializeProvenance } from '@/archive/provenance';
 import { sha256OfBytes } from '@/archive/checksum';
 
@@ -48,6 +48,19 @@ export interface FixturePageConfig {
    * the reading-language resolution's fail-loud case (FR-006a).
    */
   language?: string;
+
+  /**
+   * Folio provenance `ocr_status` override. Defaults to `searchable`. Set to
+   * `failed` to fixture `deriveOcrCondition`'s "OCR failed" caveat (FR-009).
+   */
+  ocrStatus?: string;
+
+  /**
+   * Folio provenance `ocr_quality` block. Omitted by default (no caveat). Set
+   * a sub-`high` `tier` (e.g. `low`/`medium`) to fixture
+   * `deriveOcrCondition`'s low-fidelity "OCR quality: <tier>" caveat (FR-009).
+   */
+  ocrQuality?: OcrQuality;
 }
 
 /**
@@ -95,6 +108,15 @@ export interface WriteFixtureArchiveOptions {
    * Primary language. Defaults to `French`.
    */
   language?: string;
+
+  /**
+   * When true, the `translation/` directory is never created at all -- no
+   * `pNNN.en.txt`, no sidecar, no `pNNN.fr.txt`, regardless of any per-page
+   * `pages[]` translation config. Fixtures an English-source archive (English
+   * OCR present, no translation artifacts whatsoever). Defaults to `false`
+   * (the pre-existing behavior: a translation dir is written).
+   */
+  omitTranslationDir?: boolean;
 }
 
 /**
@@ -154,6 +176,12 @@ export interface WriteFixtureArchiveResult {
  *   (fixtures the fail-loud case).
  * - The OCR French defaults to the issue.txt segment unless `correctedFrench`
  *   is provided (then both the segment and pNNN.fr.txt use the corrected text).
+ * - `omitTranslationDir: true` suppresses the entire `translation/` directory
+ *   (no `pNNN.en.txt`, sidecar, or `pNNN.fr.txt` for any page) -- fixtures an
+ *   English-source archive (English OCR present, no translation artifacts).
+ * - A page's `ocrStatus`/`ocrQuality` override the folio sidecar's
+ *   `ocr_status`/`ocr_quality`, fixturing `deriveOcrCondition`'s caveats
+ *   (`ocr_status: 'failed'`, or a sub-`high` `ocr_quality.tier`).
  *
  * @param opts Configuration.
  * @returns Archive paths, cleanup, and fixture image bytes.
@@ -235,7 +263,7 @@ export async function writeFixtureArchive(
         local_path: localPath,
         sha256: imageSha256,
         format: 'image/jpeg',
-        ocr_status: 'searchable',
+        ocr_status: pageConfig.ocrStatus ?? 'searchable',
         size: imageBuffer.byteLength,
         object_store: {
           provider: 'backblaze-b2',
@@ -243,6 +271,7 @@ export async function writeFixtureArchive(
           key: objectStoreKey,
           endpoint: 's3.us-west-000.backblazeb2.com',
         },
+        ocr_quality: pageConfig.ocrQuality,
         notes: null,
         rights_raw: '<OAIRecord>dummy</OAIRecord>',
       };
@@ -255,8 +284,10 @@ export async function writeFixtureArchive(
         `French OCR for page ${positionStr} (folio f${folioStr})`;
       ocrSegments.push(ocrFrench);
 
-      // Translation artifact: skip if omitTranslationArtifact is true.
-      if (!pageConfig.omitTranslationArtifact) {
+      // Translation artifact: skip entirely when the fixture omits the whole
+      // translation/ directory (English-source fixture), or per-page via
+      // omitTranslationArtifact.
+      if (!opts.omitTranslationDir && !pageConfig.omitTranslationArtifact) {
         const translationLabel = pageConfig.translationLabel ?? 'machine-assisted';
         const englishText =
           translationLabel === 'untranslatable'
@@ -300,8 +331,9 @@ export async function writeFixtureArchive(
         await writeFile(enSidecarPath, serializeProvenance(translationProv));
       }
 
-      // Corrected French (optional).
-      if (pageConfig.correctedFrench !== undefined) {
+      // Corrected French (optional; also suppressed when the fixture omits
+      // the translation/ directory entirely).
+      if (!opts.omitTranslationDir && pageConfig.correctedFrench !== undefined) {
         const frTextPath = path.join(
           sourceDir,
           'translation',
