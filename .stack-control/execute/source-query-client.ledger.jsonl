@@ -16,3 +16,4 @@
 {"id":"T017","tierLabel":"balanced","model":"sonnet","commit":"f717f71","reviewClean":true}
 {"id":"T015","tierLabel":"balanced","model":"sonnet","commit":"8128f97","reviewClean":true}
 {"id":"T018","tierLabel":"powerful","model":"opus","commit":"33a37b7","reviewClean":true}
+{"id":"T019","tierLabel":"balanced","model":"sonnet","commit":"387189a","reviewClean":true}
