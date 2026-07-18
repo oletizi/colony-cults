@@ -27,6 +27,7 @@ import type { SourceConfig } from '@/sourcequery/source-config';
 import { getSourceConfig } from '@/sourcequery/source-config';
 import { PolitenessPolicy } from '@/sourcequery/politeness-policy';
 import { classify } from '@/sourcequery/block-detection';
+import type { BlockClassification } from '@/sourcequery/block-detection';
 import { persistThenParse } from '@/sourcequery/frugality';
 import { persistCapture, persistBlockEvidence } from '@/sourcequery/persistence';
 import { ExitNodePolicy } from '@/sourcequery/exit-node-policy';
@@ -35,6 +36,7 @@ import type {
   ExitNode,
   HostExitState,
   OperatorPermissionRequest,
+  PageResult,
   QueryResult,
 } from '@/sourcequery/types';
 
@@ -53,6 +55,13 @@ export interface SourceQueryClientDeps {
 export interface QueryOptions {
   /** Number of result pages to walk. Only `1` is supported in the MVP. */
   pages?: number;
+  /**
+   * The operator-approved exit node (ip or hostname) relayed back in-session
+   * (FR-012). When set, `query()` runs the approved-switch pass instead of the
+   * normal navigate/classify pass: switch → settle → minimal set under grace →
+   * restore. NEVER switches without this (FR-011 / SC-003).
+   */
+  approveExitNode?: string;
 }
 
 /** Orchestrates one governed query pass and returns a grounded QueryResult. */
@@ -102,6 +111,13 @@ export class SourceQueryClient {
     }
 
     const url = config.buildQueryUrl(text, 1);
+
+    // Operator-approved escalation path (FR-012): run the switch → settle →
+    // minimal set → restore pass instead of the normal navigate/classify pass.
+    if (opts?.approveExitNode !== undefined) {
+      return await this.runApprovedPass(config, text, url, opts.approveExitNode);
+    }
+
     const politeness = new PolitenessPolicy({
       minIntervalMs: config.minIntervalMs,
       now: this.clock,
@@ -171,21 +187,56 @@ export class SourceQueryClient {
         });
       }
 
-      if (classification.outcome === 'result') {
-        // Frugality persists, re-parses from the persisted copy, and grounds the
-        // positive count; throws on persistence failure or ungrounded output.
-        return await persistThenParse({
-          pageResult,
-          config,
-          query: text,
-          url,
-          capturedAtUtc,
-        });
-      }
+      // Result / legitimate-empty: single source of truth shared with the
+      // approved-switch pass (persist + ground positive counts; retention-aware
+      // empty handling).
+      return await this.persistResultOrEmpty(
+        classification,
+        pageResult,
+        config,
+        text,
+        url,
+        capturedAtUtc,
+      );
+    } finally {
+      await this.browser.close();
+    }
+  }
 
-      // Legitimate empty. Retention-forbidden sources (FR-009) must NEVER write
-      // raw bytes — not even for an empty page — so honour retention here just as
-      // the result path (Frugality) does:
+  /**
+   * Convert a NON-block classification into a grounded {@link QueryResult}. The
+   * ONE source of truth used by BOTH the normal pass and the approved-switch
+   * grace run:
+   * - `result` → Frugality persists, re-parses from the persisted copy, and
+   *   grounds the positive count (throws on persistence failure / ungrounded).
+   * - `empty` → retention-aware count-0: `derived-facts-only` returns
+   *   `derivedFacts: []` + attribution and persists NOTHING (FR-009); `persist`
+   *   writes the empty page as evidence and returns a count-0 capture result.
+   *
+   * A `block` classification must be handled by the caller (it never reaches
+   * here); if one does, we THROW (fail-loud) rather than mis-handle it as empty.
+   */
+  private async persistResultOrEmpty(
+    classification: BlockClassification,
+    pageResult: PageResult,
+    config: SourceConfig,
+    text: string,
+    url: string,
+    capturedAtUtc: string,
+  ): Promise<QueryResult> {
+    if (classification.outcome === 'result') {
+      return await persistThenParse({
+        pageResult,
+        config,
+        query: text,
+        url,
+        capturedAtUtc,
+      });
+    }
+
+    if (classification.outcome === 'empty') {
+      // Retention-forbidden sources (FR-009) must NEVER write raw bytes — not
+      // even for an empty page — so honour retention here just as Frugality does.
       if (config.retention === 'derived-facts-only') {
         return {
           summary: { count: 0, candidates: [] },
@@ -215,8 +266,108 @@ export class SourceQueryClient {
         query: text,
         retention: 'persist',
       };
+    }
+
+    throw new Error(
+      `SourceQueryClient.persistResultOrEmpty: received a "block" classification ` +
+        `(kind="${classification.kind}", detail="${classification.detail}") for source ` +
+        `"${config.id}" query "${text}"; blocks must be handled by the caller, not here.`,
+    );
+  }
+
+  /**
+   * The operator-approved escalation pass (FR-012): open a session, resolve the
+   * approved node, capture prior host state, perform the ONE switch and run the
+   * minimal plan under grace-window discipline, then ALWAYS restore host state
+   * (owned by {@link ExitNodePolicy.runApprovedSwitch}'s `finally`). The session
+   * is ALWAYS closed. Fail-loud throughout: an unavailable Tailscale, an unknown
+   * approved node, a still-blocked ("burned") node, or an exhausted grace window
+   * before any query ran all surface as honest errors — never a fabricated result.
+   */
+  private async runApprovedPass(
+    config: SourceConfig,
+    text: string,
+    url: string,
+    approvedNodeId: string,
+  ): Promise<QueryResult> {
+    await this.browser.open();
+    try {
+      // A throw here = Tailscale unavailable; it propagates as an honest failure.
+      const nodes = await this.exitNodePolicy.enumerate();
+
+      const node = nodes.find(
+        (candidate) => candidate.ip === approvedNodeId || candidate.hostname === approvedNodeId,
+      );
+      if (node === undefined) {
+        throw new Error(
+          `SourceQueryClient: approved exit node "${approvedNodeId}" not found among enumerated ` +
+            `nodes for source "${config.id}" query "${text}". Refusing to switch to an unknown ` +
+            'node (fail-loud, Principle V).',
+        );
+      }
+
+      const priorState = await this.exitNodePolicy.captureCurrentState();
+
+      const { results } = await this.exitNodePolicy.runApprovedSwitch({
+        node,
+        priorState,
+        plan: [url],
+        grace: config.grace,
+        runOne: (u) => this.runOneUnderGrace(u, config, text),
+      });
+
+      if (results.length === 0) {
+        // The grace-window bound was hit before any query ran. Report, don't
+        // fabricate a result (spec Edge Cases: "Grace window exhausted mid-plan").
+        throw new Error(
+          `SourceQueryClient: the approved-switch grace window was exhausted before any query ` +
+            `ran for source "${config.id}" query "${text}" (settleMs=${config.grace.settleMs}, ` +
+            `maxRequests=${config.grace.maxRequests}, maxWindowMs=${config.grace.maxWindowMs}). ` +
+            'Reporting honestly — no fabricated result. Host state has been restored.',
+        );
+      }
+
+      // Single-url MVP plan: `ranAll` is true on success. Partial-coverage
+      // reporting for multi-url plans (surfacing `!ranAll`) lands with multi-page
+      // support.
+      return results[0];
     } finally {
       await this.browser.close();
     }
+  }
+
+  /**
+   * Navigate + persist + parse ONE url during the approved grace run, WITHOUT
+   * the PolitenessPolicy — the extra-slow spacing is owned by
+   * {@link ExitNodePolicy.runApprovedSwitch}. On a still-present block after the
+   * switch (a "burned node"), THROW so the grace loop aborts; host state is
+   * restored by `runApprovedSwitch`'s `finally`.
+   */
+  private async runOneUnderGrace(
+    url: string,
+    config: SourceConfig,
+    text: string,
+  ): Promise<QueryResult> {
+    const pageResult = await this.browser.navigate(url);
+    const capturedAtUtc = new Date(this.clock()).toISOString();
+    const classification = classify(pageResult, config);
+
+    if (classification.outcome === 'block') {
+      throw new Error(
+        `SourceQueryClient: still blocked after the approved exit-node switch (burned node) ` +
+          `for source "${config.id}" query "${text}" (kind="${classification.kind}", ` +
+          `detail="${classification.detail}"). Aborting the grace run — host state is restored ` +
+          'and the continued block is reported honestly (no node churning).',
+      );
+    }
+
+    return await this.persistResultOrEmpty(
+      classification,
+      pageResult,
+      config,
+      text,
+      url,
+      capturedAtUtc,
+    );
   }
 }

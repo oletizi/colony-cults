@@ -306,4 +306,77 @@ describe('sourcequery/SourceQueryClient', () => {
     // No navigation should have happened (fail before opening the session).
     expect(browser.navigateCalls).toEqual([]);
   });
+
+  describe('approved exit-node pass (FR-012/013/014, SC-004)', () => {
+    it('performs the ONE switch, runs the grace query, returns a grounded result, restores host, closes the session', async () => {
+      // The switched-origin page renders a grounded result.
+      const html =
+        '<html><body><ul class="results"><li>Hit</li></ul><span>3 results</span></body></html>';
+      const config = makeConfig(() => ({ count: 3, candidates: [{ title: 'Hit', ref: 'r1' }] }), {
+        grace: { ...DEFAULT_GRACE, maxRequests: 3, maxWindowMs: 10_000_000 },
+      });
+      const url = config.buildQueryUrl('gold rush', 1);
+      const page: PageResult = { status: 200, html, snapshotMarkdown: '# 3 results', errored: false };
+      const browser = new FakeBrowserSession({ responses: { [url]: page } });
+      const nzNode = makeExitNode({ hostname: 'nz-1', ip: '100.64.0.9', country: 'New Zealand' });
+      const runner = new FakeTailscaleRunner([nzNode], 'prior-node.example.ts.net');
+      const client = makeClient(config, browser, runner);
+
+      const result = asQueryResult(
+        await client.query('fixture', 'gold rush', { approveExitNode: 'nz-1' }),
+      );
+
+      expect(result.summary.count).toBe(3);
+      if (result.retention !== 'persist') throw new Error('expected persist retention');
+      expect(result.captures).toHaveLength(1);
+      expect(existsSync(result.captures[0].htmlPath)).toBe(true);
+      // Exactly two host mutations: the switch, then the restore (SC-004).
+      expect(runner.setCalls).toHaveLength(2);
+      expect(runner.setCalls[0]).toBe('nz-1');
+      expect(runner.setCalls[1]).toBe('prior-node.example.ts.net');
+      // Grace run does not use PolitenessPolicy; it navigates the single planned url.
+      expect(browser.navigateCalls).toEqual([url]);
+      expect(browser.isOpen).toBe(false);
+    });
+
+    it('approved node not found among enumerated nodes: rejects fail-loud, closes the session', async () => {
+      const config = makeConfig(() => ({ count: 1, candidates: [] }));
+      const browser = new FakeBrowserSession({});
+      const nzNode = makeExitNode({ hostname: 'nz-1', ip: '100.64.0.9' });
+      const runner = new FakeTailscaleRunner([nzNode], null);
+      const client = makeClient(config, browser, runner);
+
+      await expect(
+        client.query('fixture', 'gold rush', { approveExitNode: 'does-not-exist' }),
+      ).rejects.toThrow(/not found among enumerated nodes/i);
+      // No switch happened; the session was still closed.
+      expect(runner.setCalls).toEqual([]);
+      expect(browser.isOpen).toBe(false);
+    });
+
+    it('burned node (grace-run page still blocked): rejects AND host is restored (setCalls[1] present), session closed', async () => {
+      const config = makeConfig(() => ({ count: 0, candidates: [] }));
+      const url = config.buildQueryUrl('blocked', 1);
+      // The switched node is ALSO blocked — a 403 on the grace navigation.
+      const page: PageResult = {
+        status: 403,
+        html: '<html><body>Forbidden</body></html>',
+        snapshotMarkdown: '# Forbidden',
+        errored: false,
+      };
+      const browser = new FakeBrowserSession({ responses: { [url]: page } });
+      const nzNode = makeExitNode({ hostname: 'nz-1', ip: '100.64.0.9' });
+      const runner = new FakeTailscaleRunner([nzNode], 'prior-node.example.ts.net');
+      const client = makeClient(config, browser, runner);
+
+      await expect(
+        client.query('fixture', 'blocked', { approveExitNode: 'nz-1' }),
+      ).rejects.toThrow(/burned node/i);
+      // Switch happened AND host was restored on the abort path (SC-004).
+      expect(runner.setCalls).toHaveLength(2);
+      expect(runner.setCalls[0]).toBe('nz-1');
+      expect(runner.setCalls[1]).toBe('prior-node.example.ts.net');
+      expect(browser.isOpen).toBe(false);
+    });
+  });
 });

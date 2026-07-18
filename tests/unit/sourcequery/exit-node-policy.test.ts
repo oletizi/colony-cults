@@ -1,8 +1,37 @@
 import { describe, expect, it } from 'vitest';
 import { ExitNodePolicy } from '@/sourcequery/exit-node-policy';
 import { createFakeClock } from '@/sourcequery/clock';
-import type { BlockEvidence, ExitNode, HostExitState } from '@/sourcequery/types';
+import type {
+  BlockEvidence,
+  ExitNode,
+  GraceWindowConfig,
+  HostExitState,
+  QueryResult,
+} from '@/sourcequery/types';
 import { FakeTailscaleRunner } from './fakes';
+
+/** A minimal grounded QueryResult stand-in for scripted `runOne` returns. */
+function makeQueryResult(url: string): QueryResult {
+  return {
+    summary: { count: 1, candidates: [] },
+    captures: [
+      { htmlPath: `${url}.html`, snapshotPath: `${url}.md`, url, capturedAtUtc: '2026-07-17T00:00:00.000Z' },
+    ],
+    source: 'fixture',
+    query: 'q',
+    retention: 'persist',
+  };
+}
+
+function makeGrace(overrides: Partial<GraceWindowConfig> = {}): GraceWindowConfig {
+  return {
+    settleMs: 8000,
+    extraSlowIntervalMs: 15000,
+    maxRequests: 3,
+    maxWindowMs: 60000,
+    ...overrides,
+  };
+}
 
 function makeBlockEvidence(overrides: Partial<BlockEvidence> = {}): BlockEvidence {
   return {
@@ -252,6 +281,146 @@ describe('ExitNodePolicy', () => {
 
       expect(request.hostImpactWarning.length).toBeGreaterThan(0);
       expect(request.hostImpactWarning.toLowerCase()).toContain('host');
+    });
+  });
+
+  describe('runApprovedSwitch', () => {
+    /** Build a policy with an exposed fake clock so timing can be asserted. */
+    function makeTimedPolicy(initialCurrentExitNode: string | null = null): {
+      policy: ExitNodePolicy;
+      runner: FakeTailscaleRunner;
+      clockAt: () => number;
+    } {
+      const runner = new FakeTailscaleRunner([], initialCurrentExitNode);
+      const { clock, sleep, now } = createFakeClock(0);
+      const policy = new ExitNodePolicy({ tailscale: runner, clock, sleep });
+      return { policy, runner, clockAt: now };
+    }
+
+    it('switches to hostname, runs all urls settled + spaced, then restores the prior node (setCalls = [switch, restore])', async () => {
+      const { policy, runner, clockAt } = makeTimedPolicy('prior-node.example.ts.net');
+      const node = makeNode({ hostname: 'nz-1', ip: '100.64.0.9' });
+      const plan = ['https://s/a', 'https://s/b'];
+      const grace = makeGrace({ settleMs: 8000, extraSlowIntervalMs: 15000 });
+      const seenAt: number[] = [];
+
+      const { results, ranAll } = await policy.runApprovedSwitch({
+        node,
+        priorState: { priorExitNode: 'prior-node.example.ts.net' },
+        plan,
+        grace,
+        runOne: async (url) => {
+          seenAt.push(clockAt());
+          return makeQueryResult(url);
+        },
+      });
+
+      // Exactly ONE switch + ONE restore.
+      expect(runner.setCalls).toEqual(['nz-1', 'prior-node.example.ts.net']);
+      expect(results).toHaveLength(2);
+      expect(ranAll).toBe(true);
+      // First runOne happened AFTER the settle (window measured from settle end).
+      expect(seenAt[0]).toBe(8000);
+      // Navigations spaced by extraSlowIntervalMs (only between, not before first).
+      expect(seenAt[1] - seenAt[0]).toBe(15000);
+    });
+
+    it('switches to ip when hostname is empty', async () => {
+      const { policy, runner } = makeTimedPolicy(null);
+      const node = makeNode({ hostname: '', ip: '100.64.0.42' });
+
+      await policy.runApprovedSwitch({
+        node,
+        priorState: { priorExitNode: null },
+        plan: ['https://s/a'],
+        grace: makeGrace(),
+        runOne: async (url) => makeQueryResult(url),
+      });
+
+      expect(runner.setCalls[0]).toBe('100.64.0.42');
+    });
+
+    it("restores to '' (direct) when there was no prior exit node", async () => {
+      const { policy, runner } = makeTimedPolicy(null);
+      const node = makeNode({ hostname: 'nz-1' });
+
+      await policy.runApprovedSwitch({
+        node,
+        priorState: { priorExitNode: null },
+        plan: ['https://s/a'],
+        grace: makeGrace(),
+        runOne: async (url) => makeQueryResult(url),
+      });
+
+      expect(runner.setCalls).toEqual(['nz-1', '']);
+    });
+
+    it('stops at maxRequests (count bound), reporting partial coverage (ranAll false)', async () => {
+      const { policy, runner } = makeTimedPolicy(null);
+      const node = makeNode({ hostname: 'nz-1' });
+      const plan = ['https://s/a', 'https://s/b', 'https://s/c', 'https://s/d'];
+      const grace = makeGrace({ maxRequests: 2, maxWindowMs: 10_000_000 });
+
+      const { results, ranAll } = await policy.runApprovedSwitch({
+        node,
+        priorState: { priorExitNode: null },
+        plan,
+        grace,
+        runOne: async (url) => makeQueryResult(url),
+      });
+
+      expect(results).toHaveLength(2);
+      expect(ranAll).toBe(false);
+      // Host still restored exactly once after the bounded run.
+      expect(runner.setCalls).toEqual(['nz-1', '']);
+    });
+
+    it('stops at maxWindowMs (time bound), reporting partial coverage (ranAll false)', async () => {
+      const { policy, runner } = makeTimedPolicy(null);
+      const node = makeNode({ hostname: 'nz-1' });
+      const plan = ['https://s/a', 'https://s/b', 'https://s/c', 'https://s/d'];
+      // maxRequests high so only the time bound can cut the run short.
+      // After run 0 (no spacing) + spacing before run 1 (200ms), the window
+      // (100ms) is already exceeded when i=2 is checked.
+      const grace = makeGrace({
+        settleMs: 0,
+        extraSlowIntervalMs: 200,
+        maxRequests: 10,
+        maxWindowMs: 100,
+      });
+
+      const { results, ranAll } = await policy.runApprovedSwitch({
+        node,
+        priorState: { priorExitNode: null },
+        plan,
+        grace,
+        runOne: async (url) => makeQueryResult(url),
+      });
+
+      expect(results).toHaveLength(2);
+      expect(ranAll).toBe(false);
+      expect(runner.setCalls).toEqual(['nz-1', '']);
+    });
+
+    it('burned node: when runOne throws, the promise rejects BUT host is still restored (SC-004)', async () => {
+      const { policy, runner } = makeTimedPolicy('prior-node.example.ts.net');
+      const node = makeNode({ hostname: 'nz-1' });
+
+      await expect(
+        policy.runApprovedSwitch({
+          node,
+          priorState: { priorExitNode: 'prior-node.example.ts.net' },
+          plan: ['https://s/a'],
+          grace: makeGrace(),
+          runOne: async () => {
+            throw new Error('still blocked after the approved exit-node switch (burned node)');
+          },
+        }),
+      ).rejects.toThrow(/burned node/i);
+
+      // The switch happened, and restore STILL ran on the abort path.
+      expect(runner.setCalls).toEqual(['nz-1', 'prior-node.example.ts.net']);
+      expect(runner.setCalls[1]).toBe('prior-node.example.ts.net');
     });
   });
 });
