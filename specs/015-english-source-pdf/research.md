@@ -72,6 +72,15 @@ implementation-time verifications.
   versus a code (`eng`/`en`). The case-insensitive match assumes the full word;
   if a code is used, normalize at the routing seam. **Verify against real
   sidecars before wiring the match.**
+  
+  **CONFIRMED (2026-07-18):** Verified against archive-snapshot folio sidecars
+  in `/Users/orion/work/colony-cults-work/archive-snapshot/archive/cases/port-breton/books/`.
+  All English sources (PB-P056–P059) carry the full quoted word `language: "English"`,
+  matching French sources' `language: "French"`. Counts: PB-P056 (52 folios),
+  PB-P057 (1 folio), PB-P058 (1 folio), PB-P059 (1 folio) = 55 total English
+  sidecars. Across the full archive snapshot: 55 English, 2125 French sidecars.
+  No codes (`eng`, `en`, etc.) found. **Conclusion:** Case-insensitive full-word
+  matching is correct; no normalization at routing seam is needed.
 - **V2 — recto column header copy**: Whether the english-only recto header should
   read "Transcription" vs "Translation" for an OCR-transcription recto. A
   template-copy nicety, not structural; the english-only variant already renders
