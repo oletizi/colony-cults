@@ -1,13 +1,14 @@
 /**
- * Shared test fixtures for sourcequery module.
+ * Shared test fixtures for the sourcequery module.
  *
- * This module will hold test fakes and fixtures including:
- * - FakeBrowserSession (defined in T005)
- * - FakeTailscaleRunner (defined in T006)
- * - Fake clock/sleep utilities (defined in T007)
+ * Exports no-network test doubles for the module's injectable interfaces:
+ * - {@link FakeBrowserSession} — a scripted stand-in for `BrowserSession`,
+ *   returning `PageResult`s keyed by URL (see {@link FakeBrowserSessionScript}).
+ * - {@link FakeTailscaleRunner} — a scripted stand-in for `TailscaleRunner`,
+ *   tracking exit-node list/current/set calls without shelling out.
  *
- * These fakes are populated incrementally as their corresponding
- * interfaces and implementations are developed in later tasks.
+ * Fake clock/sleep utilities live in `@/sourcequery/clock`
+ * (`createFakeClock`), not here.
  */
 import type { BrowserSession } from '@/sourcequery/browser-session';
 import type { TailscaleRunner } from '@/sourcequery/tailscale-runner';
@@ -27,6 +28,9 @@ export interface FakeBrowserSessionScript {
  * Returns scripted `PageResult`s keyed by URL (e.g. result page / challenge
  * stub / drop), falling back to `defaultResult` when provided. Records the
  * order of `navigate()` calls so tests can assert on navigation sequence.
+ * Enforces the open-before-navigate precondition: `navigate()` throws if
+ * called before `open()` or after `close()`, mirroring a real
+ * persistent-Chrome session.
  */
 export class FakeBrowserSession implements BrowserSession {
   /** URLs passed to `navigate()`, in call order. */
@@ -53,6 +57,12 @@ export class FakeBrowserSession implements BrowserSession {
   }
 
   async navigate(url: string): Promise<PageResult> {
+    if (!this.isOpen) {
+      throw new Error(
+        `FakeBrowserSession: navigate('${url}') called before open() (or after close()) — ` +
+          'a real persistent-Chrome session requires open() before any navigation.',
+      );
+    }
     this.navigateCalls.push(url);
     const scripted = this.responses[url];
     if (scripted !== undefined) {

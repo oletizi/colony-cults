@@ -179,6 +179,19 @@ describe('ExitNodePolicy', () => {
 
       expect(selected?.hostname).toBe('au-online');
     });
+
+    it('prefers a later ONLINE geo match over an earlier OFFLINE geo match', () => {
+      const nodes = [
+        makeNode({ hostname: 'nz-offline', country: 'New Zealand', online: false }),
+        makeNode({ hostname: 'us-online', country: 'United States', online: true }),
+        makeNode({ hostname: 'nz-online', country: 'New Zealand', online: true }),
+      ];
+      const { policy } = makePolicy(nodes);
+
+      const selected = policy.selectNode(nodes, 'New Zealand');
+
+      expect(selected?.hostname).toBe('nz-online');
+    });
   });
 
   describe('buildPermissionRequest', () => {
@@ -375,16 +388,46 @@ describe('ExitNodePolicy', () => {
       expect(runner.setCalls).toEqual(['nz-1', '']);
     });
 
-    it('stops at maxWindowMs (time bound), reporting partial coverage (ranAll false)', async () => {
+    it('stops at maxWindowMs (time bound): no navigation STARTS once the window is exhausted, even mid-pacing', async () => {
       const { policy, runner } = makeTimedPolicy(null);
       const node = makeNode({ hostname: 'nz-1' });
       const plan = ['https://s/a', 'https://s/b', 'https://s/c', 'https://s/d'];
       // maxRequests high so only the time bound can cut the run short.
-      // After run 0 (no spacing) + spacing before run 1 (200ms), the window
-      // (100ms) is already exceeded when i=2 is checked.
+      // maxWindowMs is a HARD CEILING: it is re-checked immediately before
+      // every navigation, including after the inter-navigation pacing sleep.
+      // Run 0 starts at t=0 (window not yet exhausted). The 200ms pacing
+      // sleep before run 1 would land at t=200, which is already past the
+      // 100ms window — so run 1 must NOT start at all.
       const grace = makeGrace({
         settleMs: 0,
         extraSlowIntervalMs: 200,
+        maxRequests: 10,
+        maxWindowMs: 100,
+      });
+
+      const { results, ranAll } = await policy.runApprovedSwitch({
+        node,
+        priorState: { priorExitNode: null },
+        plan,
+        grace,
+        runOne: async (url) => makeQueryResult(url),
+      });
+
+      expect(results).toHaveLength(1);
+      expect(ranAll).toBe(false);
+      expect(runner.setCalls).toEqual(['nz-1', '']);
+    });
+
+    it('a navigation that starts exactly within the window still runs (boundary case)', async () => {
+      const { policy, runner } = makeTimedPolicy(null);
+      const node = makeNode({ hostname: 'nz-1' });
+      const plan = ['https://s/a', 'https://s/b', 'https://s/c'];
+      // Pacing (50ms) keeps run 1's start (t=50) strictly within the 100ms
+      // window, so it still runs; run 2's start (t=100) has reached the
+      // bound and must NOT run.
+      const grace = makeGrace({
+        settleMs: 0,
+        extraSlowIntervalMs: 50,
         maxRequests: 10,
         maxWindowMs: 100,
       });

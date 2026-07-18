@@ -119,6 +119,11 @@ export class ExitNodePolicy {
    *    `grace.maxRequests` (count bound) or `grace.maxWindowMs` measured from the
    *    end of the settle (time bound); pace navigations by
    *    `grace.extraSlowIntervalMs` between them; persist each via `runOne`.
+   *    `maxWindowMs` is a HARD CEILING: the time bound is re-checked
+   *    immediately before every navigation, including after the inter-
+   *    navigation pacing sleep — no navigation is ever allowed to START once
+   *    the approved window has elapsed, even if pacing alone would push it
+   *    past the bound.
    * 3. In a `finally`, restore `priorState.priorExitNode` (or `''` = direct)
    *    UNCONDITIONALLY — even if the loop throws (e.g. the switched node is ALSO
    *    blocked, the "burned node" case). `runOne`'s throw is NOT swallowed: it
@@ -154,6 +159,13 @@ export class ExitNodePolicy {
         if (i > 0) {
           // Extra-slow pacing between navigations (only BETWEEN, not before the first).
           await this.sleep(args.grace.extraSlowIntervalMs);
+        }
+        // Hard ceiling: re-check the time bound AFTER any pacing sleep and
+        // BEFORE starting the navigation — the approved window's exposure
+        // must not be extended by even one pacing interval. No navigation
+        // may START once the window is exhausted.
+        if (this.clock() - startMs >= args.grace.maxWindowMs) {
+          break; // time bound reached during pacing — do not start this navigation.
         }
         results.push(await args.runOne(args.plan[i]));
       }
