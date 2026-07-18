@@ -12,7 +12,7 @@
 import type { GetStaticPaths } from 'astro';
 import { loadCorpus } from '@/browser/load/corpus';
 import { resolveConfig } from '@/browser/config';
-import type { PageView, SourceKind } from '@/browser/model';
+import type { PageView, SourceKind, SourceLanguage } from '@/browser/model';
 import BaseLayout from '@site/layouts/BaseLayout.astro';
 import ReadingView from '@site/components/ReadingView.astro';
 
@@ -47,6 +47,7 @@ export const getStaticPaths = (() => {
             sourceId: source.sourceId,
             sourceTitle: source.title,
             kind: source.kind,
+            language: source.language,
             issueId: issue.issueId,
             issueDate: issue.date,
             page,
@@ -67,6 +68,7 @@ interface Props {
   sourceId: string;
   sourceTitle: string;
   kind: SourceKind;
+  language: SourceLanguage;
   issueId: string;
   issueDate: string;
   page: PageView;
@@ -97,6 +99,7 @@ const docDesc =
     sourceId={props.sourceId}
     sourceTitle={props.sourceTitle}
     kind={props.kind}
+    language={props.language}
     issueDate={props.issueDate}
     page={props.page}
     positionInIssue={props.positionInIssue}
