@@ -175,6 +175,8 @@ Make `pdf:build` render editions by reading EXCLUSIVELY from our own normalized 
 
 ## impl:feature/english-source-pdf
 - status: in-flight
+- analyze-clean: yes
+- spec: specs/015-english-source-pdf
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-17-english-source-pdf-design.md
 - depends-on: impl:feature/archive-direct-pdf
