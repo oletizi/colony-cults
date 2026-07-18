@@ -22,3 +22,7 @@
 {"id":"T023","tierLabel":"powerful","model":"opus","commit":"8f6ab5e","reviewClean":true}
 {"id":"T022","tierLabel":"balanced","model":"sonnet","commit":"2e15d02","reviewClean":true}
 {"id":"T024","tierLabel":"balanced","model":"sonnet","commit":"1e5e101","reviewClean":true}
+{"id":"T025","tierLabel":"fast","model":"haiku","commit":"c54c70b","reviewClean":true}
+{"id":"T026","tierLabel":"fast","model":"haiku","commit":"a29c176","reviewClean":true}
+{"id":"T027","tierLabel":"balanced","model":"sonnet","commit":"143bbcc","reviewClean":true}
+{"id":"T029","tierLabel":"fast","model":"haiku","commit":"4e46afc","reviewClean":true}
