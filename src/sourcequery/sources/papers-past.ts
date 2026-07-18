@@ -24,9 +24,21 @@ import { isCountGrounded } from '@/sourcequery/grounding';
 import type { Candidate, QuerySummary } from '@/sourcequery/types';
 import { parse } from 'node-html-parser';
 
-/** PROVISIONAL: validated against the synthetic fixture only (see file header). */
-const RESULT_SELECTOR = '.search-results .result';
-const COUNT_SELECTOR = '.results-count';
+/**
+ * Selectors confirmed against a live Papers Past newspapers-search capture
+ * (2026-07-18, "Marquis de Rays" → 695 results; persisted under
+ * bibliography/repository-responses/papers-past/). No longer provisional.
+ *
+ * - `.search-results` is the results container (present on a real results page,
+ *   absent on a WAF/challenge page) — the block-detection anchor.
+ * - The result count lives in the top pager as e.g. "Showing results 1-10 of 695"
+ *   (range-prefix shape; `selectTotalCount` reads the total after "of").
+ * - Each result row's title/publication/date are in the fields below.
+ */
+const RESULT_SELECTOR = '.search-results';
+const COUNT_SELECTOR = '.pager-center .en-version';
+/** One per result row; its `<a>` carries the article title + ref (href). */
+const ROW_TITLE_SELECTOR = '.search-results .article-preview__title--newspapers';
 
 /** Builds the Papers Past newspapers search URL for a query, optionally paged. */
 function buildQueryUrl(query: string, page?: number): string {
@@ -101,13 +113,16 @@ function parseCount(html: string, root: ReturnType<typeof parse>): number {
 }
 
 /**
- * Extracts first-page candidates from result rows. Throws (fail-loud) when a
- * row is missing its title/ref link, rather than silently dropping the row.
+ * Extracts first-page candidates from result rows. Each row's title block holds
+ * the title/ref `<a>`; the sibling `.article-preview__publication` +
+ * `.article-preview__year` carry the newspaper and date, combined into `date`
+ * (e.g. "Hawera & Normanby Star, 3 January 1884"). Throws (fail-loud) when a row
+ * is missing its title/ref link, rather than silently dropping the row.
  */
 function parseCandidates(root: ReturnType<typeof parse>): Candidate[] {
-  const rows = root.querySelectorAll(RESULT_SELECTOR);
-  return rows.map((row): Candidate => {
-    const link = row.querySelector('a');
+  const titleBlocks = root.querySelectorAll(ROW_TITLE_SELECTOR);
+  return titleBlocks.map((block): Candidate => {
+    const link = block.querySelector('a');
     if (!link) {
       throw new Error('papers-past parseSummary: result row is missing its title/ref <a> link.');
     }
@@ -116,8 +131,10 @@ function parseCandidates(root: ReturnType<typeof parse>): Candidate[] {
       throw new Error('papers-past parseSummary: result link is missing an href.');
     }
     const title = link.text.trim();
-    const dateEl = row.querySelector('.result-date');
-    const date = dateEl ? dateEl.text.trim() : undefined;
+    const row = block.parentNode;
+    const publication = row?.querySelector('.article-preview__publication')?.text.trim();
+    const year = row?.querySelector('.article-preview__year')?.text.trim();
+    const date = [publication, year].filter((v) => v && v.length > 0).join(', ') || undefined;
     return date === undefined ? { title, ref } : { title, ref, date };
   });
 }
