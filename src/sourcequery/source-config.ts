@@ -9,6 +9,7 @@
 
 import type { GraceWindowConfig, QuerySummary } from '@/sourcequery/types';
 import { PAPERS_PAST } from '@/sourcequery/sources/papers-past';
+import { PAPERS_PAST_ARTICLE } from '@/sourcequery/sources/papers-past-article';
 
 // Re-exported from the leaf `grace` module so existing importers of
 // `DEFAULT_GRACE` from `source-config` keep working, while the actual
@@ -69,3 +70,4 @@ export function getSourceConfig(id: string): SourceConfig {
 // Auto-register known sources. papers-past.ts imports `SourceConfig` type-only
 // (erased at runtime), so this value-level import here is not circular.
 registerSource(PAPERS_PAST);
+registerSource(PAPERS_PAST_ARTICLE);
