@@ -22,22 +22,26 @@
  * Even "live", the ONLY host contacted is the local 127.0.0.1 fixture server --
  * never a real source website.
  *
- * NOTE: the fixture `SourceConfig`s are registered INLINE here (not via the
- * persistent registry) so US1 stays self-contained; the persistent-registry
- * SourceConfig is a later Polish task (T027).
+ * NOTE: the fixture `SourceConfig`s are built via the shared
+ * `buildFixtureSourceConfig` builder (T027, `@/sourcequery/sources/fixture`)
+ * and `registerSource`d here once the ephemeral port is known -- NOT via a
+ * static module-level registration -- because `buildQueryUrl` must close
+ * over the runtime `baseUrl`, which only exists once the fixture server has
+ * actually bound its port (see that module's header for why a static
+ * registered config is impossible here).
  */
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { parse } from 'node-html-parser';
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { SourceQueryClient } from '@/sourcequery/source-query-client';
 import { PlaywrightBrowserSession } from '@/sourcequery/browser-session-playwright';
-import { registerSource, DEFAULT_GRACE } from '@/sourcequery/source-config';
+import { registerSource } from '@/sourcequery/source-config';
+import { buildFixtureSourceConfig } from '@/sourcequery/sources/fixture';
 import { realClock, realSleep } from '@/sourcequery/clock';
-import type { Candidate, ExitNode, QuerySummary } from '@/sourcequery/types';
+import type { ExitNode } from '@/sourcequery/types';
 import { FakeTailscaleRunner } from '../../unit/sourcequery/fakes';
 
 // --- Env gate: skip cleanly unless a real Chrome run is explicitly requested. ---
@@ -49,7 +53,6 @@ const BROWSER_TIMEOUT_MS = 120_000;
 
 const FIXTURE_LOCAL_ID = 'fixture-local';
 const FIXTURE_CHALLENGE_ID = 'fixture-challenge';
-const RESULT_SELECTOR = '.search-results .result';
 
 /**
  * Single ONLINE exit node shared by the T024 escalation-path tests
@@ -101,40 +104,6 @@ const CHALLENGE_HTML = [
   '',
 ].join('\n');
 
-/**
- * Inline fixture parser (fail-loud, no fallbacks): reads the plain-digit count
- * from `.results-count` and the title/ref of each `.result` row. Throws rather
- * than guessing when the count element, its digits, a row link, or an href is
- * missing.
- */
-function parseFixtureSummary(html: string): QuerySummary {
-  const root = parse(html);
-  const countEl = root.querySelector('.results-count');
-  if (!countEl) {
-    throw new Error('fixture parseSummary: no `.results-count` element found.');
-  }
-  const match = countEl.text.match(/\d+/);
-  if (!match) {
-    throw new Error(
-      `fixture parseSummary: no digit sequence in count element text "${countEl.text}".`,
-    );
-  }
-  const count = Number.parseInt(match[0], 10);
-  const rows = root.querySelectorAll(RESULT_SELECTOR);
-  const candidates: Candidate[] = rows.map((row): Candidate => {
-    const link = row.querySelector('a');
-    if (!link) {
-      throw new Error('fixture parseSummary: result row is missing its title/ref <a> link.');
-    }
-    const ref = link.getAttribute('href');
-    if (!ref) {
-      throw new Error('fixture parseSummary: result link is missing an href.');
-    }
-    return { title: link.text.trim(), ref };
-  });
-  return { count, candidates };
-}
-
 d('SourceQueryClient end-to-end against a local fixture server', () => {
   let server: Server;
   let port: number;
@@ -172,35 +141,31 @@ d('SourceQueryClient end-to-end against a local fixture server', () => {
     }
     port = addr.port;
 
-    // Register the fixture configs INLINE now that the ephemeral port is known.
-    registerSource({
-      id: FIXTURE_LOCAL_ID,
-      baseUrl: `http://127.0.0.1:${port}`,
-      buildQueryUrl: (query: string) =>
-        `http://127.0.0.1:${port}/results?query=${encodeURIComponent(query)}`,
-      resultSelector: RESULT_SELECTOR,
-      parseSummary: parseFixtureSummary,
-      retention: 'persist',
-      attribution: '',
-      minIntervalMs: 50,
-      grace: DEFAULT_GRACE,
-    });
+    // Build + register the fixture configs now that the ephemeral port is
+    // known. A static, module-level SourceConfig is impossible here --
+    // `buildQueryUrl` must close over `baseUrl`, which only exists once the
+    // server above has actually bound its port (see
+    // `@/sourcequery/sources/fixture`'s header for the full rationale).
+    const baseUrl = `http://127.0.0.1:${port}`;
 
-    registerSource({
-      id: FIXTURE_CHALLENGE_ID,
-      baseUrl: `http://127.0.0.1:${port}`,
-      buildQueryUrl: (query: string) =>
-        `http://127.0.0.1:${port}/challenge?query=${encodeURIComponent(query)}`,
-      resultSelector: RESULT_SELECTOR,
-      parseSummary: parseFixtureSummary,
-      retention: 'persist',
-      attribution: '',
-      // Matches CHALLENGE_NODE's country below, so selectNode's geo-match
-      // branch is exercised (not just the "only one online node" fallback).
-      preferredGeo: 'NZ',
-      minIntervalMs: 50,
-      grace: DEFAULT_GRACE,
-    });
+    registerSource(
+      buildFixtureSourceConfig({
+        id: FIXTURE_LOCAL_ID,
+        baseUrl,
+        path: '/results',
+      }),
+    );
+
+    registerSource(
+      buildFixtureSourceConfig({
+        id: FIXTURE_CHALLENGE_ID,
+        baseUrl,
+        path: '/challenge',
+        // Matches CHALLENGE_NODE's country below, so selectNode's geo-match
+        // branch is exercised (not just the "only one online node" fallback).
+        preferredGeo: 'NZ',
+      }),
+    );
   });
 
   afterAll(async () => {
