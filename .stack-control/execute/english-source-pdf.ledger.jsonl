@@ -1,0 +1,3 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"3748c08","reviewClean":true,"note":"V1 confirmed: full-word language English/French (55 EN, 2125 FR sidecars); no routing-seam normalization needed"}
+{"id":"T002","tierLabel":"balanced","model":"sonnet","commitRange":"906b5d8","reviewClean":true,"note":"ReadingLanguage resolution in archive-source.ts; FR-001/006/006a; readingLanguage surfaced on resolution; 4 tests"}
+{"id":"T003","tierLabel":"balanced","model":"sonnet","commitRange":"90c9cf4","reviewClean":true,"note":"English-source fixture: omitTranslationDir + ocrStatus/ocrQuality options; non-FR/EN via T002 language override"}
