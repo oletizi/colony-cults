@@ -37,7 +37,7 @@ import { SourceQueryClient } from '@/sourcequery/source-query-client';
 import { PlaywrightBrowserSession } from '@/sourcequery/browser-session-playwright';
 import { registerSource, DEFAULT_GRACE } from '@/sourcequery/source-config';
 import { realClock, realSleep } from '@/sourcequery/clock';
-import type { Candidate, QuerySummary } from '@/sourcequery/types';
+import type { Candidate, ExitNode, QuerySummary } from '@/sourcequery/types';
 import { FakeTailscaleRunner } from '../../unit/sourcequery/fakes';
 
 // --- Env gate: skip cleanly unless a real Chrome run is explicitly requested. ---
@@ -50,6 +50,21 @@ const BROWSER_TIMEOUT_MS = 120_000;
 const FIXTURE_LOCAL_ID = 'fixture-local';
 const FIXTURE_CHALLENGE_ID = 'fixture-challenge';
 const RESULT_SELECTOR = '.search-results .result';
+
+/**
+ * Single ONLINE exit node shared by the T024 escalation-path tests
+ * (Scenarios 3 & 4). Its `country` ("NZ") matches `FIXTURE_CHALLENGE_ID`'s
+ * `preferredGeo` above, so Scenario 3 exercises the geo-match branch of
+ * `ExitNodePolicy.selectNode` rather than only the single-online-node
+ * fallback.
+ */
+const ESCALATION_NODE: ExitNode = {
+  ip: '100.64.0.9',
+  hostname: 'nz-akl-01',
+  country: 'NZ',
+  city: 'Auckland',
+  online: true,
+};
 
 /**
  * Static results page: a `.search-results` container with two `.result` rows
@@ -180,6 +195,9 @@ d('SourceQueryClient end-to-end against a local fixture server', () => {
       parseSummary: parseFixtureSummary,
       retention: 'persist',
       attribution: '',
+      // Matches CHALLENGE_NODE's country below, so selectNode's geo-match
+      // branch is exercised (not just the "only one online node" fallback).
+      preferredGeo: 'NZ',
       minIntervalMs: 50,
       grace: DEFAULT_GRACE,
     });
@@ -269,6 +287,99 @@ d('SourceQueryClient end-to-end against a local fixture server', () => {
 
       // Even on a block, the client never autonomously switches the exit node.
       expect(fakeTailscale.setCalls).toEqual([]);
+    },
+    BROWSER_TIMEOUT_MS,
+  );
+
+  // --- T024: escalation path (Scenarios 3 & 4, quickstart.md; FR-010/011/012/013, SC-003/SC-004). ---
+
+  it(
+    'Scenario 3: requests operator escalation on a hard block with persisted evidence and no autonomous switch',
+    async () => {
+      // Unlike the block-classification test above, this fake carries a usable
+      // ONLINE exit node, so the client returns an OperatorPermissionRequest
+      // instead of throwing (a usable node exists — FR-010/FR-011).
+      const fakeTailscale = new FakeTailscaleRunner([ESCALATION_NODE]);
+      const client = new SourceQueryClient({
+        browser: new PlaywrightBrowserSession({
+          userDataDir: path.join(tmpDir, 'browser-profile'),
+        }),
+        tailscale: fakeTailscale,
+        clock: realClock,
+        sleep: realSleep,
+      });
+
+      const result = await client.query(FIXTURE_CHALLENGE_ID, 'ballarat');
+
+      // A hard block with a usable node yields an OperatorPermissionRequest,
+      // never a QueryResult.
+      if (!('proposedNode' in result)) {
+        throw new Error('expected an OperatorPermissionRequest, not a QueryResult');
+      }
+
+      // Block evidence is persisted to disk BEFORE the escalation is raised
+      // (FR-010) -- the file must actually exist, not just be referenced.
+      expect(existsSync(result.blockEvidence.evidencePath)).toBe(true);
+
+      // The proposed node, switch command, and minimal plan are populated so
+      // the operator has everything needed to approve or decline.
+      expect(result.proposedNode).toEqual(ESCALATION_NODE);
+      expect(result.switchCommand).toContain(ESCALATION_NODE.hostname);
+      expect(result.minimalQueryPlan.length).toBeGreaterThan(0);
+
+      // SC-003: the client NEVER switches the exit node autonomously, even
+      // though a usable node was available.
+      expect(fakeTailscale.setCalls).toEqual([]);
+    },
+    BROWSER_TIMEOUT_MS,
+  );
+
+  it(
+    'Scenario 4: on operator approval, switches once, runs the grace pass, and restores the prior exit node',
+    async () => {
+      // A fresh FakeTailscaleRunner per query (per the task): this one carries
+      // both the usable node AND the host's prior exit node, so the restore
+      // step (SC-004) has something concrete to restore to.
+      const priorNode = 'prior-node';
+      const fakeTailscale = new FakeTailscaleRunner([ESCALATION_NODE], priorNode);
+      const client = new SourceQueryClient({
+        browser: new PlaywrightBrowserSession({
+          userDataDir: path.join(tmpDir, 'browser-profile'),
+        }),
+        tailscale: fakeTailscale,
+        clock: realClock,
+        sleep: realSleep,
+      });
+
+      const result = await client.query(FIXTURE_LOCAL_ID, 'ballarat', {
+        approveExitNode: ESCALATION_NODE.hostname,
+      });
+
+      // Operator approval + a healthy result page yields a grounded
+      // QueryResult, never an escalation request.
+      if ('proposedNode' in result) {
+        throw new Error('expected a grounded QueryResult, not an OperatorPermissionRequest');
+      }
+
+      expect(result.retention).toBe('persist');
+      if (result.retention !== 'persist') {
+        throw new Error('expected a persist-retention QueryResult');
+      }
+      expect(result.summary.count).toBe(2);
+
+      // The grace run's single query is persisted to disk.
+      expect(result.captures).toHaveLength(1);
+      const capture = result.captures[0];
+      expect(capture).toBeDefined();
+      if (capture === undefined) {
+        throw new Error('expected a persisted capture');
+      }
+      expect(existsSync(capture.htmlPath)).toBe(true);
+      expect(existsSync(capture.snapshotPath)).toBe(true);
+
+      // SC-004: exactly ONE switch (to the approved node) then the restore
+      // back to the host's prior exit node -- host state ends up unchanged.
+      expect(fakeTailscale.setCalls).toEqual([ESCALATION_NODE.hostname, priorNode]);
     },
     BROWSER_TIMEOUT_MS,
   );
