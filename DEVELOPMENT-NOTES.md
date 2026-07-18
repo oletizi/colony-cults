@@ -1,3 +1,34 @@
+## 2026-07-18: Archive-direct PDF rendering (spec 014) built + governed + French PDFs produced; English-source rendering (spec 015) designed + specced
+
+**Goal:** Dissolve the Gallica coupling in `pdf:build` so facsimile-edition PDFs render from our own normalized archive (any source archive), build the French PDFs from the newly-acquired assets, and then design + spec rendering for the English-language sources that don't fit the FR-OCR │ EN-translation model.
+
+**Accomplished:**
+- **Archive-direct PDF reader (spec 014) — designed → shipped-to-merging.** New PDF-scoped `src/pdf/load/` reader (`archive-source` / `archive-page` / `archive-edition`) reading exclusively from the normalized archive (object_store masters + folio provenance + OCR/translation), producing the same `Edition` the Typst renderer consumes. Full front-door cycle: design → define → plan → tasks → analyze-clean → execute (T001–T019) → govern (override; phase → merging). 132 pdf tests green.
+- **Two live-acceptance bugs found + fixed** during the real build: (1) blank/cover pages with `untranslatable` marker + empty OCR now render a blank recto instead of failing loud; (2) all 419 PB-P055 masters are PNG but were staged `.jpg` — added `detectImageExt` (magic-byte sniff) so Typst decodes them. Fixture updated to carry JPEG magic.
+- **French facsimile PDFs produced:** PB-P054 (Gallica page-range extract, 10pp — proves the positional folio→translation numbering fix, f048–f050 → p001–p003) and PB-P055 (archive.org, 855pp). T020 operator-acceptance ledgered.
+- **English-source rendering (spec 015) — designed + specced (runnable).** Discovered during the French build that PB-P056 (Richmond/New Italy book) + PB-P057–P059 (press leaves) carry English OCR and NO translation, so they hit the French path's fail-loud translation gate. Brainstormed 3 decisions (OCR-as-reading-recto; route on the archive's own `language` field; honest OCR-transcription colophon), authored the design record + Spec Kit spec (3 US, 12 FR, 6 SC, tasks tier-tagged), analyze-clean. Ready for `/stack-control:execute`.
+- Pulled latest from main several times (OCR fidelity-recording, coverage byScope, and the PB-P056–P059 acquisitions authored in other sessions).
+
+**Didn't Work:**
+- The govern cross-model audit-barrage was **killed by the harness before convergence** again (the known env limitation — died very early, no barrage findings to harvest). Fell back to the established pattern: controller whole-feature review + live validation, then `govern --override` with the disposition recorded in the audit log. Both controller findings (title-page imprint date; issue.txt hard-required) captured to backlog (TASK-38/39), non-blocking for the built targets.
+- `stackctl session-end --since df23d38` over-scoped to 310 commits / 531 files (df23d38 predated an intervening 2026-07-17 session-end). Corrected this entry's boundary by hand to the real previous session-end (`05b7334`).
+
+**Course Corrections:**
+- **Design reframing (operator):** I over-indexed on "Internet Archive PDF build"; the operator pushed back — "why are you obsessing over internet archive, when this is a general problem?" then "restrict your mandate to PDF rendering." Reframed spec 014 to archive-agnostic Gallica-decoupling, PDF-only (browser snapshot path out of scope).
+- **English-source routing:** rejected inferring English from an absent `translation/` dir — it would silently collapse the very fail-loud translation-gap safety net the design must preserve. Chose the explicit archive `language` field instead.
+
+**Insights:**
+- Reading exclusively from our own normalized archive (object_store key + sha256 + folio provenance) genuinely dissolves per-source-archive friction — the same reader handles Gallica, archive.org, and page-range extracts with no source-specific branching. Language is the one legitimate axis of variation, and it's already a field in the archive.
+- Colophon honesty matters: an English source's recto is a machine OCR transcription, not a translation — labeling it as such (machineAssist null, OCR-transcription line) keeps the evidence-vs-narrative line clean, especially for the explicitly low-fidelity press leaves.
+
+**Quantitative (auto-derived from git; boundary hand-corrected to 05b7334..HEAD):**
+- Commits this session: 41 since the previous session-end (05b7334) — of which ~20 are this session's own authored `archive-direct-pdf` + `english-source-pdf` work; the remainder are `main`-merge pulls (OCR fidelity, coverage, PB-P056–P059 acquisitions from other sessions).
+  - Key authored commits: define/design(english-source-pdf) spec 015; the archive-direct-pdf full cycle (design → define → plan → tasks → analyze → T001–T020 impl → govern → blank-OCR + PNG fixes → T020 ledger).
+- Files changed: 129 (05b7334..HEAD).
+- Backlog touched (referenced in commits; status verbatim, 0 transitions): TASK-38 (imprint-date), TASK-39 (issue.txt-optional), TASK-40 (blank-OCR + PNG unit tests) — all To Do, captured this session for the archive-direct-pdf backlog.
+- Roadmap: `impl:feature/archive-direct-pdf` → merging; `impl:feature/english-source-pdf` → in-flight, design-approved + analyze-clean, spec 015 runnable.
+
+
 ## 2026-07-17: Implement + live-acquire the Internet Archive adapter (spec 013) — de Groote book enters the corpus; a class-wide archive-bookkeeping failure surfaces and is made mechanically impossible
 
 **Goal:** Execute spec 013 (the Internet Archive acquisition adapter) through the stack-control front door, then actually acquire the de Groote 1880 book — real corpus growth, not just a shipped adapter.
