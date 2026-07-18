@@ -79,9 +79,9 @@ describe('sourcequery/SourceQueryClient', () => {
   let originalCwd: string;
   let tempDir: string;
 
-  // Hermetic strategy: chdir into a fresh temp dir so persistCapture /
-  // persistThenParse (whose baseDir defaults to process.cwd()) write under the
-  // temp dir, never into the repo tree. Restore + remove afterward.
+  // Hermetic strategy: chdir into a fresh temp dir so persistCapture (whose
+  // baseDir defaults to process.cwd()) writes under the temp dir, never into the
+  // repo tree. Restore + remove afterward.
   beforeEach(() => {
     originalCwd = process.cwd();
     tempDir = mkdtempSync(path.join(tmpdir(), 'sourcequery-client-'));
@@ -283,14 +283,62 @@ describe('sourcequery/SourceQueryClient', () => {
     await expect(client.query('fixture', 'blocked')).rejects.toThrow(/tailscale/i);
     expect(runner.setCalls).toEqual([]);
     expect(browser.isOpen).toBe(false);
-    // Block evidence was persisted BEFORE enumeration failed (FR-010): the
-    // block-*.html file must exist on disk even though the pass ultimately
-    // threw due to Tailscale being unavailable.
+    // The raw page was persisted BEFORE classify (persist-before-analysis, FR-010):
+    // for a persist source that raw capture IS the block evidence, so a
+    // <slug>-<UTC>.html capture must exist on disk even though the pass ultimately
+    // threw due to Tailscale being unavailable. There is NO separate block-<UTC>
+    // copy of the same bytes.
     const { readdirSync } = await import('node:fs');
     const evidenceDir = path.join(tempDir, 'bibliography', 'repository-responses', 'fixture');
     expect(existsSync(evidenceDir)).toBe(true);
     const evidenceFiles = readdirSync(evidenceDir);
-    expect(evidenceFiles.some((file) => /^block-.*\.html$/.test(file))).toBe(true);
+    expect(evidenceFiles.some((file) => /^fixture-blocked-.*\.html$/.test(file))).toBe(true);
+    expect(evidenceFiles.some((file) => /^block-.*\.html$/.test(file))).toBe(false);
+  });
+
+  it('unclassifiable persist-retention page: rejects, but the raw page was persisted BEFORE classify (persist-before-analysis)', async () => {
+    // No result container present AND no block fingerprint AND status 200/not
+    // errored => classify() THROWS ("Page could not be classified"). Because the
+    // raw page is persisted BEFORE classify runs, a <slug>-<UTC>.{html,md} capture
+    // must still exist on disk afterward — the evidence needed to bootstrap a
+    // fixed SourceConfig is never lost to a classification failure.
+    const { readdirSync } = await import('node:fs');
+    const html = '<html><body><div class="unexpected">nothing the config recognizes</div></body></html>';
+    const config = makeConfig(() => ({ count: 0, candidates: [] }));
+    const url = config.buildQueryUrl('mystery layout', 1);
+    const page: PageResult = { status: 200, html, snapshotMarkdown: '# mystery', errored: false };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const client = makeClient(config, browser);
+
+    await expect(client.query('fixture', 'mystery layout')).rejects.toThrow(/could not be classified/i);
+
+    // The raw capture (both artifacts) is on disk despite the classify throw.
+    const captureDir = path.join(tempDir, 'bibliography', 'repository-responses', 'fixture');
+    expect(existsSync(captureDir)).toBe(true);
+    const files = readdirSync(captureDir);
+    expect(files.some((file) => /^fixture-mystery-layout-.*\.html$/.test(file))).toBe(true);
+    expect(files.some((file) => /^fixture-mystery-layout-.*\.md$/.test(file))).toBe(true);
+    // Session still closed on the throw path.
+    expect(browser.isOpen).toBe(false);
+  });
+
+  it('unclassifiable derived-facts-only page: rejects and persists NOTHING (retention-forbidden, by design)', async () => {
+    // Symmetric guard: a retention-forbidden source classifies from the in-memory
+    // HTML and persists nothing, so an unclassifiable page leaves no bytes behind.
+    const { readdirSync } = await import('node:fs');
+    const html = '<html><body><div class="unexpected">nothing recognizable</div></body></html>';
+    const config = makeConfig(() => ({ count: 0, candidates: [] }), {
+      retention: 'derived-facts-only',
+      attribution: 'Data sourced from Fixture; reproduced under fair use.',
+    });
+    const url = config.buildQueryUrl('mystery layout', 1);
+    const page: PageResult = { status: 200, html, snapshotMarkdown: '# mystery', errored: false };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const client = makeClient(config, browser);
+
+    await expect(client.query('fixture', 'mystery layout')).rejects.toThrow(/could not be classified/i);
+    expect(readdirSync(tempDir)).toEqual([]);
+    expect(browser.isOpen).toBe(false);
   });
 
   it('ungrounded result: rejects via Frugality grounding, session closed', async () => {

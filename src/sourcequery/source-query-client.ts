@@ -5,14 +5,23 @@
  * persist the raw page, classify it, and return a grounded `QueryResult` for a
  * result page OR a legitimate empty page.
  *
+ * Persist-before-analysis (Principle XII / R5): for a persist-retention source
+ * the raw page is written to disk BEFORE `classify()` reads it. `classify()`
+ * inspects the page (result-container probe + challenge fingerprints — that IS
+ * analysis) and THROWS on an unclassifiable page; persisting first guarantees
+ * every fetched page leaves a raw capture on disk, even one that then fails to
+ * classify, so a new/fixed `SourceConfig` can be bootstrapped from it.
+ *
  * Scope boundaries (fail-loud, Principle V — never fabricate a result):
  * - Multi-page walking (`pages > 1`) is a later enhancement and THROWS here
  *   rather than silently returning only page 1.
- * - On a hard block (US2 / T020) the pass persists block evidence FIRST, then
- *   either RETURNS an `OperatorPermissionRequest` (a usable exit node exists)
- *   or THROWS an honest fail-loud error (Tailscale unavailable, or no usable
- *   node). It NEVER switches the exit node autonomously — that only happens on
- *   explicit operator approval (T021 / FR-011 / SC-003).
+ * - On a hard block (US2 / T020) block evidence exists on disk FIRST — for a
+ *   persist source the raw pre-classify capture IS that evidence (no duplicate
+ *   `block-<UTC>` copy) — then the pass either RETURNS an
+ *   `OperatorPermissionRequest` (a usable exit node exists) or THROWS an honest
+ *   fail-loud error (Tailscale unavailable, or no usable node). It NEVER
+ *   switches the exit node autonomously — that only happens on explicit operator
+ *   approval (T021 / FR-011 / SC-003).
  *
  * The injected `Clock` is the ONE allowed place to form the `capturedAtUtc`
  * timestamp (this is the composition layer); the library core modules
@@ -28,15 +37,17 @@ import { getSourceConfig } from '@/sourcequery/source-config';
 import { PolitenessPolicy } from '@/sourcequery/politeness-policy';
 import { classify } from '@/sourcequery/block-detection';
 import type { BlockClassification } from '@/sourcequery/block-detection';
-import { persistThenParse } from '@/sourcequery/frugality';
+import { groundedResultFromCapture, derivedFactsResult } from '@/sourcequery/frugality';
 import { persistCapture, persistBlockEvidence } from '@/sourcequery/persistence';
 import { ExitNodePolicy } from '@/sourcequery/exit-node-policy';
 import { describeError } from '@/bibliography/load-primitives';
 import type {
+  BlockEvidence,
   ExitNode,
   HostExitState,
   OperatorPermissionRequest,
   PageResult,
+  PersistedCapture,
   QueryResult,
 } from '@/sourcequery/types';
 
@@ -132,19 +143,41 @@ export class SourceQueryClient {
       // pass is deterministic; core modules never call Date themselves.
       const capturedAtUtc = new Date(this.clock()).toISOString();
 
-      const classification = classify(pageResult, config);
+      // Persist-before-analysis (Principle XII / FR-010): for a persist-retention
+      // source the raw page is written to disk BEFORE classify() reads it, so
+      // every fetched page — INCLUDING one that then fails classification — leaves
+      // a raw capture on disk. `classify` may THROW on an unclassifiable page; the
+      // capture is already saved, so the throw propagates with the evidence intact.
+      const { classification, capture } = await this.persistThenClassify(
+        pageResult,
+        config,
+        text,
+        url,
+        capturedAtUtc,
+      );
 
       if (classification.outcome === 'block') {
-        // FR-010: persist block evidence FIRST — an OperatorPermissionRequest is
-        // never raised, and no honest stop is reported, without proof on disk.
-        const blockEvidence = await persistBlockEvidence({
-          source: config.id,
-          kind: classification.kind,
-          detail: classification.detail,
-          html: pageResult.html,
-          snapshotMarkdown: pageResult.snapshotMarkdown,
-          capturedAtUtc,
-        });
+        // FR-010: block evidence exists on disk FIRST — an OperatorPermissionRequest
+        // is never raised, and no honest stop is reported, without proof on disk.
+        // For a persist source the raw capture IS the block evidence (no second
+        // `block-<UTC>` copy of the same bytes). A retention-forbidden source
+        // persists nothing above, so its block proof is written here instead.
+        const blockEvidence: BlockEvidence =
+          capture !== null
+            ? {
+                kind: classification.kind,
+                detail: classification.detail,
+                evidencePath: capture.htmlPath,
+                capturedAtUtc: capture.capturedAtUtc,
+              }
+            : await persistBlockEvidence({
+                source: config.id,
+                kind: classification.kind,
+                detail: classification.detail,
+                html: pageResult.html,
+                snapshotMarkdown: pageResult.snapshotMarkdown,
+                capturedAtUtc,
+              });
 
         // Enumerate exit nodes and capture the host's prior state. If EITHER
         // fails, Tailscale is unavailable: report honestly and STOP — never
@@ -188,56 +221,84 @@ export class SourceQueryClient {
       }
 
       // Result / legitimate-empty: single source of truth shared with the
-      // approved-switch pass (persist + ground positive counts; retention-aware
-      // empty handling).
-      return await this.persistResultOrEmpty(
-        classification,
-        pageResult,
-        config,
-        text,
-        url,
-        capturedAtUtc,
-      );
+      // approved-switch pass (ground positive counts from the already-persisted
+      // capture; retention-aware empty handling).
+      return await this.resultOrEmpty(classification, pageResult, config, text, capture);
     } finally {
       await this.browser.close();
     }
   }
 
   /**
-   * Convert a NON-block classification into a grounded {@link QueryResult}. The
-   * ONE source of truth used by BOTH the normal pass and the approved-switch
-   * grace run:
-   * - `result` → Frugality persists, re-parses from the persisted copy, and
-   *   grounds the positive count (throws on persistence failure / ungrounded).
-   * - `empty` → retention-aware count-0: `derived-facts-only` returns
-   *   `derivedFacts: []` + attribution and persists NOTHING (FR-009); `persist`
-   *   writes the empty page as evidence and returns a count-0 capture result.
+   * Persist-before-analysis (Principle XII / R5): for a persist-retention source,
+   * write the raw page to disk via {@link persistCapture} BEFORE {@link classify}
+   * reads it, and return the resulting {@link PersistedCapture} alongside the
+   * classification. `classify()` reads the page (result-container probe +
+   * challenge fingerprints — that IS analysis) and THROWS on an unclassifiable
+   * page; persisting first guarantees the raw evidence survives that throw so a
+   * new/fixed `SourceConfig` can be bootstrapped from the captured page.
    *
-   * A `block` classification must be handled by the caller (it never reaches
-   * here); if one does, we THROW (fail-loud) rather than mis-handle it as empty.
+   * A `'derived-facts-only'` source (retention-forbidden, FR-009) persists
+   * NOTHING here (`capture` is `null`) and is classified from the in-memory HTML;
+   * an unclassifiable derived-facts-only page persists nothing by design.
    */
-  private async persistResultOrEmpty(
-    classification: BlockClassification,
+  private async persistThenClassify(
     pageResult: PageResult,
     config: SourceConfig,
     text: string,
     url: string,
     capturedAtUtc: string,
-  ): Promise<QueryResult> {
-    if (classification.outcome === 'result') {
-      return await persistThenParse({
-        pageResult,
-        config,
+  ): Promise<{ classification: BlockClassification; capture: PersistedCapture | null }> {
+    let capture: PersistedCapture | null = null;
+    if (config.retention === 'persist') {
+      // Throws on write failure (fail-loud, Principle V) — let it propagate.
+      capture = await persistCapture({
+        source: config.id,
         query: text,
         url,
+        html: pageResult.html,
+        snapshotMarkdown: pageResult.snapshotMarkdown,
         capturedAtUtc,
       });
     }
 
-    if (classification.outcome === 'empty') {
-      // Retention-forbidden sources (FR-009) must NEVER write raw bytes — not
-      // even for an empty page — so honour retention here just as Frugality does.
-      if (config.retention === 'derived-facts-only') {
+    // Analysis happens AFTER the (persist-retention) raw bytes are on disk. A
+    // throw here (unclassifiable page) propagates with the capture already saved.
+    const classification = classify(pageResult, config);
+    return { classification, capture };
+  }
+
+  /**
+   * Convert a NON-block classification into a grounded {@link QueryResult} from
+   * the ALREADY-decided persistence (the raw page was persisted before classify
+   * for persist sources; `capture` is `null` for retention-forbidden sources).
+   * The ONE source of truth used by BOTH the normal pass and the approved-switch
+   * grace run:
+   * - `result` (persist) → grounds the positive count against the already-
+   *   persisted capture (throws when ungrounded); no double-write of the bytes.
+   * - `result` (derived-facts-only) → parse + ground the in-memory HTML, return
+   *   `derivedFacts` + attribution, persist NOTHING (FR-009).
+   * - `empty` → retention-aware count-0: `derived-facts-only` returns
+   *   `derivedFacts: []` + attribution (nothing persisted); `persist` returns a
+   *   count-0 result citing the already-persisted capture.
+   *
+   * A `block` classification must be handled by the caller (it never reaches
+   * here); if one does, we THROW (fail-loud) rather than mis-handle it as empty.
+   */
+  private async resultOrEmpty(
+    classification: BlockClassification,
+    pageResult: PageResult,
+    config: SourceConfig,
+    text: string,
+    capture: PersistedCapture | null,
+  ): Promise<QueryResult> {
+    // Retention-forbidden sources (FR-009): nothing was persisted; parse the
+    // in-memory HTML and return derived facts only.
+    if (config.retention === 'derived-facts-only') {
+      if (classification.outcome === 'result') {
+        return derivedFactsResult({ pageResult, config, query: text });
+      }
+      if (classification.outcome === 'empty') {
         return {
           summary: { count: 0, candidates: [] },
           derivedFacts: [],
@@ -247,18 +308,31 @@ export class SourceQueryClient {
           retention: 'derived-facts-only',
         };
       }
+      throw new Error(
+        `SourceQueryClient.resultOrEmpty: received a "block" classification ` +
+          `(kind="${classification.kind}", detail="${classification.detail}") for source ` +
+          `"${config.id}" query "${text}"; blocks must be handled by the caller, not here.`,
+      );
+    }
 
-      // Persist source: write the empty page as evidence and return a count-0
-      // result. An empty result cites no positive number, so there is nothing to
-      // ground (no persistThenParse grounding pass).
-      const capture = await persistCapture({
-        source: config.id,
-        query: text,
-        url,
-        html: pageResult.html,
-        snapshotMarkdown: pageResult.snapshotMarkdown,
-        capturedAtUtc,
-      });
+    // Persist source: the raw page is already on disk (persist-before-analysis),
+    // so the capture must be present.
+    if (capture === null) {
+      throw new Error(
+        `SourceQueryClient.resultOrEmpty: persist-retention source "${config.id}" query ` +
+          `"${text}" reached result/empty handling without a persisted capture — the raw page ` +
+          'must be persisted before classification (persist-before-analysis invariant).',
+      );
+    }
+
+    if (classification.outcome === 'result') {
+      // Ground the positive count from the ALREADY-persisted bytes (no re-write).
+      return await groundedResultFromCapture({ capture, config, query: text });
+    }
+
+    if (classification.outcome === 'empty') {
+      // An empty result cites no positive number, so there is nothing to ground;
+      // return a count-0 result citing the already-persisted capture.
       return {
         summary: { count: 0, candidates: [] },
         captures: [capture],
@@ -269,7 +343,7 @@ export class SourceQueryClient {
     }
 
     throw new Error(
-      `SourceQueryClient.persistResultOrEmpty: received a "block" classification ` +
+      `SourceQueryClient.resultOrEmpty: received a "block" classification ` +
         `(kind="${classification.kind}", detail="${classification.detail}") for source ` +
         `"${config.id}" query "${text}"; blocks must be handled by the caller, not here.`,
     );
@@ -350,7 +424,17 @@ export class SourceQueryClient {
   ): Promise<QueryResult> {
     const pageResult = await this.browser.navigate(url);
     const capturedAtUtc = new Date(this.clock()).toISOString();
-    const classification = classify(pageResult, config);
+
+    // Persist-before-analysis here too (Principle XII): a persist-retention page
+    // fetched over the switched origin is written to disk BEFORE classify reads
+    // it, including a still-blocked ("burned node") page.
+    const { classification, capture } = await this.persistThenClassify(
+      pageResult,
+      config,
+      text,
+      url,
+      capturedAtUtc,
+    );
 
     if (classification.outcome === 'block') {
       throw new Error(
@@ -361,13 +445,6 @@ export class SourceQueryClient {
       );
     }
 
-    return await this.persistResultOrEmpty(
-      classification,
-      pageResult,
-      config,
-      text,
-      url,
-      capturedAtUtc,
-    );
+    return await this.resultOrEmpty(classification, pageResult, config, text, capture);
   }
 }
