@@ -26,3 +26,4 @@
 {"id":"T026","tierLabel":"fast","model":"haiku","commit":"a29c176","reviewClean":true}
 {"id":"T027","tierLabel":"balanced","model":"sonnet","commit":"143bbcc","reviewClean":true}
 {"id":"T029","tierLabel":"fast","model":"haiku","commit":"4e46afc","reviewClean":true}
+{"id":"T028","tierLabel":"balanced","model":"sonnet","commit":"verify-only","reviewClean":true}
