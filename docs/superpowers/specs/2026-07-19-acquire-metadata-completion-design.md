@@ -41,7 +41,9 @@ Leave acquire as-is; add a reconcile that scans B2 for objects with no SSOT reco
 5. **Keep standalone `bib reconcile` as repair-only.** Retained for pre-existing orphans / recovery; removed from the required happy path.
 6. **Capture-over-YAGNI: full metadata completeness.** The feature captures the whole XV surface — status advancement AND record-level `metadataSnapshot`/provenance completeness where an adapter can produce it — not only the status gap; the operator scopes at define time.
 
-## Open questions (for `/speckit-clarify` at define)
+## Open questions
+
+(Resolve at define time via `/speckit-clarify`.)
 
 - **Gallica path nuance:** the Gallica adapter returns `assets: []` (its masters are per-page archive provenance, reconciled via the archive-provenance path); reconcile yields `collected`, not `archived`, there. The completeness verification must check archive-provenance completeness on the Gallica path, NOT fail-loud a legitimately empty-assets Gallica acquire.
 - **`metadataSnapshot` per adapter:** which adapters can produce a record-level `metadataSnapshotRef` today (papers-past does; museum has one; gallica / IA?) — is snapshot completeness in scope for THIS feature or a per-adapter follow-on?
