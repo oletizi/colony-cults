@@ -185,6 +185,64 @@ function spyInternetArchiveAdapter(): { adapter: RepositoryAdapter; calls: Repos
   return { adapter, calls };
 }
 
+/** A Papers Past member (`papers-past` copy), approved-for-acquisition. */
+function papersPastMember(overrides: Partial<Source> = {}): Source {
+  return {
+    sourceId: 'PB-P400',
+    titles: [{ text: 'Otago Daily Times, 1880-01-01', role: 'canonical' }],
+    kind: 'archival-item',
+    partOf: 'PB-G001',
+    status: 'approved-for-acquisition',
+    identifiers: [],
+    ...overrides,
+  };
+}
+
+/** A Papers Past RepositoryRecord: carries a `papers-past` copy identifier. */
+function papersPastAuthoredRecord(
+  overrides: Partial<AuthoredRepositoryRecord> = {},
+): AuthoredRepositoryRecord {
+  return {
+    sourceArchive: 'Papers Past',
+    status: 'to-collect',
+    identifiers: [{ type: 'papers-past', value: 'ODT18800101.2.10' }],
+    ...overrides,
+  };
+}
+
+/**
+ * A spy {@link RepositoryAdapter} for the Papers Past path (T013/T014):
+ * records every `acquire` call so a dispatch test can assert a `papers-past`
+ * record routed HERE (and neither the Gallica fetcher nor the museum/IA
+ * adapters were ever touched). `resolve`/`collectRightsEvidence` throw -- the
+ * acquire dispatch path never calls them.
+ */
+function spyPapersPastAdapter(): { adapter: RepositoryAdapter; calls: RepositoryRecord[] } {
+  const calls: RepositoryRecord[] = [];
+  const adapter: RepositoryAdapter = {
+    repository: 'papers-past',
+    async resolve() {
+      throw new Error('spyPapersPastAdapter.resolve: not used on the acquire dispatch path');
+    },
+    async collectRightsEvidence() {
+      throw new Error(
+        'spyPapersPastAdapter.collectRightsEvidence: not used on the acquire dispatch path',
+      );
+    },
+    async acquire(record) {
+      calls.push(record);
+      return {
+        repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
+        assets: [],
+        metadataSnapshot: { raw: '', retrievedAt: '2026-07-18T00:00:00.000Z' },
+        complete: true,
+        reconciliationRequired: true,
+      };
+    },
+  };
+  return { adapter, calls };
+}
+
 /** A sample master mirrored to B2, as the museum adapter would return it. */
 function sampleAsset(overrides: Partial<AcquiredAsset> = {}): AcquiredAsset {
   return {
@@ -628,6 +686,38 @@ describe('runAcquire', () => {
     expect(iaCalls).toHaveLength(0);
     expect(fetch).not.toHaveBeenCalled();
     expect(result.accession).toBe('NIMI-0844');
+  });
+
+  it('T014: dispatches a papers-past record to the injected Papers Past adapter (Gallica fetcher + museum/IA adapters untouched)', async () => {
+    dir = await seedSourcesDir([
+      { source: papersPastMember(), records: [papersPastAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const { adapter: papersPastAdapter, calls: papersPastCalls } = spyPapersPastAdapter();
+    const { adapter: museumAdapter, calls: museumCalls } = spyMuseumAdapter();
+    const { adapter: iaAdapter, calls: iaCalls } = spyInternetArchiveAdapter();
+
+    const result = await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P400',
+      fetch,
+      museumAdapter,
+      internetArchiveAdapter: iaAdapter,
+      papersPastAdapter,
+    });
+
+    // Routed to the Papers Past adapter only.
+    expect(papersPastCalls).toHaveLength(1);
+    expect(papersPastCalls[0].sourceArchive).toBe('Papers Past');
+    expect(museumCalls).toHaveLength(0);
+    expect(iaCalls).toHaveLength(0);
+    expect(fetch).not.toHaveBeenCalled();
+    // Observable result carries the papers-past article code (not an ark/accession/iaItem).
+    expect(result).toEqual({
+      sourceId: 'PB-P400',
+      papersPast: 'ODT18800101.2.10',
+      sourceArchive: 'Papers Past',
+    });
   });
 
   it('scenario 4: the source-group itself (e.g. PB-P004) is refused before any fetch is attempted, relying on the approved-status precondition -- no guardrail is reimplemented here', async () => {

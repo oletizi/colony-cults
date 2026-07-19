@@ -26,6 +26,7 @@ import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
 import { runAcquire } from '@/sourcegroup/acquire';
 import { buildMuseumAdapterForMember } from '@/cli/bib-acquire-museum';
 import { buildInternetArchiveAdapterForMember } from '@/cli/bib-acquire-internet-archive';
+import { buildPapersPastAdapterForMember } from '@/cli/bib-acquire-papers-past';
 import type { LeafRange } from '@/model/quality-assessment';
 import { runReconcile, type ReconcileResult } from '@/sourcegroup/reconcile';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
@@ -191,27 +192,32 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
     // resolves it -- see `registerMemberArchiveLayout`'s doc comment.
     registerMemberArchiveLayout(sourcesDir, id);
 
-    // Register all THREE adapters: the Gallica fetcher is always injected;
-    // the museum adapter (T019) and the Internet Archive adapter (T026/T027)
-    // are each built only when THIS member's selected copy is the matching
-    // identifier type (`buildMuseumAdapterForMember` /
-    // `buildInternetArchiveAdapterForMember`), so an ark acquire never pays
-    // the museum's B2/codex cost or the IA path's poppler/staging cost.
+    // Register all FOUR adapters: the Gallica fetcher is always injected;
+    // the museum adapter (T019), the Internet Archive adapter (T026/T027),
+    // and the Papers Past adapter (T013) are each built only when THIS
+    // member's selected copy is the matching identifier type
+    // (`buildMuseumAdapterForMember` / `buildInternetArchiveAdapterForMember`
+    // / `buildPapersPastAdapterForMember`), so an ark acquire never pays the
+    // museum's B2/codex cost, the IA path's poppler/staging cost, or the
+    // Papers Past path's browser/B2 cost.
     const museumAdapter = await buildMuseumAdapterForMember(sourcesDir, id, archive);
     const internetArchiveAdapter = await buildInternetArchiveAdapterForMember(sourcesDir, id, archive, {
       approvedRange,
       reject,
       notes,
     });
+    const papersPastAdapter = await buildPapersPastAdapterForMember(sourcesDir, id, archive);
 
-    // For a B2-direct acquire (museum / Internet Archive), give runAcquire the
-    // archive-clone root + object-store coordinates so it writes the mirrored
-    // masters' companions (the discovery layer) -- so an acquisition can never
-    // again produce object-store masters with no companions (the
-    // `undiscoverable-master` sanity check). A Gallica-only acquire builds
-    // neither B2-direct adapter and writes its own companions via the fetcher,
-    // so these stay unset (no object-store config needed).
-    const isB2Direct = museumAdapter !== undefined || internetArchiveAdapter !== undefined;
+    // For a B2-direct acquire (museum / Internet Archive / Papers Past), give
+    // runAcquire the archive-clone root + object-store coordinates so it
+    // writes the mirrored masters' companions (the discovery layer) -- so an
+    // acquisition can never again produce object-store masters with no
+    // companions (the `undiscoverable-master` sanity check). A Gallica-only
+    // acquire builds none of the B2-direct adapters and writes its own
+    // companions via the fetcher, so these stay unset (no object-store config
+    // needed).
+    const isB2Direct =
+      museumAdapter !== undefined || internetArchiveAdapter !== undefined || papersPastAdapter !== undefined;
     const objectStoreConfig = isB2Direct ? resolveObjectStoreConfig() : undefined;
 
     const result = await runAcquire({
@@ -226,6 +232,7 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
       fetch: runFetchSource,
       museumAdapter,
       internetArchiveAdapter,
+      papersPastAdapter,
       ...(isB2Direct && objectStoreConfig !== undefined
         ? {
             companionArchiveRoot: resolveArchiveRoot(repoRoot),
@@ -238,7 +245,8 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
         : {}),
     });
     const mode = dryRun ? ' (dry-run)' : '';
-    const identifier = result.ark ?? result.accession ?? result.iaItem ?? '(no copy identifier)';
+    const identifier =
+      result.ark ?? result.accession ?? result.iaItem ?? result.papersPast ?? '(no copy identifier)';
     console.log(
       `bib acquire${mode}: ${result.sourceId} -> fetched ${identifier} ` +
         `from "${result.sourceArchive}"`,

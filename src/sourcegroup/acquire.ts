@@ -125,6 +125,16 @@ export interface AcquireInput {
    * (`src/cli/bib-sourcegroup.ts`) always injects it.
    */
   internetArchiveAdapter?: RepositoryAdapter;
+  /**
+   * The injected {@link PapersPastAdapter} (T013/T014, specs/015-papers-past-
+   * acquisition), registered ALONGSIDE Gallica (and the museum/Internet
+   * Archive adapters, when present) so a `papers-past` record dispatches to
+   * it. OPTIONAL: omit it to build a registry with no Papers Past adapter --
+   * a `papers-past` record then fails loud at the registry ("no adapter
+   * registered"), same as any other unregistered repository. Production
+   * wiring (`src/cli/bib-sourcegroup-acquire.ts`) always injects it.
+   */
+  papersPastAdapter?: RepositoryAdapter;
 }
 
 /** Result of a successful acquisition: what was resolved and handed to the adapter. */
@@ -138,6 +148,8 @@ export interface AcquireResult {
   accession?: string;
   /** The archive.org item id, when the record dispatched to the Internet Archive adapter. */
   iaItem?: string;
+  /** The Papers Past article code, when the record dispatched to the Papers Past adapter. */
+  papersPast?: string;
 }
 
 /** The record's ark value (the first `ark`-typed copy identifier), if any. */
@@ -155,6 +167,12 @@ function accessionOf(record: RepositoryRecord): string | undefined {
 /** The record's archive.org item id (the first `ia-item`-typed copy identifier), if any. */
 function iaItemOf(record: RepositoryRecord): string | undefined {
   const identifier = (record.identifiers ?? []).find((id) => id.type === 'ia-item');
+  return identifier?.value;
+}
+
+/** The record's Papers Past article code (the first `papers-past`-typed copy identifier), if any. */
+function papersPastOf(record: RepositoryRecord): string | undefined {
+  const identifier = (record.identifiers ?? []).find((id) => id.type === 'papers-past');
   return identifier?.value;
 }
 
@@ -179,13 +197,16 @@ const acquirePathNeverResolvesArks: ArkResolver = (_ark: string) => {
  * {@link GallicaAdapter} (wrapping the injected fetcher), plus the injected
  * museum adapter when one was supplied (so an `accession` record dispatches to
  * it), plus the injected Internet Archive adapter when one was supplied (so an
- * `ia-item` record dispatches to it, T026). Gallica-only when both are omitted
- * -- an `ark` record then dispatches exactly as it did pre-cutover.
+ * `ia-item` record dispatches to it, T026), plus the injected Papers Past
+ * adapter when one was supplied (so a `papers-past` record dispatches to it,
+ * T013/T014). Gallica-only when all three are omitted -- an `ark` record then
+ * dispatches exactly as it did pre-cutover.
  */
 function buildRegistry(
   fetch: FetchSourceFn,
   museumAdapter: RepositoryAdapter | undefined,
   internetArchiveAdapter: RepositoryAdapter | undefined,
+  papersPastAdapter: RepositoryAdapter | undefined,
 ): RepositoryAdapterRegistry {
   const gallica = new GallicaAdapter({
     fetch,
@@ -197,6 +218,9 @@ function buildRegistry(
   }
   if (internetArchiveAdapter !== undefined) {
     adapters.push(internetArchiveAdapter);
+  }
+  if (papersPastAdapter !== undefined) {
+    adapters.push(papersPastAdapter);
   }
   return new RepositoryAdapterRegistry(adapters);
 }
@@ -305,7 +329,12 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   // the deliberate cutover consequence pinned in the characterization suite.
   // The selected adapter enforces its own RECORD-level gates (public-domain,
   // identifier-present) and drives its fetch.
-  const registry = buildRegistry(input.fetch, input.museumAdapter, input.internetArchiveAdapter);
+  const registry = buildRegistry(
+    input.fetch,
+    input.museumAdapter,
+    input.internetArchiveAdapter,
+    input.papersPastAdapter,
+  );
   const adapter = registry.selectForRecord(record);
 
   const ctx: GallicaAcquisitionContext = {
@@ -400,6 +429,17 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
       );
     }
     return { sourceId: input.sourceId, iaItem, sourceArchive: record.sourceArchive };
+  }
+
+  if (adapter.repository === 'papers-past') {
+    const papersPast = papersPastOf(record);
+    if (papersPast === undefined) {
+      throw new Error(
+        `acquire: internal invariant -- ${adapter.repository} acquire succeeded for ` +
+          `"${input.sourceId}" but the record carries no papers-past identifier.`,
+      );
+    }
+    return { sourceId: input.sourceId, papersPast, sourceArchive: record.sourceArchive };
   }
 
   const accession = accessionOf(record);
