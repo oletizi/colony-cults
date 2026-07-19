@@ -38,6 +38,7 @@ export interface CompanionObjectStore {
 function extForMediaType(mediaType: string): string {
   if (mediaType === 'image/jpeg') return 'jpg';
   if (mediaType === 'image/png') return 'png';
+  if (mediaType === 'image/gif') return 'gif';
   if (mediaType === 'image/tiff') return 'tif';
   if (mediaType === 'application/pdf') return 'pdf';
   return 'bin';
