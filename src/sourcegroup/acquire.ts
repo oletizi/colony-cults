@@ -306,6 +306,7 @@ async function completeAndVerify(
   input: AcquireInput,
   record: RepositoryRecord,
   acquisition: AcquisitionResult,
+  isB2Direct: boolean,
 ): Promise<void> {
   const reconciled = await runReconcile({
     sourcesDir: input.sourcesDir,
@@ -330,6 +331,9 @@ async function completeAndVerify(
   await verifyRecordComplete(completedRecord, {
     objectStore: input.completionObjectStore,
     reconciled: { status: reconciled.status, advanced: reconciled.changed },
+    // Explicit repository kind (AUDIT-20260719-04): the verifier must not
+    // re-derive B2-direct-vs-Gallica from `record.assets` shape alone.
+    isB2Direct,
     // Best-effort per-adapter (FR-009): require the record-level snapshot only
     // where the adapter actually emitted one.
     expectsMetadataSnapshot: acquisition.metadataSnapshotRef !== undefined,
@@ -535,7 +539,7 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
             `never advanced (Principle XV).`,
         );
       }
-      await completeAndVerify(input, record, acquisition);
+      await completeAndVerify(input, record, acquisition, false);
     } else if (acquisition.assets.length > 0) {
       // B2-direct with mirrored masters: those object-store bytes MUST be
       // completed + verified. Fail loud if the store to verify them against was
@@ -548,11 +552,29 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
             `leave object-store bytes the SSOT record does not reflect (Principle XV).`,
         );
       }
-      await completeAndVerify(input, record, acquisition);
+      await completeAndVerify(input, record, acquisition, true);
+    } else if (acquisition.metadataSnapshotRef !== undefined) {
+      // A B2-direct adapter that recorded a durable metadata snapshot but ZERO
+      // page-image masters (a snapshot-only outcome). The completion tail's
+      // status derivation (`runReconcile`) advances status from mirrored masters
+      // or archive provenance -- it has NO path for a snapshot with no masters,
+      // so completing this shape is not yet supported. Fail loud rather than
+      // silently skip (which would orphan the snapshot the record does not
+      // reflect) or misroute it into the Gallica provenance path
+      // (AUDIT-20260719-03). No shipped adapter currently produces this shape;
+      // this guard makes it impossible to do so silently.
+      throw new Error(
+        `acquire: ${adapter.repository} returned a metadata snapshot with ZERO object-store ` +
+          `masters (assets: []) -- snapshot-only acquisition completion is not yet supported. ` +
+          `Refusing to report success for a durable snapshot the completion tail cannot ` +
+          `record/verify (Principle XV); add explicit snapshot-only completion handling if an ` +
+          `adapter begins producing this outcome.`,
+      );
     }
-    // else: a B2-direct outcome that mirrored NO masters -- no object-store
-    // bytes exist to orphan, so there is provably nothing to complete/verify
-    // (not routed into the Gallica archive-provenance path; AUDIT-20260719-02).
+    // else: a B2-direct outcome that mirrored NO masters AND emitted no durable
+    // snapshot -- no object-store bytes exist to orphan, so there is provably
+    // nothing to complete/verify (not routed into the Gallica archive-provenance
+    // path; AUDIT-20260719-02).
   }
 
   // `adapter.acquire` succeeded, so the record carried the identifier its

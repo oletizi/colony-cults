@@ -186,6 +186,39 @@ describe('verifyRecordComplete', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('AUDIT-04: THROWS when isB2Direct is explicitly true but the record recorded ZERO masters (not reinterpreted as Gallica)', async () => {
+    const store = fakeObjectStore({});
+    await expect(
+      verifyRecordComplete(gallicaRecord({ status: 'collected' }), {
+        objectStore: store,
+        reconciled: { status: 'collected', advanced: true },
+        isB2Direct: true,
+      }),
+    ).rejects.toThrow(/B2-direct|ZERO|master/i);
+  });
+
+  it('AUDIT-04: an explicit isB2Direct:false verifies a zero-asset record via the per-page-provenance rule (empty assets OK)', async () => {
+    const store = fakeObjectStore({});
+    await expect(
+      verifyRecordComplete(gallicaRecord(), {
+        objectStore: store,
+        reconciled: { status: 'collected', advanced: true },
+        isB2Direct: false,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('AUDIT-04: an explicit isB2Direct:true still verifies present masters against the store', async () => {
+    const store = fakeObjectStore({ [master().objectStoreKey]: { sha256: CHECKSUM } });
+    await expect(
+      verifyRecordComplete(b2Record(), {
+        objectStore: store,
+        reconciled: { status: 'archived', advanced: true },
+        isB2Direct: true,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
   it('verifies EVERY recorded master, not just the first (a later missing master still THROWS)', async () => {
     const second = master({
       objectStoreKey: 'archive/cases/x/museum/y/Y-0002.jpg',

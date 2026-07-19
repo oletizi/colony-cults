@@ -3,21 +3,27 @@
   "mode": "impl",
   "item": "impl:feature/acquire-metadata-completion",
   "governedShaBase": "d8171d6",
-  "headSha": "3bbf7a83bc811484fa3850a09875062a8405e3a5",
+  "headSha": "54cbd251d0f0291a080412a320934f164578f6d1",
   "chunkIds": [
-    "0ebc2cfaf2ebb53d",
-    "9c08e223058cd9ed"
+    "650e889e848d2722",
+    "9c08e223058cd9ed",
+    "e6bcee6fc31c4cdd"
   ],
   "rounds": 1,
   "liftedFindings": [
     {
-      "id": "0ebc2cfaf2ebb53d::AUDIT-BARRAGE-claude-01+AUDIT-BARRAGE-codex-02",
-      "title": "The completion tail silently skips a fetched-but-not-injected acquire — contradicting its own \"fails loud\" comment",
+      "id": "650e889e848d2722::AUDIT-BARRAGE-claude-01",
+      "title": "Completion tail routes on `assets.length` alone, so a B2-direct adapter that emitted a `metadataSnapshotRef` with zero assets is silently skipped — orphaned snapshot bytes",
       "severity": "high"
     },
     {
-      "id": "0ebc2cfaf2ebb53d::AUDIT-BARRAGE-codex-01",
-      "title": "Zero-asset B2-direct acquires are misrouted into the Gallica reconcile path",
+      "id": "9c08e223058cd9ed::AUDIT-BARRAGE-claude-01",
+      "title": "Completeness path is re-derived from record shape, so a B2-direct acquire with an empty asset list passes through the Gallica branch untouched",
+      "severity": "high"
+    },
+    {
+      "id": "9c08e223058cd9ed::AUDIT-BARRAGE-codex-01",
+      "title": "Completion deps are chosen from built adapters, not the selected acquire path",
       "severity": "high"
     }
   ],
@@ -25,8 +31,16 @@
   "seamResult": {
     "boundaryPairs": [
       {
-        "a": "0ebc2cfaf2ebb53d",
+        "a": "650e889e848d2722",
         "b": "9c08e223058cd9ed"
+      },
+      {
+        "a": "650e889e848d2722",
+        "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "9c08e223058cd9ed",
+        "b": "e6bcee6fc31c4cdd"
       }
     ],
     "findings": [],

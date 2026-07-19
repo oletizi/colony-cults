@@ -216,17 +216,28 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
     // acquire builds none of the B2-direct adapters and writes its own
     // companions via the fetcher, so these stay unset (no object-store config
     // needed).
+    // `isB2Direct` reflects the SELECTED copy's dispatch kind, NOT broad adapter
+    // availability (AUDIT-20260719-05): each `build*AdapterForMember` selects the
+    // member's copy via the SAME `selectRepositoryRecord(candidates, archive)`
+    // that `runAcquire` dispatches on, and returns `undefined` unless THAT copy
+    // is its identifier type. So exactly one B2 adapter is built when the selected
+    // copy is B2-direct, and all three are `undefined` when the selected copy is a
+    // Gallica (`ark`) copy -- `isB2Direct` therefore equals the kind `runAcquire`
+    // will dispatch to, and the completion machinery below always matches the
+    // selected path (a `--archive`-selected Gallica copy can never be starved of
+    // its `reconcileArchiveRoot`/`gather`).
     const isB2Direct =
       museumAdapter !== undefined || internetArchiveAdapter !== undefined || papersPastAdapter !== undefined;
     const objectStoreConfig = isB2Direct ? resolveObjectStoreConfig() : undefined;
 
     // Completion tail dependencies (spec 016, Principle XV): give runAcquire the
     // means to complete the SSOT record as part of the SAME acquire (advance
-    // status + verify), so no separate `bib reconcile` is required. A B2-direct
-    // acquire is completed against the real object store (heads-only); a Gallica
-    // acquire is completed from the archive's per-page provenance (the member's
-    // layout was registered above, so `gatherProvenance` resolves it). `--dry-run`
-    // mirrors nothing, so runAcquire's own tail is exempt regardless.
+    // status + verify), so no separate `bib reconcile` is required. Keyed on the
+    // selected copy's dispatch kind (above): a B2-direct copy is completed against
+    // the real object store (heads-only); a Gallica copy is completed from the
+    // archive's per-page provenance (the member's layout was registered above, so
+    // `gatherProvenance` resolves it). `--dry-run` mirrors nothing, so runAcquire's
+    // own tail is exempt regardless.
     const completionDeps =
       isB2Direct && objectStoreConfig !== undefined
         ? { completionObjectStore: new S3ObjectStore(objectStoreConfig) }

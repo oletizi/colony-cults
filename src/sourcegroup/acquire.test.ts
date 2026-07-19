@@ -1002,6 +1002,51 @@ describe('runAcquire', () => {
     ).rejects.toThrow(/reconcileArchiveRoot|gather|Principle XV/i);
   });
 
+  it('AUDIT-03: a B2-direct acquire with a metadataSnapshotRef but ZERO masters fails loud (never silently orphans the snapshot)', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    // A B2-direct adapter that recorded a durable snapshot but mirrored no
+    // page-image masters (assets: []). Not produced by any shipped adapter --
+    // the guard makes it impossible to complete silently.
+    const adapter: RepositoryAdapter = {
+      repository: 'new-italy-museum',
+      async resolve() {
+        throw new Error('unused on the acquire dispatch path');
+      },
+      async collectRightsEvidence() {
+        throw new Error('unused on the acquire dispatch path');
+      },
+      async acquire(record) {
+        return {
+          repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
+          assets: [],
+          metadataSnapshot: { raw: '', retrievedAt: '2026-07-14T00:00:00.000Z' },
+          metadataSnapshotRef: {
+            path: 'bibliography/snapshots/PB-P200.json',
+            retrievedAt: '2026-07-14T00:00:00.000Z',
+            endpoint: 'https://newitaly.org.au/CAT/000844.htm',
+            normalizationVersion: 1,
+          },
+          complete: true,
+          reconciliationRequired: true,
+        };
+      },
+    };
+    const objectStore = fakeObjectStore({});
+
+    await expect(
+      runAcquire({
+        sourcesDir: dir,
+        sourceId: 'PB-P200',
+        fetch,
+        museumAdapter: adapter,
+        completionObjectStore: objectStore,
+      }),
+    ).rejects.toThrow(/snapshot-only|metadata snapshot with ZERO|Principle XV/i);
+  });
+
   it('AUDIT-02: a zero-asset B2-direct acquire (HTML-only outcome) is NOT misrouted into the Gallica provenance path -- no throw, status untouched', async () => {
     dir = await seedSourcesDir([
       { source: museumMember(), records: [museumAuthoredRecord()] },

@@ -50,6 +50,20 @@ export interface CompletenessContext {
   /** The just-run reconcile outcome (`{ status, advanced }`) the acquire tail produced. */
   reconciled: { status: string; advanced: boolean };
   /**
+   * The EXPLICIT repository kind of the dispatched acquire, threaded from
+   * `runAcquire` (which knows `adapter.repository`) so the verifier does NOT
+   * re-derive the per-repository rule from `record.assets` shape alone
+   * (AUDIT-20260719-04). `true` = B2-direct (museum / internet-archive /
+   * papers-past): masters are object-store assets and MUST be present +
+   * matching; a B2-direct acquire presenting ZERO masters is a fail-loud
+   * incompleteness, NOT silently reinterpreted as the empty-assets Gallica
+   * shape. `false` = per-page-provenance (Gallica): an empty asset list is
+   * legitimate. Omitted (unit tests that construct records directly) => fall
+   * back to inferring the kind from the record's asset shape (the prior
+   * behavior), which stays correct for a well-formed record.
+   */
+  isB2Direct?: boolean;
+  /**
    * True when the adapter emitted a durable record-level `metadataSnapshot`
    * ref for this acquire (museum / papers-past / internet-archive); then the
    * record MUST carry `metadataSnapshot`. Absent/false => best-effort: the
@@ -78,8 +92,22 @@ export async function verifyRecordComplete(
 ): Promise<void> {
   const where = `"${record.sourceId}" at "${record.sourceArchive}"`;
   const masters = objectStoreMasters(record);
+  // Use the EXPLICIT kind when the caller threaded it (runAcquire always does);
+  // otherwise infer from the record's asset shape (direct-construction unit
+  // tests). An explicit B2-direct kind with ZERO recorded masters is a
+  // fail-loud incompleteness (AUDIT-20260719-04) -- it must NOT fall through to
+  // the empty-assets Gallica branch and resolve without HEADing anything.
+  const b2Direct = ctx.isB2Direct ?? masters.length > 0;
 
-  if (masters.length > 0) {
+  if (b2Direct) {
+    if (masters.length === 0) {
+      throw new Error(
+        `acquire-completeness: ${where} is a B2-direct copy but recorded ZERO object-store ` +
+          `masters -- refusing to report a complete acquire that mirrored no verifiable bytes ` +
+          `(an empty B2-direct asset list is not the same as the Gallica per-page-provenance ` +
+          `shape; Principle XV).`,
+      );
+    }
     // B2-direct: status must be advanced to `archived`, and EVERY recorded
     // master must be present in the object store with a matching checksum.
     if (ctx.reconciled.status !== 'archived') {
