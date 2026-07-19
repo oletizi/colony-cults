@@ -120,13 +120,16 @@ interface EnumerateFoliosResult {
  * `ArchivePageSource[]`, alongside each folio's raw `language` value (the
  * reading-language derivation input, spec 015).
  *
- * @throws Error if `pageDir` has no folio sidecars, if any folio's
- *   provenance is unreadable or missing `object_store.key` / `sha256`, or if
- *   `translation/` holds a `pNNN.en.txt` whose position exceeds the folio
- *   count (an over-count folio/translation mismatch, see
- *   {@link checkTranslationCoverage}) -- every error names the offending
- *   folio/position (and `sourceId`) so a fail-loud condition is immediately
- *   actionable.
+ * Deliberately does NOT run {@link checkTranslationCoverage} here: that guard
+ * is a FRENCH-path concern (over-count `translation/pNNN.en.txt` artifacts),
+ * and the reading language for this directory isn't known until its folios'
+ * `languages` have been derived. Callers run it themselves, after deriving
+ * the reading language, only when it resolves to `'french'` (spec 015).
+ *
+ * @throws Error if `pageDir` has no folio sidecars, or if any folio's
+ *   provenance is unreadable or missing `object_store.key` / `sha256` --
+ *   every error names the offending folio (and `sourceId`) so a fail-loud
+ *   condition is immediately actionable.
  */
 async function enumerateFolios(
   pageDir: string,
@@ -193,8 +196,6 @@ async function enumerateFolios(
     languages.push(provenance.language);
   }
 
-  checkTranslationCoverage(pageDir, sourceId, folios.length);
-
   return { folios, languages };
 }
 
@@ -256,6 +257,11 @@ function deriveReadingLanguage(languages: readonly string[], sourceId: string): 
  * (never read, never erroring) instead of signaling a folio/translation
  * count mismatch.
  *
+ * `translation/pNNN.en.txt` is a FRENCH-path artifact (the FR-OCR │
+ * EN-translation pairing), so callers only invoke this once the directory's
+ * reading language is known to be `'french'` (spec 015) -- see
+ * {@link resolveMonograph} / {@link resolvePeriodical}.
+ *
  * @throws Error naming `sourceId`, `pageDir`, and the offending position(s)
  *   when any `translation/pNNN.en.txt` position exceeds `folioCount`.
  */
@@ -303,6 +309,13 @@ async function resolveMonograph(
   }
   const { folios, languages } = await enumerateFolios(pageDir, sourceId);
   const readingLanguage = deriveReadingLanguage(languages, sourceId);
+  // French-only (spec 015): translation/pNNN.en.txt is a FR-OCR │
+  // EN-translation artifact, so the over-count guard is meaningless (and
+  // today a no-op, since English sources carry no translation/ dir) for an
+  // English source -- run it only once the reading language is known.
+  if (readingLanguage === 'french') {
+    checkTranslationCoverage(pageDir, sourceId, folios.length);
+  }
   return { sourceId, kind: 'monograph', pageDir, folios, readingLanguage };
 }
 
@@ -344,6 +357,15 @@ async function resolvePeriodical(
   // per-issue -- a mixed-language source is an archive-data error regardless
   // of which issue the disagreeing folios fall in (FR-006a).
   const readingLanguage = deriveReadingLanguage(allLanguages, sourceId);
+  // French-only (spec 015), run per issue-dir: translation/pNNN.en.txt is a
+  // FR-OCR │ EN-translation artifact, so the over-count guard only applies
+  // once the source's (consistent, cross-issue) reading language is known to
+  // be French -- see `checkTranslationCoverage`.
+  if (readingLanguage === 'french') {
+    for (const issue of issues) {
+      checkTranslationCoverage(issue.pageDir, sourceId, issue.folios.length);
+    }
+  }
   return { sourceId, kind: 'periodical', issues, readingLanguage };
 }
 

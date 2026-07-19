@@ -161,4 +161,43 @@ describe('folio<->translation coverage guard (T012)', () => {
       fixture.cleanup();
     }
   });
+
+  it('an English source builds unaffected by an extra file in translation/ (AUDIT-16: French-only guard)', async () => {
+    // The over-count guard is a FRENCH-path concern (translation/pNNN.en.txt
+    // pairs with FR-OCR); it must not run at all for an English source. This
+    // is deliberately unrealistic (an English source has no translation/ dir
+    // in practice, and `checkTranslationCoverage` already no-ops when the dir
+    // is absent) -- it pins that the guard is now gated on readingLanguage
+    // === 'french' rather than merely happening to no-op today.
+    const fixture = await writeFixtureArchive({
+      case: EXTRACT_SOURCE_CASE,
+      slug: EXTRACT_SOURCE_SLUG,
+      pageCount: 3,
+      startFolio: 48,
+      language: 'English',
+      omitTranslationDir: true,
+    });
+    try {
+      const translationDir = path.join(fixture.sourceDir, 'translation');
+      await mkdir(translationDir, { recursive: true });
+      await writeFile(
+        path.join(translationDir, 'p004.en.txt'),
+        'stray file with no corresponding folio -- must not throw for English',
+      );
+
+      const resolution = await resolveArchiveSource({
+        sourceId: EXTRACT_SOURCE_ID,
+        archiveRoot: fixture.archiveRoot,
+      });
+
+      expect(resolution.kind).toBe('monograph');
+      if (resolution.kind !== 'monograph') {
+        throw new Error('expected monograph resolution');
+      }
+      expect(resolution.readingLanguage).toBe('english');
+      expect(resolution.folios).toHaveLength(3);
+    } finally {
+      fixture.cleanup();
+    }
+  });
 });
