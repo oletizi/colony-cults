@@ -1,7 +1,7 @@
 /**
  * Per-page content assembly for the archive-direct PDF reader (spec 014,
  * Decision 4 / FR-006/FR-007/FR-008/FR-011; spec 015 English-source routing,
- * FR-002/FR-003/FR-004/FR-007).
+ * FR-002/FR-003/FR-004/FR-007/FR-014).
  *
  * Given one {@link ArchivePageSource} (a folio at a known POSITION in its
  * source's sorted folio sequence) plus the source's already-split `issue.txt`
@@ -24,8 +24,11 @@
  * or an inconsistent label/text pairing throws naming the page; empty OCR
  * throws too -- UNLESS the page is `untranslatable` (a blank/cover/plate page
  * has neither OCR nor translation, and renders as a blank recto). On the
- * ENGLISH path, empty/absent OCR always throws naming the page -- an English
- * page has no `untranslatable` dimension (FR-007).
+ * ENGLISH path, empty/absent OCR throws naming the page -- UNLESS the folio's
+ * provenance carries `blank_recto: true` (FR-014, the English analog of
+ * `untranslatable`), in which case empty OCR is tolerated and the page
+ * renders as a blank recto; a `blank_recto`-marked page with NON-empty OCR
+ * throws instead (a page is a plate XOR a text page).
  */
 
 import { existsSync } from 'node:fs';
@@ -239,12 +242,26 @@ function interpretLabel(
   return { english: rawEnglish, untranslatable: false, provenance };
 }
 
+/**
+ * Read the folio sidecar's provenance (`fNNN.yml`), or `null` when absent.
+ * Shared read for both reading-language paths -- the ENGLISH path (spec 015,
+ * FR-014) also needs `blank_recto` off this same record, so it reads the
+ * sidecar once and derives both `ocrCondition` and the blank/plate marker
+ * from it (see {@link loadEnglishPage}), rather than reading it twice.
+ */
+async function readFolioProvenance(page: ArchivePageSource): Promise<ProvenanceFields | null> {
+  const folioSidecarPath = path.join(page.pageDir, `${page.folioId}.yml`);
+  return existsSync(folioSidecarPath) ? readProvenance(folioSidecarPath) : null;
+}
+
+/** The folio's surfaced OCR-condition apparatus note, derived from an already-read provenance (or `null`). */
+function ocrConditionOf(provenance: ProvenanceFields | null): string | null {
+  return provenance === null ? null : deriveOcrCondition(provenance);
+}
+
 /** The folio's surfaced OCR-condition apparatus note, shared by both reading-language paths. */
 async function resolveOcrCondition(page: ArchivePageSource): Promise<string | null> {
-  const folioSidecarPath = path.join(page.pageDir, `${page.folioId}.yml`);
-  return existsSync(folioSidecarPath)
-    ? deriveOcrCondition(await readProvenance(folioSidecarPath))
-    : null;
+  return ocrConditionOf(await readFolioProvenance(page));
 }
 
 /**
@@ -296,9 +313,21 @@ async function loadFrenchPage(
  * `ocrFrench`), since the english-only Typst variant renders `english` as the
  * single reading column (see `ArchivePageContent.english` doc).
  *
- * @throws Error, naming the page, when the resolved English OCR is
- *   empty/absent (FR-007 / contract C5) -- an English page has no
- *   `untranslatable` dimension, so the blank-recto tolerance never applies.
+ * Blank/plate marker (FR-014, contract C10): the folio's provenance
+ * (`fNNN.yml`) is read ONCE here and used for both `ocrCondition` and the
+ * `blank_recto` marker. A `blank_recto: true` folio TOLERATES empty OCR
+ * (`allowEmpty = true` on the shared OCR resolution) and produces the SAME
+ * blank-recto content the FRENCH `untranslatable` page produces
+ * (`untranslatable = true`, `english = ''`), reusing spec 014's existing
+ * blank-recto rendering with no template change. An UNMARKED page is
+ * unchanged: `allowEmpty = false`, so empty/absent OCR still fails loud
+ * (FR-007).
+ *
+ * @throws Error, naming the page, when:
+ *   - the page is UNMARKED and the resolved English OCR is empty/absent
+ *     (FR-007 / contract C5) -- no `untranslatable` dimension applies here;
+ *   - the page IS `blank_recto`-marked but its resolved OCR is NON-empty (a
+ *     page is a plate XOR a text page, FR-014 / contract C10).
  */
 async function loadEnglishPage(
   pageId: string,
@@ -306,14 +335,36 @@ async function loadEnglishPage(
   translationDir: string,
   issueOcrSegments: string[],
 ): Promise<ArchivePageContent> {
+  const folioProvenance = await readFolioProvenance(page);
+  const ocrCondition = ocrConditionOf(folioProvenance);
+  const blankRecto = folioProvenance?.blank_recto === true;
+
   const english = await resolveOcrFrench(
     translationDir,
     pageId,
     page.folioId,
     issueOcrSegments,
     page.position,
-    false, // allowEmpty=false: no untranslatable dimension on the English path (FR-007).
+    blankRecto, // allowEmpty: true ONLY for a blank_recto-marked plate (FR-014); FR-007 unchanged otherwise.
   );
+
+  if (blankRecto) {
+    if (english.trim().length > 0) {
+      throw new Error(
+        `loadArchivePage: inconsistent blank_recto for page "${pageId}" (folio ${page.folioId}) -- ` +
+          `marked blank_recto but OCR is non-empty (a page is a plate XOR a text page, FR-014)`,
+      );
+    }
+    return {
+      pageId,
+      folioId: page.folioId,
+      ocrFrench: '',
+      english: '',
+      untranslatable: true,
+      machineAssist: null,
+      ocrCondition,
+    };
+  }
 
   return {
     pageId,
@@ -322,7 +373,7 @@ async function loadEnglishPage(
     english,
     untranslatable: false,
     machineAssist: null,
-    ocrCondition: await resolveOcrCondition(page),
+    ocrCondition,
   };
 }
 

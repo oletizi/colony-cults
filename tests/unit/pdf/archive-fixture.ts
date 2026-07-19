@@ -61,6 +61,16 @@ export interface FixturePageConfig {
    * `deriveOcrCondition`'s low-fidelity "OCR quality: <tier>" caveat (FR-009).
    */
   ocrQuality?: OcrQuality;
+
+  /**
+   * Folio provenance `blank_recto` marker (spec 015 FR-014). Omitted by
+   * default (unmarked page). Set `true` to write `blank_recto: true` into
+   * this folio's sidecar -- the English path's intentionally-blank-recto
+   * opt-out. Combine with `ocrFrench: ''` to fixture a tolerated blank plate
+   * (no throw), or leave the default non-empty OCR to fixture the marked
+   * page + non-empty-OCR inconsistency (throws, FR-014).
+   */
+  blankRecto?: boolean;
 }
 
 /**
@@ -182,6 +192,9 @@ export interface WriteFixtureArchiveResult {
  * - A page's `ocrStatus`/`ocrQuality` override the folio sidecar's
  *   `ocr_status`/`ocr_quality`, fixturing `deriveOcrCondition`'s caveats
  *   (`ocr_status: 'failed'`, or a sub-`high` `ocr_quality.tier`).
+ * - A page's `blankRecto: true` writes `blank_recto: true` into the folio
+ *   sidecar (spec 015 FR-014), fixturing the English path's intentionally
+ *   blank-recto opt-out from the empty-OCR fail-loud.
  *
  * @param opts Configuration.
  * @returns Archive paths, cleanup, and fixture image bytes.
@@ -272,6 +285,7 @@ export async function writeFixtureArchive(
           endpoint: 's3.us-west-000.backblazeb2.com',
         },
         ocr_quality: pageConfig.ocrQuality,
+        blank_recto: pageConfig.blankRecto === true ? true : undefined,
         notes: null,
         rights_raw: '<OAIRecord>dummy</OAIRecord>',
       };

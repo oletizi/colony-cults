@@ -200,6 +200,71 @@ describe('loadArchivePage', () => {
     }
   });
 
+  it('English path blank_recto marker (FR-014/C10): empty OCR on a marked folio does NOT throw -- untranslatable true, english "", ocrFrench ""', async () => {
+    const fixture = await writeFixtureArchive({
+      case: FULL_SOURCE_CASE,
+      slug: FULL_SOURCE_SLUG,
+      pageCount: 2,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [{ blankRecto: true, ocrFrench: '' }, {}],
+    });
+    try {
+      const folios = await foliosOf(FULL_SOURCE_ID, fixture.archiveRoot);
+      const segments = await readSegments(fixture.sourceDir);
+      expect(segments[0]).toBe('');
+
+      const content = await loadArchivePage(folios[0], segments, 'english');
+
+      expect(content.untranslatable).toBe(true);
+      expect(content.english).toBe('');
+      expect(content.ocrFrench).toBe('');
+      expect(content.machineAssist).toBeNull();
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('English path blank_recto marker (FR-014/C10): an UNMARKED empty English folio still fails loud (FR-007 regression)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: FULL_SOURCE_CASE,
+      slug: FULL_SOURCE_SLUG,
+      pageCount: 2,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [{ ocrFrench: '' }, {}],
+    });
+    try {
+      const folios = await foliosOf(FULL_SOURCE_ID, fixture.archiveRoot);
+      const segments = await readSegments(fixture.sourceDir);
+      expect(segments[0]).toBe('');
+
+      await expect(loadArchivePage(folios[0], segments, 'english')).rejects.toThrow(/p001/);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('English path blank_recto marker (FR-014/C10): a marked folio with NON-empty OCR fails loud (plate XOR text page)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: FULL_SOURCE_CASE,
+      slug: FULL_SOURCE_SLUG,
+      pageCount: 1,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [{ blankRecto: true }],
+    });
+    try {
+      const folios = await foliosOf(FULL_SOURCE_ID, fixture.archiveRoot);
+      const segments = await readSegments(fixture.sourceDir);
+      expect(segments[0].length).toBeGreaterThan(0);
+
+      await expect(loadArchivePage(folios[0], segments, 'english')).rejects.toThrow(/p001/);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
   it('French path (spec 015 US2 regression): loadArchivePage(..., "french") assembles identically to the pre-feature shape', async () => {
     const fixture = await writeFixtureArchive({
       case: FULL_SOURCE_CASE,

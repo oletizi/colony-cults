@@ -178,3 +178,56 @@ describe('serializeProvenance ocr_quality block', () => {
     expect(() => parseProvenance(yaml)).toThrow(/tier must be low\|medium\|high/);
   });
 });
+
+describe('serializeProvenance blank_recto marker (FR-014)', () => {
+  it('emits blank_recto in KEY_ORDER position (after translation, before object_store)', () => {
+    const fields: ProvenanceFields = {
+      ...legacyFields(),
+      language: 'English',
+      translation: 'machine-assisted',
+      blank_recto: true,
+    };
+    const yaml = serializeProvenance(fields);
+    const lines = yaml.trimEnd().split('\n');
+    const keyOf = (line: string): string => line.slice(0, line.indexOf(':'));
+    const keys = lines.map(keyOf);
+
+    const translationIdx = keys.indexOf('translation');
+    const blankRectoIdx = keys.indexOf('blank_recto');
+    const objectStoreIdx = keys.indexOf('object_store');
+
+    expect(translationIdx).toBeGreaterThanOrEqual(0);
+    expect(blankRectoIdx).toBe(translationIdx + 1);
+    expect(objectStoreIdx).toBe(blankRectoIdx + 1);
+
+    // Bare (unquoted) boolean scalar, not a quoted string.
+    expect(yaml).toContain('blank_recto: true');
+    expect(yaml).not.toContain('blank_recto: "true"');
+  });
+
+  it('round-trips a record WITH blank_recto: true (parse ∘ serialize == identity)', () => {
+    const fields: ProvenanceFields = {
+      ...legacyFields(),
+      language: 'English',
+      blank_recto: true,
+    };
+    const parsed = parseProvenance(serializeProvenance(fields));
+    expect(parsed).toEqual(fields);
+    expect(parsed.blank_recto).toBe(true);
+    expect(serializeProvenance(parsed)).toBe(serializeProvenance(fields));
+  });
+
+  it('omits blank_recto entirely when unset (unmarked folios re-serialize byte-identically)', () => {
+    const yaml = serializeProvenance(legacyFields());
+    expect(yaml).not.toMatch(/^blank_recto:/m);
+    expect(parseProvenance(yaml).blank_recto).toBeUndefined();
+  });
+
+  it('rejects a malformed blank_recto value (not a boolean scalar)', () => {
+    const yaml = serializeProvenance({
+      ...legacyFields(),
+      blank_recto: true,
+    }).replace('blank_recto: true', 'blank_recto: maybe');
+    expect(() => parseProvenance(yaml)).toThrow(/field "blank_recto" must be a boolean/);
+  });
+});
