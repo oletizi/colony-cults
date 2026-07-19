@@ -139,7 +139,8 @@ function isCopyLevelType(value: string): value is CopyLevelIdentifierType {
     value === 'ark' ||
     value === 'iiif-manifest' ||
     value === 'scan-doi' ||
-    value === 'ia-item'
+    value === 'ia-item' ||
+    value === 'papers-past'
   );
 }
 
