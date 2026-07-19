@@ -1,4 +1,4 @@
-import type { MachineAssistLabel } from '@/pdf/model';
+import type { MachineAssistLabel, OcrTranscription } from '@/pdf/model';
 
 /**
  * The affirmative, work-level rights determination the publish gate requires.
@@ -104,6 +104,17 @@ export interface Publication {
    * colophon and its publication record.
    */
   machineAssist?: MachineAssistLabel;
+  /**
+   * The English-source OCR-transcription disclosure (spec 015
+   * FR-008/FR-013), recorded INSTEAD OF `machineAssist` for an
+   * English-source edition (no translation was performed -- honest
+   * disclosure of the machine OCR transcription, not a translation label).
+   * Modeled optional and mutually exclusive with `machineAssist` in
+   * practice: `buildPublication` requires at least one of the two to be
+   * present (Constitution IV -- no publication with zero provenance
+   * disclosure). Reuses `@/pdf/model`'s `OcrTranscription`.
+   */
+  ocrTranscription?: OcrTranscription;
   /** Reference to the per-issue integrity manifest file (FR-006). */
   manifest: PublicationManifestRef;
 }

@@ -11,6 +11,7 @@ import {
   validateSuspectedGap,
   validateThreads,
 } from '@/bibliography/load-coverage-fields';
+import { validateOcrTranscription } from '@/bibliography/load-publication-fields';
 import {
   assertKnownKeys,
   describeError,
@@ -81,6 +82,7 @@ const PUBLICATION_KEYS = new Set([
   'keyScheme',
   'rightsBasis',
   'machineAssist',
+  'ocrTranscription',
   'manifest',
 ]);
 const MACHINE_ASSIST_KEYS = new Set(['engine', 'model', 'retrieved']);
@@ -153,12 +155,11 @@ function validateSourceRights(value: unknown, filePath: string): SourceRights {
 }
 
 /**
- * Parse one publication's `machineAssist` label (specs/008). Modeled optional on
- * `Publication`, but REQUIRED for any translated variant; validated to the
- * `MachineAssistLabel` type reused from `@/pdf/model` so the publication record
- * and the PDF colophon stay consistent. `engine` + `retrieved` are required
- * non-empty strings; `model` is a recorded id or `null` (absent -> `null`, the
- * type's own "not recorded" value, not an invented fallback).
+ * Parse one publication's `machineAssist` label (specs/008). Modeled optional
+ * on `Publication`; REQUIRED for a French publication, recorded INSTEAD OF
+ * `ocrTranscription` (`@/bibliography/load-publication-fields`) for an
+ * English-source one (spec 015 FR-008/FR-013). `engine` + `retrieved` are
+ * required non-empty strings; `model` is a recorded id or `null`.
  */
 function validateMachineAssist(
   value: unknown,
@@ -195,12 +196,9 @@ function validatePublicationManifestRef(
 }
 
 /**
- * Parse one authored `publications[]` entry (specs/008 § 2). Mirrors the
- * per-element `repositoryRecords` validator: required `variant` (narrowed),
- * `publishedAt`, `snapshot`, `snapshotShort`, `cdnBase`, `keyScheme` (narrowed),
- * `rightsBasis`, and a `manifest` ref; `machineAssist` is optional and omitted
- * from the returned object when absent. Any malformed shape fails loud (no
- * silent drop).
+ * Parse one authored `publications[]` entry (specs/008 § 2; `machineAssist` /
+ * `ocrTranscription` extended by spec 015 FR-008/FR-013, each optional and
+ * mutually exclusive in practice). Any malformed shape fails loud.
  */
 function validatePublication(value: unknown, filePath: string, index: number): Publication {
   const where = `publications[${index}]`;
@@ -238,6 +236,10 @@ function validatePublication(value: unknown, filePath: string, index: number): P
       filePath,
       `${where}.machineAssist`,
     );
+  }
+  if (obj.ocrTranscription !== undefined) {
+    const ocrWhere = `${where}.ocrTranscription`;
+    publication.ocrTranscription = validateOcrTranscription(obj.ocrTranscription, filePath, ocrWhere);
   }
   return publication;
 }

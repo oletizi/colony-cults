@@ -11,7 +11,7 @@ import {
 } from '@/pdf/publish/record';
 import type { IssueUploadResult } from '@/pdf/publish/record';
 import { loadSourceFile } from '@/bibliography/load';
-import type { MachineAssistLabel } from '@/pdf/model';
+import type { MachineAssistLabel, OcrTranscription } from '@/pdf/model';
 import type { Source } from '@/model/source';
 
 const CDN_BASE = 'https://colony-cults-cdn.oletizi.workers.dev';
@@ -25,6 +25,11 @@ const MACHINE_ASSIST: MachineAssistLabel = {
   engine: 'claude-code-cli',
   model: null,
   retrieved: '2026-07-12',
+};
+
+const OCR_TRANSCRIPTION: OcrTranscription = {
+  engineStatus: 'machine OCR · tesseract 5 (searchable)',
+  caveat: null,
 };
 
 /** A frozen clock so `publishedAt` is deterministic. */
@@ -178,7 +183,7 @@ describe('buildPublication', () => {
     issueCount: 2,
   };
 
-  it('throws if a translation-carrying variant lacks machineAssist', () => {
+  it('throws if a translation-carrying (French) edition lacks BOTH machineAssist and ocrTranscription (Constitution IV safety net intact)', () => {
     expect(() =>
       buildPublication({ ...base, machineAssist: undefined }, fixedClock),
     ).toThrow(/machineAssist/i);
@@ -194,6 +199,29 @@ describe('buildPublication', () => {
     expect(pub.manifest.manifestPath).toBe(base.manifestPath);
     expect(pub.machineAssist).toEqual(MACHINE_ASSIST);
     expect(pub.keyScheme).toBe('versioned');
+  });
+
+  // AUDIT-20260719-02 (spec 015-english-source-pdf): an English-source
+  // edition carries an ocrTranscription disclosure INSTEAD OF a machineAssist
+  // label. buildPublication must NOT throw and must record the disclosure
+  // honestly, with no machineAssist field at all.
+  it('records an English-source ocrTranscription disclosure WITHOUT throwing when machineAssist is absent', () => {
+    const pub = buildPublication(
+      { ...base, machineAssist: undefined, ocrTranscription: OCR_TRANSCRIPTION },
+      fixedClock,
+    );
+    expect(pub.ocrTranscription).toEqual(OCR_TRANSCRIPTION);
+    expect(pub.machineAssist).toBeUndefined();
+    expect(pub.publishedAt).toBe('2026-07-12');
+  });
+
+  it('still throws when neither machineAssist nor ocrTranscription is present', () => {
+    expect(() =>
+      buildPublication(
+        { ...base, machineAssist: undefined, ocrTranscription: undefined },
+        fixedClock,
+      ),
+    ).toThrow(/machineAssist.*ocrTranscription|ocrTranscription.*machineAssist/i);
   });
 });
 

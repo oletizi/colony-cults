@@ -153,9 +153,11 @@ function byArchive(a: AuthoredRepositoryRecord, b: AuthoredRepositoryRecord): nu
 
 /**
  * Build one `publications[]` entry's on-disk object in a FIXED key order
- * (matching contracts/ssot-publications.md § 2), omitting the absent optional
- * `machineAssist` so the output is deterministic and no field is fabricated.
- * Mirrors {@link orderedRecord}'s pattern for `repositoryRecords[]`.
+ * (matching contracts/ssot-publications.md § 2), omitting whichever of the two
+ * mutually-exclusive optional disclosures is absent -- `machineAssist`
+ * (French) or `ocrTranscription` (English-source, spec 015 FR-008/FR-013) --
+ * so the output is deterministic and no field is fabricated. Mirrors
+ * {@link orderedRecord}'s pattern for `repositoryRecords[]`.
  */
 function orderedPublication(publication: Publication): Record<string, unknown> {
   const out: Record<string, unknown> = {
@@ -169,6 +171,9 @@ function orderedPublication(publication: Publication): Record<string, unknown> {
   };
   if (publication.machineAssist !== undefined) {
     out.machineAssist = publication.machineAssist;
+  }
+  if (publication.ocrTranscription !== undefined) {
+    out.ocrTranscription = publication.ocrTranscription;
   }
   out.manifest = {
     manifestPath: publication.manifest.manifestPath,

@@ -1,9 +1,9 @@
 /**
  * The mode runners + record/commit tail of the `pdf:publish` orchestrator
- * (spec 008-edition-publishing, T020/T024/T031). Extracted from `publish.ts`
- * (Constitution VII, <=500 lines); `publish.ts` stays the thin sequencer
- * (rights gate -> resolve -> dispatch here) and this module owns the four mode
- * bodies + their shared record/commit tail.
+ * (spec 008-edition-publishing, T020/T024/T031; spec 015-english-source-pdf).
+ * Extracted from `publish.ts` (Constitution VII, <=500 lines); `publish.ts`
+ * stays the thin sequencer (rights gate -> resolve -> dispatch here) and this
+ * module owns the four mode bodies + their shared record/commit tail.
  *
  * Ordering guarantees (contracts/cli.md): G-3/G-4 immutable idempotent uploads
  * (delegated to `upload`); G-5/G-6 integrity recorded + provenance committed
@@ -11,14 +11,10 @@
  * never abort siblings; G-9 warm is non-fatal.
  *
  * Reconcile (T031): {@link runReconcile} is the back-fill sibling of
- * {@link runConfirm} (contracts/cli.md G-8, FR-013, SC-006). It records the
- * already-served `legacy-flat` URLs of a source's issues WITHOUT any upload
- * (no `store.put`/`store.head`): it GETs each served URL via the injected
- * `httpGet` to compute the recorded `sha256`, reads the page count from the
- * build's `<issueId>.input.json` (same as confirm), and records with
- * `keyScheme: 'legacy-flat'` + the `legacy` manifest token. The record/commit
- * tail is shared, so the only behavioural difference is "GET-and-record" vs
- * "upload-and-record".
+ * {@link runConfirm} (G-8, FR-013, SC-006): GET-and-record each already-served
+ * `legacy-flat` URL (no `store.put`/`store.head`), reading the page count +
+ * disclosure from the same `<issueId>.input.json` confirm reads. The
+ * record/commit tail is shared between both.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -27,7 +23,7 @@ import { sha256OfBytes, sha256OfFile } from '@/archive/checksum';
 import { defaultHttpGet, type HttpGet } from '@/archive/public-cache';
 import { describeError } from '@/bibliography/load-primitives';
 import { loadSourceFile } from '@/bibliography/load';
-import type { MachineAssistLabel } from '@/pdf/model';
+import type { MachineAssistLabel, OcrTranscription } from '@/pdf/model';
 import type { Publication } from '@/model/publication';
 import { cdnUrl, legacyFlatKey, versionedKey } from '@/pdf/publish/key';
 import {
@@ -51,12 +47,29 @@ import type {
   PublishResult,
 } from '@/pdf/publish/types';
 
+/**
+ * The provenance disclosure carried across an issue loop: EITHER a French
+ * `machineAssist` label OR an English `ocrTranscription` disclosure (spec
+ * 015), each optional so "not yet seen" is representable pre-loop.
+ */
+interface Disclosure {
+  machineAssist?: MachineAssistLabel;
+  ocrTranscription?: OcrTranscription;
+}
+
+/** First-seen-wins merge of a per-issue disclosure into the running `current` one. */
+function mergeDisclosure(current: Disclosure, outcome: Disclosure): Disclosure {
+  return {
+    machineAssist: current.machineAssist ?? outcome.machineAssist,
+    ocrTranscription: current.ocrTranscription ?? outcome.ocrTranscription,
+  };
+}
+
 /** The per-issue confirm outcome: an upload record + provenance, or a failure. */
-interface ConfirmIssueOutcome {
+interface ConfirmIssueOutcome extends Disclosure {
   upload?: IssueUploadResult;
   /** `true` when bytes were newly PUT; `false` on an idempotent skip. */
   uploaded?: boolean;
-  machineAssist?: MachineAssistLabel;
   failure?: PublishFailure;
 }
 
@@ -83,7 +96,7 @@ async function publishIssue(
     // than leaving an orphaned, unrecorded artifact in the store (the upload
     // then read ordering would upload bytes that a later read-failure never
     // records).
-    const { pages, machineAssist } = readIssueBuildInfo(
+    const { pages, machineAssist, ocrTranscription } = readIssueBuildInfo(
       inputJsonPathFor(issue.pdfPath, issue.issueId),
     );
     const { uploaded } = await uploadArtifact(opts.store, key, bytes, sha256);
@@ -91,7 +104,8 @@ async function publishIssue(
     return {
       upload: { issueId: issue.issueId, key, url, sha256, pages },
       uploaded,
-      machineAssist,
+      machineAssist: machineAssist ?? undefined,
+      ocrTranscription: ocrTranscription ?? undefined,
     };
   } catch (error) {
     return { failure: { issueId: issue.issueId, reason: describeError(error) } };
@@ -124,7 +138,7 @@ interface RecordContext {
 async function recordAndCommit(
   opts: PublishOptions,
   uploads: IssueUploadResult[],
-  machineAssist: MachineAssistLabel | undefined,
+  disclosure: Disclosure,
   ctx: RecordContext,
   cdnBase: string,
   rightsBasis: string,
@@ -139,8 +153,8 @@ async function recordAndCommit(
   });
   const manifestPath = writeManifestFile(opts.publicationsDir, manifest, ctx.manifestVersion);
 
-  // buildPublication fails loud when a translation-carrying variant has no
-  // machineAssist label (Constitution IV) -- both in-scope variants qualify.
+  // buildPublication fails loud when NEITHER disclosure is present (Constitution
+  // IV) -- see `record.ts`'s `buildPublication`.
   const buildInput = {
     variant,
     snapshot: ctx.publicationSnapshot,
@@ -150,7 +164,8 @@ async function recordAndCommit(
     rightsBasis,
     manifestPath,
     issueCount: manifest.issues.length,
-    ...(machineAssist !== undefined ? { machineAssist } : {}),
+    ...(disclosure.machineAssist !== undefined ? { machineAssist: disclosure.machineAssist } : {}),
+    ...(disclosure.ocrTranscription !== undefined ? { ocrTranscription: disclosure.ocrTranscription } : {}),
   };
   const publication = buildPublication(buildInput, opts.clock);
 
@@ -234,7 +249,7 @@ export async function runConfirm(
   const uploads: IssueUploadResult[] = [];
   let published = 0;
   let skipped = 0;
-  let machineAssist: MachineAssistLabel | undefined = opts.machineAssist;
+  let disclosure: Disclosure = { machineAssist: opts.machineAssist };
 
   for (const issue of present) {
     const outcome = await publishIssue(opts, issue, snapshotShort, cdnBase);
@@ -254,9 +269,7 @@ export async function runConfirm(
       skipped += 1;
       log(`  SKIP  ${outcome.upload.issueId} -> ${outcome.upload.key}  (present, sha256 match)`);
     }
-    if (machineAssist === undefined) {
-      machineAssist = outcome.machineAssist;
-    }
+    disclosure = mergeDisclosure(disclosure, outcome);
   }
 
   // Record + commit only when at least one issue succeeded (G-5/G-6, FR-008).
@@ -264,7 +277,7 @@ export async function runConfirm(
     await recordAndCommit(
       opts,
       uploads,
-      machineAssist,
+      disclosure,
       {
         keyScheme: 'versioned',
         manifestSnapshot: snapshotFull,
@@ -321,17 +334,16 @@ export interface ReconcileTarget {
   inputJsonPath: string;
 }
 
-/** The per-issue reconcile outcome: a served-URL record + label, or a failure. */
-interface ReconcileIssueOutcome {
+/** The per-issue reconcile outcome: a served-URL record + disclosure, or a failure. */
+interface ReconcileIssueOutcome extends Disclosure {
   upload?: IssueUploadResult;
-  machineAssist?: MachineAssistLabel;
   failure?: PublishFailure;
 }
 
 /**
  * Reconcile ONE issue (G-8, no upload): derive its `legacyFlatKey` + `cdnUrl`,
  * GET the served bytes via the injected `httpGet` to compute the recorded
- * `sha256`, and read the page count + machine-assist label from the build's
+ * `sha256`, and read the page count + provenance disclosure from the build's
  * `<issueId>.input.json` (same source as confirm). A non-OK GET or a missing
  * `input.json` is caught and returned as an attributable failure (G-7), never a
  * silent skip and never fabricated.
@@ -356,9 +368,13 @@ async function reconcileIssue(
     const bytes = new Uint8Array(await response.arrayBuffer());
     const sha256 = sha256OfBytes(bytes);
 
-    const { pages, machineAssist } = readIssueBuildInfo(target.inputJsonPath);
+    const { pages, machineAssist, ocrTranscription } = readIssueBuildInfo(target.inputJsonPath);
 
-    return { upload: { issueId: target.issueId, key, url, sha256, pages }, machineAssist };
+    return {
+      upload: { issueId: target.issueId, key, url, sha256, pages },
+      machineAssist: machineAssist ?? undefined,
+      ocrTranscription: ocrTranscription ?? undefined,
+    };
   } catch (error) {
     return { failure: { issueId: target.issueId, reason: describeError(error) } };
   }
@@ -386,7 +402,7 @@ export async function runReconcile(
   const failures: PublishFailure[] = [];
   const uploads: IssueUploadResult[] = [];
   let recorded = 0;
-  let machineAssist: MachineAssistLabel | undefined = opts.machineAssist;
+  let disclosure: Disclosure = { machineAssist: opts.machineAssist };
 
   for (const target of targets) {
     const outcome = await reconcileIssue(opts, target, cdnBase, httpGet);
@@ -401,14 +417,12 @@ export async function runReconcile(
     uploads.push(outcome.upload);
     recorded += 1;
     log(`  REC   ${outcome.upload.issueId} -> ${outcome.upload.key}  (served, recorded)`);
-    if (machineAssist === undefined) {
-      machineAssist = outcome.machineAssist;
-    }
+    disclosure = mergeDisclosure(disclosure, outcome);
   }
 
   // Record + commit only when at least one issue was reconciled (G-5/G-6, FR-008).
   if (uploads.length > 0) {
-    await recordAndCommit(opts, uploads, machineAssist, LEGACY_FLAT_CONTEXT, cdnBase, rightsBasis);
+    await recordAndCommit(opts, uploads, disclosure, LEGACY_FLAT_CONTEXT, cdnBase, rightsBasis);
   }
 
   const urls = uploads.map((u) => u.url);
