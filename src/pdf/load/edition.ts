@@ -264,6 +264,11 @@ export function makeEditionBuilder(deps: EditionBuilderDeps): EditionBuilder {
         itemId,
         archiveRef: deps.pin.read(),
         pages: colophonPages,
+        // The browser-snapshot path is out of scope for spec 015 (FR-012) and
+        // carries only French sources -- reading language is always 'french'
+        // here, unchanged behavior (spec-014 mandatory machine-assist label).
+        readingLanguage: 'french',
+        ocrTranscription: null,
       });
 
       return {

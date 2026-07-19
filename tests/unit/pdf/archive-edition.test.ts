@@ -88,12 +88,15 @@ describe('makeArchiveEditionReader', () => {
       expect(edition.titlePage.ark).toBe(META.ark);
       expect(edition.titlePage.date.length).toBeGreaterThan(0);
 
-      // Colophon: injected pin ref + per-image list + a machine-assist label.
+      // Colophon: injected pin ref + per-image list + a machine-assist label
+      // (French source -- ocrTranscription null, spec 015 FR-013).
       expect(edition.colophon.archiveRef).toBe(PIN_REF);
       expect(edition.colophon.snapshotSourceId).toBe(SOURCE_ID);
       expect(edition.colophon.images).toHaveLength(3);
-      expect(edition.colophon.translation.engine).toBe('claude-code-cli');
-      expect(edition.colophon.translation.retrieved.length).toBeGreaterThan(0);
+      expect(edition.colophon.translation).not.toBeNull();
+      expect(edition.colophon.translation?.engine).toBe('claude-code-cli');
+      expect(edition.colophon.translation?.retrieved.length).toBeGreaterThan(0);
+      expect(edition.colophon.ocrTranscription).toBeNull();
       expect(edition.colophon.framing.length).toBeGreaterThan(0);
     } finally {
       fixture.cleanup();
@@ -145,7 +148,7 @@ describe('makeArchiveEditionReader', () => {
         ['bytesPath', 'height', 'objectStoreKey', 'provider', 'sha256', 'width'].sort(),
       );
       expect(Object.keys(edition.colophon).sort()).toEqual(
-        ['archiveRef', 'framing', 'images', 'snapshotSourceId', 'translation'].sort(),
+        ['archiveRef', 'framing', 'images', 'ocrTranscription', 'snapshotSourceId', 'translation'].sort(),
       );
     } finally {
       fixture.cleanup();
@@ -163,6 +166,60 @@ describe('makeArchiveEditionReader', () => {
       await expect(
         readerFor(fixture.archiveRoot).build(SOURCE_ID, 'not-the-source'),
       ).rejects.toThrow(/not-the-source|source id/i);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // English colophon (spec 015, FR-013): OCR-transcription disclosure, no
+  // machine-assist label (C6); low-fidelity caveat surfaces (C7 / FR-009).
+  // ---------------------------------------------------------------------------
+
+  it('English source: colophon carries an OCR-transcription disclosure, translation/machineAssist null, no OCR-transcription caveat (C6)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 3,
+      language: 'English',
+      omitTranslationDir: true,
+    });
+    try {
+      const edition = await buildFrom(fixture);
+
+      expect(edition.colophon.translation).toBeNull();
+      expect(edition.colophon.ocrTranscription).not.toBeNull();
+      expect(edition.colophon.ocrTranscription?.engineStatus).toBe('tesseract 5 (searchable)');
+      expect(edition.colophon.ocrTranscription?.caveat).toBeNull();
+
+      // The per-page reading recto is the English OCR; no translation was read.
+      for (const page of edition.pages) {
+        expect(page.english.length).toBeGreaterThan(0);
+        expect(page.ocrFrench).toBe('');
+      }
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('English source with a sub-high OCR quality tier: the colophon disclosure carries the low-fidelity caveat (C7, FR-009)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 1,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [
+        {
+          ocrQuality: { method: 'aspell-realword-ratio-v1', language: 'en', ratio: 0.4, tier: 'low' },
+        },
+      ],
+    });
+    try {
+      const edition = await buildFrom(fixture);
+
+      expect(edition.colophon.ocrTranscription).not.toBeNull();
+      expect(edition.colophon.ocrTranscription?.caveat).toBe('quality: low');
     } finally {
       fixture.cleanup();
     }

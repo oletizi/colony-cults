@@ -38,6 +38,7 @@ import type {
   Edition,
   EditionPage,
   ImageAsset,
+  OcrTranscription,
   TitlePageMeta,
 } from '@/pdf/model';
 import type { ArchivePageContent } from '@/pdf/load/archive-page';
@@ -221,6 +222,41 @@ async function readLeadProvenance(unit: SelectedUnit, context: string): Promise<
   return readProvenance(path.join(lead.pageDir, `${lead.folioId}.yml`));
 }
 
+/**
+ * The OCR pipeline's fixed engine (`@/ocr/preflight` requires `tesseract`;
+ * the archive's provenance schema has no per-page OCR-engine field -- every
+ * OCR-text artifact in this archive was produced by this one pipeline tool).
+ */
+const OCR_ENGINE = 'tesseract 5';
+
+/**
+ * Surface a low-fidelity caveat from the lead folio's provenance: a sub-`high`
+ * computed OCR quality tier becomes `quality: <tier>` (FR-009); clean
+ * (`high`-tier or unscored) OCR yields `null` -- no caveat is fabricated.
+ */
+function deriveOcrCaveat(provenance: ProvenanceFields): string | null {
+  const quality = provenance.ocr_quality;
+  if (quality !== undefined && quality.tier !== 'high') {
+    return `quality: ${quality.tier}`;
+  }
+  return null;
+}
+
+/**
+ * Build the English-path OCR-transcription disclosure (spec 015, FR-013)
+ * from the lead folio's provenance: `engineStatus` composes the pipeline's
+ * fixed OCR engine with the folio's recorded `ocr_status`
+ * (e.g. `tesseract 5 (searchable)`); `caveat` surfaces a sub-`high`
+ * `ocr_quality.tier` when present.
+ */
+function buildOcrTranscription(provenance: ProvenanceFields, context: string): OcrTranscription {
+  const status = requireNonEmpty(provenance.ocr_status, 'ocr_status', context);
+  return {
+    engineStatus: `${OCR_ENGINE} (${status})`,
+    caveat: deriveOcrCaveat(provenance),
+  };
+}
+
 /** Map one folio + its assembled content to an EditionPage (no empty-english guard). */
 function toEditionPage(
   folio: ArchivePageSource,
@@ -306,11 +342,21 @@ export function makeArchiveEditionReader(deps: ArchiveEditionReaderDeps): Archiv
         machineAssist: contents[index].machineAssist,
       }));
 
+      // English editions carry no machine-assist label -- instead an honest
+      // OCR-transcription disclosure, sourced from the lead folio's
+      // provenance (spec 015, FR-013).
+      const ocrTranscription =
+        unit.readingLanguage === 'english'
+          ? buildOcrTranscription(leadProvenance, context)
+          : null;
+
       const colophon = assembleColophon({
         sourceId,
         itemId,
         archiveRef: deps.pin.read(),
         pages: colophonPages,
+        readingLanguage: unit.readingLanguage,
+        ocrTranscription,
       });
 
       return { itemId, kind: unit.kind, titlePage, pages, colophon };

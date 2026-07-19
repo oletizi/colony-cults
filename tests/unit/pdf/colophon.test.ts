@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { assembleColophon, EVIDENCE_FRAMING } from '@/pdf/load/colophon';
 import type { ColophonPageInput, ColophonInput } from '@/pdf/load/colophon';
-import type { MachineAssistLabel } from '@/pdf/model';
+import type { MachineAssistLabel, OcrTranscription } from '@/pdf/model';
 
 describe('EVIDENCE_FRAMING', () => {
   it('is a non-empty string', () => {
@@ -55,6 +55,14 @@ describe('assembleColophon', () => {
     };
   }
 
+  const OCR_TRANSCRIPTION: OcrTranscription = {
+    engineStatus: 'tesseract 5 (searchable)',
+    caveat: null,
+  };
+
+  // Defaults to the FRENCH path (spec-014 shape) so every pre-existing test
+  // below is unaffected; English-path tests override `readingLanguage` +
+  // `ocrTranscription` explicitly.
   function makeColophonInput(overrides: Partial<ColophonInput> = {}): ColophonInput {
     return {
       sourceId: overrides.sourceId ?? SOURCE_ID,
@@ -64,6 +72,8 @@ describe('assembleColophon', () => {
         makePage({ pageId: 'p001', folioId: 'f001' }),
         makePage({ pageId: 'p002', folioId: 'f002' }),
       ],
+      readingLanguage: overrides.readingLanguage ?? 'french',
+      ocrTranscription: overrides.ocrTranscription ?? null,
     };
   }
 
@@ -156,7 +166,7 @@ describe('assembleColophon', () => {
     );
   });
 
-  it('throws when no page carries a machine-assist label', () => {
+  it('throws when no page carries a machine-assist label (readingLanguage: french, default)', () => {
     const pages = [
       makePage({ pageId: 'p001', machineAssist: null }),
       makePage({ pageId: 'p002', machineAssist: null }),
@@ -168,6 +178,20 @@ describe('assembleColophon', () => {
     );
   });
 
+  it('French source with NO machine-assist label STILL throws (spec-014 safety net intact, spec 015 regression check)', () => {
+    // Explicit readingLanguage: 'french' -- the spec-014 mandatory-label gate
+    // MUST NOT be weakened by the addition of the English path (FR-013).
+    const pages = [
+      makePage({ pageId: 'p001', machineAssist: null }),
+      makePage({ pageId: 'p002', machineAssist: null }),
+    ];
+    const input = makeColophonInput({ pages, readingLanguage: 'french' });
+
+    expect(() => assembleColophon(input)).toThrow(
+      /assembleColophon[\s\S]*no page carries a machine-assist translation[\s\S]*label is mandatory/
+    );
+  });
+
   it('throws with source context (sourceId/itemId) in error message', () => {
     const input = makeColophonInput({
       sourceId: 'MY-SOURCE',
@@ -176,5 +200,62 @@ describe('assembleColophon', () => {
     });
 
     expect(() => assembleColophon(input)).toThrow(/MY-SOURCE\/MY-ITEM/);
+  });
+
+  // ---------------------------------------------------------------------------
+  // English path (spec 015, FR-013): OCR-transcription disclosure, no
+  // machine-assist label required/expected.
+  // ---------------------------------------------------------------------------
+
+  it('English source: translation null, ocrTranscription carried through, no machine-assist label required (C6)', () => {
+    const pages = [
+      makePage({ pageId: 'p001', machineAssist: null }),
+      makePage({ pageId: 'p002', machineAssist: null }),
+    ];
+    const input = makeColophonInput({
+      pages,
+      readingLanguage: 'english',
+      ocrTranscription: OCR_TRANSCRIPTION,
+    });
+
+    const colophon = assembleColophon(input);
+
+    expect(colophon.translation).toBeNull();
+    expect(colophon.ocrTranscription).toEqual(OCR_TRANSCRIPTION);
+    expect(colophon.framing).toBe(EVIDENCE_FRAMING);
+  });
+
+  it('English source: a low-fidelity caveat on the OCR-transcription disclosure is carried through (C7 / FR-009)', () => {
+    const withCaveat: OcrTranscription = { engineStatus: 'tesseract 5 (searchable)', caveat: 'quality: low' };
+    const input = makeColophonInput({
+      readingLanguage: 'english',
+      ocrTranscription: withCaveat,
+    });
+
+    const colophon = assembleColophon(input);
+
+    expect(colophon.ocrTranscription?.caveat).toBe('quality: low');
+  });
+
+  it('English source: throws when the OCR-transcription disclosure is missing (no silent empty disclosure, Principle V)', () => {
+    const input = makeColophonInput({
+      readingLanguage: 'english',
+      ocrTranscription: null,
+    });
+
+    expect(() => assembleColophon(input)).toThrow(
+      /assembleColophon[\s\S]*English source has no OCR-transcription disclosure[\s\S]*mandatory/
+    );
+  });
+
+  it('English source: throws when the OCR-transcription disclosure has an empty engineStatus', () => {
+    const input = makeColophonInput({
+      readingLanguage: 'english',
+      ocrTranscription: { engineStatus: '   ', caveat: null },
+    });
+
+    expect(() => assembleColophon(input)).toThrow(
+      /assembleColophon[\s\S]*English source has no OCR-transcription disclosure/
+    );
   });
 });

@@ -31,6 +31,7 @@ const colophon: ColophonMeta = {
     model: 'claude-opus-4',
     retrieved: '2026-07-01',
   },
+  ocrTranscription: null,
   framing: 'This material is propaganda, reproduced here as historical evidence.',
 };
 

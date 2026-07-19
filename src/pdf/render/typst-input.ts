@@ -89,8 +89,14 @@ export interface TypstRecto {
   english: string;
   /** Surfaced OCR-condition apparatus note, or `null`. */
   ocrCondition: string | null;
-  /** The machine-assisted-translation label (engine + date), carried per page. */
-  machineAssist: MachineAssistLabel;
+  /**
+   * The machine-assisted-translation label (engine + date), carried per page,
+   * or `null` for an English-source edition (no translation was performed --
+   * spec 015 FR-013). Mirrors `Edition.colophon.translation`; unused by any
+   * template today (see `Edition.colophon` / `frontmatter.typ` for the
+   * rendered disclosure).
+   */
+  machineAssist: MachineAssistLabel | null;
 }
 
 /**

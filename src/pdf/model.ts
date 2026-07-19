@@ -114,12 +114,16 @@ export interface ImageAsset {
 }
 
 /**
- * Reproducibility + critical framing back matter (FR-005, FR-016).
+ * Reproducibility + critical framing back matter (FR-005, FR-016; nullable
+ * `translation` + `ocrTranscription` per spec 015 FR-013).
  *
  * Validation: `archiveRef` non-empty (no pin -> fail loud, not reproducible
- * without it); `images` covers every embedded image; `translation.engine` +
- * `translation.retrieved` present (the machine-assist label is mandatory --
- * Principle III / IV translation policy).
+ * without it); `images` covers every embedded image; exactly ONE of
+ * `translation` / `ocrTranscription` is non-null (`assembleColophon` keys the
+ * requirement on the edition's reading language -- French REQUIRES
+ * `translation` with `engine` + `retrieved` present, mandatory per Principle
+ * III / IV; English REQUIRES `ocrTranscription`, since no translation was
+ * performed).
  */
 export interface ColophonMeta {
   /** The pinned archive commit. Source: pin file `site/data/archive-source.json` `.ref`. */
@@ -128,8 +132,20 @@ export interface ColophonMeta {
   snapshotSourceId: string;
   /** Per embedded image: folio id + B2 key + checksum. Source: snapshot. */
   images: ColophonImage[];
-  /** The machine-assisted translation label. Source: snapshot per-page translation provenance. */
-  translation: MachineAssistLabel;
+  /**
+   * The machine-assisted translation label, or `null` for an English-source
+   * edition (no translation was performed -- spec 015 FR-013). Required
+   * (non-null) for a French-source edition -- the spec-014 guarantee.
+   * Source: snapshot/archive per-page translation provenance.
+   */
+  translation: MachineAssistLabel | null;
+  /**
+   * The English-source OCR-transcription disclosure, or `null` for a
+   * French-source edition (French carries `translation` instead). Required
+   * (non-null) for an English-source edition (spec 015 FR-008/FR-013).
+   * Source: archive folio provenance `ocr_status`/`ocr_quality`.
+   */
+  ocrTranscription: OcrTranscription | null;
   /** The fixed critical-framing statement (propaganda held as evidence). Source: fixed constant. */
   framing: string;
 }
@@ -164,4 +180,33 @@ export interface MachineAssistLabel {
   model: string | null;
   /** ISO date the translation was produced. Source: snapshot translation provenance. */
   retrieved: string;
+}
+
+/**
+ * The English-source OCR-transcription disclosure (spec 015, FR-008/FR-013):
+ * discloses that the reading recto is a MACHINE OCR TRANSCRIPTION of the
+ * English original, not a translation -- the honest sibling of
+ * {@link MachineAssistLabel} for a source that carries no translation.
+ * Rendered as a colophon row sibling to the French `machine assist` row;
+ * never both on the same edition (see `pdf/template/frontmatter.typ`
+ * `colophon-page`).
+ *
+ * Validation: `engineStatus` non-empty (mandatory disclosure -- Principle V,
+ * no silent empty disclosure).
+ */
+export interface OcrTranscription {
+  /**
+   * The OCR engine + this edition's recorded OCR outcome, composed
+   * display-ready and dot-joined like the French row, e.g. `tesseract 5
+   * (searchable)`. Source: the OCR pipeline's fixed engine (`@/ocr/preflight`
+   * -- the archive schema has no per-page OCR-engine field) + the lead
+   * folio's provenance `ocr_status`.
+   */
+  engineStatus: string;
+  /**
+   * Low-fidelity caveat, e.g. `quality: low`, surfaced when the lead folio's
+   * provenance records a sub-`high` computed `ocr_quality.tier` (FR-009);
+   * `null` for clean (`high`-tier or unscored) OCR -- no caveat is fabricated.
+   */
+  caveat: string | null;
 }
