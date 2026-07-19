@@ -17,14 +17,13 @@
  * record/commit tail is shared between both.
  */
 
-import { readFile } from 'node:fs/promises';
-
-import { sha256OfBytes, sha256OfFile } from '@/archive/checksum';
+import { sha256OfBytes } from '@/archive/checksum';
 import { defaultHttpGet, type HttpGet } from '@/archive/public-cache';
 import { describeError } from '@/bibliography/load-primitives';
 import { loadSourceFile } from '@/bibliography/load';
 import type { Publication } from '@/model/publication';
 import { applyMachineAssistOverride, type Disclosure, mergeDisclosure } from '@/pdf/publish/disclosure';
+import { validateIssueDisclosures, uploadValidatedIssues } from '@/pdf/publish/confirm-batch';
 import { cdnUrl, legacyFlatKey, versionedKey } from '@/pdf/publish/key';
 import {
   buildManifest,
@@ -33,7 +32,6 @@ import {
   writeManifestFile,
   type IssueUploadResult,
 } from '@/pdf/publish/record';
-import { uploadArtifact } from '@/pdf/publish/upload';
 import { warmUrls } from '@/pdf/publish/warm';
 import {
   inputJsonPathFor,
@@ -46,53 +44,6 @@ import type {
   PublishOptions,
   PublishResult,
 } from '@/pdf/publish/types';
-
-/** The per-issue confirm outcome: an upload record + provenance, or a failure. */
-interface ConfirmIssueOutcome extends Disclosure {
-  upload?: IssueUploadResult;
-  /** `true` when bytes were newly PUT; `false` on an idempotent skip. */
-  uploaded?: boolean;
-  failure?: PublishFailure;
-}
-
-/**
- * Publish (or upload-skip) ONE present issue: hash + key + url + immutable
- * upload + page/label read. Every fault is caught and returned as a failure so
- * a sibling issue is never aborted (G-7).
- */
-async function publishIssue(
-  opts: PublishOptions,
-  issue: { issueId: string; pdfPath: string },
-  snapshotShort: string,
-  cdnBase: string,
-): Promise<ConfirmIssueOutcome> {
-  const { sourceId, variant } = opts;
-  try {
-    const bytes = await readFile(issue.pdfPath);
-    const sha256 = await sha256OfFile(issue.pdfPath);
-    const key = versionedKey(variant, sourceId, issue.issueId, snapshotShort);
-    const url = cdnUrl(cdnBase, key);
-
-    // Read the build metadata BEFORE the side-effecting upload: if the issue's
-    // `input.json` is missing/malformed, fail this issue with NO upload rather
-    // than leaving an orphaned, unrecorded artifact in the store (the upload
-    // then read ordering would upload bytes that a later read-failure never
-    // records).
-    const { pages, machineAssist, ocrTranscription } = readIssueBuildInfo(
-      inputJsonPathFor(issue.pdfPath, issue.issueId),
-    );
-    const { uploaded } = await uploadArtifact(opts.store, key, bytes, sha256);
-
-    return {
-      upload: { issueId: issue.issueId, key, url, sha256, pages },
-      uploaded,
-      machineAssist: machineAssist ?? undefined,
-      ocrTranscription: ocrTranscription ?? undefined,
-    };
-  } catch (error) {
-    return { failure: { issueId: issue.issueId, reason: describeError(error) } };
-  }
-}
 
 /**
  * The version-scheme context {@link recordAndCommit} needs to differ between
@@ -203,8 +154,12 @@ export function runDryRun(
 }
 
 /**
- * The confirmed, mutating pipeline: per-issue immutable upload (G-3/G-4,
- * record-and-continue G-7), then record + commit (G-5/G-6) + non-fatal warm
+ * The confirmed, mutating pipeline (AUDIT-20260719-10: two strict phases --
+ * see `@/pdf/publish/confirm-batch`): phase 1 reads + validates/merges EVERY
+ * present issue's disclosure BEFORE any upload, so a cross-issue (or
+ * option-seed) disclosure conflict aborts the WHOLE run with NOTHING
+ * uploaded; phase 2 then uploads (G-3/G-4, record-and-continue G-7) only the
+ * issues phase 1 cleared. Then record + commit (G-5/G-6) + non-fatal warm
  * (G-9). Missing built PDFs (from resolve) are pre-counted failures.
  */
 export async function runConfirm(
@@ -228,15 +183,25 @@ export async function runConfirm(
     reason: `no built PDF at ${m.expectedPath}`,
   }));
 
+  // Phase 1 (AUDIT-20260719-10): read + validate/merge every present issue's
+  // disclosure -- built PURELY from per-issue outcomes (AUDIT-20260719-08),
+  // then the kind-aware `opts.machineAssist` fallback (never contaminates an
+  // English/ocrTranscription run). BOTH a cross-issue conflict and an
+  // option-seed conflict throw HERE, before phase 2's first upload.
+  const { validated, disclosure: perIssueDisclosure } = validateIssueDisclosures(present, failures);
+  const disclosure = applyMachineAssistOverride(
+    perIssueDisclosure,
+    opts,
+    '<publish option --machine-assist>',
+  );
+
+  // Phase 2: upload only the issues phase 1 cleared.
+  const outcomes = await uploadValidatedIssues(opts, validated, snapshotShort, cdnBase);
+
   const uploads: IssueUploadResult[] = [];
   let published = 0;
   let skipped = 0;
-  // Built PURELY from per-issue outcomes (AUDIT-20260719-08) -- NOT
-  // pre-seeded from `opts.machineAssist` (see `applyMachineAssistOverride`).
-  let disclosure: Disclosure = {};
-
-  for (const issue of present) {
-    const outcome = await publishIssue(opts, issue, snapshotShort, cdnBase);
+  for (const outcome of outcomes) {
     if (outcome.failure !== undefined) {
       failures.push(outcome.failure);
       log(`  FAIL  ${outcome.failure.issueId}: ${outcome.failure.reason}`);
@@ -253,18 +218,10 @@ export async function runConfirm(
       skipped += 1;
       log(`  SKIP  ${outcome.upload.issueId} -> ${outcome.upload.key}  (present, sha256 match)`);
     }
-    // Throws (AUDIT-20260719-06) if this issue's disclosure conflicts with an
-    // earlier one in this run -- propagates out of runConfirm, aborting the
-    // whole publish (nothing recorded) rather than silently first-seen-wins.
-    disclosure = mergeDisclosure(disclosure, outcome, issue.issueId);
   }
 
   // Record + commit only when at least one issue succeeded (G-5/G-6, FR-008).
   if (uploads.length > 0) {
-    // Kind-aware `opts.machineAssist` fallback, applied AFTER the loop's real
-    // evidence is known -- never contaminates an English (ocrTranscription)
-    // run (AUDIT-20260719-08).
-    disclosure = applyMachineAssistOverride(disclosure, opts, '<publish option --machine-assist>');
     await recordAndCommit(
       opts,
       uploads,

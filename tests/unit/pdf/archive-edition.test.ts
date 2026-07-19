@@ -381,6 +381,67 @@ describe('makeArchiveEditionReader', () => {
     }
   });
 
+  // ---------------------------------------------------------------------------
+  // AUDIT-20260719-13 (HIGH, govern finding): a `blank_recto`-marked folio's
+  // OWN ocr_status/ocr_quality must NOT leak into the edition-level
+  // `worstCaveat` either -- the AUDIT-09 fix guarded only `representativeStatus`
+  // (the engineStatus channel); this pins the sibling `worst`/caveat channel.
+  // ---------------------------------------------------------------------------
+
+  it('English source: a blank_recto folio with ocr_status "failed" does NOT poison worstCaveat alongside clean content folios (AUDIT-20260719-13)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 3,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [
+        {}, // clean content folio, representative lead
+        // Blank plate whose sidecar happens to record a "failed" OCR status --
+        // must NOT become the edition's worstCaveat.
+        { blankRecto: true, ocrFrench: '', ocrStatus: 'failed' },
+        {}, // clean content folio
+      ],
+    });
+    try {
+      const edition = await buildFrom(fixture);
+
+      expect(edition.colophon.ocrTranscription).not.toBeNull();
+      expect(edition.colophon.ocrTranscription?.caveat).toBeNull();
+      // Sanity: the representative engineStatus is still the clean lead's.
+      expect(edition.colophon.ocrTranscription?.engineStatus).toBe('tesseract 5 (searchable)');
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('English source: a blank_recto folio with ocr_quality.tier "low" does NOT poison worstCaveat alongside clean content folios (AUDIT-20260719-13)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 3,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [
+        {},
+        {
+          blankRecto: true,
+          ocrFrench: '',
+          ocrQuality: { method: 'aspell-realword-ratio-v1', language: 'en', ratio: 0.4, tier: 'low' },
+        },
+        {},
+      ],
+    });
+    try {
+      const edition = await buildFrom(fixture);
+
+      expect(edition.colophon.ocrTranscription).not.toBeNull();
+      expect(edition.colophon.ocrTranscription?.caveat).toBeNull();
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
   it('fails loud (does not silently skip) when a non-lead folio has a malformed OCR provenance sidecar', async () => {
     const fixture = await writeFixtureArchive({
       case: SOURCE_CASE,

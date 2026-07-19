@@ -275,11 +275,21 @@ interface OcrDisclosureAggregate {
  * Read every folio's provenance sidecar ONCE and derive both all-folios-aware
  * pieces of the OCR-transcription disclosure:
  *
- *  - `worstCaveat` (spec 015 FR-009; fixes AUDIT-20260719-01, HIGH): the
- *    WORST OCR condition across ALL of the unit's folios, not just the lead
- *    folio -- a lead folio that is clean must NOT suppress a disclosure that
- *    a LATER folio is sub-`high` or `ocr_status: failed` (Constitution
- *    I/III, evidence honesty).
+ *  - `worstCaveat` (spec 015 FR-009; fixes AUDIT-20260719-01, HIGH; fixes
+ *    AUDIT-20260719-13, HIGH): the WORST OCR condition across ALL of the
+ *    unit's NON-`blank_recto` folios, not just the lead folio -- a lead
+ *    folio that is clean must NOT suppress a disclosure that a LATER folio
+ *    is sub-`high` or `ocr_status: failed` (Constitution I/III, evidence
+ *    honesty). `blank_recto`-marked folios are SKIPPED here, exactly as they
+ *    already are for `representativeStatus` below: an intentionally-blank
+ *    cover/plate carries no English OCR, so whatever `ocr_status`/
+ *    `ocr_quality` its sidecar happens to record (a plausible `failed` or
+ *    `low` when the pipeline still runs OCR over a blank page) must never
+ *    leak into the edition-level caveat as though it described the real OCR
+ *    content -- the AUDIT-09 fix guarded only `representativeStatus`,
+ *    leaving this sibling channel to poison the colophon's oxblood caveat
+ *    with a blank plate's meaningless status. Both aggregations now apply
+ *    the SAME `blank_recto !== true` filter -- one consistent rule.
  *  - `representativeStatus` (fixes AUDIT-20260719-09, HIGH): the FIRST
  *    folio's `ocr_status` that is NOT `blank_recto`-marked. T015's
  *    blank/plate opt-out (FR-014) lets an English edition's lead folio
@@ -311,6 +321,12 @@ async function deriveOcrDisclosureAggregate(
 
   let worst: OcrSeverity = { severity: 0, caveat: null };
   for (const provenance of provenances) {
+    // Skip blank_recto-marked folios (AUDIT-20260719-13): an intentionally-
+    // blank cover/plate's own ocr_status/ocr_quality must never leak into the
+    // edition-level caveat -- same filter as `representativeStatus` below.
+    if (provenance.blank_recto === true) {
+      continue;
+    }
     const candidate = ocrSeverityOf(provenance);
     if (candidate.severity > worst.severity) {
       worst = candidate;

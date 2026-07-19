@@ -311,6 +311,15 @@ describe('publish() English-source edition (AUDIT-20260719-06): two issues with 
     const loaded = loadSourceFile(path.join(conflictSourcesDir, `${CONFLICT_SOURCE_ID}.yml`));
     expect(loaded.source.publications ?? []).toHaveLength(0);
     expect(conflictCommit).not.toHaveBeenCalled();
+
+    // AUDIT-20260719-10: NOTHING was uploaded to the object store either --
+    // both issues' disclosures are read + merged BEFORE any confirm-mode PUT,
+    // so the cross-issue conflict aborts with zero artifacts durably placed
+    // (never an orphaned upload with no publication record). Before that fix,
+    // issue 1 (and issue 2, whose own upload runs before its outcome's
+    // disclosure is merged) would already be PUT by the time the conflict
+    // throw fires.
+    expect(conflictStore.size).toBe(0);
   });
 });
 
@@ -456,10 +465,29 @@ describe('publish() English-source edition (AUDIT-20260719-08): opts.machineAssi
 });
 
 /**
- * AUDIT-20260719-08 companion: a French (machineAssist) run with the SAME
- * opts.machineAssist seed present must still succeed and record machineAssist
- * only -- proves the fix does not merely drop opts.machineAssist unconditionally,
- * only when it would contradict an English (ocrTranscription) run.
+ * AUDIT-20260719-08 companion (AUDIT-20260719-11 corrected docstring): a
+ * French (machineAssist) run with opts.machineAssist SET TO THE SAME VALUE as
+ * every page's recto.machineAssist must still succeed and record machineAssist
+ * only.
+ *
+ * IMPORTANT (AUDIT-20260719-11): because this fixture writes the SAME value
+ * for both the per-page `recto.machineAssist` and the run-option
+ * `opts.machineAssist`, this test alone CANNOT distinguish "the option-seed
+ * survived" from "the option-seed was dropped unconditionally" -- either way
+ * `readIssueBuildInfo`'s per-page read alone supplies the recorded value (it
+ * MUST, per the exactly-one-of-machineAssist/ocrTranscription invariant --
+ * AUDIT-02/04/05 -- every successfully-read French issue already carries a
+ * non-null machineAssist before the option is ever consulted). This test
+ * therefore only proves the narrower, still-useful claim: a MATCHING option
+ * value does not spuriously trip `mergeDisclosure`'s conflict check. The
+ * "seed is not dropped unconditionally" half of AUDIT-08 is isolated instead
+ * by two OTHER tests: (1) the DISTINCT-value test immediately below, which
+ * proves the option is actually READ (a silently-dropped option could never
+ * produce the conflict-throw asserted there), and (2) the direct unit tests
+ * on `applyMachineAssistOverride` in `tests/unit/publish/disclosure.test.ts`,
+ * which call it with an EMPTY running disclosure -- the one state this
+ * integration fixture can never reach -- and assert the option becomes the
+ * SOLE recorded value.
  */
 describe('publish() French edition: opts.machineAssist seed still works for a machineAssist-carrying (parallel) run', () => {
   const FRENCH_SOURCE_ID = 'PB-994';
@@ -577,5 +605,43 @@ describe('publish() French edition: opts.machineAssist seed still works for a ma
     }
     expect(publication.machineAssist).toEqual(FRENCH_MACHINE_ASSIST);
     expect(publication.ocrTranscription).toBeUndefined();
+  });
+
+  /**
+   * AUDIT-20260719-11: a DISTINCT opts.machineAssist (differing from every
+   * page's real recto.machineAssist) must fail loud with a conflict, NOT
+   * silently succeed using the per-page value. This is the isolation the
+   * SAME-value test above cannot provide: if a regression made the seed
+   * unconditionally dropped, this fixture's option value would simply never
+   * be consulted and the run would succeed anyway -- so a passing "throws"
+   * assertion here proves the option is genuinely read and folded in via
+   * `applyMachineAssistOverride`/`mergeDisclosure`, not silently ignored.
+   */
+  it('throws when opts.machineAssist DIFFERS from every page real machineAssist value -- proves the option is read, not silently dropped', async () => {
+    const CONFLICTING_MACHINE_ASSIST: MachineAssistLabel = {
+      engine: 'claude-code-cli',
+      model: 'claude-opus-4',
+      retrieved: '2026-07-19T09:00:00.000Z',
+    };
+
+    await expect(
+      publish({
+        sourceId: FRENCH_SOURCE_ID,
+        variant: FRENCH_VARIANT,
+        confirm: true,
+        outDir: frenchOutDir,
+        sourcesDir: frenchSourcesDir,
+        publicationsDir: frenchPublicationsDir,
+        store: frenchStore,
+        clock: fixedClock,
+        pinReader: frenchPinReader,
+        corpusSnapshotReader: frenchCorpusSnapshotReader,
+        cdnBase: CDN_BASE,
+        warm: false,
+        commit: frenchCommit,
+        machineAssist: CONFLICTING_MACHINE_ASSIST,
+        log: () => {},
+      }),
+    ).rejects.toThrow(/machineAssist/);
   });
 });

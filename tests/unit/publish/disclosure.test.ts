@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { mergeDisclosure } from '@/pdf/publish/disclosure';
+import { applyMachineAssistOverride, mergeDisclosure } from '@/pdf/publish/disclosure';
 import type { Disclosure } from '@/pdf/publish/disclosure';
 import type { MachineAssistLabel, OcrTranscription } from '@/pdf/model';
 
@@ -77,5 +77,58 @@ describe('mergeDisclosure: DIFFERING per-issue disclosures fail loud (AUDIT-2026
     expect(() => mergeDisclosure(afterFirst, { ocrTranscription: OCR_B }, 'issue-2')).toThrow(
       /quality: low/,
     );
+  });
+});
+
+/**
+ * Unit tests (AUDIT-20260719-11, spec 015-english-source-pdf) for
+ * `applyMachineAssistOverride` directly (not through a full `publish()` run).
+ *
+ * These ISOLATE the "the run-option seed is not dropped unconditionally"
+ * half of AUDIT-20260719-08 that the integration-level companion test in
+ * `english-source.test.ts` (the "French edition: opts.machineAssist seed
+ * still works" describe) CANNOT isolate: that fixture writes the SAME value
+ * for both the per-page `recto.machineAssist` and `opts.machineAssist`, so
+ * the recorded disclosure comes from the per-page read regardless of whether
+ * the option-seed logic works at all -- `readIssueBuildInfo`'s exactly-one-
+ * of-`machineAssist`/`ocrTranscription` invariant (AUDIT-02/04/05) means NO
+ * successful `publish()` run can ever reach `recordAndCommit` with an EMPTY
+ * running disclosure to seed from a per-page read alone -- at least one
+ * present, successfully-read issue must already carry `machineAssist` (or
+ * the run is English and the option is ignored outright). So the "seed is
+ * the SOLE source of the recorded value" case is only reachable by calling
+ * `applyMachineAssistOverride` directly with an EMPTY running disclosure, as
+ * this block does.
+ */
+describe('applyMachineAssistOverride (AUDIT-20260719-11: isolates the seed channel from any per-issue value)', () => {
+  it('is the SOLE source of machineAssist when the running disclosure carries nothing yet', () => {
+    const result = applyMachineAssistOverride({}, { machineAssist: MACHINE_ASSIST_A }, 'opt-label');
+    expect(result.machineAssist).toEqual(MACHINE_ASSIST_A);
+    expect(result.ocrTranscription).toBeUndefined();
+  });
+
+  it('is a no-op when opts.machineAssist is undefined', () => {
+    const disclosure: Disclosure = { machineAssist: MACHINE_ASSIST_A };
+    expect(applyMachineAssistOverride(disclosure, {}, 'opt-label')).toEqual(disclosure);
+  });
+
+  it('is IGNORED outright for an English (ocrTranscription-carrying) run -- never contaminates it', () => {
+    const disclosure: Disclosure = { ocrTranscription: OCR_A };
+    const result = applyMachineAssistOverride(disclosure, { machineAssist: MACHINE_ASSIST_A }, 'opt-label');
+    expect(result).toEqual(disclosure);
+    expect(result.machineAssist).toBeUndefined();
+  });
+
+  it('merges without conflict when the option matches an already-present machineAssist', () => {
+    const disclosure: Disclosure = { machineAssist: MACHINE_ASSIST_A };
+    const result = applyMachineAssistOverride(disclosure, { machineAssist: MACHINE_ASSIST_A }, 'opt-label');
+    expect(result.machineAssist).toEqual(MACHINE_ASSIST_A);
+  });
+
+  it('throws when the option CONFLICTS with an already-present machineAssist -- the option is read, not silently dropped', () => {
+    const disclosure: Disclosure = { machineAssist: MACHINE_ASSIST_A };
+    expect(() =>
+      applyMachineAssistOverride(disclosure, { machineAssist: MACHINE_ASSIST_B }, 'opt-label'),
+    ).toThrow(/machineAssist/);
   });
 });

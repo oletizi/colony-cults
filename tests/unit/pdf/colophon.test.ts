@@ -227,7 +227,17 @@ describe('assembleColophon', () => {
 
   it('English source: a low-fidelity caveat on the OCR-transcription disclosure is carried through (C7 / FR-009)', () => {
     const withCaveat: OcrTranscription = { engineStatus: 'tesseract 5 (searchable)', caveat: 'quality: low' };
+    // AUDIT-20260719-12: explicit machineAssist: null pages (like C6) --
+    // `makePage()`'s DEFAULT carries a non-null machine-assist label, so
+    // without this override this fixture would (also) describe an English
+    // source whose pages carry a translation credit, silently leaving the
+    // colophon boundary's XOR unasserted by this test.
+    const pages = [
+      makePage({ pageId: 'p001', machineAssist: null }),
+      makePage({ pageId: 'p002', machineAssist: null }),
+    ];
     const input = makeColophonInput({
+      pages,
       readingLanguage: 'english',
       ocrTranscription: withCaveat,
     });
@@ -235,10 +245,16 @@ describe('assembleColophon', () => {
     const colophon = assembleColophon(input);
 
     expect(colophon.ocrTranscription?.caveat).toBe('quality: low');
+    expect(colophon.translation).toBeNull();
   });
 
   it('English source: throws when the OCR-transcription disclosure is missing (no silent empty disclosure, Principle V)', () => {
+    const pages = [
+      makePage({ pageId: 'p001', machineAssist: null }),
+      makePage({ pageId: 'p002', machineAssist: null }),
+    ];
     const input = makeColophonInput({
+      pages,
       readingLanguage: 'english',
       ocrTranscription: null,
     });
@@ -249,7 +265,12 @@ describe('assembleColophon', () => {
   });
 
   it('English source: throws when the OCR-transcription disclosure has an empty engineStatus', () => {
+    const pages = [
+      makePage({ pageId: 'p001', machineAssist: null }),
+      makePage({ pageId: 'p002', machineAssist: null }),
+    ];
     const input = makeColophonInput({
+      pages,
       readingLanguage: 'english',
       ocrTranscription: { engineStatus: '   ', caveat: null },
     });
@@ -257,5 +278,26 @@ describe('assembleColophon', () => {
     expect(() => assembleColophon(input)).toThrow(
       /assembleColophon[\s\S]*English source has no OCR-transcription disclosure/
     );
+  });
+
+  it('English source: pages carrying machine-assist labels do NOT leak into translation -- the colophon forces translation null regardless of page input (AUDIT-20260719-12, pins the XOR at the colophon boundary)', () => {
+    // Deliberately the OPPOSITE of C6/C7 above: default pages, which DO carry
+    // a non-null machine-assist label (makePage()'s default). This is the
+    // exact both-disclosures-in-the-input state the AUDIT-03/04/05/06/07
+    // "exactly-one provenance disclosure" series forbids downstream -- pin
+    // which side of the XOR assembleColophon's English branch takes.
+    const input = makeColophonInput({
+      readingLanguage: 'english',
+      ocrTranscription: OCR_TRANSCRIPTION,
+    });
+
+    const colophon = assembleColophon(input);
+
+    // assembleEnglishColophon hardcodes translation: null (it does not even
+    // read `pages` for the machine-assist label) -- the English branch always
+    // drops/ignores page-level machine-assist labels rather than emitting
+    // both disclosures.
+    expect(colophon.translation).toBeNull();
+    expect(colophon.ocrTranscription).toEqual(OCR_TRANSCRIPTION);
   });
 });
