@@ -172,4 +172,5 @@ Spun out of 009's research loop (backlog TASK-32). SRCH-0013 verified that the d
 
 ## impl:feature/papers-past-acquisition
 - status: planned
+- analyze-clean: yes
 - spec: specs/015-papers-past-acquisition
