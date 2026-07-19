@@ -9,8 +9,10 @@ Additive language-keyed branch inside the shipped archive-direct reader (spec
 tasks are `balanced`, tests/investigation `fast`.
 
 Files touched: `src/pdf/load/archive-source.ts`, `archive-page.ts`,
-`archive-edition.ts`; `tests/unit/pdf/archive-fixture.ts` + tests. Downstream
-(Typst templates, build/batch, object-store fetch) unchanged.
+`archive-edition.ts`, `colophon.ts`; `src/pdf/model.ts`; and — the sole template
+exception (FR-013, via `/frontend-design`) — `pdf/template/frontmatter.typ`
+(colophon line only); `tests/unit/pdf/archive-fixture.ts` + tests. Downstream
+(facing-page/spread templates, build/batch, object-store fetch) unchanged.
 
 ## Phase 1: Setup / Investigation
 
@@ -45,14 +47,23 @@ Files touched: `src/pdf/load/archive-source.ts`, `archive-page.ts`,
 
 **Goal**: The English colophon discloses the recto as a machine OCR transcription, never a translation.
 
-**Independent test**: Assemble an English edition and inspect its colophon: OCR-transcription line present, no machine-assisted-translation line, `machineAssist` null; low-fidelity caveat surfaces where recorded.
+**Independent test**: Assemble an English edition and inspect its colophon: OCR-transcription line present, no machine-assisted-translation line, `translation`/`machineAssist` null; low-fidelity caveat surfaces where recorded.
 
-- [ ] T010 [tier:balanced] [US3] In `src/pdf/load/archive-edition.ts` colophon assembly, for English sources emit an **OCR-transcription** line (recto is a machine OCR transcription of the English original; OCR engine/status + low-fidelity caveat when present) and **omit** the machine-assisted-translation line; ensure the edition's `machineAssist` label is null (FR-008). Keep the file ≤500 lines (extract a colophon helper if needed).
-- [ ] T011 [tier:fast] [US3] Unit test in `tests/unit/pdf/archive-edition.test.ts`: the English edition's colophon contains the OCR-transcription line and NO machine-assisted-translation line, `machineAssist` is null (C6); a folio with a sub-high OCR condition surfaces its caveat on the page (C7, FR-009).
+> **Scope note (FR-013, added 2026-07-18):** discovered during execution — the shared `assembleColophon` MANDATES a machine-assist label (throws when none) and the colophon template `frontmatter.typ` renders `col.translation.engine` unconditionally, so an English source cannot be assembled/rendered without change. This phase therefore touches `colophon.ts`, `model.ts`, and (via `/frontend-design`) `pdf/template/frontmatter.typ` — the sole FR-010 template exception.
+
+**Prerequisite for T010 (controller step, Constitution XI — MANDATORY before any `.typ` edit):** design the colophon template change through `/frontend-design:frontend-design`. The `colophon-page` in `pdf/template/frontmatter.typ` must branch — English → an OCR-transcription line (recto is a machine OCR transcription of the English original; OCR engine/status + low-fidelity caveat when present); French → the existing machine-assist line; never both. This is a controller-run design step (not a tier-dispatched subagent task); its output (layout/typography/label copy direction) feeds T010's `frontmatter.typ` edit.
+
+- [ ] T010 [tier:balanced] [US3] Implement FR-013 across the data + render layers (the `frontmatter.typ` edit follows the frontend-design prerequisite above):
+  - `src/pdf/model.ts`: `ColophonMeta.translation` → `MachineAssistLabel | null`; add an OCR-transcription disclosure field (engine/status + caveat, null for French).
+  - `src/pdf/load/colophon.ts`: make `assembleColophon` reading-language-aware — French still fails loud when no page carries a machine-assist label (spec-014 safety net); English requires the OCR-transcription disclosure instead and sets `translation = null`.
+  - `src/pdf/load/archive-edition.ts`: thread the reading language + OCR provenance into `assembleColophon`; English editions get `translation`/`machineAssist` null.
+  - `pdf/template/frontmatter.typ`: implement the branch per T010a (English OCR-transcription line vs French machine-assist line; never both). Keep every touched file ≤500 lines (extract a helper if needed).
+- [ ] T011 [tier:fast] [US3] Unit test in `tests/unit/pdf/archive-edition.test.ts` (and/or a colophon unit test): the English edition's colophon contains the OCR-transcription disclosure and NO machine-assisted-translation label, `translation`/`machineAssist` null (C6); a French source with NO machine-assist label STILL throws (spec-014 safety net, C3-adjacent); a folio with a sub-high OCR condition surfaces its caveat on the page (C7, FR-009).
 
 ## Phase 6: Polish & Cross-Cutting
 
-- [ ] T012 [tier:fast] Run `npx vitest run tests/unit/pdf` (existing 132 + new English-path tests all green), `npx tsc --noEmit` clean, and confirm every touched source file is within the 300–500 line guidance (C8: downstream unchanged).
+- [ ] T014 [tier:balanced] English end-to-end integration test: build a full `Edition` from an English fixture via the archive-edition reader (`makeArchiveEditionReader(...).build(...)`) — proving `assembleColophon` no longer throws for a no-translation English source (C1) — and serialize it via `toTypstInput` to confirm the colophon carries the OCR-transcription disclosure and the english-only recto renders the English OCR (C6). This is the end-to-end proof US1 + US3 need; the T004/T005/T010 unit tests do not exercise the full `build()` colophon path.
+- [ ] T012 [tier:fast] Run `npx vitest run tests/unit/pdf` (existing pdf suite + all new English-path tests green), `npx tsc --noEmit` clean, and confirm every touched source file is within the 300–500 line guidance. Confirm C8 (facing-page/spread templates, enumeration, fetch/verify, reproducibility unchanged) AND that the ONLY template change is the colophon `frontmatter.typ` machine-assist/OCR-transcription branch (C9, the sanctioned FR-010 exception).
 - [~] T013 [tier:balanced] Operator acceptance: build the real English targets end to end — `COLONY_ARCHIVE_ROOT=<pin> npx tsx scripts/build-pdf.ts PB-P056` (first target, ~52pp), then PB-P057–P059 (press leaves). Confirm each PDF shows the English OCR as the reading recto, an honest OCR-transcription colophon (no MT line), the pinned-archive reference, and — for the press leaves — the surfaced low-fidelity caveat (SC-006). Operator-verified; excluded from the tasks-complete gate.
 
 ## Dependencies & order
@@ -60,8 +71,13 @@ Files touched: `src/pdf/load/archive-source.ts`, `archive-page.ts`,
 - T001 → T002 (verify vocabulary before wiring the match).
 - T002, T003 (Foundational) block all user-story phases.
 - US1 (T004–T007) is the MVP: independently delivers buildable English PDFs.
-- US2 (T008–T009) and US3 (T010–T011) are independent of each other; both depend
-  only on Foundational + the routing from US1's T004/T005.
+- US2 (T008–T009) and US3 (T010→T011) are independent of each other; both
+  depend only on Foundational + the routing from US1's T004/T005.
+- US3: **the `/frontend-design` prerequisite MUST precede T010's `frontmatter.typ`
+  edit** (Constitution XI). T010 (colophon.ts/model.ts/archive-edition.ts/frontmatter.typ)
+  → T011 (test).
+- T014 (English end-to-end integration) after T010 (needs the reading-language-aware
+  colophon so `build()` no longer throws).
 - T012 after all implementation; T013 (operator) last.
 
 ## Parallel opportunities

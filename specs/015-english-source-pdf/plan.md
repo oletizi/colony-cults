@@ -37,7 +37,8 @@ Add an **English-source rendering path** to the shipped archive-direct PDF reade
 - **V. Fail Loud, No Fallbacks**: PASS — missing English OCR fails loud; an unsupported reading language fails loud; the French translation gate stays fail-loud. Absence of `translation/` on the English path is a *routing* outcome, not a silent fallback.
 - **VI. Composition Over Inheritance / VII. Type Safety**: PASS — the branch composes into the existing reader functions; discriminated routing on a typed language value; no `any`/`as`/`@ts-ignore`; files stay ≤500 lines (archive-page.ts is ~258 lines, archive-edition.ts ~302 lines — the additions must not push either past 500; if archive-edition.ts approaches the limit, extract the colophon-assembly helper).
 - **VIII. Faithful Tool Adoption**: PASS — authored through the stack-control front door driving Spec Kit in order.
-- **XIV. The Operator Owns Scope (No Agent Scope-Cutting)**: PASS — the spec captures the full requirement set from the approved design; the two open questions are documented non-blocking Assumptions, not scope cuts.
+- **XI. Design Through the Design Skill**: APPLIES (FR-013, added 2026-07-18) — the colophon template (`frontmatter.typ`) must change to render the English OCR-transcription line (the shared `assembleColophon` + template hard-code a mandatory machine-assist line; an English source cannot render without this). Because the colophon is user-facing typography, that template change is designed through `/frontend-design:frontend-design` BEFORE any markup edit. The reader/model/assembler changes (`archive-edition.ts`, `colophon.ts`, `model.ts`) are non-UI and do not.
+- **XIV. The Operator Owns Scope (No Agent Scope-Cutting)**: PASS — the spec captures the full requirement set from the approved design; the FR-010/FR-013 colophon-template exception was surfaced to the operator and approved (not an agent scope-cut); the deferred V2 header-copy is an operator-recorded decision.
 
 No violations → Complexity Tracking left empty.
 
@@ -62,8 +63,11 @@ src/pdf/
 ├── load/
 │   ├── archive-source.ts     # (touched) surface the source reading-language from folio provenance
 │   ├── archive-page.ts       # (touched) language-keyed branch: English → OCR-as-recto, skip translation; empty-OCR fail-loud
-│   └── archive-edition.ts     # (touched) English colophon: OCR-transcription line, machineAssist=null; unsupported-language fail-loud
-├── model.ts                  # (touched only if a typed reading-language / recto-kind field is needed)
+│   ├── archive-edition.ts     # (touched) thread reading-language into colophon assembly; unsupported-language fail-loud
+│   └── colophon.ts           # (touched, FR-013) reading-language-aware assembleColophon: French requires machine-assist label, English requires OCR-transcription disclosure; nullable translation
+├── model.ts                  # (touched, FR-013) ColophonMeta.translation → nullable; add OCR-transcription disclosure field
+├── template/
+│   └── frontmatter.typ       # (touched via /frontend-design, FR-013) colophon-page branches: English OCR-transcription line vs French machine-assist line
 └── render/
     ├── build.ts              # (unchanged expected) language-agnostic image staging + Typst invoke
     └── batch.ts              # (unchanged expected) source discovery

@@ -52,12 +52,29 @@ path its fields carry English-source meaning:
 > invariant: **the rendered recto reading text is the English OCR; no translation
 > artifact is read.**
 
-## Edition / Colophon (existing — English-source semantics)
+## Edition / Colophon (CHANGED — English-source semantics, FR-013)
 
-- `machineAssist` label is **null** for English sources.
-- The colophon gains an **OCR-transcription** line: the recto is a machine OCR
-  transcription of the English original, carrying OCR engine/status + low-fidelity
-  caveat when present; **no** machine-assisted-translation line.
+Spec-014's `assembleColophon` **mandated** a machine-assist translation label
+(it throws if no page carries one), and `ColophonMeta.translation` is a
+non-nullable `MachineAssistLabel`; the colophon template (`frontmatter.typ`)
+renders `col.translation.engine/model/retrieved` unconditionally. An English
+source carries **no** translation label, so this feature must relax the mandate
+(FR-013). Changes:
+
+- `ColophonMeta.translation` becomes **nullable** (`MachineAssistLabel | null`).
+  It is `null` for English sources; it remains **required** (assembler fails
+  loud) for French sources — the spec-014 guarantee is preserved by keying the
+  requirement on the reading language, not by dropping it.
+- `ColophonMeta` gains an **OCR-transcription disclosure** field (recto is a
+  machine OCR transcription of the English original; OCR engine/status +
+  low-fidelity caveat when present). Null for French sources.
+- `assembleColophon` takes the reading language (or an equivalent
+  transcription-input) so it can require-a-label for French and
+  require-a-transcription-disclosure for English.
+- The colophon template (`frontmatter.typ`) branches: English → the
+  OCR-transcription line; French → the machine-assist line; never both. **This
+  template change is designed through `/frontend-design:frontend-design`
+  (Constitution XI)** — the sole FR-010 exception.
 - The pinned-archive reference (`archiveRef`) is **unchanged** (reproducibility).
 
 ## Fail-loud conditions (English path)

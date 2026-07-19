@@ -48,12 +48,22 @@ positional `issue.txt` segment (empty/absent OCR) → throw naming the page. (Th
 blank-recto tolerance from spec 014 is gated on the `untranslatable` marker,
 which does not apply here.)
 
-## ENGLISH PATH — edition + colophon
+## ENGLISH PATH — edition + colophon (FR-013)
 
-- `machineAssist` label absent (null) for the edition.
-- Colophon carries an **OCR-transcription** line (recto is a machine OCR
+- `machineAssist` label absent (null) for the edition. `ColophonMeta.translation`
+  is nullable and is `null` here.
+- `assembleColophon` MUST NOT throw on the legitimate absence of a machine-assist
+  label for an English source (spec-014 threw unconditionally when no page carried
+  one). It keys the requirement on the reading language: **French still requires a
+  label** (throws if absent — the spec-014 safety net); **English requires an
+  OCR-transcription disclosure** instead.
+- Colophon carries an **OCR-transcription** disclosure (recto is a machine OCR
   transcription of the English original; OCR engine/status + low-fidelity caveat
   when present) and **no** machine-assisted-translation line.
+- The colophon template (`frontmatter.typ`) branches on reading language: English
+  → OCR-transcription line; French → machine-assist line; never both. This is the
+  one FR-010 template exception; it is designed through
+  `/frontend-design:frontend-design` (Constitution XI).
 - `archiveRef` (pinned-archive commit) unchanged.
 - Both edition variants remain available; the English-source path targets the
   english-only reading recto. The parallel FR │ EN variant is unaffected.
@@ -74,6 +84,7 @@ which does not apply here.)
 | C3 | A French source's translation-gap fail-loud is intact. |
 | C4 | A non-FR/EN reading language fails loud naming the value. |
 | C5 | An English page with empty/absent OCR fails loud naming the page. |
-| C6 | English colophon: OCR-transcription line present, machine-assisted-translation line absent, `machineAssist` null. |
+| C6 | English colophon: OCR-transcription line present, machine-assisted-translation line absent, `machineAssist`/`translation` null. |
 | C7 | `ocrCondition` (low-fidelity caveat) surfaces on English pages that record one. |
-| C8 | Folio enumeration, positional mapping, object-store fetch/verify, reproducibility, and Typst templates unchanged. |
+| C8 | Folio enumeration, positional mapping, object-store fetch/verify, reproducibility, and the facing-page/spread Typst templates unchanged. **Exception (C9).** |
+| C9 | The colophon template (`frontmatter.typ`) renders the OCR-transcription line for English and the machine-assist line for French, never both; a French source with no machine-assist label still fails loud (spec-014 safety net intact). This is the sole FR-010 template exception, designed via `/frontend-design`. |

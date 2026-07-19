@@ -60,10 +60,24 @@ implementation-time verifications.
 - **Decision**: The English-source path is an additive branch inside the existing
   archive-direct reader (`archive-source.ts` surfaces the reading language;
   `archive-page.ts` + `archive-edition.ts` branch). No new top-level reader; the
-  Typst templates, both edition variants, object-store fetch/verify, positional
-  mapping, and reproducibility are untouched.
+  facing-page/spread Typst templates, both edition variants, object-store
+  fetch/verify, positional mapping, and reproducibility are untouched.
 - **Rationale**: Smallest honest surface; reuses centralized machinery; avoids
   two readers drifting.
+- **AMENDMENT (2026-07-18, discovered during execution — operator-approved):**
+  "Typst templates untouched" was too strong. The shared `assembleColophon`
+  **mandates** a machine-assist translation label (throws when no page carries
+  one), and the colophon template `frontmatter.typ` renders
+  `col.translation.engine` unconditionally — so an English source (no translation
+  label) cannot even be assembled/rendered without change. The colophon template
+  MUST branch (English → OCR-transcription line; French → machine-assist line),
+  `ColophonMeta.translation` becomes nullable, and `assembleColophon` becomes
+  reading-language-aware (FR-013). This is the SOLE template exception to FR-010;
+  every other template stays unchanged. Because the colophon is user-facing
+  typography, the template change is designed through
+  `/frontend-design:frontend-design` (Constitution XI). This conflict was not
+  caught by `/speckit-analyze` because it did not trace colophon data into the
+  Typst render layer.
 
 ## Implementation-time verifications (open questions — non-blocking)
 
