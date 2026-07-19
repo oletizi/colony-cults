@@ -43,10 +43,18 @@ reading language MUST be consistent across a source's folios;
   **before** it is placed in `english` (the French path's empty-check reads
   `ocrFrench`; the English path checks the value it puts in `english`).
 
-**Fail-loud**: an English page with neither a corrected `pNNN.fr.txt` nor a
-positional `issue.txt` segment (empty/absent OCR) → throw naming the page. (The
-blank-recto tolerance from spec 014 is gated on the `untranslatable` marker,
-which does not apply here.)
+**Fail-loud**: an **unmarked** English page with neither a corrected `pNNN.fr.txt`
+nor a positional `issue.txt` segment (empty/absent OCR) → throw naming the page.
+
+**Blank / plate marker (FR-014)**: an English folio whose provenance carries
+`blank_recto: true` is an intentionally-blank recto (plate / cover / blank leaf).
+On this folio the English path TOLERATES empty OCR and produces the blank-recto
+content — it sets `untranslatable = true`, `english = ''` (the SAME flag the French
+`untranslatable` page sets), so spec 014's existing blank-recto rendering draws the
+verso facsimile with an empty reading column (no template change). The marker is the
+ONLY opt-out from the empty-OCR fail-loud above, so a genuine gap on an unmarked page
+is never silenced. A `blank_recto` folio with NON-empty OCR → throw (a page is a
+plate XOR a text page).
 
 ## ENGLISH PATH — edition + colophon (FR-013)
 
@@ -103,3 +111,4 @@ which does not apply here.)
 | C7 | `ocrCondition` (low-fidelity caveat) surfaces on English pages that record one. |
 | C8 | Folio enumeration, positional mapping, object-store fetch/verify, reproducibility, and the facing-page/spread Typst templates unchanged. **Exception (C9).** |
 | C9 | The colophon template (`frontmatter.typ`) renders the OCR-transcription line for English and the machine-assist line for French, never both; a French source with no machine-assist label still fails loud (spec-014 safety net intact). This is the sole FR-010 template exception, designed via `/frontend-design`. |
+| C10 | An English folio marked `blank_recto: true` with empty OCR builds a blank reading recto over its verso facsimile (no fail-loud); an UNMARKED empty English folio still fails loud (FR-007); a `blank_recto` folio with non-empty OCR fails loud. (FR-014) |

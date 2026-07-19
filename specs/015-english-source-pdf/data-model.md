@@ -77,10 +77,30 @@ source carries **no** translation label, so this feature must relax the mandate
   (Constitution XI)** — the sole FR-010 exception.
 - The pinned-archive reference (`archiveRef`) is **unchanged** (reproducibility).
 
+## Blank / plate page marker (English path, FR-014)
+
+An English folio MAY carry a folio-provenance `blank_recto` marker (an additive
+OPTIONAL boolean field on `ProvenanceFields`, alongside `ocr_status`/`translation`)
+declaring the page an intentionally-blank recto — a plate, illustration, cover, or
+blank leaf with no reading text. This is the English analog of the French path's
+`untranslatable` translation label (which lives on the translation sidecar English
+sources do not have, so the marker lives on the folio sidecar the English path
+already reads).
+
+- When `blank_recto` is true, the English path TOLERATES an empty OCR result and
+  produces a blank reading recto — it sets the SAME blank-recto flag the French
+  `untranslatable` path sets (`untranslatable = true`, `english = ''`), so spec
+  014's existing blank-recto rendering draws the verso facsimile with an empty
+  reading column. No template change.
+- When `blank_recto` is absent/false, FR-007's empty-OCR fail-loud is unchanged.
+- A `blank_recto`-marked page with NON-empty OCR is an inconsistency → fail loud
+  (a page is either a blank plate or a text page, not both).
+
 ## Fail-loud conditions (English path)
 
-1. Missing English OCR for a page (neither corrected `pNNN.fr.txt` nor a
-   positional `issue.txt` segment) → fail loud naming the page.
+1. Missing English OCR for an **unmarked** page (neither corrected `pNNN.fr.txt`
+   nor a positional `issue.txt` segment, and NOT `blank_recto`-marked) → fail loud
+   naming the page. A `blank_recto`-marked page tolerates empty OCR (FR-014).
 2. Unsupported reading language (non-FR/EN) → fail loud naming source + value.
 3. Mixed reading language across a source's folios → fail loud.
 4. Missing image master (unchanged from spec 014) → fail loud.
