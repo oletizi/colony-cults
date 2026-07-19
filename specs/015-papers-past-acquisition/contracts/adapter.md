@@ -6,8 +6,10 @@ Implements the existing `RepositoryAdapter` interface (`src/repository/adapter.t
 
 ```ts
 interface PapersPastAdapterDeps {
-  browserSession: BrowserSession;   // spec-014; clears the Incapsula WAF; injected fake in tests
-  byteFetch: { getBytes(url: string): Promise<Uint8Array | Buffer> };  // polite HttpClient; fake in tests
+  browserSession: BrowserSession;   // spec-014; clears the Incapsula WAF; performs BOTH the page read
+                                    //   (navigate) AND the image byte fetch (fetchBytes, inside the same
+                                    //   WAF-cleared context — research R1 CONFIRMED the /imageserver/ CDN
+                                    //   is WAF-gated too); injected fake in tests
   objectStore?: ObjectStore;        // required only for acquire (resolve-only needs no B2 creds)
   now?: () => string;               // injected clock (ISO timestamp; mirrors the museum adapter's `() => string`)
 }
@@ -32,7 +34,7 @@ class PapersPastAdapter implements RepositoryAdapter {
 1. **Fail-closed gate:** throw unless `record.rightsAssessment?.rightsStatus === 'public-domain'` — BEFORE any fetch or object-store call (0 side effects on refuse).
 2. `ctx.dryRun` → return empty assets, no `objectStore` write, no record mutation.
 3. Re-resolve (or use the passed record's locators); **identity guard**: the resolved `oid` MUST match the record identifier, else throw (remote change).
-4. For each image segment (in `area` order): `byteFetch.getBytes(url)` → **image-validity guard** (magic-byte/content sniff; a challenge page or non-image → throw) → `sha256OfBytes` → key `archive/papers-past/<id>/<sha256>.gif` → `objectStore.head(key)`: if present with matching checksum skip (idempotent) else `objectStore.put(key, bytes, {sha256, contentType:'image/gif'})`. Build `AcquiredAsset{role:'page-master', sequence:area}`.
+4. Open the browser session ONCE and keep it open across the page read AND every image byte fetch (same WAF-cleared context). For each image segment (in `area` order): `browserSession.fetchBytes(url)` (the WAF-cleared in-page fetch — research R1 CONFIRMED the stateless client is WAF-blocked) → **image-validity guard** (GIF magic-byte sniff; a challenge page or non-image → throw) → `sha256OfBytes` → key `archive/papers-past/<id>/<sha256>.gif` → `objectStore.head(key)`: if present with matching checksum skip (idempotent) else `objectStore.put(key, bytes, {sha256, contentType:'image/gif'})`. Build `AcquiredAsset{role:'page-master', sequence:area}`.
 5. Return `{ repositoryRecordId, assets:[…page-masters], metadataSnapshot, complete:true }`. (No OCR companion asset — OCR is out of scope; the existing OCR/translation pipeline produces it from the held facsimile. Clarified 2026-07-19.)
 
 ## Invariants

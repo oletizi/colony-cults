@@ -6,17 +6,17 @@
 
 ## Summary
 
-Add a `RepositoryAdapter` for Papers Past (NLNZ) so `bib acquire` can mirror one discrete public-domain Papers Past newspaper article — its page-image facsimile (N sequenced `/imageserver/...` GIF segments) — into the corpus archive + B2, end-to-end, parallel to the museum/IA adapters. The adapter reads the Incapsula-WAF-gated article page through the shipped spec-014 real-browser `BrowserSession` (persist-before-analysis) and fetches image bytes through the polite bulk-acquisition `HttpClient` (hybrid, guarded fail-loud against a WAF/non-image response). Rights are evidence-first (the adapter surfaces NLNZ's "No known copyright (New Zealand)" verbatim, no verdict) and fail-closed on an operator public-domain `RightsAssessment`. The de Rays article (SRCH-0018/0019) is made acquirable as a source-group member reusing the existing member-acquire path. OCR text is out of scope as an acquired asset (the existing OCR/translation pipeline produces it from the held facsimile; operator decision, clarified 2026-07-19).
+Add a `RepositoryAdapter` for Papers Past (NLNZ) so `bib acquire` can mirror one discrete public-domain Papers Past newspaper article — its page-image facsimile (N sequenced `/imageserver/...` GIF segments) — into the corpus archive + B2, end-to-end, parallel to the museum/IA adapters. The adapter reads the Incapsula-WAF-gated article page through the shipped spec-014 real-browser `BrowserSession` (persist-before-analysis) and fetches image bytes INSIDE that same WAF-cleared context via `BrowserSession.fetchBytes` (research R1 CONFIRMED: the `/imageserver/` CDN is WAF-gated too, so the stateless client fails; the byte-fetch stays guarded fail-loud against a non-GIF/challenge response). Rights are evidence-first (the adapter surfaces NLNZ's "No known copyright (New Zealand)" verbatim, no verdict) and fail-closed on an operator public-domain `RightsAssessment`. The de Rays article (SRCH-0018/0019) is made acquirable as a source-group member reusing the existing member-acquire path. OCR text is out of scope as an acquired asset (the existing OCR/translation pipeline produces it from the held facsimile; operator decision, clarified 2026-07-19).
 
 ## Technical Context
 
 **Language/Version**: TypeScript (ESM), Node 22, `@/` → `src/` import alias
 
-**Primary Dependencies**: spec-014 `BrowserSession` (real Playwright, WAF-clearing); `@/gallica/http-client` `HttpClient` (`getBytes`, polite/rate-limited — the bulk-acquisition byte client); `node-html-parser` (mechanical article parse); `@/archive/s3-object-store` `S3ObjectStore` + `resolveObjectStoreConfig` (B2); `@/archive/checksum` (sha256); the existing `RepositoryAdapter` framework + registry.
+**Primary Dependencies**: spec-014 `BrowserSession` (real Playwright, WAF-clearing) — its `navigate` reads the article page AND its `fetchBytes` fetches the image bytes inside the same WAF-cleared context (research R1 CONFIRMED: the `/imageserver/` CDN is WAF-gated too, so a stateless `HttpClient` `getBytes` fails); `node-html-parser` (mechanical article parse); `@/archive/s3-object-store` `S3ObjectStore` + `resolveObjectStoreConfig` (B2); `@/archive/checksum` (sha256); the existing `RepositoryAdapter` framework + registry.
 
 **Storage**: content-addressed objects in B2 under `archive/papers-past/<article-id>/<sha256>.{gif,txt}`; provenance `.yml` in the archive clone; `assets` recorded on the `papers-past` `RepositoryRecord` (`bibliography/sources/*.yml`).
 
-**Testing**: vitest; unit tests with `FakeBrowserSession` + fake `getBytes` + fake `ObjectStore` (no network, no host); env-gated live acquisition + image-CDN-reachability scenarios.
+**Testing**: vitest; unit tests with `FakeBrowserSession` (scripting both `navigate` HTML and `fetchBytes` image bytes) + fake `ObjectStore` (no network, no host); env-gated live acquisition + image-CDN-reachability (browser byte-fetch) scenarios.
 
 **Target Platform**: local CLI (`bib acquire`) on the operator host.
 
@@ -34,8 +34,8 @@ Add a `RepositoryAdapter` for Papers Past (NLNZ) so `bib acquire` can mirror one
 
 - **Principle II (Integration-First / capture-don't-cut)**: scope captured; the one operator scope decision (source-group membership vs TASK-27) was made explicitly via clarify, not a silent YAGNI cut. PASS.
 - **Principle V (Fail-loud, no fallbacks)**: resolve fails loud on missing id/asset; acquire fails closed on rights and loud on remote-change / non-image response. No fallbacks outside tests. PASS.
-- **Principle VI (Interface-first, DI, no inheritance)**: adapter is constructor-injected (`BrowserSession`, `byteFetch`, `ObjectStore`, clock); composes existing interfaces; no class inheritance. PASS.
-- **Principle VIII (Faithful tool adoption)**: reuses the shipped `RepositoryAdapter` framework, the spec-014 browser, the `HttpClient`, and the object store — reinvents nothing; drives the Spec Kit chain in order. PASS.
+- **Principle VI (Interface-first, DI, no inheritance)**: adapter is constructor-injected (`BrowserSession` — page read + WAF-cleared byte fetch, `ObjectStore`, clock); composes existing interfaces; no class inheritance. PASS.
+- **Principle VIII (Faithful tool adoption)**: reuses the shipped `RepositoryAdapter` framework, the spec-014 browser (extended with `fetchBytes` for the WAF-gated CDN), and the object store — reinvents nothing; drives the Spec Kit chain in order. PASS.
 - **Principle XII (Respect the Source)**: article reads go through the one governed browser mechanism (no ad-hoc channel); image bytes through the polite acquisition client; rights fail-closed. PASS.
 - **INV (adapter invariants)**: no fabrication, rights fail-closed, typed result, single-adapter dispatch, idempotent, never-migrate — all honored. PASS.
 

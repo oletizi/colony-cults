@@ -55,24 +55,24 @@ The adapter surfaces the rights **evidence** it reads on the article page (NLNZ'
 
 ---
 
-### User Story 3 - Governed hybrid fetch clears the WAF without off-roading (Priority: P3)
+### User Story 3 - Governed browser fetch clears the WAF without off-roading (Priority: P3)
 
-Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client cannot clear, but the shipped real-browser query client can. The adapter reads the article page through the governed real-browser session (persist-before-analysis) and fetches the image bytes through the polite bulk-acquisition client — one discovery/read mechanism, one bulk-bytes mechanism, no ad-hoc side channel.
+Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client cannot clear, but the shipped real-browser query client can. The adapter reads the article page through the governed real-browser session (persist-before-analysis) and fetches the image bytes INSIDE that same WAF-cleared context (`BrowserSession.fetchBytes`, research R1 CONFIRMED — the `/imageserver/` CDN is WAF-gated too, so the stateless client is blocked) — one governed mechanism for both the page read and the byte fetch, no ad-hoc side channel.
 
 **Why this priority**: Without a WAF-clearing read path the adapter cannot function at all; and the read path must stay inside the sanctioned governance (no curl/WebFetch/ad-hoc browser). It is P3 only because it is the transport under US1/US2, not a separately shippable outcome.
 
-**Independent Test**: Confirm the adapter's page read is performed via the injected governed browser session (a fake in tests, never the real host), that the raw page is persisted before it is parsed, and that image bytes are fetched via the injected byte-fetch client. No test path touches the network or the real host.
+**Independent Test**: Confirm the adapter's page read is performed via the injected governed browser session (a fake in tests, never the real host), that the raw page is persisted before it is parsed, and that image bytes are fetched via that same injected browser session's `fetchBytes` (the WAF-cleared byte-fetch). No test path touches the network or the real host.
 
 **Acceptance Scenarios**:
 
 1. **Given** an article page behind the WAF, **When** the adapter resolves it, **Then** the page is read through the governed real-browser session and the raw page is persisted before any parsing.
-2. **Given** resolved image URLs, **When** the adapter acquires, **Then** the image bytes are fetched through the polite bulk-acquisition client (the shipped, Principle-XII-governed acquisition path), not an ad-hoc fetch.
+2. **Given** resolved image URLs, **When** the adapter acquires, **Then** the image bytes are fetched inside the same WAF-cleared browser context (`BrowserSession.fetchBytes`, the governed mechanism), not an ad-hoc fetch or a stateless client.
 
 ---
 
 ### Edge Cases
 
-- **Image CDN also WAF-gated**: if the page-image URLs are not reachable by the stateless byte-fetch client (Incapsula covers them too), the adapter MUST fail loud with a clear diagnostic rather than mirror a challenge page as if it were an image; the resolution (browser byte-fetch) is a documented follow-up decided in the research phase.
+- **Image CDN also WAF-gated (CONFIRMED)**: the page-image URLs are NOT reachable by the stateless client (Incapsula covers them too — a live `bib acquire` returned "fetch failed"), so image bytes are fetched inside the WAF-cleared browser context (`BrowserSession.fetchBytes`, research R1). The image-validity guard still fails loud on a non-GIF/challenge body rather than mirror it as a facsimile.
 - **Article with multiple page-images**: a single article can span multiple image scans; all are acquired as sequenced `page-master` assets, none silently dropped.
 - **OCR text absent or empty**: OCR is optional (out of scope as an acquired asset; clarified 2026-07-19). The page-image facsimile is always the master; if the article page has no OCR text panel the optional parse field is simply absent (never fabricated), and acquisition is unaffected.
 - **Non-public-domain / unassessed record**: acquisition refuses fail-loud with zero side effects (US2).
@@ -90,11 +90,11 @@ Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client
 
 **Adapter contract**
 
-- **FR-003**: The system MUST provide a Papers Past repository adapter implementing the existing `RepositoryAdapter` contract (`resolve`, `collectRightsEvidence`, `acquire`) with constructor-injected dependencies (a governed browser session, a byte-fetch client, an object store, an injectable clock) so the adapter is unit-testable with no network and no host mutation.
+- **FR-003**: The system MUST provide a Papers Past repository adapter implementing the existing `RepositoryAdapter` contract (`resolve`, `collectRightsEvidence`, `acquire`) with constructor-injected dependencies (a governed browser session — which performs BOTH the page read and the WAF-cleared image byte fetch, research R1 CONFIRMED — an object store, an injectable clock) so the adapter is unit-testable with no network and no host mutation.
 - **FR-004**: `resolve` MUST read the article page through the governed real-browser session, persist the raw page before any parsing, and mechanically parse the article title, the page-image asset URL(s), the newspaper/date/page metadata, and the rights statement (and MAY expose the on-page OCR text as an optional convenience field — never fabricated, not stored as an asset). It MUST fail loud when the article code or the page-image URL(s) are absent (never fabricate an identifier or asset — resolve-fail-loud).
 - **FR-005**: `collectRightsEvidence` MUST surface the article's rights statement ("No known copyright (New Zealand)") verbatim as raw rights evidence, with NZ jurisdiction and the grounded article date, and MUST NOT carry any rights-status verdict (evidence, not judgment).
 - **FR-006**: `acquire` MUST refuse fail-loud, before any page fetch or object-store write, unless the record carries an operator-authored public-domain rights assessment (fail-closed rights gate).
-- **FR-007**: `acquire` MUST fetch each page-image via the polite bulk-acquisition byte-fetch client, compute a content checksum, and put each to the object store under a deterministic `archive/papers-past/<article-id>/<sha256>.<ext>` key with `role: page-master` and a stable sequence. OCR text is NOT stored by the adapter (out of scope — the existing OCR/translation pipeline produces it from the held facsimile; clarified 2026-07-19).
+- **FR-007**: `acquire` MUST fetch each page-image via the WAF-cleared browser byte-fetch (`BrowserSession.fetchBytes`, research R1 CONFIRMED — the stateless client is WAF-blocked), compute a content checksum, and put each to the object store under a deterministic `archive/papers-past/<article-id>/<sha256>.<ext>` key with `role: page-master` and a stable sequence. OCR text is NOT stored by the adapter (out of scope — the existing OCR/translation pipeline produces it from the held facsimile; clarified 2026-07-19).
 - **FR-008**: `acquire` MUST be idempotent by object key + checksum — a re-run of an already-mirrored article MUST NOT write a duplicate — and MUST fail loud on a remote-change / identity mismatch rather than mirror changed bytes.
 - **FR-009**: Under dry-run, `acquire` MUST perform read-only validation with NO object-store write and NO record mutation.
 - **FR-010**: `acquire` MUST return a typed acquisition result (assets + metadata snapshot + completeness) that the persistence layer records on the copy record, so a subsequent `bib show`/coverage reflects the held facsimile.
@@ -107,7 +107,7 @@ Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client
 
 **Governance + provenance**
 
-- **FR-014**: Article-page reads MUST go through the governed real-browser session (the `fetching-online-sources` sanctioned client) — never curl / WebFetch / raw HTTP / an ad-hoc browser call. Image-byte fetches MUST go through the shipped bulk-acquisition client (the separately-Principle-XII-governed acquisition path).
+- **FR-014**: Article-page reads MUST go through the governed real-browser session (the `fetching-online-sources` sanctioned client) — never curl / WebFetch / raw HTTP / an ad-hoc browser call. Image-byte fetches MUST ALSO go through that same governed browser byte-fetch — the WAF-cleared browser context's in-page `fetch` (`BrowserSession.fetchBytes`) — NOT the stateless client (research R1 CONFIRMED: the `/imageserver/` CDN is Incapsula-WAF-gated too, so a stateless byte fetch fails). One governed mechanism performs both the page read and the byte fetch; no ad-hoc side channel.
 - **FR-015**: The Papers Past code path (page read, byte fetch, object-store write, host state) MUST be exercised in automated tests ONLY through injected fakes; it MUST NEVER hit the network or mutate the real object store / host during the test suite.
 
 ### Key Entities *(include if data involved)*
@@ -130,9 +130,9 @@ Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client
 
 ## Assumptions
 
-- The shipped real-browser query client (spec 014) is reusable as the governed page-read transport for the adapter (its `BrowserSession` boundary is injectable and clears the Incapsula WAF, as validated in SRCH-0018/0019).
+- The shipped real-browser query client (spec 014) is reusable as the governed transport for BOTH the page read and the image byte fetch (its `BrowserSession` boundary is injectable, clears the Incapsula WAF as validated in SRCH-0018/0019, and its in-page `fetchBytes` reaches the WAF-gated `/imageserver/` CDN the stateless client cannot).
 - Papers Past newspaper content in the target era is public-domain in New Zealand and carries NLNZ's "No known copyright (New Zealand)" statement; the operator authors the corresponding rights assessment.
 - The corpus archive root and B2 object-store credentials are configured for a real acquisition run (per the per-session-archive-clone policy); the adapter itself needs no credentials for resolve-only use.
 - MVP scope is one-article acquisition. Batch acquisition of many articles, a deduplicated discrete-item census of the 695, whole-page / whole-issue acquisition, and the US (Chronicling America) / Italian (Camera dei Deputati) axes are explicit follow-ons, out of scope here.
 - Member acquirability is via **source-group membership**, reusing the existing member-acquire path (clarified 2026-07-18); the standalone-source approval path (TASK-27) is out of scope.
-- One point remains deferred to the plan's research phase: whether the Papers Past image CDN is reachable statelessly or is WAF-gated (fallback: browser byte-fetch). (The former second research point — OCR-text storage role — is resolved: OCR is out of scope as an acquired asset; the existing OCR/translation pipeline handles it. Operator decision, clarified 2026-07-19.)
+- The deferred research point is RESOLVED (research R1 CONFIRMED by a live `bib acquire`): the Papers Past image CDN is WAF-gated, NOT reachable statelessly, so image bytes are fetched via the WAF-cleared browser byte-fetch (`BrowserSession.fetchBytes`). (The former second research point — OCR-text storage role — is likewise resolved: OCR is out of scope as an acquired asset; the existing OCR/translation pipeline handles it. Operator decision, clarified 2026-07-19.)

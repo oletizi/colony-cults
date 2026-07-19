@@ -56,7 +56,8 @@ resolve (browser read → persist raw → parse) → ResolvedArticle
   → acquire:
        fail-closed gate (rightsStatus === 'public-domain', else THROW, 0 side effects)
        dry-run → empty assets, no write
-       for each page-image segment: getBytes (guarded: valid image or THROW) → sha256
+       (browser session opened once, kept open across page read + all byte fetches)
+       for each page-image segment: browserSession.fetchBytes (WAF-cleared; guarded: valid GIF or THROW) → sha256
          → objectStore.head(key) present+match? skip : put(key, bytes)   [idempotent]
        remote-change / identity mismatch → THROW
        → AcquisitionResult { assets, metadataSnapshot, complete }
