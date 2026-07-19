@@ -44,3 +44,6 @@
 
 ## session-end 2026-07-17
 - stackctl resolve-tiers rejects a task id with a letter suffix (e.g. T009a inserted between T009 and T010) as 'line NN: task checkbox has no T-id' — inserting a task mid-list after /speckit-analyze forces either a full renumber or folding the work into a sibling; supporting Txxx-suffix ids (or naming the offending id) would smooth the analyze-remediation seam.
+
+## session-end 2026-07-19
+- govern FATAL'd on a non-obvious two-file lockstep: removing the sonnet lane from .stack-control/fleet-knowledge.yaml alone is insufficient — it must exactly match the configured barrage lanes (audit-barrage-config.yaml / shipped template), and the mismatch only surfaces as a fatal at govern time, not at edit time. A pre-govern 'stackctl fleet-check' (or a single source of truth for lanes) would catch it early.

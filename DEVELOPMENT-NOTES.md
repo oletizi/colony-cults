@@ -1,3 +1,71 @@
+## 2026-07-19: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 47
+  - tasks(015-papers-past-acquisition): 23 tier-tagged tasks + analyze-clean
+  - plan(015-papers-past-acquisition): plan + research + data-model + contracts + quickstart
+  - clarify(015): member acquirability = source-group membership (TASK-27 out of scope)
+  - spec(015-papers-past-acquisition): author spec via /speckit-specify + roadmap node (define front door)
+  - design(papers-past-acquisition): approved brainstorming design for the Papers Past acquisition adapter
+  - feat(sourcequery): papers-past-article content-read config + validate de Rays vein (SRCH-0019)
+  - search(SRCH-0018): Papers Past NZ press — de Rays affair, 695 hits (TASK-39)
+  - fix(014): correct Papers Past selectors against real markup (TASK-39 / Scenario 6)
+  - fix(014): persist the raw page BEFORE classify (persist-before-analysis, Principle XII)
+  - fix(014): remove the MCP-browser fallback — reconcile skill/commandment/spec with no-exceptions
+  - govern(014): record operator-authorized convergence override — graduated
+  - fix(014): govern round-2 findings — parseCount range-prefix + SC-004/evidence coverage
+  - chore(govern): project barrage-config override removing the sonnet lane
+  - chore(govern): remove the sonnet lane from the audit-barrage fleet (permanent)
+  - chore(backlog): capture TASK-43 (production exec-backed TailscaleRunner gap)
+  - fix(014): govern findings — maxWindowMs hard ceiling + policy test/fake hardening
+  - fix(014): govern findings — comma-count parse, separator-tolerant grounding, DEFAULT_GRACE cycle
+  - chore(014 T028): final verify clean; mark all T001-T029 complete
+  - chore(014): ledger Wave D (T025,T026,T027,T029) complete
+  - docs(014 T029): document the one-time manual live smoke (Papers Past governed query)
+  - test(014 T027): extract reusable local-fixture SourceConfig builder
+  - docs(014 T026): point the source-access commandment at the bib query-source client
+  - docs(014 T025): rewire fetching-online-sources skill to the bib query-source client (FR-017)
+  - chore(014): ledger T024 complete (US2 done)
+  - test(014 T024): integration escalation scenarios (challenge->request+evidence; approval->switch+restore)
+  - chore(014): ledger T022,T023 complete
+  - feat(014 T022): CLI --approve-exit-node flag + exit code 3 escalation
+  - test(014 T023): US2 policy unit-coverage backstop (escalation budget = 1/pass, FR-014)
+  - chore(014): ledger T021 complete
+  - feat(014 T021): runApprovedSwitch + approved-switch pass (FR-012/013/014, SC-004)
+  - chore(014): ledger T020 complete
+  - feat(014 T020): operator-permission request + block STOP behavior (FR-010/FR-011, SC-003)
+  - chore(014): ledger T019 complete
+  - feat(014 T019): ExitNodePolicy foundation (enumerate + capture-state + geo-select)
+  - chore(014): ledger Wave C (T015,T017,T018) complete
+  - test(014 T018): env-gated end-to-end integration test (local fixture server)
+  - feat(014 T015): bib query-source CLI verb (US1 subset)
+  - test(014 T017): US1 unit-coverage backstop (client-level derived-facts-only result, FR-009)
+  - chore(014): ledger T014 complete
+  - feat(014 T014): SourceQueryClient orchestrator (result/empty happy path, fail-loud seams)
+  - chore(014): ledger Wave A (T010-T013,T016) complete
+  - feat(014 T016): Papers Past SourceConfig + auto-registration
+  - feat(014 T013): real Playwright BrowserSession (persistent Chrome, headed-first, fail-loud)
+  - feat(014 T012): Frugality persist-then-parse + verify-in-code grounding (FR-007/FR-009)
+  - feat(014 T011): PolitenessPolicy (single session + min inter-navigation interval)
+  - feat(014 T010): block/result/empty classification (R1, positive-signal-only)
+  - chore(014): add node-html-parser for source-result parsing
+- Files changed: 56
+- Backlog touched: TASK-27, TASK-39, TASK-43
+
 ## 2026-07-17: Discovery frontier + Italian axis (measured negative); Principle XII hardened from discipline → skill → policy-as-code (spec 014), executed through Foundational
 
 **Goal:** Began with "do some more discovery." It answered one question (are there unacquired assets? — no, the corpus is at its acquirable maximum), opened a new one (the untried discovery frontier), and then — after the operator caught me breaking the source-access discipline three times — became the work that failure demanded: move the politeness/frugality mandate out of agent discipline and into enforcement, first as a skill, then as a full spec-driven code feature.
