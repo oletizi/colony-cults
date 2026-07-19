@@ -47,3 +47,6 @@
 
 ## session-end 2026-07-19
 - govern FATAL'd on a non-obvious two-file lockstep: removing the sonnet lane from .stack-control/fleet-knowledge.yaml alone is insufficient — it must exactly match the configured barrage lanes (audit-barrage-config.yaml / shipped template), and the mismatch only surfaces as a fatal at govern time, not at edit time. A pre-govern 'stackctl fleet-check' (or a single source of truth for lanes) would catch it early.
+
+## session-end 2026-07-19
+- stackctl govern (implement mode, whole-feature) FATALs during audit-barrage payload assembly when the diff includes a committed data file larger than the 24KB per-file fleet envelope — e.g. a ~49KB source-page capture under bibliography/repository-responses/ (every Papers Past acquire commits one). Govern's code-only scoping excludes .md docs but not large .html/.json data captures. It should exclude the corpus data paths (bibliography/repository-responses/, archive companions) from the CODE audit payload the way it excludes documentation. Workaround this session: operator-authorized govern --override (short-circuits the barrage cleanly). Captured locally as TASK-45; upstream stackctl defect worth a deskwork issue.

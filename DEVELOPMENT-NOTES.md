@@ -1,3 +1,69 @@
+## 2026-07-19: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 45
+  - analyze(016-acquire-metadata-completion): record analyze-clean (0 critical/0 high; consistent)
+  - tasks(016-acquire-metadata-completion): 11 tier-tagged tasks, test-first
+  - plan(016-acquire-metadata-completion): plan + research + data-model + contracts + quickstart
+  - clarify(016): per-repository completeness + best-effort metadataSnapshot; capture snapshot follow-on
+  - spec(016-acquire-metadata-completion): author spec via /speckit-specify + link spec pointer (Principle XV)
+  - roadmap(acquire-metadata-completion): design-approved + in-flight
+  - design(acquire-metadata-completion): clean open-questions heading for exit-gate
+  - design(acquire-metadata-completion): weld SSOT completion into acquire (Principle XV) — fail-loud + idempotent-rerun
+  - docs(governance): propagate Principle XV to CLAUDE.md + GOVERNANCE.md; promote TASK-46 (acquire metadata completion) to feature-rigor
+  - docs: amend constitution to v1.4.0 (add Principle XV — Metadata Integrity Is Mechanically Enforced)
+  - docs(design): incorporate third-party review — repo-vs-work identity, candidate provenance, advisory classification, census versioning
+  - docs(design): source-agnostic discovery + governed Papers Past census (spec 016 design)
+  - chore(backlog): capture TASK-44 (stale-cookie WAF re-challenge) + TASK-45 (govern excludes data paths)
+  - govern(015): record findings + operator-authorized override (data-file payload limit)
+  - bibliography(015): acquire de Rays PB-P061 end-to-end — archived, 3/3 masters in B2, metadataSnapshot
+  - feat(015): wire papers-past into verify-member/promote (well-formed code + PD rights)
+  - fix(015): govern findings AUDIT-01/03/04/05 + record-level metadataSnapshot
+  - fix(archive): map image/gif to .gif in the companion writer (was falling to .bin)
+  - docs(015): confirm research R1 — image CDN WAF-gated, browser byte-fetch is the path
+  - feat(015): R1 fallback — fetch image bytes in the WAF-cleared browser context
+  - fix(015): resolve Papers Past /imageserver/ image src to absolute URL
+  - chore(015): ledger polish (T021-T023) complete — all 23 tasks ledgered
+  - docs(015 T022,T023): quickstart live-smoke note + mark tasks.md complete (T001-T023)
+  - test(015 T021): env-gated live acquire + image-CDN reachability integration test (skips without RUN_PAPERS_PAST_ACQUIRE)
+  - chore(015): ledger CLI wiring (T013,T014,T020) complete
+  - feat(015 T014): dispatch papers-past copies through runAcquire (CLI + registry wiring)
+  - feat(015 T020): recognize papers-past in bib inventory allowlist + resolve-only adapter
+  - feat(015 T013): buildPapersPastAdapterForMember — bib acquire builder (real browser/HttpClient/B2)
+  - chore(015): ledger adapter core (T009-T012,T016-T019) complete
+  - test(015 T012,T018,T019): adapter unit suite — 15 tests (rights fail-closed, idempotent, dry-run, image-guard, remote-change, identity, resolve-only, literal key)
+  - feat(015 T009-T011,T016,T017): Papers Past adapter core — resolve/keys/acquire/rights
+  - refine(015): adapter rights-evidence follows the IA WeakMap + mechanical-GroundedField pattern
+  - chore(015): ledger Wave B (T005-T008,T015) complete
+  - bibliography(015 T015): de Rays Papers Past source PB-P061 + NZ-press group PB-P060
+  - fix(bibliography): isCopyLevelType guard drift — include papers-past copy type
+  - test(015 T008): shared adapter fakes (browser/byte-fetch/object-store)
+  - feat(015 T006,T007): mechanical article parse + de Rays fixture unit test
+  - feat(015 T005): registry dispatch row papers-past + routing test
+  - chore(015): ledger Wave A (T001-T004) complete
+  - feat(015 T004): ParsedArticle parse-result interface (interface-first)
+  - feat(015 T003): add 'papers-past' to RepositoryName union
+  - feat(015 T002): add 'papers-past' copy-level identifier type
+  - chore(015 T001): scaffold papers-past dirs + de Rays test fixture
+  - roadmap(papers-past-acquisition): record analyze-clean (015 remediated + cross-artifact consistent)
+  - analyze(015-papers-past-acquisition): remediate H1/M1/M2; de-scope OCR per operator
+- Files changed: 67
+- Backlog touched: TASK-44, TASK-45, TASK-46
+
 ## 2026-07-19: Spec 014 executed + govern-graduated + hardened; first live discovery (695 NZ hits) validated a vein and surfaced three real bugs; spec 015 (Papers Past acquisition) authored to runnable
 
 **Goal:** "Pick up where we left off" — finish the source-query-client feature (spec 014). It grew, by what each step demanded: execute 014 to completion, govern it, then actually USE it for discovery, which validated a vein, surfaced real defects, exposed a governance contradiction, and led into authoring the next feature's spec (015, a Papers Past acquisition adapter).
