@@ -32,6 +32,15 @@ import type { RepositoryRecord } from '@/model/repository-record';
  * Do NOT use `bib migrate` for this: migrate rebuilds the SSOT from the frozen
  * legacy CSVs + a stale archive register (TASK-8), which would corrupt the
  * source-group model.
+ *
+ * REPAIR-ONLY (spec 016, Principle XV): standalone `bib reconcile` is no longer
+ * required after a normal `bib acquire`. `runAcquire` now runs this exact
+ * idempotent status derivation as an inseparable completion tail
+ * (`src/sourcegroup/acquire.ts`), so the happy path completes the SSOT record
+ * inline. This module is retained as a REPAIR tool -- for pre-existing orphans
+ * (records that predate the weld, with masters in the store but `to-collect`
+ * status) and recovery -- not as a step in the normal acquisition flow. The
+ * logic here is unchanged; only its role narrowed.
  */
 
 /**

@@ -220,6 +220,18 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
       museumAdapter !== undefined || internetArchiveAdapter !== undefined || papersPastAdapter !== undefined;
     const objectStoreConfig = isB2Direct ? resolveObjectStoreConfig() : undefined;
 
+    // Completion tail dependencies (spec 016, Principle XV): give runAcquire the
+    // means to complete the SSOT record as part of the SAME acquire (advance
+    // status + verify), so no separate `bib reconcile` is required. A B2-direct
+    // acquire is completed against the real object store (heads-only); a Gallica
+    // acquire is completed from the archive's per-page provenance (the member's
+    // layout was registered above, so `gatherProvenance` resolves it). `--dry-run`
+    // mirrors nothing, so runAcquire's own tail is exempt regardless.
+    const completionDeps =
+      isB2Direct && objectStoreConfig !== undefined
+        ? { completionObjectStore: new S3ObjectStore(objectStoreConfig) }
+        : { reconcileArchiveRoot: resolveArchiveRoot(repoRoot), gather: gatherProvenance };
+
     const result = await runAcquire({
       sourcesDir,
       sourceId: id,
@@ -233,6 +245,7 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
       museumAdapter,
       internetArchiveAdapter,
       papersPastAdapter,
+      ...completionDeps,
       ...(isB2Direct && objectStoreConfig !== undefined
         ? {
             companionArchiveRoot: resolveArchiveRoot(repoRoot),
@@ -332,6 +345,13 @@ function selectedCopyHasRecordedAssets(
  *   unregistered source-group member -- same overlay `bib acquire` needs).
  *
  * Idempotent; re-runnable on members acquired out-of-band.
+ *
+ * REPAIR-ONLY (spec 016, Principle XV): a normal `bib acquire` now completes the
+ * SSOT record inline (it runs this same idempotent status derivation as an
+ * inseparable tail), so `bib reconcile` is NO LONGER required after acquiring a
+ * member. It is retained for REPAIR -- pre-existing orphans (masters in the
+ * store but `to-collect` status, from before the acquire-completion weld) and
+ * recovery -- not as a routine post-acquire step.
  */
 export async function runReconcileCli(rest: string[]): Promise<number> {
   let parsed: ReconcileCliArgs;

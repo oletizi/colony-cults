@@ -26,10 +26,19 @@ Drive `runAcquire` with `dryRun: true`. Expect: adapter mirrors nothing, the rec
 
 Hand-break a record (masters in the fake store, status `to-collect`). Run the standalone `reconcile`. Expect: it advances the status (repair-only retention — the happy path no longer needs it).
 
-## Scenario 7 — Live end-to-end (env-gated, operator acceptance)
+## Scenario 7 — Live end-to-end (env-gated, operator acceptance) — MANUAL
 
-Re-acquire the de Rays member `PB-P061` (or any B2-direct member) with archive/B2 configured: `bib acquire <member>`. Expect exit 0 AND `bib show <member>` immediately shows `status: archived` with NO separate `bib reconcile` — the regression that motivated this feature (PB-P061 stuck at `to-collect`) no longer occurs. Gated on the real archive/B2 config.
+Re-acquire the de Rays member `PB-P061` (or any B2-direct member) with archive/B2 configured:
+
+```bash
+bib acquire PB-P061          # exit 0
+bib show PB-P061             # RepositoryRecord status: archived (NOT to-collect)
+```
+
+Expect exit 0 AND `bib show PB-P061` **immediately** shows `status: archived` with **NO** separate `bib reconcile` — the regression that motivated this feature (PB-P061 acquired 2026-07-19 stuck at `to-collect` with 3 masters already in B2) no longer occurs. The CLI now wires the completion tail (`src/cli/bib-sourcegroup-acquire.ts`: a B2-direct acquire passes a real `S3ObjectStore` as `completionObjectStore`; a Gallica acquire passes `reconcileArchiveRoot` + `gatherProvenance`), so `runAcquire` advances + verifies the record inline.
+
+This scenario is a **manual operator acceptance**: it mutates the real object store / SSOT and requires live archive/B2 credentials, so it is NOT part of the hermetic suite and is not run by the coding agent. Run it once against a real member to bless the end-to-end path.
 
 ## Scenario 8 — Unit suite is hermetic
 
-`npx vitest run tests/unit/sourcegroup/acquire-completeness.test.ts tests/unit/sourcegroup/acquire.test.ts` — all pass with injected fakes; 0 network calls; the real object store / host is never mutated (FR-010).
+`npx vitest run src/sourcegroup/acquire-completeness.test.ts src/sourcegroup/acquire.test.ts` — all pass with injected fakes; 0 network calls; the real object store / host is never mutated (FR-010). (Tests are colocated under `src/sourcegroup/`, the repo convention, not a separate `tests/unit/` tree.)
