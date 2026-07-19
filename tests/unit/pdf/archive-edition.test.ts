@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
@@ -221,6 +222,151 @@ describe('makeArchiveEditionReader', () => {
 
       expect(edition.colophon.ocrTranscription).not.toBeNull();
       expect(edition.colophon.ocrTranscription?.caveat).toBe('quality: low');
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // AUDIT-20260719-01 (HIGH, govern finding): the edition-level OCR-transcription
+  // caveat MUST reflect the WORST OCR condition across ALL of the edition's
+  // folios, not just the lead folio -- a clean lead with a sub-high (or failed)
+  // LATER folio must still disclose that gap (Constitution I/III, evidence
+  // honesty).
+  // ---------------------------------------------------------------------------
+
+  it('English source: a clean LEAD folio with a sub-high LATER folio still surfaces the worst caveat (AUDIT-20260719-01)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 3,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [
+        {},
+        {},
+        {
+          ocrQuality: { method: 'aspell-realword-ratio-v1', language: 'en', ratio: 0.4, tier: 'low' },
+        },
+      ],
+    });
+    try {
+      const edition = await buildFrom(fixture);
+
+      // The LEAD folio (page 1) is clean -- pre-fix, lead-only derivation
+      // would render no caveat here even though page 3 is sub-high.
+      expect(edition.colophon.ocrTranscription).not.toBeNull();
+      expect(edition.colophon.ocrTranscription?.caveat).toBe('quality: low');
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('English source: every folio clean surfaces NO caveat (worst-of-all-clean is null)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 4,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [{}, {}, {}, {}],
+    });
+    try {
+      const edition = await buildFrom(fixture);
+
+      expect(edition.colophon.ocrTranscription).not.toBeNull();
+      expect(edition.colophon.ocrTranscription?.caveat).toBeNull();
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('English source: ocr_status "failed" on a LATER folio surfaces the worst caveat', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 2,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [{}, { ocrStatus: 'failed' }],
+    });
+    try {
+      const edition = await buildFrom(fixture);
+
+      expect(edition.colophon.ocrTranscription).not.toBeNull();
+      expect(edition.colophon.ocrTranscription?.caveat).toBe('status: failed');
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('English source: a failed folio outranks a merely sub-high folio (severity ordering)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 3,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [
+        {
+          ocrQuality: { method: 'aspell-realword-ratio-v1', language: 'en', ratio: 0.6, tier: 'medium' },
+        },
+        { ocrStatus: 'failed' },
+        {
+          ocrQuality: { method: 'aspell-realword-ratio-v1', language: 'en', ratio: 0.4, tier: 'low' },
+        },
+      ],
+    });
+    try {
+      const edition = await buildFrom(fixture);
+
+      // failed (severity 3) outranks both medium (1) and low (2).
+      expect(edition.colophon.ocrTranscription?.caveat).toBe('status: failed');
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('English source: a single-folio edition still works (worst-of-one)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 1,
+      language: 'English',
+      omitTranslationDir: true,
+    });
+    try {
+      const edition = await buildFrom(fixture);
+
+      expect(edition.colophon.ocrTranscription).not.toBeNull();
+      expect(edition.colophon.ocrTranscription?.caveat).toBeNull();
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  it('fails loud (does not silently skip) when a non-lead folio has a malformed OCR provenance sidecar', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 2,
+      language: 'English',
+      omitTranslationDir: true,
+    });
+    try {
+      const { writeFile } = await import('node:fs/promises');
+      // Corrupt the SECOND folio's sidecar (still enumerated -- the folio
+      // list is driven by the sidecar filename existing at all, so this
+      // preserves the 2-folio shape while making that one unreadable). The
+      // lead (first) folio is fine, so a lead-only reader would never
+      // notice; the worst-across-folios aggregation must still attempt to
+      // read it and fail loud rather than silently treating an unreadable
+      // folio as clean.
+      await writeFile(path.join(fixture.sourceDir, 'f002.yml'), 'id: "not-valid-provenance"\n');
+
+      await expect(readerFor(fixture.archiveRoot).build(SOURCE_ID, SOURCE_ID)).rejects.toThrow(
+        /missing required field/i,
+      );
     } finally {
       fixture.cleanup();
     }

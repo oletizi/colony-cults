@@ -230,30 +230,81 @@ async function readLeadProvenance(unit: SelectedUnit, context: string): Promise<
 const OCR_ENGINE = 'tesseract 5';
 
 /**
- * Surface a low-fidelity caveat from the lead folio's provenance: a sub-`high`
- * computed OCR quality tier becomes `quality: <tier>` (FR-009); clean
- * (`high`-tier or unscored) OCR yields `null` -- no caveat is fabricated.
+ * One folio's OCR-condition severity, worst-first: a `failed` `ocr_status`
+ * outranks any sub-`high` quality tier, which in turn outranks a clean
+ * (`high`-tier or unscored) folio. Higher `severity` is worse.
  */
-function deriveOcrCaveat(provenance: ProvenanceFields): string | null {
-  const quality = provenance.ocr_quality;
-  if (quality !== undefined && quality.tier !== 'high') {
-    return `quality: ${quality.tier}`;
-  }
-  return null;
+interface OcrSeverity {
+  severity: 0 | 1 | 2 | 3;
+  /** The caveat text this folio alone would contribute, or `null` if clean. */
+  caveat: string | null;
 }
 
 /**
- * Build the English-path OCR-transcription disclosure (spec 015, FR-013)
- * from the lead folio's provenance: `engineStatus` composes the pipeline's
- * fixed OCR engine with the folio's recorded `ocr_status`
- * (e.g. `tesseract 5 (searchable)`); `caveat` surfaces a sub-`high`
- * `ocr_quality.tier` when present.
+ * Rank one folio's provenance on the OCR-condition severity scale (AUDIT-
+ * 20260719-01): `failed` (3) worst, then `quality.tier` `low` (2) / `medium`
+ * (1), then clean (`high`-tier or unscored quality, 0) -- no caveat.
  */
-function buildOcrTranscription(provenance: ProvenanceFields, context: string): OcrTranscription {
-  const status = requireNonEmpty(provenance.ocr_status, 'ocr_status', context);
+function ocrSeverityOf(provenance: ProvenanceFields): OcrSeverity {
+  if (provenance.ocr_status === 'failed') {
+    return { severity: 3, caveat: 'status: failed' };
+  }
+  const tier = provenance.ocr_quality?.tier;
+  if (tier === 'low') {
+    return { severity: 2, caveat: 'quality: low' };
+  }
+  if (tier === 'medium') {
+    return { severity: 1, caveat: 'quality: medium' };
+  }
+  return { severity: 0, caveat: null };
+}
+
+/**
+ * The edition-level OCR-transcription caveat (spec 015 FR-009; fixes AUDIT-
+ * 20260719-01, HIGH): the WORST OCR condition across ALL of the unit's
+ * folios, not just the lead folio -- a lead folio that is clean must NOT
+ * suppress a disclosure that a LATER folio is sub-`high` or `ocr_status:
+ * failed` (Constitution I/III, evidence honesty). Reads every folio's
+ * sidecar directly (not the per-page `ArchivePageContent.ocrCondition`
+ * apparatus-note string, whose free-text format does not preserve the
+ * severity ordering needed to pick a worst); fails loud, naming the sidecar
+ * path (via `readProvenance`), on any folio whose sidecar is missing or
+ * malformed -- no folio is silently skipped from the aggregation.
+ */
+async function deriveWorstOcrCaveat(unit: SelectedUnit): Promise<string | null> {
+  const provenances = await Promise.all(
+    unit.folios.map((folio) =>
+      readProvenance(path.join(folio.pageDir, `${folio.folioId}.yml`)),
+    ),
+  );
+  let worst: OcrSeverity = { severity: 0, caveat: null };
+  for (const provenance of provenances) {
+    const candidate = ocrSeverityOf(provenance);
+    if (candidate.severity > worst.severity) {
+      worst = candidate;
+    }
+  }
+  return worst.caveat;
+}
+
+/**
+ * Build the English-path OCR-transcription disclosure (spec 015, FR-013):
+ * `engineStatus` composes the pipeline's fixed OCR engine with the LEAD
+ * folio's recorded `ocr_status` (e.g. `tesseract 5 (searchable)`) -- engine
+ * identity is uniform across one edition's pipeline run, so the lead folio is
+ * representative there. `caveat` is the pre-computed worst-across-all-folios
+ * condition (see `deriveWorstOcrCaveat`, AUDIT-20260719-01) -- NOT derived
+ * from the lead folio alone.
+ */
+function buildOcrTranscription(
+  leadProvenance: ProvenanceFields,
+  worstCaveat: string | null,
+  context: string,
+): OcrTranscription {
+  const status = requireNonEmpty(leadProvenance.ocr_status, 'ocr_status', context);
   return {
     engineStatus: `${OCR_ENGINE} (${status})`,
-    caveat: deriveOcrCaveat(provenance),
+    caveat: worstCaveat,
   };
 }
 
@@ -343,11 +394,12 @@ export function makeArchiveEditionReader(deps: ArchiveEditionReaderDeps): Archiv
       }));
 
       // English editions carry no machine-assist label -- instead an honest
-      // OCR-transcription disclosure, sourced from the lead folio's
-      // provenance (spec 015, FR-013).
+      // OCR-transcription disclosure (spec 015, FR-013), whose caveat is the
+      // WORST OCR condition across all folios, not just the lead
+      // (AUDIT-20260719-01).
       const ocrTranscription =
         unit.readingLanguage === 'english'
-          ? buildOcrTranscription(leadProvenance, context)
+          ? buildOcrTranscription(leadProvenance, await deriveWorstOcrCaveat(unit), context)
           : null;
 
       const colophon = assembleColophon({
