@@ -9,6 +9,8 @@ import type { RepositoryAdapter } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { ObjectStore, ObjectHead } from '@/archive/object-store';
+import type { AssetProvenance } from '@/bibliography/provenance-read';
+import type { GatherProvenanceFn } from '@/sourcegroup/reconcile';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import { loadAllSources } from '@/bibliography/load';
 import { runAcquire, type FetchSourceFn } from '@/sourcegroup/acquire';
@@ -320,6 +322,38 @@ function fakeObjectStore(
   return store;
 }
 
+/** One archive-provenance page-image entry (Gallica per-page master). */
+function pageImage(sourceArchive: string, seq: number, backed: boolean): AssetProvenance {
+  const key = `archive/x/gallica/y/f${String(seq).padStart(3, '0')}.jpg`;
+  return {
+    source_archive: sourceArchive,
+    local_path: key,
+    type: 'page-image',
+    sha256: `${seq}`.repeat(64).slice(0, 64),
+    object_store: backed
+      ? { provider: 'backblaze-b2', bucket: 'colony-cults', key, endpoint: 'https://s3' }
+      : null,
+    format: 'image/jpeg',
+    original_url: 'https://gallica.bnf.fr/ark:/x',
+  };
+}
+
+/**
+ * Completion-tail machinery for a Gallica (per-page-provenance) acquire: a fake
+ * `gather` returning object-store-backed page-image provenance for the given
+ * archive(s) (so the reconcile advances to an acquired status) plus a stand-in
+ * `reconcileArchiveRoot`. A non-dry-run Gallica acquire now FAILS LOUD without
+ * these (spec 016, AUDIT-20260719-01), so a dispatch test that drives a real
+ * Gallica acquire must inject them -- just as it injects `fetch`.
+ */
+function gallicaCompletionDeps(
+  archives: string[] = ['Gallica / BnF', 'State Library of Queensland'],
+): { reconcileArchiveRoot: string; gather: GatherProvenanceFn } {
+  const gather: GatherProvenanceFn = async () =>
+    archives.flatMap((archive) => [pageImage(archive, 1, true), pageImage(archive, 2, true)]);
+  return { reconcileArchiveRoot: '/archive/root', gather };
+}
+
 async function seedSourcesDir(
   entries: { source: Source; records: AuthoredRepositoryRecord[] }[],
 ): Promise<string> {
@@ -352,6 +386,7 @@ describe('runAcquire', () => {
       sourceId: 'PB-P100',
       objectStore: true,
       fetch,
+      ...gallicaCompletionDeps(),
     });
 
     expect(result.ark).toBe(ARK);
@@ -390,6 +425,7 @@ describe('runAcquire', () => {
       checkpoint: true,
       checkpointEvery: 25,
       fetch,
+      ...gallicaCompletionDeps(),
     });
 
     const [args] = vi.mocked(fetch).mock.calls[0];
@@ -401,7 +437,7 @@ describe('runAcquire', () => {
     dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
-    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch });
+    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() });
 
     const [args] = vi.mocked(fetch).mock.calls[0];
     expect(args.flags.checkpoint).toBe(false);
@@ -412,7 +448,7 @@ describe('runAcquire', () => {
     dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
-    const result = await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch });
+    const result = await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() });
 
     expect(result.sourceArchive).toBe('Gallica / BnF');
   });
@@ -439,6 +475,7 @@ describe('runAcquire', () => {
       sourceId: 'PB-P100',
       archive: 'State Library of Queensland',
       fetch,
+      ...gallicaCompletionDeps(),
     });
 
     expect(result.ark).toBe(otherArk);
@@ -632,7 +669,7 @@ describe('runAcquire', () => {
     dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
-    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch });
+    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() });
 
     const loaded = loadAllSources(dir);
     const entry = loaded.find((l) => l.source.sourceId === 'PB-P100');
@@ -650,6 +687,7 @@ describe('runAcquire', () => {
       sourceId: 'PB-P100',
       fetch,
       museumAdapter: adapter,
+      ...gallicaCompletionDeps(),
     });
 
     // Behavior unchanged: ark -> Gallica fetcher; the museum adapter is untouched.
@@ -698,6 +736,7 @@ describe('runAcquire', () => {
       sourceId: 'PB-P100',
       fetch,
       internetArchiveAdapter: iaAdapter,
+      ...gallicaCompletionDeps(),
     });
 
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -908,29 +947,19 @@ describe('runAcquire', () => {
     dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
     // A fake provenance gatherer standing in for the archive per-page masters
-    // the fetcher wrote: one page image, object-store-backed but not all, so
-    // reconcile yields `collected` (the Gallica-complete status).
-    const gather = vi.fn(async () => [
-      {
-        source_archive: 'Gallica / BnF',
-        type: 'page-image',
-        local_path: 'archive/cases/x/gallica/y/f001.jpg',
-        object_store: null,
-      },
-      {
-        source_archive: 'Gallica / BnF',
-        type: 'page-image',
-        local_path: 'archive/cases/x/gallica/y/f002.jpg',
-        object_store: { provider: 'b2', bucket: 'b', endpoint: 'e', key: 'k' },
-      },
-    ]);
+    // the fetcher wrote: two page images, one object-store-backed and one not,
+    // so reconcile yields `collected` (the Gallica-complete status, not archived).
+    const gather: GatherProvenanceFn = async () => [
+      pageImage('Gallica / BnF', 1, false),
+      pageImage('Gallica / BnF', 2, true),
+    ];
 
     const result = await runAcquire({
       sourcesDir: dir,
       sourceId: 'PB-P100',
       fetch,
       reconcileArchiveRoot: '/archive/root',
-      gather: gather as never,
+      gather,
     });
 
     expect(result.ark).toBe(ARK);
@@ -940,6 +969,82 @@ describe('runAcquire', () => {
       ?.records.find((r) => r.sourceArchive === 'Gallica / BnF');
     // Advanced to `collected` (per-page provenance path), NOT failed for empty assets.
     expect(record?.status).toBe('collected');
+  });
+
+  it('AUDIT-01: a B2-direct acquire that mirrored masters but was given NO completionObjectStore fails loud (never silently skips completion)', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const asset = sampleAsset();
+    const adapter = acquiringMuseumAdapter([asset]);
+
+    // No completionObjectStore injected: the acquire mirrored a master, so the
+    // completion is REQUIRED and cannot be skipped -- it must fail loud.
+    await expect(
+      runAcquire({
+        sourcesDir: dir,
+        sourceId: 'PB-P200',
+        fetch,
+        museumAdapter: adapter,
+      }),
+    ).rejects.toThrow(/completionObjectStore|complete \+ verify|Principle XV/i);
+  });
+
+  it('AUDIT-01: a non-dry-run Gallica acquire given NO reconcileArchiveRoot/gather fails loud (never silently skips status advancement)', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+
+    // No completion machinery injected for a Gallica acquire: refuse to report
+    // success for a fetched copy whose status was never advanced.
+    await expect(
+      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch }),
+    ).rejects.toThrow(/reconcileArchiveRoot|gather|Principle XV/i);
+  });
+
+  it('AUDIT-02: a zero-asset B2-direct acquire (HTML-only outcome) is NOT misrouted into the Gallica provenance path -- no throw, status untouched', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    // A B2-direct adapter that legitimately mirrors NO master (assets: []),
+    // like the museum HTML-only path (complete: true, no bytes).
+    const adapter = acquiringMuseumAdapter([]);
+    // A store whose head THROWS if consulted -- proving we neither run the B2
+    // completion (nothing mirrored) nor misroute to the Gallica provenance path
+    // (which would throw "archiveRoot required").
+    const objectStore: ObjectStore = {
+      async head() {
+        throw new Error('zero-asset B2-direct must not HEAD the store');
+      },
+      async put() {
+        throw new Error('unused');
+      },
+      async get(): Promise<Uint8Array> {
+        throw new Error('unused');
+      },
+      async attachSha256Metadata() {
+        throw new Error('unused');
+      },
+    };
+
+    // Must NOT throw a misleading Gallica-provenance error (AUDIT-20260719-02).
+    await expect(
+      runAcquire({
+        sourcesDir: dir,
+        sourceId: 'PB-P200',
+        fetch,
+        museumAdapter: adapter,
+        completionObjectStore: objectStore,
+      }),
+    ).resolves.toMatchObject({ sourceId: 'PB-P200', accession: 'NIMI-0844' });
+
+    // No master mirrored ⇒ nothing to complete ⇒ status stays as authored.
+    const loaded = loadAllSources(dir);
+    const record = loaded
+      .find((l) => l.source.sourceId === 'PB-P200')
+      ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
+    expect(record?.status).toBe('to-collect');
   });
 
   it('scenario 4: the source-group itself (e.g. PB-P004) is refused before any fetch is attempted, relying on the approved-status precondition -- no guardrail is reimplemented here', async () => {

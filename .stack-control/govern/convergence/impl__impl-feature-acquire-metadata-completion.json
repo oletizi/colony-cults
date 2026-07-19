@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/acquire-metadata-completion",
+  "governedShaBase": "d8171d6",
+  "headSha": "3bbf7a83bc811484fa3850a09875062a8405e3a5",
+  "chunkIds": [
+    "0ebc2cfaf2ebb53d",
+    "9c08e223058cd9ed"
+  ],
+  "rounds": 1,
+  "liftedFindings": [
+    {
+      "id": "0ebc2cfaf2ebb53d::AUDIT-BARRAGE-claude-01+AUDIT-BARRAGE-codex-02",
+      "title": "The completion tail silently skips a fetched-but-not-injected acquire — contradicting its own \"fails loud\" comment",
+      "severity": "high"
+    },
+    {
+      "id": "0ebc2cfaf2ebb53d::AUDIT-BARRAGE-codex-01",
+      "title": "Zero-asset B2-direct acquires are misrouted into the Gallica reconcile path",
+      "severity": "high"
+    }
+  ],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [
+      {
+        "a": "0ebc2cfaf2ebb53d",
+        "b": "9c08e223058cd9ed"
+      }
+    ],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [
+    "52343ce950faa887"
+  ],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-gap-closure"
+}

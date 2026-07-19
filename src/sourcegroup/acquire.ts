@@ -9,7 +9,7 @@ import { GallicaAdapter, type GallicaAcquisitionContext } from '@/repository/gal
 import { runReconcile, type GatherProvenanceFn } from '@/sourcegroup/reconcile';
 import { verifyRecordComplete } from '@/sourcegroup/acquire-completeness';
 import type { ParsedArgs } from '@/cli/parse';
-import type { RepositoryAdapter } from '@/repository/adapter';
+import type { RepositoryAdapter, AcquisitionResult } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { ObjectStore } from '@/archive/object-store';
 import type { ArkResolver } from '@/sourcegroup/inventory';
@@ -158,18 +158,23 @@ export interface AcquireInput {
   /**
    * Archive-clone root the Gallica completion tail gathers per-page provenance
    * from (`COLONY_ARCHIVE_ROOT`), threaded into {@link runReconcile}'s
-   * archive-provenance path. REQUIRED for a Gallica acquire's completion tail;
-   * unused on the B2-direct path (whose truth is the object store). Absent ⇒
-   * the Gallica completion tail cannot run and fails loud (never silently
-   * skips advancing a fetched copy).
+   * archive-provenance path. REQUIRED together with {@link AcquireInput.gather}
+   * for a non-dry-run Gallica acquire: `runAcquire` FAILS LOUD (throws, reports
+   * NO success) when a Gallica acquire is missing either, rather than silently
+   * skipping status advancement for a fetched copy (Principle XV,
+   * AUDIT-20260719-01). Unused on the B2-direct path (whose truth is the object
+   * store). Production wiring (`src/cli/bib-sourcegroup-acquire.ts`) always
+   * injects both for a Gallica acquire.
    */
   reconcileArchiveRoot?: string;
   /**
    * Injected provenance gatherer for the Gallica completion tail (the same
    * {@link GatherProvenanceFn} {@link runReconcile} takes -- production passes
-   * `gatherProvenance`, `@/bibliography/derive`). REQUIRED for a Gallica
-   * acquire's completion tail; unused on the B2-direct path. Injected so tests
-   * never touch a real archive on disk.
+   * `gatherProvenance`, `@/bibliography/derive`). REQUIRED together with
+   * {@link AcquireInput.reconcileArchiveRoot} for a non-dry-run Gallica acquire
+   * (a missing gather makes `runAcquire` fail loud, never silently skip).
+   * Unused on the B2-direct path. Injected so tests never touch a real archive
+   * on disk.
    */
   gather?: GatherProvenanceFn;
 }
@@ -284,6 +289,51 @@ function assertWellFormed(input: AcquireInput): void {
   if (typeof input.fetch !== 'function') {
     throw new Error('acquire: input.fetch is required (the injected shipped fetcher).');
   }
+}
+
+/**
+ * The completion tail's reconcile + verify, shared by both the per-page-provenance
+ * (gallica) and B2-direct branches of {@link runAcquire} (spec 016). Advances the
+ * record's acquisition `status` via the idempotent {@link runReconcile} (heads-only;
+ * NO source re-fetch -- the single source of status derivation, Principle VIII),
+ * then confirms the record fully reflects the held bytes via {@link
+ * verifyRecordComplete}, which throws (fail-loud) on any incompleteness. Reconcile
+ * picks its own path from the persisted record's asset shape; the caller has already
+ * asserted the path-appropriate machinery is present (fail-loud otherwise), so a
+ * missing dependency here would be an internal error, not a silent skip.
+ */
+async function completeAndVerify(
+  input: AcquireInput,
+  record: RepositoryRecord,
+  acquisition: AcquisitionResult,
+): Promise<void> {
+  const reconciled = await runReconcile({
+    sourcesDir: input.sourcesDir,
+    sourceId: input.sourceId,
+    archive: input.archive,
+    objectStore: input.completionObjectStore,
+    archiveRoot: input.reconcileArchiveRoot,
+    gather: input.gather,
+  });
+
+  // Verify the completed record. Build the just-acquired shape (the selected
+  // record plus the mirrored assets + any adapter-emitted snapshot ref) rather
+  // than re-loading, and pass reconcile's derived status as the authoritative
+  // `reconciled` outcome.
+  const completedRecord: RepositoryRecord = {
+    ...record,
+    ...(acquisition.assets.length > 0 ? { assets: acquisition.assets } : {}),
+    ...(acquisition.metadataSnapshotRef !== undefined
+      ? { metadataSnapshot: acquisition.metadataSnapshotRef }
+      : {}),
+  };
+  await verifyRecordComplete(completedRecord, {
+    objectStore: input.completionObjectStore,
+    reconciled: { status: reconciled.status, advanced: reconciled.changed },
+    // Best-effort per-adapter (FR-009): require the record-level snapshot only
+    // where the adapter actually emitted one.
+    expectsMetadataSnapshot: acquisition.metadataSnapshotRef !== undefined,
+  });
 }
 
 /**
@@ -452,46 +502,57 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   // `status`, then verify the record fully reflects the held bytes with the
   // per-repository `verifyRecordComplete`. `runAcquire` returns success ONLY
   // after verification passes; any incompleteness throws (fail-loud, Principle
-  // V), naming the gap, so it is mechanically impossible to finish an acquire
-  // with object-store bytes the record does not reflect.
+  // V), naming the gap.
   //
-  // `--dry-run` is exempt: the adapter mirrored nothing, so there is nothing to
-  // complete or verify. The tail also short-circuits the pure dispatch path
-  // (no bytes mirrored AND no completion machinery injected) so it stays a
-  // no-op there -- but ANY acquire that mirrored masters runs the tail and
-  // fails loud if it cannot complete/verify them (the dangerous case is never
-  // skipped).
-  const mirroredMasters = acquisition.assets.length > 0;
-  const completionInjected =
-    input.completionObjectStore !== undefined || input.gather !== undefined;
-  if (input.dryRun !== true && (mirroredMasters || completionInjected)) {
-    const reconciled = await runReconcile({
-      sourcesDir: input.sourcesDir,
-      sourceId: input.sourceId,
-      archive: input.archive,
-      objectStore: input.completionObjectStore,
-      archiveRoot: input.reconcileArchiveRoot,
-      gather: input.gather,
-    });
-
-    // Verify the completed record against the store. Build the just-acquired
-    // shape (the selected record plus the mirrored assets + any adapter-emitted
-    // snapshot ref) rather than re-loading, and pass reconcile's derived status
-    // as the authoritative `reconciled` outcome.
-    const completedRecord: RepositoryRecord = {
-      ...record,
-      ...(mirroredMasters ? { assets: acquisition.assets } : {}),
-      ...(acquisition.metadataSnapshotRef !== undefined
-        ? { metadataSnapshot: acquisition.metadataSnapshotRef }
-        : {}),
-    };
-    await verifyRecordComplete(completedRecord, {
-      objectStore: input.completionObjectStore,
-      reconciled: { status: reconciled.status, advanced: reconciled.changed },
-      // Best-effort per-adapter (FR-009): require the record-level snapshot only
-      // where the adapter actually emitted one.
-      expectsMetadataSnapshot: acquisition.metadataSnapshotRef !== undefined,
-    });
+  // Which completion path applies is chosen by the DISPATCHED ADAPTER'S KIND --
+  // an explicit signal (AUDIT-20260719-01/02), never inferred from
+  // `assets.length` + which optional deps happened to be injected:
+  //   - `gallica` is the per-page-provenance kind: its masters are archive
+  //     per-page provenance (adapter returns `assets: []`), reconciled from the
+  //     archive under `reconcileArchiveRoot` via the injected `gather`.
+  //   - every other adapter (new-italy-museum / internet-archive / papers-past)
+  //     is B2-direct: its masters are recorded object-store assets, reconciled
+  //     + verified against the injected `completionObjectStore`.
+  // A NEW per-page-provenance-style adapter MUST be added to the gallica branch
+  // here (else it would be misrouted to the B2-direct branch).
+  //
+  // `--dry-run` is exempt (the adapter mirrored nothing -- nothing to complete).
+  // Otherwise the tail FAILS LOUD when its required machinery is absent -- it is
+  // NEVER silently skipped for a copy that needs completing (the exact XV hole
+  // AUDIT-20260719-01 named). The only safe no-op is a B2-direct outcome that
+  // mirrored ZERO masters (a metadata/HTML-only cataloging outcome): there are
+  // no object-store bytes to orphan, so there is nothing to complete or verify.
+  if (input.dryRun !== true) {
+    if (adapter.repository === 'gallica') {
+      // Per-page-provenance: a fetched Gallica copy MUST be reconciled to its
+      // acquired status. Refuse to report success without the machinery to do so
+      // (never leave a fetched copy stuck at `to-collect`; Principle XV).
+      if (input.reconcileArchiveRoot === undefined || input.gather === undefined) {
+        throw new Error(
+          `acquire: a non-dry-run ${adapter.repository} acquire requires reconcileArchiveRoot + ` +
+            `gather to complete the SSOT record (advance status from the archive's per-page ` +
+            `provenance) -- refusing to report success for a copy whose acquisition status was ` +
+            `never advanced (Principle XV).`,
+        );
+      }
+      await completeAndVerify(input, record, acquisition);
+    } else if (acquisition.assets.length > 0) {
+      // B2-direct with mirrored masters: those object-store bytes MUST be
+      // completed + verified. Fail loud if the store to verify them against was
+      // not injected (never report success for bytes the record cannot confirm).
+      if (input.completionObjectStore === undefined) {
+        throw new Error(
+          `acquire: a non-dry-run ${adapter.repository} acquire mirrored ` +
+            `${acquisition.assets.length} master(s) to the object store but no ` +
+            `completionObjectStore was injected to complete + verify the record -- refusing to ` +
+            `leave object-store bytes the SSOT record does not reflect (Principle XV).`,
+        );
+      }
+      await completeAndVerify(input, record, acquisition);
+    }
+    // else: a B2-direct outcome that mirrored NO masters -- no object-store
+    // bytes exist to orphan, so there is provably nothing to complete/verify
+    // (not routed into the Gallica archive-provenance path; AUDIT-20260719-02).
   }
 
   // `adapter.acquire` succeeded, so the record carried the identifier its
