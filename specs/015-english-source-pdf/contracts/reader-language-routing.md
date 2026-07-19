@@ -64,6 +64,21 @@ which does not apply here.)
   → OCR-transcription line; French → machine-assist line; never both. This is the
   one FR-010 template exception; it is designed through
   `/frontend-design:frontend-design` (Constitution XI).
+
+  **Design direction (frontend-design, 2026-07-18) — the OCR-transcription row.**
+  The English row is an honest sibling of the existing `machine assist` row in the
+  same evidentiary data block; no new color/face/grid (all inherited apparatus):
+  - **Label:** `transcription` (faint lowercase, sibling to `machine assist`).
+  - **Value:** leads with `machine OCR` (unmistakably not a translation, not human),
+    then engine/status, dot-separated exactly like the French `engine · model ·
+    retrieved` — e.g. `machine OCR · tesseract 5 (searchable)`.
+  - **Low-fidelity caveat:** when the edition records a sub-high OCR condition,
+    append it as a final dot-separated token rendered in **oxblood** (the colophon's
+    existing accent) — e.g. `machine OCR · tesseract 5 · quality: low`. Absent for
+    clean OCR (no accent shown).
+  - The French `machine assist` row is byte-for-byte unchanged. This colophon line
+    is independent of the per-page recto column header (deferred V2, `spread.typ`
+    untouched).
 - `archiveRef` (pinned-archive commit) unchanged.
 - Both edition variants remain available; the English-source path targets the
   english-only reading recto. The parallel FR │ EN variant is unaffected.
