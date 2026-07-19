@@ -1,5 +1,5 @@
 <!-- SPECKIT START -->
-Active plan: specs/014-source-query-client/plan.md
+Active plan: specs/015-papers-past-acquisition/plan.md
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the active plan above.
 <!-- SPECKIT END -->
