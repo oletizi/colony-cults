@@ -15,3 +15,6 @@
 {"id":"T017","tierLabel":"powerful","model":"opus","commit":"ab1d6f7","reviewClean":true,"note":"fail-closed rights gate at top of acquire (0 side effects on refuse); adversarial review confirmed no bypass"}
 {"id":"T018","tierLabel":"balanced","model":"opus","commit":"da569f1","reviewClean":true,"note":"rights tests: no-assessment + restricted both throw with 0 byteFetch/objectStore calls; collectRightsEvidence NZ no-verdict; bundled"}
 {"id":"T019","tierLabel":"balanced","model":"opus","commit":"da569f1","reviewClean":true,"note":"governed-read test: navigate called, raw page persisted (temp) before parse, bytes via injected byteFetch; bundled"}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commit":"759b145","reviewClean":true,"note":"buildPapersPastAdapterForMember mirrors museum builder; real PlaywrightBrowserSession+HttpClient+S3ObjectStore only for papers-past copy; tsc 0"}
+{"id":"T020","tierLabel":"fast","model":"haiku","commit":"12a5d18","reviewClean":true,"note":"papers-past in bib-inventory asRepositoryName allowlist + resolve-only adapter arm; inventory tests 12 pass"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commit":"1b74419","reviewClean":true,"note":"wire papersPastAdapter through AcquireInput/AcquireResult/buildRegistry + runAcquireCli; papersPastOf helper; dispatch test; 80 touched tests pass"}
