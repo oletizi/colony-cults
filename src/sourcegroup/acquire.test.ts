@@ -8,6 +8,7 @@ import type { Rights } from '@/model/rights';
 import type { RepositoryAdapter } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { AcquiredAsset } from '@/model/acquired-asset';
+import type { ObjectStore, ObjectHead } from '@/archive/object-store';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import { loadAllSources } from '@/bibliography/load';
 import { runAcquire, type FetchSourceFn } from '@/sourcegroup/acquire';
@@ -284,6 +285,39 @@ function acquiringMuseumAdapter(assets: AcquiredAsset[]): RepositoryAdapter {
       };
     },
   };
+}
+
+/**
+ * A head-capable fake {@link ObjectStore} for the completion tail (spec 016):
+ * `head` answers from an in-memory map keyed by object-store key. A `put`
+ * counter lets a test assert idempotency (0 duplicate writes on a re-run);
+ * `put`/`get`/`attachSha256Metadata` otherwise throw -- the acquire completion
+ * tail only HEADs.
+ */
+function fakeObjectStore(
+  entries: Record<string, { sha256?: string }>,
+): ObjectStore & { putCount: number } {
+  const store = {
+    putCount: 0,
+    async head(key: string): Promise<ObjectHead> {
+      const entry = entries[key];
+      if (entry === undefined) {
+        return { exists: false };
+      }
+      return entry.sha256 === undefined ? { exists: true } : { exists: true, sha256: entry.sha256 };
+    },
+    async put() {
+      store.putCount += 1;
+      throw new Error('fakeObjectStore.put: the acquire completion tail never PUTs (heads-only)');
+    },
+    async get(): Promise<Uint8Array> {
+      throw new Error('fakeObjectStore.get: the acquire completion tail never GETs');
+    },
+    async attachSha256Metadata() {
+      throw new Error('fakeObjectStore.attachSha256Metadata: the acquire completion tail never rewrites metadata');
+    },
+  };
+  return store;
 }
 
 async function seedSourcesDir(
@@ -565,12 +599,18 @@ describe('runAcquire', () => {
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
     const asset = sampleAsset();
     const adapter = acquiringMuseumAdapter([asset]);
+    // The completion tail (spec 016) HEADs the recorded master, so give it a
+    // store where the master is present + matching -- this test still asserts
+    // the round-trip persistence (the tail's status advancement is asserted by
+    // the US1 test below).
+    const objectStore = fakeObjectStore({ [asset.objectStoreKey]: { sha256: asset.checksum } });
 
     await runAcquire({
       sourcesDir: dir,
       sourceId: 'PB-P200',
       fetch,
       museumAdapter: adapter,
+      completionObjectStore: objectStore,
     });
 
     // Re-load the SSOT: the acquired master is now recorded on the copy, and
@@ -718,6 +758,188 @@ describe('runAcquire', () => {
       papersPast: 'ODT18800101.2.10',
       sourceArchive: 'Papers Past',
     });
+  });
+
+  // --- Spec 016: acquire completes the SSOT record (Principle XV) ---
+
+  it('T005/US1: a B2-direct acquire advances the record status to archived INLINE (no separate reconcile)', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const asset = sampleAsset();
+    const adapter = acquiringMuseumAdapter([asset]);
+    const objectStore = fakeObjectStore({ [asset.objectStoreKey]: { sha256: asset.checksum } });
+
+    // Only runAcquire is invoked -- NO separate runReconcile call.
+    await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P200',
+      fetch,
+      museumAdapter: adapter,
+      completionObjectStore: objectStore,
+    });
+
+    const loaded = loadAllSources(dir);
+    const record = loaded
+      .find((l) => l.source.sourceId === 'PB-P200')
+      ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
+    // Status advanced from `to-collect` to `archived` as part of the SAME acquire.
+    expect(record?.status).toBe('archived');
+    expect(record?.status).not.toBe('to-collect');
+    expect(record?.assets).toEqual([asset]);
+  });
+
+  it('T007/US2: a B2-direct acquire whose recorded master is MISSING from the store fails loud and does NOT report success', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const asset = sampleAsset();
+    const adapter = acquiringMuseumAdapter([asset]);
+    const objectStore = fakeObjectStore({}); // master key absent -> head { exists: false }
+
+    await expect(
+      runAcquire({
+        sourcesDir: dir,
+        sourceId: 'PB-P200',
+        fetch,
+        museumAdapter: adapter,
+        completionObjectStore: objectStore,
+      }),
+    ).rejects.toThrow(/status|archived|missing|advance/i);
+  });
+
+  it('T007/US2: a B2-direct acquire whose stored checksum MISMATCHES the recorded master fails loud', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const asset = sampleAsset();
+    const adapter = acquiringMuseumAdapter([asset]);
+    const objectStore = fakeObjectStore({ [asset.objectStoreKey]: { sha256: 'd'.repeat(64) } });
+
+    await expect(
+      runAcquire({
+        sourcesDir: dir,
+        sourceId: 'PB-P200',
+        fetch,
+        museumAdapter: adapter,
+        completionObjectStore: objectStore,
+      }),
+    ).rejects.toThrow(/mismatch|checksum|sha256/i);
+  });
+
+  it('T007/US2: re-running acquire over an assets-recorded-but-unadvanced record heals it with 0 duplicate object-store writes', async () => {
+    // Seed a record that already carries the mirrored asset but is still
+    // `to-collect` (an orphan from a prior acquire that mirrored bytes but did
+    // not complete) -- the exact PB-P061 regression.
+    const asset = sampleAsset();
+    dir = await seedSourcesDir([
+      {
+        source: museumMember(),
+        records: [museumAuthoredRecord({ status: 'to-collect', assets: [asset] })],
+      },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const adapter = acquiringMuseumAdapter([asset]);
+    const objectStore = fakeObjectStore({ [asset.objectStoreKey]: { sha256: asset.checksum } });
+
+    await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P200',
+      fetch,
+      museumAdapter: adapter,
+      completionObjectStore: objectStore,
+    });
+
+    const loaded = loadAllSources(dir);
+    const record = loaded
+      .find((l) => l.source.sourceId === 'PB-P200')
+      ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
+    expect(record?.status).toBe('archived');
+    // The completion tail is heads-only: no bytes were re-uploaded.
+    expect(objectStore.putCount).toBe(0);
+  });
+
+  it('T006/US2: --dry-run skips the completion tail + verification (no status change, no writes, reports success)', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    // A dry-run adapter mirrors nothing (returns empty assets), mirroring the
+    // real adapters' `ctx.dryRun` behavior.
+    const adapter = acquiringMuseumAdapter([]);
+    // A store whose head would THROW if ever consulted -- proving the tail is
+    // skipped on dry-run.
+    const objectStore: ObjectStore = {
+      async head() {
+        throw new Error('dry-run must not HEAD the object store');
+      },
+      async put() {
+        throw new Error('unused');
+      },
+      async get(): Promise<Uint8Array> {
+        throw new Error('unused');
+      },
+      async attachSha256Metadata() {
+        throw new Error('unused');
+      },
+    };
+
+    await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P200',
+      dryRun: true,
+      fetch,
+      museumAdapter: adapter,
+      completionObjectStore: objectStore,
+    });
+
+    const loaded = loadAllSources(dir);
+    const record = loaded
+      .find((l) => l.source.sourceId === 'PB-P200')
+      ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
+    // Untouched: dry-run mirrored nothing, so there is nothing to complete.
+    expect(record?.status).toBe('to-collect');
+  });
+
+  it('T008/US3: a Gallica-shaped acquire (assets: []) completes via the archive-provenance path to status collected -- not failed for empty assets', async () => {
+    dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    // A fake provenance gatherer standing in for the archive per-page masters
+    // the fetcher wrote: one page image, object-store-backed but not all, so
+    // reconcile yields `collected` (the Gallica-complete status).
+    const gather = vi.fn(async () => [
+      {
+        source_archive: 'Gallica / BnF',
+        type: 'page-image',
+        local_path: 'archive/cases/x/gallica/y/f001.jpg',
+        object_store: null,
+      },
+      {
+        source_archive: 'Gallica / BnF',
+        type: 'page-image',
+        local_path: 'archive/cases/x/gallica/y/f002.jpg',
+        object_store: { provider: 'b2', bucket: 'b', endpoint: 'e', key: 'k' },
+      },
+    ]);
+
+    const result = await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P100',
+      fetch,
+      reconcileArchiveRoot: '/archive/root',
+      gather: gather as never,
+    });
+
+    expect(result.ark).toBe(ARK);
+    const loaded = loadAllSources(dir);
+    const record = loaded
+      .find((l) => l.source.sourceId === 'PB-P100')
+      ?.records.find((r) => r.sourceArchive === 'Gallica / BnF');
+    // Advanced to `collected` (per-page provenance path), NOT failed for empty assets.
+    expect(record?.status).toBe('collected');
   });
 
   it('scenario 4: the source-group itself (e.g. PB-P004) is refused before any fetch is attempted, relying on the approved-status precondition -- no guardrail is reimplemented here', async () => {

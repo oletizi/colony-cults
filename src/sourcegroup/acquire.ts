@@ -6,9 +6,12 @@ import { isFetchableWork } from '@/bibliography/scope';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { RepositoryAdapterRegistry } from '@/repository/registry';
 import { GallicaAdapter, type GallicaAcquisitionContext } from '@/repository/gallica/adapter';
+import { runReconcile, type GatherProvenanceFn } from '@/sourcegroup/reconcile';
+import { verifyRecordComplete } from '@/sourcegroup/acquire-completeness';
 import type { ParsedArgs } from '@/cli/parse';
 import type { RepositoryAdapter } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
+import type { ObjectStore } from '@/archive/object-store';
 import type { ArkResolver } from '@/sourcegroup/inventory';
 
 /**
@@ -135,6 +138,40 @@ export interface AcquireInput {
    * wiring (`src/cli/bib-sourcegroup-acquire.ts`) always injects it.
    */
   papersPastAdapter?: RepositoryAdapter;
+  /**
+   * Head-capable object store for the completion tail (spec 016, Principle XV).
+   * After the adapter mirror + persist-assets block, `runAcquire` reuses the
+   * idempotent {@link runReconcile} (heads-only) to advance the record's
+   * acquisition `status`, then {@link verifyRecordComplete} to confirm every
+   * recorded master is present + matching in the store BEFORE reporting
+   * success. REQUIRED for a B2-direct acquire (museum / internet-archive /
+   * papers-past) that mirrored masters; a Gallica acquire (`assets: []`,
+   * per-page provenance) does not consult it. Injected so tests pass a fake
+   * that never touches B2. Production wiring
+   * (`src/cli/bib-sourcegroup-acquire.ts`) constructs the real `S3ObjectStore`.
+   *
+   * NB: distinct from the `objectStore?: boolean` field above (which forwards
+   * `--object-store` to the fetcher) -- this is the head-capable store handle
+   * the completion tail HEADs against.
+   */
+  completionObjectStore?: ObjectStore;
+  /**
+   * Archive-clone root the Gallica completion tail gathers per-page provenance
+   * from (`COLONY_ARCHIVE_ROOT`), threaded into {@link runReconcile}'s
+   * archive-provenance path. REQUIRED for a Gallica acquire's completion tail;
+   * unused on the B2-direct path (whose truth is the object store). Absent ⇒
+   * the Gallica completion tail cannot run and fails loud (never silently
+   * skips advancing a fetched copy).
+   */
+  reconcileArchiveRoot?: string;
+  /**
+   * Injected provenance gatherer for the Gallica completion tail (the same
+   * {@link GatherProvenanceFn} {@link runReconcile} takes -- production passes
+   * `gatherProvenance`, `@/bibliography/derive`). REQUIRED for a Gallica
+   * acquire's completion tail; unused on the B2-direct path. Injected so tests
+   * never touch a real archive on disk.
+   */
+  gather?: GatherProvenanceFn;
 }
 
 /** Result of a successful acquisition: what was resolved and handed to the adapter. */
@@ -404,6 +441,57 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
         now: acquisition.qualityAssessment?.assessedAt ?? new Date().toISOString(),
       });
     }
+  }
+
+  // Completion tail (spec 016, Constitution Principle XV -- NO ORPHAN ASSETS):
+  // completing the SSOT record is an INSEPARABLE part of the acquire, not a
+  // separate `bib reconcile` the operator must remember. After the mirror +
+  // persist-assets block, reuse the idempotent, heads-only `runReconcile`
+  // (`src/sourcegroup/reconcile.ts` -- the single source of status derivation,
+  // Principle VIII; NO source re-fetch) to advance the record's acquisition
+  // `status`, then verify the record fully reflects the held bytes with the
+  // per-repository `verifyRecordComplete`. `runAcquire` returns success ONLY
+  // after verification passes; any incompleteness throws (fail-loud, Principle
+  // V), naming the gap, so it is mechanically impossible to finish an acquire
+  // with object-store bytes the record does not reflect.
+  //
+  // `--dry-run` is exempt: the adapter mirrored nothing, so there is nothing to
+  // complete or verify. The tail also short-circuits the pure dispatch path
+  // (no bytes mirrored AND no completion machinery injected) so it stays a
+  // no-op there -- but ANY acquire that mirrored masters runs the tail and
+  // fails loud if it cannot complete/verify them (the dangerous case is never
+  // skipped).
+  const mirroredMasters = acquisition.assets.length > 0;
+  const completionInjected =
+    input.completionObjectStore !== undefined || input.gather !== undefined;
+  if (input.dryRun !== true && (mirroredMasters || completionInjected)) {
+    const reconciled = await runReconcile({
+      sourcesDir: input.sourcesDir,
+      sourceId: input.sourceId,
+      archive: input.archive,
+      objectStore: input.completionObjectStore,
+      archiveRoot: input.reconcileArchiveRoot,
+      gather: input.gather,
+    });
+
+    // Verify the completed record against the store. Build the just-acquired
+    // shape (the selected record plus the mirrored assets + any adapter-emitted
+    // snapshot ref) rather than re-loading, and pass reconcile's derived status
+    // as the authoritative `reconciled` outcome.
+    const completedRecord: RepositoryRecord = {
+      ...record,
+      ...(mirroredMasters ? { assets: acquisition.assets } : {}),
+      ...(acquisition.metadataSnapshotRef !== undefined
+        ? { metadataSnapshot: acquisition.metadataSnapshotRef }
+        : {}),
+    };
+    await verifyRecordComplete(completedRecord, {
+      objectStore: input.completionObjectStore,
+      reconciled: { status: reconciled.status, advanced: reconciled.changed },
+      // Best-effort per-adapter (FR-009): require the record-level snapshot only
+      // where the adapter actually emitted one.
+      expectsMetadataSnapshot: acquisition.metadataSnapshotRef !== undefined,
+    });
   }
 
   // `adapter.acquire` succeeded, so the record carried the identifier its
