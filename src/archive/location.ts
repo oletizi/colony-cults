@@ -69,6 +69,34 @@ const SOURCE_LAYOUTS: Readonly<Record<string, SourceLayout>> = {
     slug: 'cour-de-cassation-chambre-criminelle-arret-de-rejet-du-pourvoi-de-charles',
     kind: 'monograph',
   },
+  // English-language sources (spec 015): the recto reading text IS the English OCR
+  // (no translation). Registered so `sourceLayout` resolves them for the archive-
+  // direct PDF build; slugs verified against the archive clone's on-disk directory
+  // (folio sidecar `id:` fields, cases/port-breton/books/<slug>).
+  'PB-P056': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'richmond-river-district-of-new-south-wales-new-italy-a-brief-sketch-of-a-new',
+    kind: 'monograph',
+  },
+  'PB-P057': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'the-china-mail-hong-kong-16-october-1880-report-on-the-wreck-of-the-marquis-de',
+    kind: 'monograph',
+  },
+  'PB-P058': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'the-china-mail-hong-kong-8-march-1882-the-colony-of-port-breton-the-justice-of',
+    kind: 'monograph',
+  },
+  'PB-P059': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'the-hong-kong-daily-press-16-july-1883-trial-of-the-marquis-de-rays-paris-12',
+    kind: 'monograph',
+  },
 };
 
 /**
