@@ -133,3 +133,14 @@ describe('readIssueBuildInfo: no disclosure at all -- fail loud (genuine provena
     expect(() => readIssueBuildInfo(filePath)).toThrow(/machineAssist|ocrTranscription/);
   });
 });
+
+describe('readIssueBuildInfo: BOTH disclosures present -- fail loud (two conflicting provenance stories, AUDIT-20260719-04/05)', () => {
+  it('throws when pages[0].recto.machineAssist AND colophon.ocrTranscription are both present', () => {
+    const filePath = writeInputJson('1900-01-06_both', {
+      pages: [{ recto: { machineAssist: MACHINE_ASSIST } }],
+      colophon: { ocrTranscription: OCR_TRANSCRIPTION },
+    });
+
+    expect(() => readIssueBuildInfo(filePath)).toThrow(/machineAssist.*ocrTranscription|ocrTranscription.*machineAssist/is);
+  });
+});

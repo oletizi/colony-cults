@@ -187,17 +187,17 @@ export interface BuildPublicationInput {
   rightsBasis: string;
   /**
    * The French-source machine-assisted translation label. Modeled optional:
-   * exactly one of `machineAssist` / `ocrTranscription` is present for a real
-   * built issue (spec 015's `ColophonMeta`) -- `buildPublication` throws if
-   * BOTH are absent (Constitution IV), but does NOT require `machineAssist`
-   * specifically once `ocrTranscription` is present (English-source, spec
-   * 015 FR-008/FR-013).
+   * `buildPublication` enforces EXACTLY ONE of `machineAssist` /
+   * `ocrTranscription` for a real built issue (spec 015's `ColophonMeta`) --
+   * it throws if BOTH are absent (Constitution IV, zero provenance
+   * disclosure) AND if BOTH are present (two conflicting provenance stories,
+   * AUDIT-20260719-04/05).
    */
   machineAssist?: MachineAssistLabel;
   /**
    * The English-source OCR-transcription disclosure, recorded INSTEAD OF
    * `machineAssist` for an English-source edition (spec 015 FR-008/FR-013).
-   * See `machineAssist`'s doc for the presence invariant.
+   * See `machineAssist`'s doc for the enforced exactly-one invariant.
    */
   ocrTranscription?: OcrTranscription;
   /** Repo-relative manifest path (from {@link writeManifestFile}). */
@@ -208,10 +208,12 @@ export interface BuildPublicationInput {
 
 /**
  * Assemble the lean {@link Publication} entry. `publishedAt` comes from the
- * injected `clock` (ISO date, `YYYY-MM-DD`). Throws if BOTH `machineAssist`
- * and `ocrTranscription` are absent (Constitution IV: every publication must
- * disclose either a machine-assisted translation label (French) or an
- * OCR-transcription disclosure (English) -- never neither). The distinguishing
+ * injected `clock` (ISO date, `YYYY-MM-DD`). Enforces EXACTLY ONE of
+ * `machineAssist` / `ocrTranscription`: throws if BOTH are absent
+ * (Constitution IV: every publication must disclose either a
+ * machine-assisted translation label (French) or an OCR-transcription
+ * disclosure (English) -- never neither), and throws if BOTH are present (two
+ * conflicting provenance stories -- AUDIT-20260719-04/05). The distinguishing
  * signal is the disclosure SHAPE the caller collected from the built issues'
  * `input.json` colophon (`@/pdf/publish/issue`), not the `variant` -- the
  * `english-only` variant is ambiguous between a French source (EN
@@ -219,6 +221,15 @@ export interface BuildPublicationInput {
  * decide this (AUDIT-20260719-02).
  */
 export function buildPublication(input: BuildPublicationInput, clock: Clock): Publication {
+  if (input.machineAssist !== undefined && input.ocrTranscription !== undefined) {
+    throw new Error(
+      `buildPublication: variant "${input.variant}" carries BOTH a machineAssist ` +
+        `label and an ocrTranscription disclosure. These are mutually exclusive ` +
+        `provenance stories (a French machine-assisted translation XOR an ` +
+        `English OCR transcription); refusing to record a publication with two ` +
+        `conflicting provenance disclosures (AUDIT-20260719-04/05).`,
+    );
+  }
   if (input.machineAssist === undefined && input.ocrTranscription === undefined) {
     throw new Error(
       `buildPublication: variant "${input.variant}" has no machineAssist label ` +

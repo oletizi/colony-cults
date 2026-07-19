@@ -158,6 +158,16 @@ function byArchive(a: AuthoredRepositoryRecord, b: AuthoredRepositoryRecord): nu
  * (French) or `ocrTranscription` (English-source, spec 015 FR-008/FR-013) --
  * so the output is deterministic and no field is fabricated. Mirrors
  * {@link orderedRecord}'s pattern for `repositoryRecords[]`.
+ *
+ * This is a PURE serializer, not an enforcement boundary: a `Publication`
+ * reaching here is assumed already valid. The exactly-one invariant
+ * (`machineAssist` XOR `ocrTranscription`, AUDIT-20260719-03/04/05/06) is
+ * enforced upstream, at every path that CONSTRUCTS a `Publication`
+ * (`@/bibliography/load-publications`' `validatePublication` for the SSOT
+ * load path, `@/pdf/publish/record`'s `buildPublication` for the write path)
+ * -- see `@/model/publication`'s `Publication.machineAssist` doc for the full
+ * enforcement-point list. Deliberately NOT re-checked here, mirroring
+ * `orderedRecord`'s posture of trusting its already-validated input.
  */
 function orderedPublication(publication: Publication): Record<string, unknown> {
   const out: Record<string, unknown> = {

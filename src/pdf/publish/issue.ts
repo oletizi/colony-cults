@@ -13,9 +13,11 @@
  * (`pages[0].recto.machineAssist`, unchanged since spec 008) or an
  * English-source edition's `ocrTranscription` disclosure (`colophon
  * .ocrTranscription` -- the edition-level source of truth; no per-page recto
- * field carries it, per `@/pdf/render/typst-input`'s `TypstRecto`). Reading
- * fails loud only when NEITHER is present -- a publication with no provenance
- * disclosure at all is a genuine gap (AUDIT-20260719-02).
+ * field carries it, per `@/pdf/render/typst-input`'s `TypstRecto`).
+ * `readIssueBuildInfo` ENFORCES this exactly-one invariant: it fails loud
+ * when NEITHER is present -- a publication with no provenance disclosure at
+ * all is a genuine gap (AUDIT-20260719-02) -- and when BOTH are present -- a
+ * built edition is exactly one kind, never both (AUDIT-20260719-04/05).
  */
 
 import { readFileSync } from 'node:fs';
@@ -38,9 +40,10 @@ function requireNonEmptyString(value: unknown, where: string): string {
 
 /**
  * The facts read from a built issue's `<issueId>.input.json` (data-model §3,
- * extended by spec 015). Exactly one of `machineAssist` / `ocrTranscription`
+ * extended by spec 015). EXACTLY ONE of `machineAssist` / `ocrTranscription`
  * is non-null on any real edition -- `readIssueBuildInfo` throws if both are
- * absent, but tolerates either being individually absent.
+ * absent AND if both are present (AUDIT-20260719-04/05); either being
+ * individually absent (with the other present) is the normal, tolerated case.
  */
 export interface IssueBuildInfo {
   /** Page count from `input.json` `.pages.length`, NOT parsed from PDF bytes. */
@@ -107,9 +110,9 @@ function parseNullableOcrTranscription(value: unknown, where: string): OcrTransc
 /**
  * Read the built issue's page count + provenance disclosure from its
  * `<issueId>.input.json` (a serialized `TypstInput`, written next to the PDF by
- * `pdf:build`). Throws (missing file, malformed shape, or NEITHER disclosure
- * present) -- the caller catches per-issue and records it as an attributable
- * failure (G-7).
+ * `pdf:build`). Throws (missing file, malformed shape, NEITHER disclosure
+ * present, or BOTH disclosures present) -- the caller catches per-issue and
+ * records it as an attributable failure (G-7).
  */
 export function readIssueBuildInfo(inputJsonPath: string): IssueBuildInfo {
   const parsed: unknown = JSON.parse(readFileSync(inputJsonPath, 'utf-8'));
@@ -140,6 +143,17 @@ export function readIssueBuildInfo(inputJsonPath: string): IssueBuildInfo {
         `${inputJsonPath}: colophon.ocrTranscription`,
       )
     : null;
+
+  if (machineAssist !== null && ocrTranscription !== null) {
+    throw new Error(
+      `${inputJsonPath}: carries BOTH a machineAssist label ` +
+        `(pages[0].recto.machineAssist) and an ocrTranscription disclosure ` +
+        `(colophon.ocrTranscription) -- a built edition is EXACTLY ONE kind (a ` +
+        `French machine-assisted translation XOR an English OCR transcription); ` +
+        `refusing to read a build input.json with two conflicting provenance ` +
+        `disclosures (AUDIT-20260719-04/05).`,
+    );
+  }
 
   if (machineAssist === null && ocrTranscription === null) {
     throw new Error(

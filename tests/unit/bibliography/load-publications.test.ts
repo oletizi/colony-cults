@@ -45,6 +45,39 @@ const ENGLISH_ONLY_PUB = `  - variant: english-only
       issueCount: 71
 `;
 
+// AUDIT-20260719-03/04: a publications[] entry carrying BOTH machineAssist
+// and ocrTranscription -- two conflicting provenance stories.
+const BOTH_DISCLOSURES_PUB = `  - variant: english-only
+    publishedAt: "2026-07-12"
+    snapshot: "3b8b1fd6a0d7f76f3c5f9a2b3da94252bbb5dd10"
+    snapshotShort: "3b8b1fd6"
+    cdnBase: "https://colony-cults-cdn.oletizi.workers.dev"
+    keyScheme: versioned
+    rightsBasis: "1881 imprint; French public domain"
+    machineAssist:
+      engine: "claude"
+      retrieved: "2026-07-12"
+    ocrTranscription:
+      engineStatus: "machine OCR · tesseract 5 (searchable)"
+    manifest:
+      manifestPath: "bibliography/publications/PB-P001-english-only-3b8b1fd6.yml"
+      issueCount: 71
+`;
+
+// AUDIT-20260719-03: a publications[] entry carrying NEITHER disclosure --
+// zero provenance disclosure (Constitution III/IV).
+const NEITHER_DISCLOSURE_PUB = `  - variant: english-only
+    publishedAt: "2026-07-12"
+    snapshot: "3b8b1fd6a0d7f76f3c5f9a2b3da94252bbb5dd10"
+    snapshotShort: "3b8b1fd6"
+    cdnBase: "https://colony-cults-cdn.oletizi.workers.dev"
+    keyScheme: versioned
+    rightsBasis: "1881 imprint; French public domain"
+    manifest:
+      manifestPath: "bibliography/publications/PB-P001-english-only-3b8b1fd6.yml"
+      issueCount: 71
+`;
+
 let dir: string;
 
 beforeEach(() => {
@@ -111,5 +144,21 @@ describe('loadSourceFile rights + publications (specs/008)', () => {
     const { source } = loadSourceFile(filePath);
     expect(source.rights).toBeUndefined();
     expect(source.publications).toBeUndefined();
+  });
+});
+
+describe('loadSourceFile publications[] exactly-one-disclosure invariant (AUDIT-20260719-03/04)', () => {
+  it('throws (locating) when a publications[] entry carries BOTH machineAssist and ocrTranscription', () => {
+    const filePath = writeSource(BASE + publicationsBlock(BOTH_DISCLOSURES_PUB));
+    expect(() => loadSourceFile(filePath)).toThrow(/publications\[0\]/);
+    expect(() => loadSourceFile(filePath)).toThrow(/machineAssist/);
+    expect(() => loadSourceFile(filePath)).toThrow(/ocrTranscription/);
+  });
+
+  it('throws (locating) when a publications[] entry carries NEITHER machineAssist nor ocrTranscription', () => {
+    const filePath = writeSource(BASE + publicationsBlock(NEITHER_DISCLOSURE_PUB));
+    expect(() => loadSourceFile(filePath)).toThrow(/publications\[0\]/);
+    expect(() => loadSourceFile(filePath)).toThrow(/machineAssist/);
+    expect(() => loadSourceFile(filePath)).toThrow(/ocrTranscription/);
   });
 });

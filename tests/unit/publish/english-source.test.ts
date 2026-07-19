@@ -181,3 +181,135 @@ describe('publish() English-source edition (AUDIT-20260719-02): nullable machine
     expect(raw).toContain(`pages: ${PAGE_COUNT}`);
   });
 });
+
+/**
+ * AUDIT-20260719-06: before the fix, `mergeDisclosure` was first-seen-wins,
+ * so a multi-issue publish run whose issues carry DIFFERENT
+ * `colophon.ocrTranscription` values (e.g. a later issue surfaces a worse OCR
+ * caveat than an earlier one) silently recorded only the FIRST issue's
+ * disclosure on the durable `Publication` -- understating OCR quality. The
+ * fix makes this fail loud instead of silently collapsing to first-seen (see
+ * `@/pdf/publish/disclosure`'s `mergeDisclosure` for the documented
+ * fail-loud-vs-worst-aggregate choice).
+ */
+describe('publish() English-source edition (AUDIT-20260719-06): two issues with DIFFERING colophon.ocrTranscription', () => {
+  const CONFLICT_SOURCE_ID = 'PB-992';
+  const CONFLICT_ISSUE_IDS = ['1900-06-01_a', '1900-07-01_b'];
+
+  const OCR_TRANSCRIPTION_CLEAN: OcrTranscription = {
+    engineStatus: 'machine OCR · tesseract 5 (searchable)',
+    caveat: null,
+  };
+  const OCR_TRANSCRIPTION_LOW: OcrTranscription = {
+    engineStatus: 'machine OCR · raw',
+    caveat: 'quality: low (sub-high tier folios present)',
+  };
+
+  const conflictPinReader: ArchivePinReader = { read: () => PIN_REF };
+  const conflictCorpusSnapshotReader: CorpusSnapshotReader = {
+    read(sourceId: string) {
+      if (sourceId !== CONFLICT_SOURCE_ID) {
+        throw new Error(`fake corpusSnapshotReader: unexpected sourceId ${sourceId}`);
+      }
+      return {
+        sources: [
+          {
+            sourceId: CONFLICT_SOURCE_ID,
+            title: 'English Source Conflict Test Source',
+            kind: 'periodical' as const,
+            ark: 'ark:/12148/english-source-conflict-test',
+            rights: 'public-domain',
+            issues: CONFLICT_ISSUE_IDS.map((issueId, i) => ({
+              issueId,
+              date: '1900-06-01',
+              sequence: i + 1,
+              pages: [],
+            })),
+          },
+        ],
+        skipped: [],
+      };
+    },
+  };
+
+  let conflictTmpRoot: string;
+  let conflictSourcesDir: string;
+  let conflictPublicationsDir: string;
+  let conflictOutDir: string;
+  let conflictStore: FakeObjectStore;
+  let conflictCommit: ReturnType<typeof vi.fn>;
+
+  beforeAll(() => {
+    conflictTmpRoot = mkdtempSync(
+      path.join(tmpdir(), 'corpus-print-pdf-publish-english-source-conflict-'),
+    );
+    conflictSourcesDir = path.join(conflictTmpRoot, 'bibliography', 'sources');
+    conflictPublicationsDir = path.join(conflictTmpRoot, 'bibliography', 'publications');
+    conflictOutDir = path.join(conflictTmpRoot, 'build', 'pdf');
+
+    const source: Source = {
+      sourceId: CONFLICT_SOURCE_ID,
+      titles: [{ text: 'English Source Conflict Test Source', role: 'canonical' }],
+      kind: 'periodical',
+      identifiers: [],
+      rights: { status: 'public-domain', basis: RIGHTS_BASIS },
+    };
+    mkdirSync(conflictSourcesDir, { recursive: true });
+    writeSourceFile(conflictSourcesDir, { source, records: [] });
+
+    const sourceOutDir = path.join(conflictOutDir, CONFLICT_SOURCE_ID);
+    mkdirSync(sourceOutDir, { recursive: true });
+
+    // Two issues, DIFFERING ocrTranscription -- the state channel AUDIT-06
+    // flagged as untested (the old fixture wrote the SAME object for every
+    // issue).
+    const transcriptions = [OCR_TRANSCRIPTION_CLEAN, OCR_TRANSCRIPTION_LOW];
+    CONFLICT_ISSUE_IDS.forEach((issueId, i) => {
+      writeFileSync(
+        path.join(sourceOutDir, `${issueId}.pdf`),
+        Buffer.from(`%PDF-1.4 english-source conflict stub for ${issueId}\n`, 'utf-8'),
+      );
+      const pages = Array.from({ length: PAGE_COUNT }, () => ({ recto: { machineAssist: null } }));
+      writeFileSync(
+        path.join(sourceOutDir, `${issueId}.input.json`),
+        JSON.stringify({ pages, colophon: { ocrTranscription: transcriptions[i] } }),
+        'utf-8',
+      );
+    });
+
+    conflictStore = new FakeObjectStore();
+    conflictCommit = vi.fn();
+  });
+
+  afterAll(() => {
+    rmSync(conflictTmpRoot, { recursive: true, force: true });
+  });
+
+  it('rejects the whole publish run rather than silently recording only the first-seen ocrTranscription', async () => {
+    await expect(
+      publish({
+        sourceId: CONFLICT_SOURCE_ID,
+        variant: VARIANT,
+        confirm: true,
+        outDir: conflictOutDir,
+        sourcesDir: conflictSourcesDir,
+        publicationsDir: conflictPublicationsDir,
+        store: conflictStore,
+        clock: fixedClock,
+        pinReader: conflictPinReader,
+        corpusSnapshotReader: conflictCorpusSnapshotReader,
+        cdnBase: CDN_BASE,
+        warm: false,
+        commit: conflictCommit,
+        log: () => {},
+      }),
+    ).rejects.toThrow(/ocrTranscription/);
+
+    // Nothing was recorded: recordAndCommit never ran (the throw happens
+    // mid-loop, before the record/commit tail), so no publications entry and
+    // no commit.
+    const loaded = loadSourceFile(path.join(conflictSourcesDir, `${CONFLICT_SOURCE_ID}.yml`));
+    expect(loaded.source.publications ?? []).toHaveLength(0);
+    expect(conflictCommit).not.toHaveBeenCalled();
+  });
+});

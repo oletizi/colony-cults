@@ -23,8 +23,8 @@ import { sha256OfBytes, sha256OfFile } from '@/archive/checksum';
 import { defaultHttpGet, type HttpGet } from '@/archive/public-cache';
 import { describeError } from '@/bibliography/load-primitives';
 import { loadSourceFile } from '@/bibliography/load';
-import type { MachineAssistLabel, OcrTranscription } from '@/pdf/model';
 import type { Publication } from '@/model/publication';
+import { type Disclosure, mergeDisclosure } from '@/pdf/publish/disclosure';
 import { cdnUrl, legacyFlatKey, versionedKey } from '@/pdf/publish/key';
 import {
   buildManifest,
@@ -46,24 +46,6 @@ import type {
   PublishOptions,
   PublishResult,
 } from '@/pdf/publish/types';
-
-/**
- * The provenance disclosure carried across an issue loop: EITHER a French
- * `machineAssist` label OR an English `ocrTranscription` disclosure (spec
- * 015), each optional so "not yet seen" is representable pre-loop.
- */
-interface Disclosure {
-  machineAssist?: MachineAssistLabel;
-  ocrTranscription?: OcrTranscription;
-}
-
-/** First-seen-wins merge of a per-issue disclosure into the running `current` one. */
-function mergeDisclosure(current: Disclosure, outcome: Disclosure): Disclosure {
-  return {
-    machineAssist: current.machineAssist ?? outcome.machineAssist,
-    ocrTranscription: current.ocrTranscription ?? outcome.ocrTranscription,
-  };
-}
 
 /** The per-issue confirm outcome: an upload record + provenance, or a failure. */
 interface ConfirmIssueOutcome extends Disclosure {
@@ -269,7 +251,10 @@ export async function runConfirm(
       skipped += 1;
       log(`  SKIP  ${outcome.upload.issueId} -> ${outcome.upload.key}  (present, sha256 match)`);
     }
-    disclosure = mergeDisclosure(disclosure, outcome);
+    // Throws (AUDIT-20260719-06) if this issue's disclosure conflicts with an
+    // earlier one in this run -- propagates out of runConfirm, aborting the
+    // whole publish (nothing recorded) rather than silently first-seen-wins.
+    disclosure = mergeDisclosure(disclosure, outcome, issue.issueId);
   }
 
   // Record + commit only when at least one issue succeeded (G-5/G-6, FR-008).
@@ -417,7 +402,9 @@ export async function runReconcile(
     uploads.push(outcome.upload);
     recorded += 1;
     log(`  REC   ${outcome.upload.issueId} -> ${outcome.upload.key}  (served, recorded)`);
-    disclosure = mergeDisclosure(disclosure, outcome);
+    // Throws (AUDIT-20260719-06) if this issue's disclosure conflicts with an
+    // earlier one in this run -- see `runConfirm`'s matching comment.
+    disclosure = mergeDisclosure(disclosure, outcome, target.issueId);
   }
 
   // Record + commit only when at least one issue was reconciled (G-5/G-6, FR-008).

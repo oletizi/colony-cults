@@ -94,12 +94,23 @@ export interface Publication {
   /** The `SourceRights.basis` that cleared the gate (FR-005). */
   rightsBasis: string;
   /**
-   * Engine + date for machine-assisted translation. Modeled optional, but
-   * REQUIRED for any variant carrying machine translation -- both in-scope
-   * variants qualify (`english-only` = EN; `parallel` = FR OCR | EN), so both
-   * MUST carry it (Constitution IV: translations MUST be labeled
-   * machine-assisted unless human-reviewed). Absent ONLY for a hypothetical
-   * pure-facsimile variant (none in v1 scope). Reuses `@/pdf/model`'s
+   * Engine + date for machine-assisted translation. Modeled optional on the
+   * TYPE (TypeScript cannot express the XOR), but a `Publication` carries
+   * EXACTLY ONE of `machineAssist` / `ocrTranscription` -- ENFORCED, not just
+   * documented, at every boundary a `Publication` can enter
+   * (AUDIT-20260719-03/04/05/06):
+   *   - `@/bibliography/load-publications`' `validatePublication`
+   *     (`assertExactlyOneProvenanceDisclosure`, the hand-authored SSOT load
+   *     path)
+   *   - `@/pdf/publish/record`'s `buildPublication` (the write path)
+   *   - `@/pdf/publish/issue`'s `readIssueBuildInfo` (the built-issue
+   *     `input.json` parser)
+   *   - `@/pdf/publish/disclosure`'s `mergeDisclosure` (fails loud on
+   *     conflicting per-issue disclosures within one multi-issue publish run,
+   *     rather than silently collapsing to the first-seen issue)
+   * `machineAssist` present means a French-source machine-assisted
+   * translation (Constitution IV: translations MUST be labeled
+   * machine-assisted unless human-reviewed). Reuses `@/pdf/model`'s
    * `MachineAssistLabel` so the invariant stays consistent between the PDF
    * colophon and its publication record.
    */
@@ -109,10 +120,10 @@ export interface Publication {
    * FR-008/FR-013), recorded INSTEAD OF `machineAssist` for an
    * English-source edition (no translation was performed -- honest
    * disclosure of the machine OCR transcription, not a translation label).
-   * Modeled optional and mutually exclusive with `machineAssist` in
-   * practice: `buildPublication` requires at least one of the two to be
-   * present (Constitution IV -- no publication with zero provenance
-   * disclosure). Reuses `@/pdf/model`'s `OcrTranscription`.
+   * See `machineAssist`'s doc for the ENFORCED exactly-one invariant and its
+   * enforcement points -- zero disclosure violates Constitution III/IV; two
+   * disclosures is an equally malformed conflicting-provenance state.
+   * Reuses `@/pdf/model`'s `OcrTranscription`.
    */
   ocrTranscription?: OcrTranscription;
   /** Reference to the per-issue integrity manifest file (FR-006). */

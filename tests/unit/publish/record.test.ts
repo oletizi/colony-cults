@@ -223,6 +223,18 @@ describe('buildPublication', () => {
       ),
     ).toThrow(/machineAssist.*ocrTranscription|ocrTranscription.*machineAssist/i);
   });
+
+  // AUDIT-20260719-04/05: BOTH disclosures present is an equally malformed
+  // state (two conflicting provenance stories) -- buildPublication must
+  // reject it, not silently record both.
+  it('throws when BOTH machineAssist and ocrTranscription are present', () => {
+    expect(() =>
+      buildPublication(
+        { ...base, machineAssist: MACHINE_ASSIST, ocrTranscription: OCR_TRANSCRIPTION },
+        fixedClock,
+      ),
+    ).toThrow(/machineAssist.*ocrTranscription|ocrTranscription.*machineAssist/is);
+  });
 });
 
 describe('upsertPublication', () => {
