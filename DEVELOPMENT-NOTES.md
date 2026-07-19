@@ -1,18 +1,27 @@
-## 2026-07-19: <!-- session title -->
+## 2026-07-19: Spec 014 executed + govern-graduated + hardened; first live discovery (695 NZ hits) validated a vein and surfaced three real bugs; spec 015 (Papers Past acquisition) authored to runnable
 
-**Goal:** <!-- compose: what we set out to do -->
+**Goal:** "Pick up where we left off" — finish the source-query-client feature (spec 014). It grew, by what each step demanded: execute 014 to completion, govern it, then actually USE it for discovery, which validated a vein, surfaced real defects, exposed a governance contradiction, and led into authoring the next feature's spec (015, a Papers Past acquisition adapter).
 
 **Accomplished:**
-- <!-- compose -->
+- Executed spec 014 end-to-end via `/stack-control:execute` — US1 (governed query MVP), US2 (operator-gated exit-node escalation), US3 (skill/commandment rewire), polish — 29 tasks, model-sized dispatch, test-first, per-task reviewed + ledgered.
+- Ran the end-of-feature govern; it can't converge in this env (barrage killed 3×, documented limitation) so it graduated under an operator-authorized override — but it did its job: two audit rounds surfaced real HIGH bugs, all fixed (parseCount comma+range-prefix silent-wrong-count, `maxWindowMs` hard-ceiling grace overrun, separator-tolerant + derived-facts grounding, the false-type-only `DEFAULT_GRACE` cycle) + coverage gaps.
+- **First live `bib query-source` run**: de Rays → **695 Papers Past NZ newspaper articles** (SRCH-0018), a high-yield untried axis; validated one article end-to-end (SRCH-0019 — real Paris-cable primary source, explicitly public-domain, OCR + images captured).
+- Authored **spec 015 (Papers Past acquisition adapter)** through the full define chain (specify → clarify → plan → tasks → analyze) to runnable, 100% coverage, analyze-clean; brainstormed design committed; roadmap node created.
+- Permanently removed the flaky sonnet govern lane; captured TASK-43 (production TailscaleRunner) and a fleet-config-lockstep friction.
 
 **Didn't Work:**
-- <!-- compose -->
+- The whole-feature cross-model govern barrage cannot reach reconciliation in this environment — killed at ~50 min / ~12 min / ~1 min across three attempts. Root cause: the sonnet lane timed out on every chunk (removed) plus a background-runtime kill. Graduated under override (the documented practice here).
+- Removing sonnet from `fleet-knowledge.yaml` alone FATAL'd govern — it must lockstep-match the barrage-config; the mismatch only surfaces at govern time (captured as friction).
 
 **Course Corrections:**
-- <!-- compose -->
+- I claimed acquisition was blocked on missing archive/B2 config; the operator corrected me — it was in `.env` all along (archive clone + B2 creds resolve cleanly). The real remaining blocker is the (unbuilt) Papers Past adapter, not config.
+- The operator challenged my calling the MCP browser a "fallback": the skill/commandment/spec said "no exceptions / only path" yet carved out a sanctioned second channel — a genuine contradiction. Removed it across all three; the answer for an unregistered source is now "register a `SourceConfig`", never a hand-driven browser.
+- "Always record the find" established as a standing rule (SRCH-0018/0019 logged before proceeding).
 
 **Insights:**
-- <!-- compose -->
+- **Discovery is a powerful integration test.** Driving one real query surfaced three real defects govern structurally could not: the fallback contradiction (docs are excluded by code-only barrage scoping), a persist-before-analysis ordering bug (classify ran before persist, so a wrong selector lost the raw page — no test hit that client-level path), and simply-wrong provisional selectors. Using the thing found what auditing the thing missed.
+- **Persist-first IS the bootstrap.** Once the client persists the raw page before analysis, a wrong provisional selector still leaves the real markup on disk — you fix the config from the capture. That closed-loop is what makes "no fallback, register a `SourceConfig`" actually workable; now codified in skill + spec + commandment.
+- A found gap that earns the full treatment graduates cleanly up the lifecycle: backlog find (TASK-39) → validated → design → spec 015 through the front door.
 
 **Quantitative (auto-derived from git; verify before publishing):**
 - Commits: 47
