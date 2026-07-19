@@ -2,7 +2,7 @@
 
 **Date**: 2026-07-19
 **Origin**: spec-015 follow-on (TASK-39 vein); SRCH-0018 (695 raw Papers Past "Marquis de Rays" hits); PB-P061 acquired end-to-end via the shipped Papers Past adapter.
-**Status**: Approved design (brainstormed 2026-07-19), pending `/stack-control:define` as spec 016.
+**Status**: Approved design (brainstormed 2026-07-19; third-party design review incorporated 2026-07-19 — refinements 1–5 below), pending `/stack-control:define` as spec 016.
 
 ## Purpose
 
@@ -40,10 +40,19 @@ Generalize `DiscoveryDispatcher` from single-mechanism to a **registry keyed by 
 Implement the `pages > 1` path (currently throws as "a later enhancement"): walk pages 1..K **within one governed browser session**, paced by the existing `PolitenessPolicy` (min inter-navigation interval), persist-before-analysis on **each** page, and aggregate the per-row candidates across pages. Bounded by the caller's limit → a handful of paced fetches, comfortably inside one session. Fail-loud on a WAF challenge / grounding failure (the raw page is already persisted).
 
 ### 3. `PapersPastDiscoveryMechanism` (implements `DiscoveryMechanism`)
-`endpoint: 'papers-past'`. `search(query, {maxResults})` drives the governed browser `SourceQueryClient` (bounded multi-page walk) and maps each result row → `DiscoveryCandidate`: `identifier` = the article code extracted from the row `ref` (the `oid`, e.g. `HNS18840103.2.19.3`), `titleHint` = the row title, `dateHint` = newspaper + date. **Dedup by article code** within the returned set. `isAvailable()` reflects the browser client's readiness. Constructor-injected `SourceQueryClient` (composition/DI; a fake in tests → no network).
+`endpoint: 'papers-past'`. `search(query, {maxResults})` drives the governed browser `SourceQueryClient` (bounded multi-page walk) and maps each result row → `DiscoveryCandidate`: `identifier` = the article code extracted from the row `ref` (the `oid`, e.g. `HNS18840103.2.19.3`), `titleHint` = the row title, `dateHint` = newspaper + date. `isAvailable()` reflects the browser client's readiness. Constructor-injected `SourceQueryClient` (composition/DI; a fake in tests → no network).
+
+**Deduplication is repository-scoped, NOT work-level identity (review refinement 1).** The mechanism dedups by article code *within one Papers Past census* — the article code is a *repository* identifier, not an intellectual-work identifier. Repository-level dedup during discovery does NOT imply work-level identity: a Papers Past article, a Trove article, and a British Newspaper Archive article may be the same intellectual work. Concluding that — and attaching an additional `RepositoryRecord` to an existing `Source` rather than creating a duplicate `Source` — remains the job of **promotion**, where research judgment enters the model. The census never asserts work identity.
+
+**`DiscoveryCandidate` carries discovery provenance (review refinement 2).** Beyond `identifier`/`titleHint`/`dateHint`, each candidate preserves enough to make later investigation deterministic and to record research history when multiple searches surface the same article — e.g. `repositoryIdentifier`, `searchQuery`, `searchPage`, `searchRank`, and `capturedFrom` (the search-log id, e.g. SRCH-00NN). This is provenance describing *how* the candidate entered the corpus (Principle III), not a duplicate of the persisted HTML. These fields are additive/optional on the shared type so existing mechanisms (BnF SRU) remain valid.
+
+**Classification is advisory only (review refinement 3).** Any coarse "substantial vs passing mention" label the census derives is heuristic, metadata-derived, and **advisory** — for reporting and prioritization. It MUST NOT feed promotion or acquisition automatically. Promotion remains the authoritative point where research judgment enters the corpus (Principle I: evidence and interpretation kept visibly separate).
 
 ### 4. Search-log record (SRCH-00NN)
-Document the census run per the "always record the find" rule: query, pages/limit sampled, raw hits, distinct-after-dedup, coarse classification counts, an extrapolation to the full 695, and the persisted captures. No corpus member is created by the census itself (candidates are surfaced for the operator to curate/promote).
+Document the census run per the "always record the find" rule: query, pages/limit sampled, raw hits, distinct-after-dedup, coarse (advisory) classification counts, an extrapolation to the full 695, and the persisted captures. No corpus member is created by the census itself (candidates are surfaced for the operator to curate/promote).
+
+- **Version the census algorithm (review refinement 4).** Record `censusVersion: 1` so a later change to the dedup or classification logic is reproducible and distinguishable — "the corpus changed" vs "the census became better."
+- **Extrapolation is informational (review refinement 5).** The extrapolation to ~695 is a **planning estimate**, never a corpus fact. It MUST NOT appear in coverage metrics as known inventory. The only canonical facts are the sampled results, the discovered candidates, and (later) the promoted `Source`s.
 
 ### 5. Backlog (deferred follow-on)
 Capture: "bring BnF SRU discovery under persist-first governance" (a governed-HTTP transport that persists the SRU response before parsing, so every discovery mechanism honors the full Principle XII envelope uniformly).
