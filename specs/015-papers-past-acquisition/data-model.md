@@ -10,7 +10,7 @@ Typed entities and the model/vocabulary additions. No `any`/`as`/`@ts-ignore` (P
 
 > **No `AcquiredAsset` role addition.** OCR text is out of scope as an acquired asset (clarified 2026-07-19 — the existing OCR/translation pipeline produces it from the held facsimile), so no `'ocr-text'` role is added. The only acquired assets are the `page-master` page-image segments, reusing the existing `page-master` role.
 
-> **No `ResolvedRepositoryItem` contract change.** Rights statement + article date ride the existing `metadata: GroundedExtraction<MuseumItemFields>` carrier exactly as the New Italy Museum adapter does (`date` → article date; `statedCredit` → the verbatim rights statement), constructed mechanically from the parse (a field that appears verbatim in the source is maximally grounded). No new shared field is introduced.
+> **No `ResolvedRepositoryItem` contract change.** Rights evidence is carried via a `WeakMap<ResolvedRepositoryItem, RightsEvidence>` keyed by the resolved item — the shipped **Internet Archive** adapter's pattern (`src/repository/internet-archive/adapter.ts` + `rights.ts`) for a mechanical (non-LLM) adapter whose `RightsEvidence.rightsRaw` has no home on the typed contract. The required `metadata: GroundedExtraction<MuseumItemFields>` is `{ date }` only, where `date` is a mechanically-built `GroundedField`: per the documented IA convention, `GroundedField` hard-codes `provenance.modelAssisted: true` (it was authored for LLM prose), so `engine`/`model` are named to the mechanical parse, NOT a model call. No new shared field is introduced.
 
 ## ResolvedArticle (adapter `resolve` output — a `ResolvedRepositoryItem`)
 
@@ -21,7 +21,7 @@ Typed entities and the model/vocabulary additions. No `any`/`as`/`@ts-ignore` (P
 | `sourceUrl` | `string` | the article page URL |
 | `title` | `string` | the `h3` heading text, mechanically derived (non-empty) — never an LLM field |
 | `assetLocators` | `AssetLocator[]` | one per `/imageserver/...&area=<n>` segment: `{ url, role: 'page-master', sequence: <area> }` |
-| `metadata` | `GroundedExtraction<MuseumItemFields>` | mechanically-built grounded fields: `date` → the article date, `statedCredit` → the verbatim rights statement (read back by `collectRightsEvidence`), `creator`/`description` → newspaper/page (optional). Reuses the existing carrier — no contract change. |
+| `metadata` | `GroundedExtraction<MuseumItemFields>` | `{ date }` only — a mechanically-built `GroundedField` for the article date (IA `modelAssisted:true` convention; `engine`/`model` name the mechanical parse). The verbatim rights statement + jurisdiction are carried separately via a `WeakMap<ResolvedRepositoryItem, RightsEvidence>` (IA pattern), NOT via `statedCredit`. Reuses the existing carrier — no contract change. |
 
 The mechanical parse (`parse.ts`) MAY additionally expose the on-page OCR text as an optional convenience field of its own pure return type (`ocrText?: string`), but it is NOT propagated to `acquire` and NOT stored as an asset (OCR out of scope; clarified 2026-07-19).
 

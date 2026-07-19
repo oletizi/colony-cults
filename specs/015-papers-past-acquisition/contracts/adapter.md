@@ -21,11 +21,11 @@ class PapersPastAdapter implements RepositoryAdapter {
 
 - Navigate the article page (`https://paperspast.natlib.govt.nz/newspapers/<article-id>`) via `browserSession`; **persist the raw page before parsing** (persist-before-analysis).
 - Mechanically parse: `oid`/article-id (fail-loud if absent — no fabrication), `h3` title (non-empty), the `/imageserver/...&area=<n>` image URLs as sequenced `assetLocators` (fail-loud if none), the newspaper/date/page metadata, the "No known copyright (New Zealand)" rights block, and the OPTIONAL `#text-tab` OCR text (`ParsedArticle.ocrText?`; absent → undefined, never fabricated — out of scope as an asset).
-- Returns `{ repository, identifiers:[{type:'papers-past',value}], sourceUrl, title, assetLocators, metadata }`. `metadata` reuses the existing `GroundedExtraction<MuseumItemFields>` carrier built mechanically (`date` = article date, `statedCredit` = verbatim rights statement); the optional OCR text is NOT carried on the resolved item.
+- Returns `{ repository, identifiers:[{type:'papers-past',value}], sourceUrl, title, assetLocators, metadata }`. `metadata` = `{ date }` (a mechanically-built `GroundedField`, IA `modelAssisted:true` convention — `engine`/`model` name the mechanical parse). The verbatim `rightsRaw` + jurisdiction are stashed in a `WeakMap<ResolvedRepositoryItem, RightsEvidence>` keyed by the returned item (IA pattern) for `collectRightsEvidence` to read back — no shared-contract change. The optional OCR text is NOT carried on the resolved item.
 
 ## `collectRightsEvidence(item): Promise<RightsEvidence>`
 
-- Returns `{ rightsRaw: <verbatim NLNZ statement>, jurisdiction:'NZ', date:<grounded article date> }`. **No `rightsStatus`.**
+- Returns the `RightsEvidence` cached in the `WeakMap` during `resolve` (IA pattern): `{ rightsRaw: <verbatim NLNZ statement>, jurisdiction:'NZ', date:<grounded article date> }`. **No `rightsStatus`.** Fails loud if `item` is not one this adapter's own `resolve` returned (no re-parse, no fabrication).
 
 ## `acquire(record, ctx): Promise<AcquisitionResult>`
 
