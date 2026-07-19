@@ -345,6 +345,42 @@ describe('makeArchiveEditionReader', () => {
     }
   });
 
+  // ---------------------------------------------------------------------------
+  // AUDIT-20260719-09 (HIGH, govern finding): the edition-level `engineStatus`
+  // MUST be derived from a REPRESENTATIVE (non-blank_recto) folio, not the raw
+  // lead folio -- T015's blank/plate marker lets an English edition's FIRST
+  // folio be an intentionally-blank cover/plate, so the lead's own ocr_status
+  // can be unrepresentative of the edition even though later folios carry the
+  // real English OCR.
+  // ---------------------------------------------------------------------------
+
+  it('English source: a blank_recto LEAD folio does not leak its own ocr_status into the edition engineStatus (AUDIT-20260719-09)', async () => {
+    const fixture = await writeFixtureArchive({
+      case: SOURCE_CASE,
+      slug: SOURCE_SLUG,
+      pageCount: 3,
+      language: 'English',
+      omitTranslationDir: true,
+      pages: [
+        // Blank cover/plate: no real OCR was attempted -- its own ocr_status
+        // ("none") must NOT become the edition-level engineStatus.
+        { blankRecto: true, ocrFrench: '', ocrStatus: 'none' },
+        {}, // real English OCR, default ocr_status "searchable"
+        {},
+      ],
+    });
+    try {
+      const edition = await buildFrom(fixture);
+
+      expect(edition.colophon.ocrTranscription).not.toBeNull();
+      // The REPRESENTATIVE (first non-blank) folio's status, NOT the blank
+      // lead folio's "none".
+      expect(edition.colophon.ocrTranscription?.engineStatus).toBe('tesseract 5 (searchable)');
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
   it('fails loud (does not silently skip) when a non-lead folio has a malformed OCR provenance sidecar', async () => {
     const fixture = await writeFixtureArchive({
       case: SOURCE_CASE,

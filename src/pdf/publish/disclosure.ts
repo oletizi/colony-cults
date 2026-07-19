@@ -8,6 +8,7 @@
  */
 
 import type { MachineAssistLabel, OcrTranscription } from '@/pdf/model';
+import type { PublishOptions } from '@/pdf/publish/types';
 
 /** The running (or per-issue) provenance disclosure; each field independently optional. */
 export interface Disclosure {
@@ -80,4 +81,48 @@ function mergeField<T>(
     );
   }
   return current;
+}
+
+/**
+ * Fold the `opts.machineAssist` run-option OVERRIDE onto a running disclosure
+ * already built purely from per-issue outcomes (AUDIT-20260719-08).
+ *
+ * Before this fix, both `modes.ts` mode runners unconditionally SEEDED the
+ * running disclosure with `{ machineAssist: opts.machineAssist }` BEFORE the
+ * loop. For an English-source run every issue's `readIssueBuildInfo` outcome
+ * correctly carries `ocrTranscription` (never `machineAssist`), but the
+ * unconditional seed injected a `machineAssist` value from the run option
+ * regardless -- `mergeDisclosure` then folded the issues' `ocrTranscription`
+ * onto that seed, producing a running disclosure with BOTH fields populated,
+ * which `buildPublication`'s exactly-one check rejected. The option's own
+ * safety therefore depended entirely on `opts.machineAssist` happening to be
+ * `undefined` for every English run -- a guarantee that lived outside this
+ * module and was asserted nowhere near the seed.
+ *
+ * The fix: build the running disclosure PURELY from the per-issue outcomes
+ * (each already exactly-one, enforced by `readIssueBuildInfo`), then apply
+ * `opts.machineAssist` ONLY as a kind-aware fallback -- and ONLY once the
+ * loop's real evidence is known:
+ *  - an English run (`disclosure.ocrTranscription !== undefined`): the
+ *    option is IGNORED outright, no matter its value -- an English run's
+ *    provenance disclosure is never a translation label.
+ *  - anything else: fold it in via `mergeDisclosure`, so a genuine conflict
+ *    with an already-populated per-issue `machineAssist` still fails loud
+ *    (same fail-loud-on-mismatch semantics `mergeDisclosure` already gives
+ *    cross-issue), while an ABSENT per-issue `machineAssist` picks up the
+ *    option as intended.
+ *
+ * Extracted here (not `modes.ts`) because it operates purely on `Disclosure`
+ * + the one `PublishOptions` field it reads, mirroring `mergeDisclosure`'s
+ * home; keeps `modes.ts` under the Constitution VII 500-line cap.
+ */
+export function applyMachineAssistOverride(
+  disclosure: Disclosure,
+  opts: Pick<PublishOptions, 'machineAssist'>,
+  label: string,
+): Disclosure {
+  if (opts.machineAssist === undefined || disclosure.ocrTranscription !== undefined) {
+    return disclosure;
+  }
+  return mergeDisclosure(disclosure, { machineAssist: opts.machineAssist }, label);
 }

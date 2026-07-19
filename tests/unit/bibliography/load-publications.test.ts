@@ -78,6 +78,54 @@ const NEITHER_DISCLOSURE_PUB = `  - variant: english-only
       issueCount: 71
 `;
 
+// AUDIT-20260719-07: variant × disclosure cross-check fixtures. `parallel` is
+// inherently FR-OCR / EN-translation and must carry machineAssist, never
+// ocrTranscription. `english-only` is ambiguous and valid with EITHER (a
+// French source rendered english-only carries machineAssist; an English OCR
+// source carries ocrTranscription).
+const PARALLEL_MACHINE_ASSIST_PUB = `  - variant: parallel
+    publishedAt: "2026-07-12"
+    snapshot: "3b8b1fd6a0d7f76f3c5f9a2b3da94252bbb5dd10"
+    snapshotShort: "3b8b1fd6"
+    cdnBase: "https://colony-cults-cdn.oletizi.workers.dev"
+    keyScheme: versioned
+    rightsBasis: "1881 imprint; French public domain"
+    machineAssist:
+      engine: "claude"
+      retrieved: "2026-07-12"
+    manifest:
+      manifestPath: "bibliography/publications/PB-P001-parallel-3b8b1fd6.yml"
+      issueCount: 71
+`;
+
+const PARALLEL_OCR_TRANSCRIPTION_PUB = `  - variant: parallel
+    publishedAt: "2026-07-12"
+    snapshot: "3b8b1fd6a0d7f76f3c5f9a2b3da94252bbb5dd10"
+    snapshotShort: "3b8b1fd6"
+    cdnBase: "https://colony-cults-cdn.oletizi.workers.dev"
+    keyScheme: versioned
+    rightsBasis: "1881 imprint; French public domain"
+    ocrTranscription:
+      engineStatus: "machine OCR · tesseract 5 (searchable)"
+    manifest:
+      manifestPath: "bibliography/publications/PB-P001-parallel-3b8b1fd6.yml"
+      issueCount: 71
+`;
+
+const ENGLISH_ONLY_OCR_TRANSCRIPTION_PUB = `  - variant: english-only
+    publishedAt: "2026-07-12"
+    snapshot: "3b8b1fd6a0d7f76f3c5f9a2b3da94252bbb5dd10"
+    snapshotShort: "3b8b1fd6"
+    cdnBase: "https://colony-cults-cdn.oletizi.workers.dev"
+    keyScheme: versioned
+    rightsBasis: "1881 imprint; French public domain"
+    ocrTranscription:
+      engineStatus: "machine OCR · tesseract 5 (searchable)"
+    manifest:
+      manifestPath: "bibliography/publications/PB-P001-english-only-3b8b1fd6.yml"
+      issueCount: 71
+`;
+
 let dir: string;
 
 beforeEach(() => {
@@ -159,6 +207,42 @@ describe('loadSourceFile publications[] exactly-one-disclosure invariant (AUDIT-
     const filePath = writeSource(BASE + publicationsBlock(NEITHER_DISCLOSURE_PUB));
     expect(() => loadSourceFile(filePath)).toThrow(/publications\[0\]/);
     expect(() => loadSourceFile(filePath)).toThrow(/machineAssist/);
+    expect(() => loadSourceFile(filePath)).toThrow(/ocrTranscription/);
+  });
+});
+
+describe('loadSourceFile publications[] variant x disclosure consistency (AUDIT-20260719-07)', () => {
+  it('accepts variant "parallel" + machineAssist (the FR-OCR / EN-translation story)', () => {
+    const filePath = writeSource(BASE + publicationsBlock(PARALLEL_MACHINE_ASSIST_PUB));
+    const { source } = loadSourceFile(filePath);
+    const [pub] = source.publications ?? [];
+    expect(pub?.variant).toBe('parallel');
+    expect(pub?.machineAssist).toBeDefined();
+    expect(pub?.ocrTranscription).toBeUndefined();
+  });
+
+  it('accepts variant "english-only" + machineAssist (a French source rendered english-only)', () => {
+    const filePath = writeSource(BASE + publicationsBlock(ENGLISH_ONLY_PUB));
+    const { source } = loadSourceFile(filePath);
+    const [pub] = source.publications ?? [];
+    expect(pub?.variant).toBe('english-only');
+    expect(pub?.machineAssist).toBeDefined();
+    expect(pub?.ocrTranscription).toBeUndefined();
+  });
+
+  it('accepts variant "english-only" + ocrTranscription (an English OCR source)', () => {
+    const filePath = writeSource(BASE + publicationsBlock(ENGLISH_ONLY_OCR_TRANSCRIPTION_PUB));
+    const { source } = loadSourceFile(filePath);
+    const [pub] = source.publications ?? [];
+    expect(pub?.variant).toBe('english-only');
+    expect(pub?.ocrTranscription).toBeDefined();
+    expect(pub?.machineAssist).toBeUndefined();
+  });
+
+  it('throws (locating) when variant "parallel" carries ocrTranscription instead of machineAssist', () => {
+    const filePath = writeSource(BASE + publicationsBlock(PARALLEL_OCR_TRANSCRIPTION_PUB));
+    expect(() => loadSourceFile(filePath)).toThrow(/publications\[0\]/);
+    expect(() => loadSourceFile(filePath)).toThrow(/parallel/);
     expect(() => loadSourceFile(filePath)).toThrow(/ocrTranscription/);
   });
 });

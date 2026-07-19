@@ -24,7 +24,7 @@ import { defaultHttpGet, type HttpGet } from '@/archive/public-cache';
 import { describeError } from '@/bibliography/load-primitives';
 import { loadSourceFile } from '@/bibliography/load';
 import type { Publication } from '@/model/publication';
-import { type Disclosure, mergeDisclosure } from '@/pdf/publish/disclosure';
+import { applyMachineAssistOverride, type Disclosure, mergeDisclosure } from '@/pdf/publish/disclosure';
 import { cdnUrl, legacyFlatKey, versionedKey } from '@/pdf/publish/key';
 import {
   buildManifest,
@@ -231,7 +231,9 @@ export async function runConfirm(
   const uploads: IssueUploadResult[] = [];
   let published = 0;
   let skipped = 0;
-  let disclosure: Disclosure = { machineAssist: opts.machineAssist };
+  // Built PURELY from per-issue outcomes (AUDIT-20260719-08) -- NOT
+  // pre-seeded from `opts.machineAssist` (see `applyMachineAssistOverride`).
+  let disclosure: Disclosure = {};
 
   for (const issue of present) {
     const outcome = await publishIssue(opts, issue, snapshotShort, cdnBase);
@@ -259,6 +261,10 @@ export async function runConfirm(
 
   // Record + commit only when at least one issue succeeded (G-5/G-6, FR-008).
   if (uploads.length > 0) {
+    // Kind-aware `opts.machineAssist` fallback, applied AFTER the loop's real
+    // evidence is known -- never contaminates an English (ocrTranscription)
+    // run (AUDIT-20260719-08).
+    disclosure = applyMachineAssistOverride(disclosure, opts, '<publish option --machine-assist>');
     await recordAndCommit(
       opts,
       uploads,
@@ -387,7 +393,9 @@ export async function runReconcile(
   const failures: PublishFailure[] = [];
   const uploads: IssueUploadResult[] = [];
   let recorded = 0;
-  let disclosure: Disclosure = { machineAssist: opts.machineAssist };
+  // Built PURELY from per-issue outcomes (AUDIT-20260719-08) -- see
+  // `runConfirm`'s matching comment + `applyMachineAssistOverride`.
+  let disclosure: Disclosure = {};
 
   for (const target of targets) {
     const outcome = await reconcileIssue(opts, target, cdnBase, httpGet);
@@ -409,6 +417,7 @@ export async function runReconcile(
 
   // Record + commit only when at least one issue was reconciled (G-5/G-6, FR-008).
   if (uploads.length > 0) {
+    disclosure = applyMachineAssistOverride(disclosure, opts, '<publish option --machine-assist>');
     await recordAndCommit(opts, uploads, disclosure, LEGACY_FLAT_CONTEXT, cdnBase, rightsBasis);
   }
 

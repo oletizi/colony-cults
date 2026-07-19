@@ -122,13 +122,41 @@ function validatePublicationManifestRef(
 }
 
 /**
+ * Enforce the variant x disclosure cross-check (AUDIT-20260719-07): `variant:
+ * "parallel"` is inherently a French-OCR / English-translation edition, so it
+ * MUST carry `machineAssist` and MUST NOT carry `ocrTranscription`. Reject
+ * only that one contradiction -- `variant: "english-only"` is deliberately
+ * AMBIGUOUS and valid with EITHER disclosure (a French source rendered
+ * english-only carries `machineAssist`; an English OCR source carries
+ * `ocrTranscription`), so it is never rejected here. Called AFTER
+ * `assertExactlyOneProvenanceDisclosure`, so `parallel` with no `machineAssist`
+ * is already covered (exactly-one guarantees the "neither" and "both" cases
+ * are rejected; the only remaining contradiction is `parallel` +
+ * `ocrTranscription`, which implies `parallel` + no `machineAssist`).
+ */
+function assertVariantMatchesDisclosure(publication: Publication, filePath: string, where: string): void {
+  if (publication.variant === 'parallel' && publication.ocrTranscription !== undefined) {
+    fail(
+      filePath,
+      `${where}: variant "parallel" carries an ocrTranscription disclosure -- "parallel" is ` +
+        `inherently a French-OCR / English-translation edition and must carry machineAssist ` +
+        `instead; refusing to load a publication whose variant and provenance disclosure ` +
+        `contradict each other.`,
+    );
+  }
+}
+
+/**
  * Parse one authored `publications[]` entry (specs/008 § 2; `machineAssist` /
  * `ocrTranscription` extended by spec 015 FR-008/FR-013). Any malformed shape
  * fails loud, including the ENFORCED exactly-one-disclosure invariant: a
  * publication must carry `machineAssist` XOR `ocrTranscription`, never both
  * and never neither (`assertExactlyOneProvenanceDisclosure`,
  * AUDIT-20260719-03/04) -- this loader is its own enforcement boundary, not a
- * deferral to `buildPublication`.
+ * deferral to `buildPublication` -- AND the variant x disclosure cross-check
+ * (`assertVariantMatchesDisclosure`, AUDIT-20260719-07): `parallel` requires
+ * `machineAssist` and forbids `ocrTranscription`; `english-only` is valid
+ * with either.
  */
 export function validatePublication(value: unknown, filePath: string, index: number): Publication {
   const where = `publications[${index}]`;
@@ -177,5 +205,6 @@ export function validatePublication(value: unknown, filePath: string, index: num
     filePath,
     where,
   );
+  assertVariantMatchesDisclosure(publication, filePath, where);
   return publication;
 }

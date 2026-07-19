@@ -260,23 +260,55 @@ function ocrSeverityOf(provenance: ProvenanceFields): OcrSeverity {
 }
 
 /**
- * The edition-level OCR-transcription caveat (spec 015 FR-009; fixes AUDIT-
- * 20260719-01, HIGH): the WORST OCR condition across ALL of the unit's
- * folios, not just the lead folio -- a lead folio that is clean must NOT
- * suppress a disclosure that a LATER folio is sub-`high` or `ocr_status:
- * failed` (Constitution I/III, evidence honesty). Reads every folio's
- * sidecar directly (not the per-page `ArchivePageContent.ocrCondition`
- * apparatus-note string, whose free-text format does not preserve the
- * severity ordering needed to pick a worst); fails loud, naming the sidecar
- * path (via `readProvenance`), on any folio whose sidecar is missing or
- * malformed -- no folio is silently skipped from the aggregation.
+ * The two derived, all-folios-aware pieces of the edition-level OCR-
+ * transcription disclosure (spec 015 FR-009/FR-013): the WORST OCR condition
+ * across every folio (the caveat) and a REPRESENTATIVE folio's `ocr_status`
+ * (the engine-status component). Computed together off ONE shared read of
+ * every folio's provenance sidecar (see {@link deriveOcrDisclosureAggregate}).
  */
-async function deriveWorstOcrCaveat(unit: SelectedUnit): Promise<string | null> {
+interface OcrDisclosureAggregate {
+  worstCaveat: string | null;
+  representativeStatus: string;
+}
+
+/**
+ * Read every folio's provenance sidecar ONCE and derive both all-folios-aware
+ * pieces of the OCR-transcription disclosure:
+ *
+ *  - `worstCaveat` (spec 015 FR-009; fixes AUDIT-20260719-01, HIGH): the
+ *    WORST OCR condition across ALL of the unit's folios, not just the lead
+ *    folio -- a lead folio that is clean must NOT suppress a disclosure that
+ *    a LATER folio is sub-`high` or `ocr_status: failed` (Constitution
+ *    I/III, evidence honesty).
+ *  - `representativeStatus` (fixes AUDIT-20260719-09, HIGH): the FIRST
+ *    folio's `ocr_status` that is NOT `blank_recto`-marked. T015's
+ *    blank/plate opt-out (FR-014) lets an English edition's lead folio
+ *    legitimately be an intentionally-blank cover/plate, whose OWN
+ *    `ocr_status` (e.g. `none`) is unrepresentative of the edition even
+ *    though later folios carry the real English OCR -- the lead folio's raw
+ *    status must never leak into the edition-level disclosure as though it
+ *    were representative. Fails loud (naming the context), WITHOUT
+ *    fabricating a status, only in the degenerate case where every folio in
+ *    the unit is `blank_recto`-marked (no folio has a usable status to
+ *    disclose).
+ *
+ * Reads every folio's sidecar directly (not the per-page
+ * `ArchivePageContent.ocrCondition` apparatus-note string, whose free-text
+ * format does not preserve the severity ordering needed to pick a worst);
+ * fails loud, naming the sidecar path (via `readProvenance`), on any folio
+ * whose sidecar is missing or malformed -- no folio is silently skipped from
+ * the aggregation.
+ */
+async function deriveOcrDisclosureAggregate(
+  unit: SelectedUnit,
+  context: string,
+): Promise<OcrDisclosureAggregate> {
   const provenances = await Promise.all(
     unit.folios.map((folio) =>
       readProvenance(path.join(folio.pageDir, `${folio.folioId}.yml`)),
     ),
   );
+
   let worst: OcrSeverity = { severity: 0, caveat: null };
   for (const provenance of provenances) {
     const candidate = ocrSeverityOf(provenance);
@@ -284,27 +316,35 @@ async function deriveWorstOcrCaveat(unit: SelectedUnit): Promise<string | null> 
       worst = candidate;
     }
   }
-  return worst.caveat;
+
+  const representative = provenances.find((provenance) => provenance.blank_recto !== true);
+  if (representative === undefined) {
+    throw new Error(
+      `${context}: every folio is blank_recto-marked -- no folio has a usable ` +
+        `OCR status to disclose as the edition's engineStatus.`,
+    );
+  }
+
+  return {
+    worstCaveat: worst.caveat,
+    representativeStatus: requireNonEmpty(representative.ocr_status, 'ocr_status', context),
+  };
 }
 
 /**
  * Build the English-path OCR-transcription disclosure (spec 015, FR-013):
- * `engineStatus` composes the pipeline's fixed OCR engine with the LEAD
- * folio's recorded `ocr_status` (e.g. `tesseract 5 (searchable)`) -- engine
- * identity is uniform across one edition's pipeline run, so the lead folio is
- * representative there. `caveat` is the pre-computed worst-across-all-folios
- * condition (see `deriveWorstOcrCaveat`, AUDIT-20260719-01) -- NOT derived
- * from the lead folio alone.
+ * `engineStatus` composes the pipeline's fixed OCR engine with a
+ * REPRESENTATIVE (non-`blank_recto`) folio's recorded `ocr_status` (e.g.
+ * `tesseract 5 (searchable)`) -- NEVER the raw lead folio's status alone,
+ * which can be an intentionally-blank cover/plate's unrepresentative status
+ * (AUDIT-20260719-09). `caveat` is the pre-computed worst-across-all-folios
+ * condition (AUDIT-20260719-01). Both pieces come from the same
+ * {@link deriveOcrDisclosureAggregate} read.
  */
-function buildOcrTranscription(
-  leadProvenance: ProvenanceFields,
-  worstCaveat: string | null,
-  context: string,
-): OcrTranscription {
-  const status = requireNonEmpty(leadProvenance.ocr_status, 'ocr_status', context);
+function buildOcrTranscription(aggregate: OcrDisclosureAggregate): OcrTranscription {
   return {
-    engineStatus: `${OCR_ENGINE} (${status})`,
-    caveat: worstCaveat,
+    engineStatus: `${OCR_ENGINE} (${aggregate.representativeStatus})`,
+    caveat: aggregate.worstCaveat,
   };
 }
 
@@ -395,11 +435,12 @@ export function makeArchiveEditionReader(deps: ArchiveEditionReaderDeps): Archiv
 
       // English editions carry no machine-assist label -- instead an honest
       // OCR-transcription disclosure (spec 015, FR-013), whose caveat is the
-      // WORST OCR condition across all folios, not just the lead
-      // (AUDIT-20260719-01).
+      // WORST OCR condition across all folios (AUDIT-20260719-01) and whose
+      // engineStatus is a REPRESENTATIVE (non-blank_recto) folio's status,
+      // never the raw lead folio's alone (AUDIT-20260719-09).
       const ocrTranscription =
         unit.readingLanguage === 'english'
-          ? buildOcrTranscription(leadProvenance, await deriveWorstOcrCaveat(unit), context)
+          ? buildOcrTranscription(await deriveOcrDisclosureAggregate(unit, context))
           : null;
 
       const colophon = assembleColophon({

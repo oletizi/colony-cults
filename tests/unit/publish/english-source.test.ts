@@ -28,7 +28,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { loadSourceFile } from '@/bibliography/load';
 import { writeSourceFile } from '@/bibliography/source-writer';
 import type { ArchivePinReader, CorpusSnapshotReader } from '@/pdf/load/edition';
-import type { OcrTranscription } from '@/pdf/model';
+import type { MachineAssistLabel, OcrTranscription } from '@/pdf/model';
 import { publish } from '@/pdf/publish/publish';
 import type { Source } from '@/model/source';
 
@@ -311,5 +311,271 @@ describe('publish() English-source edition (AUDIT-20260719-06): two issues with 
     const loaded = loadSourceFile(path.join(conflictSourcesDir, `${CONFLICT_SOURCE_ID}.yml`));
     expect(loaded.source.publications ?? []).toHaveLength(0);
     expect(conflictCommit).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * AUDIT-20260719-08 (HIGH, govern finding): `runConfirm`/`runReconcile`
+ * unconditionally seeded the running disclosure from `opts.machineAssist`
+ * (`let disclosure: Disclosure = { machineAssist: opts.machineAssist }`). For
+ * an English-source publish, every issue's `readIssueBuildInfo` outcome
+ * correctly carries `ocrTranscription` (never `machineAssist`) -- but the
+ * unconditional seed injected a `machineAssist` value from the RUN OPTION
+ * regardless, so `mergeDisclosure` produced a running disclosure with BOTH
+ * fields populated, and `buildPublication`'s exactly-one check rejected the
+ * whole (otherwise-valid) English run. This reproduces that seeded path
+ * directly (rather than relying on `publish.ts` never setting the option) and
+ * asserts the run SUCCEEDS, recording `ocrTranscription` only.
+ */
+describe('publish() English-source edition (AUDIT-20260719-08): opts.machineAssist seed must not contaminate an English (ocrTranscription) run', () => {
+  const SEEDED_SOURCE_ID = 'PB-993';
+  const SEEDED_ISSUE_IDS = ['1900-08-01_a', '1900-09-01_b'];
+
+  // A run-option machineAssist value that, pre-fix, unconditionally seeded the
+  // running disclosure -- simulating whatever upstream option resolution the
+  // AUDIT-08 finding flagged as an "invisible option coupling".
+  const SEEDED_MACHINE_ASSIST: MachineAssistLabel = {
+    engine: 'claude-code-cli',
+    model: 'claude-opus-4',
+    retrieved: '2026-07-19T00:00:00.000Z',
+  };
+
+  const seededPinReader: ArchivePinReader = { read: () => PIN_REF };
+  const seededCorpusSnapshotReader: CorpusSnapshotReader = {
+    read(sourceId: string) {
+      if (sourceId !== SEEDED_SOURCE_ID) {
+        throw new Error(`fake corpusSnapshotReader: unexpected sourceId ${sourceId}`);
+      }
+      return {
+        sources: [
+          {
+            sourceId: SEEDED_SOURCE_ID,
+            title: 'English Source Seeded-Option Test Source',
+            kind: 'periodical' as const,
+            ark: 'ark:/12148/english-source-seeded-test',
+            rights: 'public-domain',
+            issues: SEEDED_ISSUE_IDS.map((issueId, i) => ({
+              issueId,
+              date: '1900-08-01',
+              sequence: i + 1,
+              pages: [],
+            })),
+          },
+        ],
+        skipped: [],
+      };
+    },
+  };
+
+  let seededTmpRoot: string;
+  let seededSourcesDir: string;
+  let seededPublicationsDir: string;
+  let seededOutDir: string;
+  let seededStore: FakeObjectStore;
+  let seededCommit: ReturnType<typeof vi.fn>;
+
+  beforeAll(() => {
+    seededTmpRoot = mkdtempSync(
+      path.join(tmpdir(), 'corpus-print-pdf-publish-english-source-seeded-'),
+    );
+    seededSourcesDir = path.join(seededTmpRoot, 'bibliography', 'sources');
+    seededPublicationsDir = path.join(seededTmpRoot, 'bibliography', 'publications');
+    seededOutDir = path.join(seededTmpRoot, 'build', 'pdf');
+
+    const source: Source = {
+      sourceId: SEEDED_SOURCE_ID,
+      titles: [{ text: 'English Source Seeded-Option Test Source', role: 'canonical' }],
+      kind: 'periodical',
+      identifiers: [],
+      rights: { status: 'public-domain', basis: RIGHTS_BASIS },
+    };
+    mkdirSync(seededSourcesDir, { recursive: true });
+    writeSourceFile(seededSourcesDir, { source, records: [] });
+
+    const sourceOutDir = path.join(seededOutDir, SEEDED_SOURCE_ID);
+    mkdirSync(sourceOutDir, { recursive: true });
+    for (const issueId of SEEDED_ISSUE_IDS) {
+      writeFileSync(
+        path.join(sourceOutDir, `${issueId}.pdf`),
+        Buffer.from(`%PDF-1.4 english-source seeded-option stub for ${issueId}\n`, 'utf-8'),
+      );
+      const pages = Array.from({ length: PAGE_COUNT }, () => ({ recto: { machineAssist: null } }));
+      writeFileSync(
+        path.join(sourceOutDir, `${issueId}.input.json`),
+        JSON.stringify({ pages, colophon: { ocrTranscription: OCR_TRANSCRIPTION } }),
+        'utf-8',
+      );
+    }
+
+    seededStore = new FakeObjectStore();
+    seededCommit = vi.fn();
+  });
+
+  afterAll(() => {
+    rmSync(seededTmpRoot, { recursive: true, force: true });
+  });
+
+  it('succeeds (does not reject as both-disclosures) when opts.machineAssist is set alongside English (ocrTranscription) issues', async () => {
+    const result = await publish({
+      sourceId: SEEDED_SOURCE_ID,
+      variant: VARIANT,
+      confirm: true,
+      outDir: seededOutDir,
+      sourcesDir: seededSourcesDir,
+      publicationsDir: seededPublicationsDir,
+      store: seededStore,
+      clock: fixedClock,
+      pinReader: seededPinReader,
+      corpusSnapshotReader: seededCorpusSnapshotReader,
+      cdnBase: CDN_BASE,
+      warm: false,
+      commit: seededCommit,
+      // The seeded run option AUDIT-20260719-08 flags: must NOT contaminate
+      // an English (ocrTranscription) run.
+      machineAssist: SEEDED_MACHINE_ASSIST,
+      log: () => {},
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.mode).toBe('confirm');
+    expect(result.published).toBe(SEEDED_ISSUE_IDS.length);
+    expect(result.failed).toBe(0);
+    expect(result.failures).toEqual([]);
+
+    const loaded = loadSourceFile(path.join(seededSourcesDir, `${SEEDED_SOURCE_ID}.yml`));
+    expect(loaded.source.publications).toHaveLength(1);
+    const publication = loaded.source.publications?.[0];
+    if (publication === undefined) {
+      throw new Error('test bug: publication entry missing after seeded-option English publish');
+    }
+    // Recorded: ocrTranscription only, no machineAssist -- the seeded run
+    // option must be dropped, not merged in alongside the English disclosure.
+    expect(publication.ocrTranscription).toEqual(OCR_TRANSCRIPTION);
+    expect(publication.machineAssist).toBeUndefined();
+  });
+});
+
+/**
+ * AUDIT-20260719-08 companion: a French (machineAssist) run with the SAME
+ * opts.machineAssist seed present must still succeed and record machineAssist
+ * only -- proves the fix does not merely drop opts.machineAssist unconditionally,
+ * only when it would contradict an English (ocrTranscription) run.
+ */
+describe('publish() French edition: opts.machineAssist seed still works for a machineAssist-carrying (parallel) run', () => {
+  const FRENCH_SOURCE_ID = 'PB-994';
+  const FRENCH_ISSUE_IDS = ['1900-10-01_a'];
+  const FRENCH_VARIANT = 'parallel' as const;
+
+  const FRENCH_MACHINE_ASSIST: MachineAssistLabel = {
+    engine: 'claude-code-cli',
+    model: 'claude-opus-4',
+    retrieved: '2026-07-19T00:00:00.000Z',
+  };
+
+  const frenchPinReader: ArchivePinReader = { read: () => PIN_REF };
+  const frenchCorpusSnapshotReader: CorpusSnapshotReader = {
+    read(sourceId: string) {
+      if (sourceId !== FRENCH_SOURCE_ID) {
+        throw new Error(`fake corpusSnapshotReader: unexpected sourceId ${sourceId}`);
+      }
+      return {
+        sources: [
+          {
+            sourceId: FRENCH_SOURCE_ID,
+            title: 'French Test Source',
+            kind: 'periodical' as const,
+            ark: 'ark:/12148/french-seeded-test',
+            rights: 'public-domain',
+            issues: FRENCH_ISSUE_IDS.map((issueId, i) => ({
+              issueId,
+              date: '1900-10-01',
+              sequence: i + 1,
+              pages: [],
+            })),
+          },
+        ],
+        skipped: [],
+      };
+    },
+  };
+
+  let frenchTmpRoot: string;
+  let frenchSourcesDir: string;
+  let frenchPublicationsDir: string;
+  let frenchOutDir: string;
+  let frenchStore: FakeObjectStore;
+  let frenchCommit: ReturnType<typeof vi.fn>;
+
+  beforeAll(() => {
+    frenchTmpRoot = mkdtempSync(path.join(tmpdir(), 'corpus-print-pdf-publish-french-seeded-'));
+    frenchSourcesDir = path.join(frenchTmpRoot, 'bibliography', 'sources');
+    frenchPublicationsDir = path.join(frenchTmpRoot, 'bibliography', 'publications');
+    frenchOutDir = path.join(frenchTmpRoot, 'build', 'pdf');
+
+    const source: Source = {
+      sourceId: FRENCH_SOURCE_ID,
+      titles: [{ text: 'French Test Source', role: 'canonical' }],
+      kind: 'periodical',
+      identifiers: [],
+      rights: { status: 'public-domain', basis: RIGHTS_BASIS },
+    };
+    mkdirSync(frenchSourcesDir, { recursive: true });
+    writeSourceFile(frenchSourcesDir, { source, records: [] });
+
+    const sourceOutDir = path.join(frenchOutDir, FRENCH_SOURCE_ID);
+    mkdirSync(sourceOutDir, { recursive: true });
+    for (const issueId of FRENCH_ISSUE_IDS) {
+      writeFileSync(
+        path.join(sourceOutDir, `${issueId}.pdf`),
+        Buffer.from(`%PDF-1.4 french stub for ${issueId}\n`, 'utf-8'),
+      );
+      const pages = Array.from({ length: PAGE_COUNT }, () => ({
+        recto: { machineAssist: FRENCH_MACHINE_ASSIST },
+      }));
+      writeFileSync(
+        path.join(sourceOutDir, `${issueId}.input.json`),
+        JSON.stringify({ pages }),
+        'utf-8',
+      );
+    }
+
+    frenchStore = new FakeObjectStore();
+    frenchCommit = vi.fn();
+  });
+
+  afterAll(() => {
+    rmSync(frenchTmpRoot, { recursive: true, force: true });
+  });
+
+  it('succeeds and records machineAssist only, with opts.machineAssist seed present', async () => {
+    const result = await publish({
+      sourceId: FRENCH_SOURCE_ID,
+      variant: FRENCH_VARIANT,
+      confirm: true,
+      outDir: frenchOutDir,
+      sourcesDir: frenchSourcesDir,
+      publicationsDir: frenchPublicationsDir,
+      store: frenchStore,
+      clock: fixedClock,
+      pinReader: frenchPinReader,
+      corpusSnapshotReader: frenchCorpusSnapshotReader,
+      cdnBase: CDN_BASE,
+      warm: false,
+      commit: frenchCommit,
+      machineAssist: FRENCH_MACHINE_ASSIST,
+      log: () => {},
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.published).toBe(FRENCH_ISSUE_IDS.length);
+    expect(result.failed).toBe(0);
+
+    const loaded = loadSourceFile(path.join(frenchSourcesDir, `${FRENCH_SOURCE_ID}.yml`));
+    const publication = loaded.source.publications?.[0];
+    if (publication === undefined) {
+      throw new Error('test bug: publication entry missing after French seeded-option publish');
+    }
+    expect(publication.machineAssist).toEqual(FRENCH_MACHINE_ASSIST);
+    expect(publication.ocrTranscription).toBeUndefined();
   });
 });
