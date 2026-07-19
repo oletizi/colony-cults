@@ -10,11 +10,11 @@ No new CLI verb — Papers Past plugs into the existing `bib acquire` member pat
 
 | Outcome | Behaviour | Exit |
 |---------|-----------|------|
-| Acquire a public-domain papers-past member | page-masters + ocr-text mirrored to B2; assets + provenance recorded | 0 |
+| Acquire a public-domain papers-past member | page-masters mirrored to B2; assets + provenance recorded (OCR out of scope — downstream pipeline) | 0 |
 | `--dry-run` | read-only validation; 0 object-store writes, 0 record mutation | 0 |
 | Record not assessed public-domain | fail-loud refusal, 0 side effects (fail-closed gate) | non-zero |
 | Not an article / missing id / WAF-gated image | fail-loud (never fabricate, never mirror a challenge) | non-zero |
 
 ## `bib inventory` allowlist
 
-`papers-past` is added to the repository allowlist / enumeration `bib inventory` surfaces, so a papers-past member is a recognized, inventoriable repository (parity with gallica/museum/internet-archive).
+`papers-past` is added to the repository allowlist `bib inventory` surfaces (in `src/cli/bib-inventory.ts`), so a papers-past member is a recognized, inventoriable repository (parity with `gallica`/`new-italy-museum`/`internet-archive` — the actual `RepositoryName` values).

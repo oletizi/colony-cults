@@ -6,7 +6,7 @@
 
 ## Summary
 
-Add a `RepositoryAdapter` for Papers Past (NLNZ) so `bib acquire` can mirror one discrete public-domain Papers Past newspaper article — its page-image facsimile (N sequenced `/imageserver/...` GIF segments) plus OCR text — into the corpus archive + B2, end-to-end, parallel to the museum/IA adapters. The adapter reads the Incapsula-WAF-gated article page through the shipped spec-014 real-browser `BrowserSession` (persist-before-analysis) and fetches image bytes through the polite bulk-acquisition `HttpClient` (hybrid, guarded fail-loud against a WAF/non-image response). Rights are evidence-first (the adapter surfaces NLNZ's "No known copyright (New Zealand)" verbatim, no verdict) and fail-closed on an operator public-domain `RightsAssessment`. The de Rays article (SRCH-0018/0019) is made acquirable as a source-group member reusing the existing member-acquire path.
+Add a `RepositoryAdapter` for Papers Past (NLNZ) so `bib acquire` can mirror one discrete public-domain Papers Past newspaper article — its page-image facsimile (N sequenced `/imageserver/...` GIF segments) — into the corpus archive + B2, end-to-end, parallel to the museum/IA adapters. The adapter reads the Incapsula-WAF-gated article page through the shipped spec-014 real-browser `BrowserSession` (persist-before-analysis) and fetches image bytes through the polite bulk-acquisition `HttpClient` (hybrid, guarded fail-loud against a WAF/non-image response). Rights are evidence-first (the adapter surfaces NLNZ's "No known copyright (New Zealand)" verbatim, no verdict) and fail-closed on an operator public-domain `RightsAssessment`. The de Rays article (SRCH-0018/0019) is made acquirable as a source-group member reusing the existing member-acquire path. OCR text is out of scope as an acquired asset (the existing OCR/translation pipeline produces it from the held facsimile; operator decision, clarified 2026-07-19).
 
 ## Technical Context
 
@@ -48,7 +48,7 @@ No violations → Complexity Tracking empty.
 ```text
 specs/015-papers-past-acquisition/
 ├── plan.md              # This file
-├── research.md          # Phase 0 (R1 image fetch, R2 OCR role, R3 facsimile, R4-R7 reuse)
+├── research.md          # Phase 0 (R1 image fetch, R2 OCR — out of scope, R3 facsimile, R4-R7 reuse)
 ├── data-model.md        # Phase 1 (vocab additions, ResolvedArticle, RightsEvidence, AcquiredAsset, key layout)
 ├── quickstart.md        # Phase 1 (7 validation scenarios)
 ├── contracts/           # Phase 1 (adapter.md, cli.md)
@@ -60,19 +60,19 @@ specs/015-papers-past-acquisition/
 ```text
 src/
 ├── model/
-│   ├── identifiers.ts             # + 'papers-past' to CopyLevelIdentifierType / COPY_LEVEL_TYPES
-│   └── acquired-asset.ts          # + 'ocr-text' role
+│   └── identifiers.ts             # + 'papers-past' to CopyLevelIdentifierType / COPY_LEVEL_TYPES
 ├── repository/
 │   ├── adapter.ts                 # + 'papers-past' to RepositoryName
 │   ├── registry.ts                # + IDENTIFIER_TYPE_REPOSITORY row
 │   └── papers-past/
+│       ├── types.ts               # ParsedArticle result interface (interface-first)
 │       ├── adapter.ts             # PapersPastAdapter (resolve/collectRightsEvidence/acquire)
-│       ├── parse.ts               # mechanical article parse (title, image URLs, OCR, metadata, rights)
+│       ├── parse.ts               # mechanical article parse (title, image URLs, metadata, rights, optional OCR)
 │       └── index.ts               # barrel
 └── cli/
     ├── bib-acquire-papers-past.ts # buildPapersPastAdapterForMember (mirror bib-acquire-museum.ts)
-    ├── bib-sourcegroup-acquire.ts # wire the builder into runAcquireCli
-    └── bib-sourcegroup.ts         # inventory repository allowlist + registry wiring
+    ├── bib-sourcegroup-acquire.ts # wire the builder into runAcquireCli + registry
+    └── bib-inventory.ts           # inventory repository allowlist (gallica/new-italy-museum/internet-archive → +papers-past)
 
 tests/unit/repository/papers-past/
 ├── adapter.test.ts                # resolve / rights-evidence / acquire (fail-closed, idempotent, dry-run, image-guard)

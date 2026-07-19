@@ -1,6 +1,6 @@
 # Phase 0 Research: Papers Past Acquisition Adapter
 
-Resolves the plan-level unknowns, including the two research points deferred from the spec (image-CDN reachability; OCR-text storage role) and the architecture-reuse decisions.
+Resolves the plan-level unknowns, including the research points deferred from the spec (image-CDN reachability; OCR-text handling) and the architecture-reuse decisions.
 
 ## R1 — Image fetch mechanism (spec research point 1)
 
@@ -14,13 +14,13 @@ Resolves the plan-level unknowns, including the two research points deferred fro
 
 **Alternatives considered.** All-browser byte-fetch from the start (safest, but extends the browser before it is known to be necessary — the operator chose hybrid). Confirm-first (the operator declined pre-committing to it).
 
-## R2 — OCR-text storage (spec research point 2)
+## R2 — OCR-text handling (spec research point 2) — RESOLVED: OUT OF SCOPE
 
-**Decision.** Add an **`ocr-text`** role to the `AcquiredAsset` role union and store the article's OCR text as a **separate object** (a `.txt`) under `archive/papers-past/<article-id>/`, checksummed and provenanced exactly like the `page-master` images.
+**Decision (operator, 2026-07-19).** OCR text is **out of scope as an acquired asset** for this adapter. The corpus already has an OCR + translation pipeline that produces OCR from the held page-image facsimile, so the adapter neither stores OCR as an `AcquiredAsset` nor adds an `'ocr-text'` role. The mechanical parse MAY expose the on-page OCR text as an OPTIONAL convenience field of its pure result type (`ParsedArticle.ocrText?`), best-effort and never fabricated, but it is not propagated to `acquire` and not persisted.
 
-**Rationale.** The OCR is held corpus content — searchable, citable, first-class — not mere retrieval metadata. Treating it as an `AcquiredAsset` (its own object key + checksum + provenance) makes it durable and grep-traceable, consistent with how the corpus treats acquired content. It is a companion to the page-image master (which remains the authoritative facsimile).
+**Rationale.** OCR is a nice-to-have here, not a preservation deliverable: the page-image facsimile is the authoritative master, and OCR is generated downstream by the existing pipeline (single source of OCR truth, no duplicate/competing OCR path). This also avoids introducing a type-safe OCR carrier on the shared `ResolvedRepositoryItem` contract for an optional field (analyze finding H1). Rights statement + article date ride the existing `metadata` carrier (museum pattern), so no shared-contract change is needed.
 
-**Alternatives considered.** Store the OCR in the record's `metadataSnapshot` (lighter, but the OCR is then not a first-class held/searchable asset and lacks its own checksum/provenance). Store as an untyped page-master-adjacent file (ambiguous role, breaks the typed roles union).
+**Alternatives considered (superseded).** Add an `'ocr-text'` role + store the OCR `.txt` as a first-class checksummed asset (rejected — duplicates the pipeline's job and forces an OCR carrier on the shared contract). Store OCR in the record `metadataSnapshot` (rejected — same duplication, and the adapter is not the OCR source of truth).
 
 ## R3 — Facsimile composition
 

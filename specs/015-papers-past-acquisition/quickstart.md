@@ -11,7 +11,7 @@ Runnable scenarios that prove the feature works end to end. Details live in [con
 
 Fake `BrowserSession` scripts the persisted de Rays article HTML; fake `byteFetch` returns valid GIF bytes per segment; fake `ObjectStore` records puts. Drive `acquire` on a record assessed `public-domain`.
 
-Expect: N `page-master` GIF assets + 1 `ocr-text` asset put under `archive/papers-past/<id>/<sha256>.{gif,txt}`; assets + provenance returned; deterministic keys.
+Expect: N `page-master` GIF assets put under `archive/papers-past/<id>/<sha256>.gif`; assets + provenance returned; deterministic keys. (No OCR asset — OCR is out of scope for the adapter; clarified 2026-07-19.)
 
 ## Scenario 2 — Rights fail-closed (unit)
 
@@ -31,7 +31,7 @@ Fetch one real `/imageserver/...` URL via the polite `HttpClient`. Expect a vali
 
 ## Scenario 6 — Live end-to-end acquisition (env-gated)
 
-With the NZ-press source-group member (the de Rays article, assessed public-domain) and archive/B2 configured: `bib acquire <member>`. Expect exit 0; the article's page-image facsimile + OCR held in the archive clone + B2 with provenance; `bib show` reflects the held assets. Re-run → idempotent. Requires `RUN_PAPERS_PAST_ACQUIRE=1`.
+With the NZ-press source-group member (the de Rays article, assessed public-domain) and archive/B2 configured: `bib acquire <member>`. Expect exit 0; the article's page-image facsimile held in the archive clone + B2 with provenance; `bib show` reflects the held assets. Re-run → idempotent. Requires `RUN_PAPERS_PAST_ACQUIRE=1`. (OCR produced downstream by the existing OCR pipeline, not by this adapter.)
 
 ## Scenario 7 — Unit suite is hermetic
 

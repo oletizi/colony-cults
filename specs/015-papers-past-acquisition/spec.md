@@ -4,7 +4,7 @@
 **Created**: 2026-07-18
 **Status**: Draft
 **Origin**: backlog thread TASK-39 (NZ press discovery); design at `docs/superpowers/specs/2026-07-18-papers-past-acquisition-adapter-design.md`
-**Input**: Add a repository adapter for Papers Past (NLNZ) so `bib acquire` can mirror one discrete public-domain Papers Past newspaper article — its page-image facsimile(s) plus OCR text — into the corpus archive and B2, end-to-end, parallel to the Gallica / New Italy Museum / Internet Archive adapters.
+**Input**: Add a repository adapter for Papers Past (NLNZ) so `bib acquire` can mirror one discrete public-domain Papers Past newspaper article — its page-image facsimile(s) — into the corpus archive and B2, end-to-end, parallel to the Gallica / New Italy Museum / Internet Archive adapters. (OCR text is out of scope as an acquired asset — handled by the existing OCR/translation pipeline; clarified 2026-07-19.)
 
 ## Context
 
@@ -16,19 +16,23 @@ Search-log SRCH-0018/0019 established a live, high-yield, previously-untried dis
 
 - Q: How is the de Rays article made acquirable so `bib acquire` (which operates on a source-group member with status approved-for-acquisition) can process it? → A: Source-group membership — add the article as a member of a source-group and reuse the existing member-acquire path unchanged; the standalone-source approval path (TASK-27) is NOT pulled into this feature's scope.
 
+### Session 2026-07-19
+
+- Q: Should the adapter mirror the article's OCR text as a first-class acquired asset (an `ocr-text` companion)? → A: No — OCR is optional/nice-to-have and out of scope for this adapter. The corpus already has an OCR + translation pipeline that produces OCR from the held page-image facsimile. The adapter's required deliverable is the page-image facsimile (the preservation master); the mechanical parse MAY expose the on-page OCR text as an optional convenience field, but the adapter neither stores it as an asset nor fails when it is absent. (Operator scope decision — resolves analyze finding H1: `ResolvedRepositoryItem` has no type-safe carrier for full OCR text, and building one for an optional field is unwarranted.)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Acquire one public-domain Papers Past article end-to-end (Priority: P1) 🎯 MVP
 
-An operator has a corpus Source for a discrete Papers Past article (identified by its article code, e.g. `HNS18840103.2.19.3`) with an operator-authored public-domain rights assessment. They run `bib acquire` for it. The system resolves the article, mirrors its page-image facsimile(s) and OCR text into the corpus archive and B2 object store, and records the acquired assets + provenance on the copy record — with the same idempotency, dry-run safety, and fail-loud guarantees as the existing adapters.
+An operator has a corpus Source for a discrete Papers Past article (identified by its article code, e.g. `HNS18840103.2.19.3`) with an operator-authored public-domain rights assessment. They run `bib acquire` for it. The system resolves the article, mirrors its page-image facsimile(s) into the corpus archive and B2 object store, and records the acquired assets + provenance on the copy record — with the same idempotency, dry-run safety, and fail-loud guarantees as the existing adapters. (OCR text is out of scope as an acquired asset — the existing OCR/translation pipeline produces it from the held facsimile; clarified 2026-07-19.)
 
 **Why this priority**: This is the whole point of the feature — turning the validated, high-yield Papers Past vein from queryable into acquirable. Everything else (rights gating, fetch mechanics) exists to make this one acquisition correct and safe.
 
-**Independent Test**: With a fake browser session (scripting the persisted article HTML), a fake byte-fetch client, and a fake object store, drive `acquire` on a record carrying a public-domain assessment; confirm the page-image asset(s) + OCR companion are put to the object store under `archive/papers-past/<id>/…`, the assets + provenance are recorded, a re-run is idempotent (no duplicate write), and a dry run performs no object-store write.
+**Independent Test**: With a fake browser session (scripting the persisted article HTML), a fake byte-fetch client, and a fake object store, drive `acquire` on a record carrying a public-domain assessment; confirm the page-image asset(s) are put to the object store under `archive/papers-past/<id>/…`, the assets + provenance are recorded, a re-run is idempotent (no duplicate write), and a dry run performs no object-store write.
 
 **Acceptance Scenarios**:
 
-1. **Given** a Source + `papers-past` copy record with a public-domain rights assessment and the article's persisted page, **When** `bib acquire` runs, **Then** the adapter resolves the article (title, page-image URLs, OCR text, metadata), fetches each page-image, computes its checksum, puts it to the object store under a deterministic `archive/papers-past/<id>/<sha256>.<ext>` key with `role: page-master` (sequenced), stores the OCR text as a companion, and records the `AcquiredAsset`s + provenance on the record.
+1. **Given** a Source + `papers-past` copy record with a public-domain rights assessment and the article's persisted page, **When** `bib acquire` runs, **Then** the adapter resolves the article (title, page-image URLs, rights statement, metadata), fetches each page-image, computes its checksum, puts it to the object store under a deterministic `archive/papers-past/<id>/<sha256>.<ext>` key with `role: page-master` (sequenced), and records the `AcquiredAsset`s + provenance on the record. (OCR text is not stored by the adapter — it is produced downstream by the existing OCR pipeline; clarified 2026-07-19.)
 2. **Given** an article already acquired (assets present in the object store at the same checksum), **When** `bib acquire` re-runs, **Then** no duplicate object-store write occurs and the result converges on the existing assets (idempotent by object key + checksum).
 3. **Given** `--dry-run`, **When** `bib acquire` runs, **Then** the item is validated read-only and NO object-store write and NO record mutation occur.
 4. **Given** the remote article page or image has changed since resolution (checksum/identity mismatch), **When** acquisition proceeds, **Then** the run fails loud rather than silently mirroring changed bytes.
@@ -70,7 +74,7 @@ Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client
 
 - **Image CDN also WAF-gated**: if the page-image URLs are not reachable by the stateless byte-fetch client (Incapsula covers them too), the adapter MUST fail loud with a clear diagnostic rather than mirror a challenge page as if it were an image; the resolution (browser byte-fetch) is a documented follow-up decided in the research phase.
 - **Article with multiple page-images**: a single article can span multiple image scans; all are acquired as sequenced `page-master` assets, none silently dropped.
-- **OCR text absent or empty**: if the article page has no OCR text panel, the page-image facsimile is still the master; the missing OCR is recorded honestly, not fabricated.
+- **OCR text absent or empty**: OCR is optional (out of scope as an acquired asset; clarified 2026-07-19). The page-image facsimile is always the master; if the article page has no OCR text panel the optional parse field is simply absent (never fabricated), and acquisition is unaffected.
 - **Non-public-domain / unassessed record**: acquisition refuses fail-loud with zero side effects (US2).
 - **Remote change between resolve and acquire**: identity/checksum mismatch fails loud (US1 scenario 4); no silent mirror of changed bytes.
 - **Not an article page** (wrong code, a search or error page): resolution fails loud rather than fabricating identifiers or assets.
@@ -87,13 +91,13 @@ Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client
 **Adapter contract**
 
 - **FR-003**: The system MUST provide a Papers Past repository adapter implementing the existing `RepositoryAdapter` contract (`resolve`, `collectRightsEvidence`, `acquire`) with constructor-injected dependencies (a governed browser session, a byte-fetch client, an object store, an injectable clock) so the adapter is unit-testable with no network and no host mutation.
-- **FR-004**: `resolve` MUST read the article page through the governed real-browser session, persist the raw page before any parsing, and mechanically parse the article title, the page-image asset URL(s), the OCR text, the newspaper/date/page metadata, and the rights statement. It MUST fail loud when the article code or the page-image URL(s) are absent (never fabricate an identifier or asset — resolve-fail-loud).
+- **FR-004**: `resolve` MUST read the article page through the governed real-browser session, persist the raw page before any parsing, and mechanically parse the article title, the page-image asset URL(s), the newspaper/date/page metadata, and the rights statement (and MAY expose the on-page OCR text as an optional convenience field — never fabricated, not stored as an asset). It MUST fail loud when the article code or the page-image URL(s) are absent (never fabricate an identifier or asset — resolve-fail-loud).
 - **FR-005**: `collectRightsEvidence` MUST surface the article's rights statement ("No known copyright (New Zealand)") verbatim as raw rights evidence, with NZ jurisdiction and the grounded article date, and MUST NOT carry any rights-status verdict (evidence, not judgment).
 - **FR-006**: `acquire` MUST refuse fail-loud, before any page fetch or object-store write, unless the record carries an operator-authored public-domain rights assessment (fail-closed rights gate).
-- **FR-007**: `acquire` MUST fetch each page-image via the polite bulk-acquisition byte-fetch client, compute a content checksum, and put each to the object store under a deterministic `archive/papers-past/<article-id>/<sha256>.<ext>` key with `role: page-master` and a stable sequence, and MUST persist the article's OCR text as a companion of the acquired record.
+- **FR-007**: `acquire` MUST fetch each page-image via the polite bulk-acquisition byte-fetch client, compute a content checksum, and put each to the object store under a deterministic `archive/papers-past/<article-id>/<sha256>.<ext>` key with `role: page-master` and a stable sequence. OCR text is NOT stored by the adapter (out of scope — the existing OCR/translation pipeline produces it from the held facsimile; clarified 2026-07-19).
 - **FR-008**: `acquire` MUST be idempotent by object key + checksum — a re-run of an already-mirrored article MUST NOT write a duplicate — and MUST fail loud on a remote-change / identity mismatch rather than mirror changed bytes.
 - **FR-009**: Under dry-run, `acquire` MUST perform read-only validation with NO object-store write and NO record mutation.
-- **FR-010**: `acquire` MUST return a typed acquisition result (assets + metadata snapshot + completeness) that the persistence layer records on the copy record, so a subsequent `bib show`/coverage reflects the held facsimile + OCR.
+- **FR-010**: `acquire` MUST return a typed acquisition result (assets + metadata snapshot + completeness) that the persistence layer records on the copy record, so a subsequent `bib show`/coverage reflects the held facsimile.
 
 **CLI + member integration**
 
@@ -109,15 +113,15 @@ Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client
 ### Key Entities *(include if data involved)*
 
 - **PapersPastCopy**: a copy record of kind `papers-past` whose identifier value is the article code; carries the operator rights assessment, the source (article) URL, and the acquired assets.
-- **ResolvedArticle**: the mechanically-parsed article — identifiers, title, page-image asset locators, OCR text, newspaper/date/page metadata — produced by `resolve`.
+- **ResolvedArticle**: the mechanically-parsed article — identifiers, title, page-image asset locators, newspaper/date/page metadata, rights statement, and an optional (non-propagated) OCR-text convenience field — produced by `resolve`.
 - **RightsEvidence (NZ)**: the verbatim NLNZ "No known copyright (New Zealand)" statement + jurisdiction + grounded date, with no verdict.
-- **AcquiredAsset (page-master / OCR companion)**: the mirrored page-image facsimile(s) and the OCR text, each with object-store key, checksum, byte length, role, and provenance path.
+- **AcquiredAsset (page-master)**: the mirrored page-image facsimile(s), each with object-store key, checksum, byte length, `role: page-master`, sequence, and provenance path. (OCR text is not an acquired asset of this adapter; clarified 2026-07-19.)
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: An operator can acquire the validated de Rays Papers Past article end-to-end with a single `bib acquire` invocation, and its page-image facsimile + OCR text are held in the corpus archive + B2 with recorded provenance.
+- **SC-001**: An operator can acquire the validated de Rays Papers Past article end-to-end with a single `bib acquire` invocation, and its page-image facsimile is held in the corpus archive + B2 with recorded provenance. (OCR is produced downstream by the existing OCR pipeline, not by this adapter; clarified 2026-07-19.)
 - **SC-002**: 0 acquisitions occur on an unassessed or non-public-domain record — every mirrored article is preceded by an operator public-domain rights assessment (fail-closed).
 - **SC-003**: A re-run of an already-acquired article performs 0 duplicate object-store writes (idempotent), and a dry run performs 0 writes.
 - **SC-004**: 0 rights verdicts are authored by the adapter — every rights judgment in the record is operator-authored; the adapter contributes evidence only.
@@ -131,4 +135,4 @@ Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client
 - The corpus archive root and B2 object-store credentials are configured for a real acquisition run (per the per-session-archive-clone policy); the adapter itself needs no credentials for resolve-only use.
 - MVP scope is one-article acquisition. Batch acquisition of many articles, a deduplicated discrete-item census of the 695, whole-page / whole-issue acquisition, and the US (Chronicling America) / Italian (Camera dei Deputati) axes are explicit follow-ons, out of scope here.
 - Member acquirability is via **source-group membership**, reusing the existing member-acquire path (clarified 2026-07-18); the standalone-source approval path (TASK-27) is out of scope.
-- Two points remain deferred to the plan's research phase: (1) whether the Papers Past image CDN is reachable statelessly or is WAF-gated (fallback: browser byte-fetch); (2) OCR-text storage as a new `ocr-text` asset role vs the metadata snapshot.
+- One point remains deferred to the plan's research phase: whether the Papers Past image CDN is reachable statelessly or is WAF-gated (fallback: browser byte-fetch). (The former second research point — OCR-text storage role — is resolved: OCR is out of scope as an acquired asset; the existing OCR/translation pipeline handles it. Operator decision, clarified 2026-07-19.)
