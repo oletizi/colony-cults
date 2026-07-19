@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/english-source-pdf",
+  "governedShaBase": "3f08343",
+  "headSha": "02e86dc9102eeddec59ca18888aad40128e15be5",
+  "chunkIds": [
+    "02c52cc09551e2c3",
+    "4fe682ce65e90a8f",
+    "80a3b52766e9988e",
+    "8c6d87ad9b9df038",
+    "deeb8ffa373f7458"
+  ],
+  "rounds": 1,
+  "liftedFindings": [
+    {
+      "id": "80a3b52766e9988e::AUDIT-BARRAGE-claude-04+AUDIT-BARRAGE-codex-01",
+      "title": "Colophon OCR-quality caveat is sampled only from the lead folio, so a mixed-quality edition can disclose \"clean\" while carrying sub-high pages",
+      "severity": "high"
+    },
+    {
+      "id": "deeb8ffa373f7458::AUDIT-BARRAGE-codex-01",
+      "title": "English input JSON now publishes as a hard failure",
+      "severity": "high"
+    }
+  ],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [
+      {
+        "a": "02c52cc09551e2c3",
+        "b": "4fe682ce65e90a8f"
+      },
+      {
+        "a": "02c52cc09551e2c3",
+        "b": "80a3b52766e9988e"
+      },
+      {
+        "a": "02c52cc09551e2c3",
+        "b": "8c6d87ad9b9df038"
+      },
+      {
+        "a": "02c52cc09551e2c3",
+        "b": "deeb8ffa373f7458"
+      },
+      {
+        "a": "4fe682ce65e90a8f",
+        "b": "80a3b52766e9988e"
+      },
+      {
+        "a": "4fe682ce65e90a8f",
+        "b": "8c6d87ad9b9df038"
+      },
+      {
+        "a": "4fe682ce65e90a8f",
+        "b": "deeb8ffa373f7458"
+      },
+      {
+        "a": "80a3b52766e9988e",
+        "b": "8c6d87ad9b9df038"
+      },
+      {
+        "a": "80a3b52766e9988e",
+        "b": "deeb8ffa373f7458"
+      },
+      {
+        "a": "8c6d87ad9b9df038",
+        "b": "deeb8ffa373f7458"
+      }
+    ],
+    "findings": [],
+    "suppressedCompatible": 1
+  },
+  "splitClusterRefs": [
+    "0e23e1234a2a026c"
+  ],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-print-pdf"
+}
