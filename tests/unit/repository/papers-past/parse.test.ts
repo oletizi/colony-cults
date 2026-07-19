@@ -30,12 +30,14 @@ describe('parseArticle -- real fixture de-rays-article.html', () => {
     expect(article.title).toContain('CONVICTION OF MARQUIS DE RAYS');
   });
 
-  it('extracts 3 image locators sequenced by area, urls pointing at /imageserver/', () => {
+  it('extracts 3 image locators sequenced by area, resolved to ABSOLUTE /imageserver/ urls', () => {
     const article = parseArticle(FIXTURE_HTML, FIXTURE_URL);
     expect(article.imageLocators).toHaveLength(3);
     expect(article.imageLocators.map((locator) => locator.sequence)).toEqual([1, 2, 3]);
     for (const locator of article.imageLocators) {
-      expect(locator.url).toContain('/imageserver/');
+      // Must be an ABSOLUTE, fetchable URL (the root-relative /imageserver/ src
+      // resolved against the article page) — a relative path breaks getBytes.
+      expect(locator.url).toMatch(/^https:\/\/paperspast\.natlib\.govt\.nz\/imageserver\//);
     }
   });
 

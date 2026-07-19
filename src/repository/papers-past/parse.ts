@@ -89,7 +89,10 @@ function extractTitle(root: ReturnType<typeof parse>): string {
 }
 
 /** Extracts the ordered image locators from the `#image-tab` panel. */
-function extractImageLocators(root: ReturnType<typeof parse>): { url: string; sequence: number }[] {
+function extractImageLocators(
+  root: ReturnType<typeof parse>,
+  sourceUrl: string,
+): { url: string; sequence: number }[] {
   const imageTab = root.querySelector(IMAGE_TAB_SELECTOR);
   if (!imageTab) {
     throw new Error(`parseArticle: no "${IMAGE_TAB_SELECTOR}" panel; not an article page (fail-loud).`);
@@ -102,11 +105,24 @@ function extractImageLocators(root: ReturnType<typeof parse>): { url: string; se
     );
   }
   const locators = images.map((img) => {
-    const url = img.getAttribute('src');
-    if (!url) {
+    const src = img.getAttribute('src');
+    if (!src) {
       throw new Error('parseArticle: image element has no "src" attribute.');
     }
-    return { url, sequence: decodeImageArea(url) };
+    // Papers Past serves the `/imageserver/...` facsimile as a ROOT-RELATIVE
+    // src; resolve it to an ABSOLUTE URL against the article page so the
+    // byte-fetch client receives a fetchable URL (a relative path throws
+    // "Failed to parse URL"). `new URL` leaves an already-absolute src intact.
+    let url: string;
+    try {
+      url = new URL(src, sourceUrl).href;
+    } catch {
+      throw new Error(
+        `parseArticle: cannot resolve image src "${src}" against source URL "${sourceUrl}" ` +
+          '(an absolute article-page URL is required to resolve the relative /imageserver/ path).',
+      );
+    }
+    return { url, sequence: decodeImageArea(src) };
   });
   locators.sort((a, b) => a.sequence - b.sequence);
   return locators;
@@ -141,17 +157,16 @@ function extractOcrText(root: ReturnType<typeof parse>): string | undefined {
  * Mechanically parses a Papers Past article page into a {@link ParsedArticle}.
  * Throws when the page is not a recognisable article page -- missing article
  * id, missing title, or zero image locators -- rather than fabricating any
- * field. `sourceUrl` is accepted for parity with other adapters' parse
- * signatures but is not currently required to derive any field (the
- * canonical link supplies the article id).
+ * field. `sourceUrl` (the absolute article-page URL) is the base against which
+ * the root-relative `/imageserver/` image `src`s are resolved to absolute,
+ * fetchable URLs.
  */
 export function parseArticle(html: string, sourceUrl: string): ParsedArticle {
-  void sourceUrl;
   const root = parse(html);
 
   const articleId = extractArticleId(root);
   const title = extractTitle(root);
-  const imageLocators = extractImageLocators(root);
+  const imageLocators = extractImageLocators(root, sourceUrl);
   const rightsRaw = extractRightsRaw(root);
   const ocrText = extractOcrText(root);
 
