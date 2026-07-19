@@ -2,3 +2,8 @@
 {"id":"T002","tierLabel":"fast","model":"haiku","commit":"bcd5292","reviewClean":true,"note":"add 'papers-past' to CopyLevelIdentifierType + COPY_LEVEL_TYPES; tsc 0"}
 {"id":"T003","tierLabel":"fast","model":"haiku","commit":"02469a1","reviewClean":true,"note":"add 'papers-past' to RepositoryName union; tsc 0 (no exhaustive switch)"}
 {"id":"T004","tierLabel":"fast","model":"haiku","commit":"a4c7e50","reviewClean":true,"note":"ParsedArticle parse-result interface in types.ts (interface-first); tsc 0"}
+{"id":"T005","tierLabel":"fast","model":"haiku","commit":"cc539bb","reviewClean":true,"note":"IDENTIFIER_TYPE_REPOSITORY papers-past row + routing test (2 pass); tsc 0"}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commit":"553adf4","reviewClean":true,"note":"parseArticle(html,url)->ParsedArticle, 165 lines; #image-tab-scoped locators (dedup .show-for-print), canonical-link id, fail-loud; test-first"}
+{"id":"T007","tierLabel":"balanced","model":"sonnet","commit":"553adf4","reviewClean":true,"note":"parse.test.ts vs de Rays fixture (6 pass): id/title/3 locators/rights/optional OCR/non-article throws"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commit":"7765905","reviewClean":true,"note":"fakes.ts (237 lines): FakeBrowserSession + FakeByteFetchClient + FakeObjectStore vs real interfaces; tsc 0"}
+{"id":"T015","tierLabel":"balanced","model":"sonnet","commit":"a8d4637","reviewClean":true,"note":"PB-P061 de Rays periodical source (papers-past record, PD rightsAssessment) partOf new NZ-press group PB-P060 approved-for-acquisition; also fixed isCopyLevelType drift (cf0ea37)"}
