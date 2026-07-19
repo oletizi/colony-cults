@@ -10,6 +10,13 @@
 
 Principle XV (Metadata Integrity Is Mechanically Enforced — No Orphan Assets, v1.4.0) requires any process that retrieves an object or writes an asset to complete its durable SSOT metadata as an inseparable, structural, fail-loud part of the *same* operation. The acquire pipeline violates this: `runAcquire` (source-agnostic across gallica / new-italy-museum / internet-archive / papers-past) mirrors bytes to the object store and records the returned assets + archive companions, but does NOT advance the `RepositoryRecord` acquisition status — a *separate* `bib reconcile` (which the operator must remember to run) advances `to-collect → archived`. Confirmed live 2026-07-19: acquiring PB-P061 left `status: to-collect` with 3 masters already in the object store until a manual reconcile. The record read as unacquired despite the bytes being held.
 
+## Clarifications
+
+### Session 2026-07-19
+
+- Q: How should acquire judge "record complete" so it does not fail-loud a legitimately empty-assets Gallica acquire? → A: Per-repository-appropriate completeness — a B2-direct adapter (museum / internet-archive / papers-past) is complete when its assets are recorded + status advanced + every master's object-store head matches; a per-page-provenance adapter (Gallica, `assets: []`) is complete when its archive-provenance path is complete + status advanced to the correct value (`collected`). Never a universal "non-empty B2 asset list" check.
+- Q: Is record-level `metadataSnapshot` completeness in scope for THIS feature across all adapters? → A: Best-effort per-adapter — completeness REQUIRES status advancement + assets for every adapter now; the record-level `metadataSnapshot` is verified only where the adapter emits one (papers-past, museum); an adapter that does not yet emit one is NOT failed for its absence, and a per-adapter backlog follow-on captures adding it.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A completed acquisition leaves a complete, findable record (Priority: P1) 🎯 MVP
@@ -58,8 +65,8 @@ Status-advancement no longer depends on a separately-invoked `reconcile` in the 
 
 ### Edge Cases
 
-- **Empty-assets adapter path (Gallica):** [NEEDS CLARIFICATION: the Gallica adapter returns `assets: []` (masters are per-page archive provenance, reconciled via the archive-provenance path; reconcile yields `collected`, not `archived`). Completeness for that path MUST be judged by the archive-provenance completeness, and a legitimately empty-assets Gallica acquire MUST NOT be failed as "incomplete". Confirm the completeness verification is per-repository-appropriate rather than a universal "non-empty B2 asset list" check.]
-- **Record-level metadataSnapshot completeness:** [NEEDS CLARIFICATION: is record-level `metadataSnapshot` completeness in scope for THIS feature across all adapters (papers-past + museum produce one; gallica / internet-archive?), or best-effort per-adapter — i.e. an adapter that does not yet produce a snapshot is not failed for its absence, with a per-adapter follow-on to add it?]
+- **Empty-assets adapter path (Gallica):** the Gallica adapter returns `assets: []` (masters are per-page archive provenance, reconciled via the archive-provenance path; reconcile yields `collected`, not `archived`). Completeness is **per-repository-appropriate** (clarified 2026-07-19): the Gallica path is complete when its archive-provenance is complete + status advanced to `collected` — a legitimately empty-assets Gallica acquire is NOT failed as "incomplete", and completeness is never a universal "non-empty B2 asset list" check.
+- **Record-level metadataSnapshot absent for an adapter:** completeness verifies the `metadataSnapshot` only where the adapter emits one (papers-past, museum); an adapter that does not yet emit one (gallica / internet-archive today) is NOT failed for its absence (best-effort per-adapter; clarified 2026-07-19). A per-adapter backlog follow-on adds snapshot emission to those adapters.
 - **Dry-run:** `--dry-run` mirrors nothing, so it is exempt from completeness verification (nothing was acquired to complete).
 - **Re-acquire of an already-complete record:** idempotent — no duplicate object-store writes, status stays advanced, still reports success.
 
@@ -74,8 +81,9 @@ Status-advancement no longer depends on a separately-invoked `reconcile` in the 
 - **FR-005**: The guarantee MUST be source-agnostic — it holds for every acquisition adapter (gallica / new-italy-museum / internet-archive / papers-past) via the shared `runAcquire` path (a single mechanism, not per-adapter code).
 - **FR-006**: The standalone `reconcile` MUST be retained as a repair tool for pre-existing orphans / recovery; it is no longer required to complete a normal acquisition.
 - **FR-007**: `--dry-run` MUST be exempt from completeness verification (it mirrors nothing).
-- **FR-008**: The completeness verification MUST be per-repository-appropriate — an adapter that legitimately produces no B2 assets (e.g. Gallica, whose masters are per-page archive provenance) MUST have its completeness judged by the appropriate provenance, never failed for an empty asset list (see the Gallica edge-case clarification).
-- **FR-009**: The full completion path — including the fail-loud and idempotent-recovery branches — MUST be exercised in automated tests with injected fakes: no network, no real object-store mutation.
+- **FR-008**: The completeness verification MUST be **per-repository-appropriate** (clarified 2026-07-19): a B2-direct adapter (museum / internet-archive / papers-past) is complete when its assets are recorded + status advanced + every recorded master's object-store head matches; a per-page-provenance adapter (Gallica, `assets: []`) is complete when its archive-provenance is complete + status advanced to `collected`. An adapter that legitimately produces no B2 assets MUST NOT be failed for an empty asset list, and completeness is never a universal "non-empty B2 asset list" check.
+- **FR-009**: Record-level `metadataSnapshot` completeness is **best-effort per-adapter** (clarified 2026-07-19): where an adapter emits a record-level `metadataSnapshot` (papers-past, museum) the verification MUST confirm it is present; an adapter that does not yet emit one MUST NOT be failed for its absence. (A per-adapter follow-on adds snapshot emission to the remaining adapters.)
+- **FR-010**: The full completion path — including the fail-loud and idempotent-recovery branches — MUST be exercised in automated tests with injected fakes: no network, no real object-store mutation.
 
 ### Key Entities *(include if feature involves data)*
 

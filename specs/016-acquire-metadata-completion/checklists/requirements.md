@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,12 +31,9 @@
 
 ## Notes
 
-- Two `[NEEDS CLARIFICATION]` markers remain by design, both scope-impactful and deferred to
-  `/speckit-clarify` (the next define-chain step), per Principle XIV (operator owns scope — do
-  not silently default a scope decision):
-  1. The Gallica empty-assets (`assets: []`) path — completeness judged by archive-provenance,
-     not a B2 asset list; must not fail-loud a legitimately empty Gallica acquire.
-  2. Record-level `metadataSnapshot` completeness scope across adapters (in-scope-for-all vs
-     best-effort-per-adapter with a follow-on).
+- Both `[NEEDS CLARIFICATION]` markers resolved via `/speckit-clarify` (Session 2026-07-19):
+  1. Gallica empty-assets path → **per-repository-appropriate completeness** (FR-008).
+  2. Record-level `metadataSnapshot` completeness → **best-effort per-adapter** + follow-on (FR-009).
 - The two lower-impact open questions (dry-run exemption; verification depth) are resolved with
   documented defaults in the spec's Assumptions.
+- All checklist items pass; spec is ready for `/speckit-plan`.
