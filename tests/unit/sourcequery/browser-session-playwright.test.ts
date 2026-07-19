@@ -11,13 +11,19 @@ import {
   type LaunchFn,
 } from '@/sourcequery/browser-session-playwright';
 
-/** A scripted fake page: goto/content/ariaSnapshot are all overridable. */
+/** A scripted fake page: goto/content/ariaSnapshot/evaluate are all overridable. */
 function fakePage(overrides: Partial<InjectedPage> = {}): InjectedPage {
   const response: InjectedGotoResponse = { status: () => 200 };
   return {
     goto: async () => response,
     content: async () => '<html></html>',
     ariaSnapshot: async () => '- text',
+    // Default: unscripted -- the throw's Promise<never> is assignable to the
+    // generic evaluate<T> signature, so no `as` is needed. Tests that exercise
+    // fetchBytes override this with a scripted base64-returning stub.
+    evaluate: async () => {
+      throw new Error('fakePage.evaluate: not scripted for this test');
+    },
     ...overrides,
   };
 }
@@ -144,6 +150,44 @@ describe('PlaywrightBrowserSession.navigate()', () => {
 
     await expect(session.navigate('https://example.test/')).rejects.toThrow(
       /navigate\(\) called before a successful open\(\)/,
+    );
+  });
+});
+
+describe('PlaywrightBrowserSession.fetchBytes()', () => {
+  it('decodes the base64 an in-page evaluate returns into the raw bytes', async () => {
+    const gif = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x2a]);
+    const base64 = Buffer.from(gif).toString('base64');
+    const page = fakePage({ evaluate: async () => base64 });
+    const session = new PlaywrightBrowserSession({ launch: async () => fakeContext(page) });
+    await session.open();
+
+    const bytes = await session.fetchBytes('https://example.test/imageserver/x');
+
+    expect(Array.from(bytes)).toEqual(Array.from(gif));
+  });
+
+  it('throws (fail-loud) when the in-page fetch errors, naming the url', async () => {
+    const page = fakePage({
+      evaluate: async () => {
+        throw new Error('HTTP 403 for https://example.test/imageserver/x');
+      },
+    });
+    const session = new PlaywrightBrowserSession({ launch: async () => fakeContext(page) });
+    await session.open();
+
+    await expect(session.fetchBytes('https://example.test/imageserver/x')).rejects.toThrow(
+      /in-page fetchBytes\('https:\/\/example.test\/imageserver\/x'\) failed/,
+    );
+  });
+
+  it('throws if fetchBytes() is called before a successful open()/navigate()', async () => {
+    const session = new PlaywrightBrowserSession({
+      launch: async () => fakeContext(fakePage()),
+    });
+
+    await expect(session.fetchBytes('https://example.test/x')).rejects.toThrow(
+      /fetchBytes\('https:\/\/example.test\/x'\) called before a successful open\(\)\/navigate\(\)/,
     );
   });
 });

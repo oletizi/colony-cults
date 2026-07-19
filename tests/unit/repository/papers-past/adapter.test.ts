@@ -4,9 +4,15 @@
  * path / idempotency / dry-run / image-validity guard).
  *
  * ZERO network, ZERO real host/object-store mutation: the injected fakes
- * (`./fakes`) script every browser navigation, byte fetch, and object-store
- * head/put, and `captureBaseDir` is a per-run temp dir so `persistCapture`
- * writes under `os.tmpdir()`, never the repo's `bibliography/` tree.
+ * (`./fakes`) script every browser navigation, WAF-cleared image byte fetch
+ * (`fetchBytes`), and object-store head/put, and `captureBaseDir` is a per-run
+ * temp dir so `persistCapture` writes under `os.tmpdir()`, never the repo's
+ * `bibliography/` tree.
+ *
+ * Image bytes flow through the SAME browser session's `fetchBytes` (the
+ * WAF-cleared in-page fetch, research.md R1 CONFIRMED) -- not a separate
+ * stateless client -- so a test scripts image bytes on the browser fake and
+ * asserts on `browser.fetchBytesCalls`.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -19,11 +25,7 @@ import { parseArticle } from '@/repository/papers-past/parse';
 import { sha256OfBytes } from '@/archive/checksum';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { RightsAssessment } from '@/model/rights';
-import {
-  FakeBrowserSession,
-  FakeByteFetchClient,
-  FakeObjectStore,
-} from './fakes';
+import { FakeBrowserSession, FakeObjectStore } from './fakes';
 
 const FIXTURE_HTML = readFileSync(
   path.join(__dirname, 'fixtures', 'de-rays-article.html'),
@@ -84,8 +86,13 @@ function recordWith(rightsAssessment?: RightsAssessment): RepositoryRecord {
   return record;
 }
 
-function fixtureBrowser(): FakeBrowserSession {
-  return new FakeBrowserSession({ html: new Map([[FIXTURE_URL, FIXTURE_HTML]]) });
+/**
+ * Fixture browser session scripting the article HTML for `FIXTURE_URL` and,
+ * optionally, the WAF-cleared image bytes returned by `fetchBytes` per image
+ * URL (research.md R1: bytes come from the same session, not a separate client).
+ */
+function fixtureBrowser(bytes?: Map<string, Uint8Array>): FakeBrowserSession {
+  return new FakeBrowserSession({ html: new Map([[FIXTURE_URL, FIXTURE_HTML]]), bytes });
 }
 
 describe('PapersPastAdapter', () => {
@@ -108,7 +115,6 @@ describe('PapersPastAdapter', () => {
       const browser = fixtureBrowser();
       const adapter = new PapersPastAdapter({
         browserSession: browser,
-        byteFetch: new FakeByteFetchClient(),
         now: () => FIXED_NOW,
         captureBaseDir,
       });
@@ -135,10 +141,8 @@ describe('PapersPastAdapter', () => {
   describe('governed read (T019)', () => {
     it('navigates via the browser session and persists the raw page BEFORE parsing', async () => {
       const browser = fixtureBrowser();
-      const byteFetch = new FakeByteFetchClient();
       const adapter = new PapersPastAdapter({
         browserSession: browser,
-        byteFetch,
         now: () => FIXED_NOW,
         captureBaseDir,
       });
@@ -147,8 +151,8 @@ describe('PapersPastAdapter', () => {
 
       // The article page was fetched through the injected browser session.
       expect(browser.navigateCalls).toEqual([FIXTURE_URL]);
-      // resolve fetches NO image bytes (bytes only flow through byteFetch at acquire).
-      expect(byteFetch.getBytesCalls).toEqual([]);
+      // resolve fetches NO image bytes (bytes only flow through fetchBytes at acquire).
+      expect(browser.fetchBytesCalls).toEqual([]);
 
       // The raw page was persisted to the temp capture dir (persist-before-parse):
       // an .html capture whose bytes are the fixture exists there.
@@ -164,10 +168,9 @@ describe('PapersPastAdapter', () => {
   describe('acquire happy path', () => {
     it('mirrors 3 page-master GIFs under deterministic keys and returns complete', async () => {
       const objectStore = new FakeObjectStore();
-      const byteFetch = new FakeByteFetchClient({ bytes: scriptedImageBytes() });
+      const browser = fixtureBrowser(scriptedImageBytes());
       const adapter = new PapersPastAdapter({
-        browserSession: fixtureBrowser(),
-        byteFetch,
+        browserSession: browser,
         objectStore,
         now: () => FIXED_NOW,
         captureBaseDir,
@@ -182,8 +185,8 @@ describe('PapersPastAdapter', () => {
       expect(result.assets.map((asset) => asset.sequence)).toEqual([1, 2, 3]);
       expect(result.assets.every((asset) => asset.mediaType === 'image/gif')).toBe(true);
 
-      // Bytes flowed through the injected byteFetch (never an ad-hoc fetch).
-      expect(byteFetch.getBytesCalls).toHaveLength(3);
+      // Bytes flowed through the SAME WAF-cleared browser session (never an ad-hoc fetch).
+      expect(browser.fetchBytesCalls).toHaveLength(3);
 
       // Exactly 3 puts, one per deterministic key.
       expect(objectStore.putCalls).toHaveLength(3);
@@ -206,8 +209,7 @@ describe('PapersPastAdapter', () => {
       );
       const objectStore = new FakeObjectStore(new Map(seed));
       const adapter = new PapersPastAdapter({
-        browserSession: fixtureBrowser(),
-        byteFetch: new FakeByteFetchClient({ bytes: scriptedImageBytes() }),
+        browserSession: fixtureBrowser(scriptedImageBytes()),
         objectStore,
         now: () => FIXED_NOW,
         captureBaseDir,
@@ -225,11 +227,9 @@ describe('PapersPastAdapter', () => {
   describe('dry-run', () => {
     it('writes nothing and returns empty assets with complete:false', async () => {
       const objectStore = new FakeObjectStore();
-      const byteFetch = new FakeByteFetchClient({ bytes: scriptedImageBytes() });
-      const browser = fixtureBrowser();
+      const browser = fixtureBrowser(scriptedImageBytes());
       const adapter = new PapersPastAdapter({
         browserSession: browser,
-        byteFetch,
         objectStore,
         now: () => FIXED_NOW,
         captureBaseDir,
@@ -242,7 +242,7 @@ describe('PapersPastAdapter', () => {
       expect(result.reconciliationRequired).toBe(true);
       // No side effects at all: no navigate, no byte fetch, no put.
       expect(browser.navigateCalls).toEqual([]);
-      expect(byteFetch.getBytesCalls).toEqual([]);
+      expect(browser.fetchBytesCalls).toEqual([]);
       expect(objectStore.putCalls).toHaveLength(0);
       expect(objectStore.headCalls).toHaveLength(0);
     });
@@ -255,8 +255,7 @@ describe('PapersPastAdapter', () => {
       bytes.set(IMAGE_LOCATORS[1].url, challengeBytes());
       const objectStore = new FakeObjectStore();
       const adapter = new PapersPastAdapter({
-        browserSession: fixtureBrowser(),
-        byteFetch: new FakeByteFetchClient({ bytes }),
+        browserSession: fixtureBrowser(bytes),
         objectStore,
         now: () => FIXED_NOW,
         captureBaseDir,
@@ -276,26 +275,23 @@ describe('PapersPastAdapter', () => {
   describe('rights fail-closed (T018)', () => {
     it('throws with ZERO side effects when no rightsAssessment is present', async () => {
       const objectStore = new FakeObjectStore();
-      const byteFetch = new FakeByteFetchClient({ bytes: scriptedImageBytes() });
-      const browser = fixtureBrowser();
+      const browser = fixtureBrowser(scriptedImageBytes());
       const adapter = new PapersPastAdapter({
         browserSession: browser,
-        byteFetch,
         objectStore,
         now: () => FIXED_NOW,
         captureBaseDir,
       });
 
       await expect(adapter.acquire(recordWith(undefined), {})).rejects.toThrow(/fail-closed/);
-      expect(byteFetch.getBytesCalls.length).toBe(0);
+      expect(browser.fetchBytesCalls.length).toBe(0);
       expect(objectStore.putCalls.length).toBe(0);
       expect(browser.navigateCalls.length).toBe(0);
     });
 
     it('throws with ZERO side effects when rightsStatus is restricted', async () => {
       const objectStore = new FakeObjectStore();
-      const byteFetch = new FakeByteFetchClient({ bytes: scriptedImageBytes() });
-      const browser = fixtureBrowser();
+      const browser = fixtureBrowser(scriptedImageBytes());
       const restricted: RightsAssessment = {
         rightsStatus: 'restricted',
         rightsBasis: 'Under copyright.',
@@ -304,14 +300,13 @@ describe('PapersPastAdapter', () => {
       };
       const adapter = new PapersPastAdapter({
         browserSession: browser,
-        byteFetch,
         objectStore,
         now: () => FIXED_NOW,
         captureBaseDir,
       });
 
       await expect(adapter.acquire(recordWith(restricted), {})).rejects.toThrow(/fail-closed/);
-      expect(byteFetch.getBytesCalls.length).toBe(0);
+      expect(browser.fetchBytesCalls.length).toBe(0);
       expect(objectStore.putCalls.length).toBe(0);
       expect(browser.navigateCalls.length).toBe(0);
     });
@@ -321,7 +316,6 @@ describe('PapersPastAdapter', () => {
     it('returns the verbatim NZ rights evidence with a grounded date and NO rightsStatus', async () => {
       const adapter = new PapersPastAdapter({
         browserSession: fixtureBrowser(),
-        byteFetch: new FakeByteFetchClient(),
         now: () => FIXED_NOW,
         captureBaseDir,
       });
@@ -338,7 +332,6 @@ describe('PapersPastAdapter', () => {
     it('fails loud when the item is not one this adapter resolved', async () => {
       const adapter = new PapersPastAdapter({
         browserSession: fixtureBrowser(),
-        byteFetch: new FakeByteFetchClient(),
         now: () => FIXED_NOW,
         captureBaseDir,
       });
@@ -375,8 +368,7 @@ describe('PapersPastAdapter', () => {
     it('throws and issues 0 puts when a recorded segment-1 master checksum differs', async () => {
       const objectStore = new FakeObjectStore();
       const adapter = new PapersPastAdapter({
-        browserSession: fixtureBrowser(),
-        byteFetch: new FakeByteFetchClient({ bytes: scriptedImageBytes() }),
+        browserSession: fixtureBrowser(scriptedImageBytes()),
         objectStore,
         now: () => FIXED_NOW,
         captureBaseDir,
@@ -408,8 +400,7 @@ describe('PapersPastAdapter', () => {
     it('throws and issues 0 puts when the resolved article code differs from the record id', async () => {
       const objectStore = new FakeObjectStore();
       const adapter = new PapersPastAdapter({
-        browserSession: fixtureBrowser(),
-        byteFetch: new FakeByteFetchClient({ bytes: scriptedImageBytes() }),
+        browserSession: fixtureBrowser(scriptedImageBytes()),
         objectStore,
         now: () => FIXED_NOW,
         captureBaseDir,
@@ -426,10 +417,9 @@ describe('PapersPastAdapter', () => {
 
     it('throws before any navigation when the record carries no papers-past identifier', async () => {
       const objectStore = new FakeObjectStore();
-      const browser = fixtureBrowser();
+      const browser = fixtureBrowser(scriptedImageBytes());
       const adapter = new PapersPastAdapter({
         browserSession: browser,
-        byteFetch: new FakeByteFetchClient({ bytes: scriptedImageBytes() }),
         objectStore,
         now: () => FIXED_NOW,
         captureBaseDir,
@@ -447,10 +437,9 @@ describe('PapersPastAdapter', () => {
 
   describe('resolve-only (no objectStore)', () => {
     it('throws that it cannot acquire, with 0 navigation, when constructed without an object store', async () => {
-      const browser = fixtureBrowser();
+      const browser = fixtureBrowser(scriptedImageBytes());
       const adapter = new PapersPastAdapter({
         browserSession: browser,
-        byteFetch: new FakeByteFetchClient({ bytes: scriptedImageBytes() }),
         // NO objectStore: a resolve-only construction cannot mirror.
         now: () => FIXED_NOW,
         captureBaseDir,
@@ -474,8 +463,7 @@ describe('PapersPastAdapter', () => {
 
       const objectStore = new FakeObjectStore();
       const adapter = new PapersPastAdapter({
-        browserSession: fixtureBrowser(),
-        byteFetch: new FakeByteFetchClient({ bytes: scriptedImageBytes() }),
+        browserSession: fixtureBrowser(scriptedImageBytes()),
         objectStore,
         now: () => FIXED_NOW,
         captureBaseDir,

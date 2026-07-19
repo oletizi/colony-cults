@@ -11,7 +11,6 @@
 
 import { loadAllSources } from '@/bibliography/load';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
-import { HttpClient } from '@/gallica/http-client';
 import { PapersPastAdapter } from '@/repository/papers-past/adapter';
 import { PlaywrightBrowserSession } from '@/sourcequery/browser-session-playwright';
 import { S3ObjectStore } from '@/archive/s3-object-store';
@@ -64,10 +63,11 @@ export async function buildPapersPastAdapterForMember(
   // Papers Past acquire mirrors the page-image facsimile to the object
   // store, so a real ObjectStore (B2) is REQUIRED here -- fail loud if its
   // config is absent rather than silently mirroring nothing. The Playwright
-  // browser session clears the Incapsula WAF that gates the article page.
+  // browser session clears the Incapsula WAF that gates the article page AND
+  // fetches the image bytes inside that same WAF-cleared context (research.md
+  // R1 CONFIRMED: the `/imageserver/` CDN is WAF-gated too).
   return new PapersPastAdapter({
     browserSession: new PlaywrightBrowserSession(),
-    byteFetch: new HttpClient(),
     objectStore: new S3ObjectStore(resolveObjectStoreConfig()),
   });
 }

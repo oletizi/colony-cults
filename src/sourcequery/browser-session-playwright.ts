@@ -57,6 +57,17 @@ export interface InjectedPage {
   ): Promise<InjectedGotoResponse | null>;
   content(): Promise<string>;
   ariaSnapshot(): Promise<string>;
+  /**
+   * Playwright's `Page.evaluate`: run `fn` (serialized into the page and
+   * re-hydrated there) inside the page's JS context with an optional `arg`,
+   * returning its result. Used by {@link PlaywrightBrowserSession.fetchBytes}
+   * to run an in-page `fetch` that reuses the WAF-cleared browser's
+   * cookies/TLS/origin, returning the bytes as a base64 `string` (a JSON-safe
+   * transport across the CDP boundary). Typed to `Promise<string>` -- the only
+   * shape this module needs; the real, generic `Page.evaluate` satisfies it
+   * structurally (instantiate its result type to `string`).
+   */
+  evaluate(fn: string | Function, arg?: unknown): Promise<string>;
 }
 
 /** Minimal subset of Playwright's `BrowserContext` this module drives. */
@@ -180,6 +191,46 @@ export class PlaywrightBrowserSession implements BrowserSession {
       };
     } catch {
       return { status: null, html: '', snapshotMarkdown: '', errored: true };
+    }
+  }
+
+  /**
+   * Fetch the raw bytes at `url` INSIDE the open, WAF-cleared browser context
+   * (research.md R1, CONFIRMED): the Papers Past `/imageserver/` CDN sits
+   * behind the same Incapsula WAF as the article page, so a stateless byte
+   * fetch is challenged, not served the GIF. Running an in-page `fetch`
+   * (`credentials: 'include'`) in the already-navigated page reuses the
+   * cleared browser's cookies/TLS/origin, so the CDN serves the real asset.
+   * The bytes are marshalled back across the CDP boundary as base64 (a
+   * JSON-safe transport) and decoded in Node. Throws (fail-loud, Principle V)
+   * if the session was never opened/navigated, or on any non-OK response /
+   * in-page error — never returns a challenge body as if it were the asset.
+   */
+  async fetchBytes(url: string): Promise<Uint8Array> {
+    if (this.page === undefined) {
+      throw new Error(
+        `PlaywrightBrowserSession: fetchBytes('${url}') called before a successful ` +
+          'open()/navigate() — the in-page fetch needs an open page on the same origin.',
+      );
+    }
+    try {
+      const base64 = await this.page.evaluate(
+        async (u: string) => {
+          const res = await fetch(u, { credentials: 'include' });
+          if (!res.ok) throw new Error('HTTP ' + res.status + ' for ' + u);
+          const bytes = new Uint8Array(await res.arrayBuffer());
+          let bin = '';
+          for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+          return btoa(bin);
+        },
+        url,
+      );
+      return Uint8Array.from(Buffer.from(base64, 'base64'));
+    } catch (error) {
+      throw new Error(
+        `PlaywrightBrowserSession: in-page fetchBytes('${url}') failed inside the ` +
+          `WAF-cleared browser context: ${describeError(error)}`,
+      );
     }
   }
 

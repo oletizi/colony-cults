@@ -19,12 +19,16 @@
  *   #   file, per resolveObjectStoreConfig (@/archive/b2-config)
  *   RUN_PAPERS_PAST_ACQUIRE=1 npx vitest run tests/integration/repository/papers-past/acquire.test.ts
  *
- * Scenario (a) (image-CDN reachability, research R1) derives one real
- * `/imageserver/...` GIF URL by mechanically parsing the persisted fixture
- * `tests/unit/repository/papers-past/fixtures/de-rays-article.html` and
- * fetches it with the real, polite `HttpClient` -- asserting the bytes carry
- * the GIF87a/GIF89a magic. A non-image/challenge response FAILS loud (never
- * a silent pass), naming the documented R1 fallback (a browser byte-fetch).
+ * Scenario (a) (image-CDN reachability, research R1 CONFIRMED) derives one
+ * real `/imageserver/...` GIF URL by mechanically parsing the persisted
+ * fixture `tests/unit/repository/papers-past/fixtures/de-rays-article.html`
+ * and fetches it INSIDE the WAF-cleared browser context via
+ * `PlaywrightBrowserSession.fetchBytes` (open + navigate the article page
+ * first, same origin) -- asserting the bytes carry the GIF87a/GIF89a magic.
+ * R1 is CONFIRMED (a live `bib acquire`): the `/imageserver/` CDN is
+ * Incapsula-WAF-gated too, so the stateless `HttpClient` byte fetch FAILS
+ * ("fetch failed"); the browser byte-fetch is now the adapter's mechanism.
+ * A non-image/challenge response FAILS loud (never a silent pass).
  *
  * Scenario (b) (live end-to-end acquire) drives the REAL `runAcquireCli`
  * for the de Rays member (`PB-P061`, `bibliography/sources/PB-P061.yml`),
@@ -38,7 +42,7 @@ import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
 import { parseArticle } from '@/repository/papers-past/parse';
-import { HttpClient } from '@/gallica/http-client';
+import { PlaywrightBrowserSession } from '@/sourcequery/browser-session-playwright';
 import { runAcquireCli } from '@/cli/bib-sourcegroup-acquire';
 import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
 import { loadAllSources } from '@/bibliography/load';
@@ -84,7 +88,7 @@ function isGifMagic(bytes: Uint8Array): boolean {
 
 describe.skipIf(!RUN_PAPERS_PAST_ACQUIRE)('Papers Past adapter (live, operator-run acceptance)', () => {
   it(
-    '(a) fetches a real /imageserver/ GIF URL derived from the fixture and validates GIF magic bytes (research R1)',
+    '(a) fetches a real /imageserver/ GIF URL via the WAF-cleared browser byte-fetch and validates GIF magic bytes (research R1 CONFIRMED)',
     async () => {
       const html = readFileSync(FIXTURE_HTML_PATH, 'utf-8');
       const parsed = parseArticle(html, FIXTURE_URL);
@@ -96,18 +100,28 @@ describe.skipIf(!RUN_PAPERS_PAST_ACQUIRE)('Papers Past adapter (live, operator-r
       }
       const url = first.url.startsWith('http') ? first.url : `${PAPERS_PAST_HOST}${first.url}`;
 
-      const client = new HttpClient();
-      const bytes = await client.getBytes(url);
+      // R1 CONFIRMED (live `bib acquire`): the `/imageserver/` CDN is
+      // Incapsula-WAF-gated too, so a stateless `HttpClient` GET FAILS
+      // ("fetch failed"). Fetch the bytes INSIDE the WAF-cleared browser
+      // context -- open + navigate the article page first (same origin), then
+      // `fetchBytes` the image URL -- the governed mechanism the adapter uses.
+      const browser = new PlaywrightBrowserSession();
+      await browser.open();
+      try {
+        await browser.navigate(FIXTURE_URL);
+        const bytes = await browser.fetchBytes(url);
 
-      if (!isGifMagic(bytes)) {
-        throw new Error(
-          `Papers Past image-CDN reachability check FAILED: GET ${url} did not return GIF bytes ` +
-            '(no GIF87a/GIF89a magic in the first 6 bytes) -- likely a non-image/challenge response. ' +
-            'Per research R1, the documented fallback is fetching these bytes via the browser session ' +
-            '(build the browser byte-fetch) instead of a bare HttpClient GET; this is NOT a silent pass.',
-        );
+        if (!isGifMagic(bytes)) {
+          throw new Error(
+            `Papers Past image-CDN check FAILED: the WAF-cleared browser fetchBytes(${url}) did ` +
+              'not return GIF bytes (no GIF87a/GIF89a magic in the first 6 bytes) -- likely a ' +
+              'non-image/challenge response. This is NOT a silent pass.',
+          );
+        }
+        expect(isGifMagic(bytes)).toBe(true);
+      } finally {
+        await browser.close();
       }
-      expect(isGifMagic(bytes)).toBe(true);
     },
     LIVE_TIMEOUT_MS,
   );

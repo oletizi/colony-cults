@@ -21,6 +21,13 @@ import type { ExitNode, PageResult } from '@/sourcequery/types';
 export interface FakeBrowserSessionScript {
   responses?: Record<string, PageResult>;
   defaultResult?: PageResult;
+  /**
+   * Optional per-URL bytes for {@link FakeBrowserSession.fetchBytes} (the
+   * WAF-cleared in-page byte fetch). A URL absent from this map throws a
+   * descriptive "fetchBytes not scripted" error, mirroring the real
+   * fail-loud contract.
+   */
+  bytes?: Record<string, Uint8Array>;
 }
 
 /**
@@ -38,12 +45,14 @@ export class FakeBrowserSession implements BrowserSession {
 
   private readonly responses: Record<string, PageResult>;
   private readonly defaultResult: PageResult | undefined;
+  private readonly bytes: Record<string, Uint8Array>;
   private opened = false;
   private closed = false;
 
   constructor(script: FakeBrowserSessionScript = {}) {
     this.responses = script.responses ?? {};
     this.defaultResult = script.defaultResult;
+    this.bytes = script.bytes ?? {};
   }
 
   /** Whether `open()` has been called and `close()` has not (yet). */
@@ -73,6 +82,16 @@ export class FakeBrowserSession implements BrowserSession {
     }
     throw new Error(
       `FakeBrowserSession: no scripted PageResult for URL: ${url}`,
+    );
+  }
+
+  async fetchBytes(url: string): Promise<Uint8Array> {
+    const scripted = this.bytes[url];
+    if (scripted !== undefined) {
+      return scripted;
+    }
+    throw new Error(
+      `FakeBrowserSession: fetchBytes not scripted for URL: ${url}`,
     );
   }
 

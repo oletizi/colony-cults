@@ -9,10 +9,11 @@
  * idempotent head-then-put by canonical key + checksum; remote-change fail-loud).
  *
  * Composition + constructor DI only (no inheritance, no globals). It owns no
- * fetch/parse logic of its own beyond orchestration -- it composes the shipped
- * halves: the spec-014 `BrowserSession` (clears the Incapsula WAF), the polite
- * byte-fetch client, `persistCapture` (persist-before-parse), `parseArticle`
- * (`@/repository/papers-past/parse`, which fails loud on a missing id/title/zero
+ * fetch/parse logic beyond orchestration -- it composes the shipped halves: the
+ * spec-014 `BrowserSession` (clears the Incapsula WAF and, research.md R1
+ * CONFIRMED, also fetches image bytes via its in-page `fetchBytes` inside that
+ * same cleared context, since the `/imageserver/` CDN is WAF-gated too),
+ * `persistCapture`, `parseArticle` (fails loud on a missing id/title/zero
  * locators), and the deterministic key helpers (`./keys`).
  */
 
@@ -54,21 +55,16 @@ const CAPTURE_SOURCE = 'papers-past-article';
 /** GIF media type -- the Papers Past `/imageserver/` facsimile is always a GIF. */
 const GIF_MEDIA_TYPE = 'image/gif';
 
-/**
- * The byte-fetch surface this adapter depends on: download image bytes. The
- * polite `@/gallica/http-client` `HttpClient`'s `getBytes` satisfies this
- * structurally, so tests inject a fake and never touch the network.
- */
-export interface PapersPastByteFetch {
-  getBytes(url: string): Promise<Uint8Array>;
-}
-
 /** Construction dependencies for {@link PapersPastAdapter} (all injected). */
 export interface PapersPastAdapterDeps {
-  /** Spec-014 browser session that clears the WAF; fake in tests. REQUIRED. */
+  /**
+   * Spec-014 browser session that clears the Incapsula WAF; fake in tests.
+   * REQUIRED. Performs BOTH the article-page read (`navigate`) AND the image
+   * byte fetch (`fetchBytes`, inside the same WAF-cleared context) -- research.md
+   * R1 CONFIRMED the `/imageserver/` CDN is WAF-gated too, so a stateless byte
+   * fetch is challenged, not served the GIF.
+   */
   browserSession: BrowserSession;
-  /** Polite byte-fetch client for image bytes; fake in tests. REQUIRED. */
-  byteFetch: PapersPastByteFetch;
   /**
    * Object store the page-master GIFs are PUT to (B2 in prod). Required only for
    * `acquire` (which throws, fail-loud, if it is absent when actually needed) --
@@ -87,10 +83,10 @@ export interface PapersPastAdapterDeps {
 }
 
 /**
- * Is `bytes` a GIF (magic number `GIF87a` / `GIF89a`)? The Papers Past
- * `/imageserver/` facsimile is a GIF; a challenge page / non-image body would
- * NOT start with these six bytes, so this is the image-validity guard that
- * refuses to mirror a non-image as a facsimile (contract invariant).
+ * Is `bytes` a GIF (magic `GIF87a` / `GIF89a`)? The Papers Past `/imageserver/`
+ * facsimile is a GIF; a challenge page / non-image body would NOT start with
+ * these six bytes -- the image-validity guard that refuses to mirror a non-image
+ * as a facsimile (contract invariant).
  */
 function isGif(bytes: Uint8Array): boolean {
   return (
@@ -120,7 +116,6 @@ export class PapersPastAdapter implements RepositoryAdapter {
   readonly repository = 'papers-past' as const;
 
   private readonly browserSession: BrowserSession;
-  private readonly byteFetch: PapersPastByteFetch;
   private readonly objectStore: ObjectStore | undefined;
   private readonly now: () => string;
   private readonly captureBaseDir: string | undefined;
@@ -129,12 +124,11 @@ export class PapersPastAdapter implements RepositoryAdapter {
    * Threads the `RightsEvidence` computed during `resolve` through to
    * `collectRightsEvidence`, keyed by object identity of the exact
    * `ResolvedRepositoryItem` `resolve` returned (the Internet Archive pattern).
-   * `collectRightsEvidence(item)` receives only a `ResolvedRepositoryItem`,
-   * whose `metadata` carries no `rightsRaw`/jurisdiction; re-navigating the
-   * article page a second time to recover verbatim evidence this adapter
-   * already parsed once would pay a redundant WAF-clearing round trip and risk
-   * a divergent (remote-changed) result. A `WeakMap` avoids retaining evidence
-   * for items no longer referenced.
+   * `collectRightsEvidence(item)` receives only a `ResolvedRepositoryItem`, whose
+   * `metadata` carries no `rightsRaw`/jurisdiction; re-navigating the article page
+   * to recover verbatim evidence already parsed once would pay a redundant
+   * WAF-clearing round trip and risk a divergent (remote-changed) result. A
+   * `WeakMap` avoids retaining evidence for items no longer referenced.
    */
   private readonly rightsEvidenceByItem = new WeakMap<ResolvedRepositoryItem, RightsEvidence>();
 
@@ -145,16 +139,12 @@ export class PapersPastAdapter implements RepositoryAdapter {
     if (deps.browserSession === null || typeof deps.browserSession !== 'object') {
       throw new Error('PapersPastAdapter: deps.browserSession is required (the browser session).');
     }
-    if (deps.byteFetch === null || typeof deps.byteFetch !== 'object') {
-      throw new Error('PapersPastAdapter: deps.byteFetch is required (the byte-fetch client).');
-    }
     if (deps.objectStore !== undefined && typeof deps.objectStore !== 'object') {
       throw new Error(
         'PapersPastAdapter: deps.objectStore, when given, must be an object (the object store).',
       );
     }
     this.browserSession = deps.browserSession;
-    this.byteFetch = deps.byteFetch;
     this.objectStore = deps.objectStore;
     this.now = deps.now ?? (() => new Date().toISOString());
     this.captureBaseDir = deps.captureBaseDir;
@@ -162,13 +152,12 @@ export class PapersPastAdapter implements RepositoryAdapter {
 
   /**
    * Build the mechanical grounded `date` field for an article, derived from the
-   * article code (`oid`), where Papers Past encodes the publication date
-   * (`HNS18840103.2.19.3` -> `1884-01-03`). This is a DETERMINISTIC parse, never
-   * a model call: {@link GroundedField} hard-codes `provenance.modelAssisted:
-   * true` (it was authored for LLM prose), so `engine`/`model` NAME the
-   * mechanical parse honestly (the Internet Archive `rights.ts` convention)
-   * rather than inventing a model. Fails loud (no fabrication) if the article
-   * code carries no `YYYYMMDD` date.
+   * article code (`oid`) where Papers Past encodes the publication date
+   * (`HNS18840103.2.19.3` -> `1884-01-03`). A DETERMINISTIC parse, never a model
+   * call: {@link GroundedField} hard-codes `provenance.modelAssisted: true`, so
+   * `engine`/`model` NAME the mechanical parse honestly (the Internet Archive
+   * `rights.ts` convention) rather than inventing a model. Fails loud (no
+   * fabrication) if the article code carries no `YYYYMMDD` date.
    */
   private mechanicalDateField(parsed: ParsedArticle): GroundedField<string> {
     const match = /^[A-Za-z]+(\d{4})(\d{2})(\d{2})\./.exec(parsed.articleId);
@@ -218,46 +207,46 @@ export class PapersPastAdapter implements RepositoryAdapter {
     };
   }
 
-  /**
-   * Open the session, navigate to the article page, PERSIST THE RAW PAGE BEFORE
-   * PARSING (persist-before-analysis, spec-014 / T019 governed-read), then
-   * mechanically parse it. Always closes the session (try/finally). `parseArticle`
-   * fails loud on a missing id/title/zero image locators -- not re-checked here.
-   */
-  private async loadArticle(
-    locatorValue: string,
-  ): Promise<{ pageUrl: string; html: string; parsed: ParsedArticle }> {
+  /** Resolve a raw locator (article code or full URL) to the article-page URL. */
+  private articleUrlFor(locatorValue: string): string {
     const raw = locatorValue.trim();
-    const pageUrl = raw.startsWith('http') ? raw : `${ARTICLE_BASE}/${raw}`;
+    return raw.startsWith('http') ? raw : `${ARTICLE_BASE}/${raw}`;
+  }
+
+  /**
+   * Navigate an ALREADY-OPEN session to the article page, PERSIST THE RAW PAGE
+   * BEFORE PARSING (persist-before-analysis, spec-014 / T019 governed-read), then
+   * mechanically parse it. Does NOT open/close the session -- the caller owns the
+   * lifecycle (try/finally), so the SAME WAF-cleared context stays open across the
+   * page read AND the subsequent `fetchBytes` image fetches (research.md R1).
+   * `parseArticle` fails loud on a missing id/title/0 locators.
+   */
+  private async navigateAndParse(
+    pageUrl: string,
+  ): Promise<{ html: string; parsed: ParsedArticle }> {
     const query = pageUrl.split('/').filter((segment) => segment.length > 0).pop() ?? pageUrl;
 
-    await this.browserSession.open();
-    try {
-      const page = await this.browserSession.navigate(pageUrl);
-      // Persist BEFORE parsing (governed-read invariant): the raw bytes are on
-      // disk before any field is derived from them.
-      await persistCapture({
-        source: CAPTURE_SOURCE,
-        query,
-        url: pageUrl,
-        html: page.html,
-        snapshotMarkdown: page.snapshotMarkdown,
-        capturedAtUtc: this.now(),
-        baseDir: this.captureBaseDir,
-      });
-      const parsed = parseArticle(page.html, pageUrl);
-      return { pageUrl, html: page.html, parsed };
-    } finally {
-      await this.browserSession.close();
-    }
+    const page = await this.browserSession.navigate(pageUrl);
+    // Persist BEFORE parsing (governed-read invariant): raw bytes on disk first.
+    await persistCapture({
+      source: CAPTURE_SOURCE,
+      query,
+      url: pageUrl,
+      html: page.html,
+      snapshotMarkdown: page.snapshotMarkdown,
+      capturedAtUtc: this.now(),
+      baseDir: this.captureBaseDir,
+    });
+    const parsed = parseArticle(page.html, pageUrl);
+    return { html: page.html, parsed };
   }
 
   /**
    * Resolve a Papers Past article locator (`locator.value` is the article code
    * or the full article-page URL) to a concrete item. The raw page is persisted
-   * before parsing; the mechanical parse fails loud on a missing id/zero
-   * locators (no fabrication, INV-A). The verbatim rights statement + NZ
-   * jurisdiction are stashed in the `WeakMap` for `collectRightsEvidence`.
+   * before parsing; the mechanical parse fails loud on a missing id/zero locators
+   * (no fabrication, INV-A). The verbatim rights statement + NZ jurisdiction are
+   * stashed in the `WeakMap` for `collectRightsEvidence`.
    */
   async resolve(
     locator: RepositoryLocator,
@@ -273,7 +262,14 @@ export class PapersPastAdapter implements RepositoryAdapter {
       );
     }
 
-    const { pageUrl, parsed } = await this.loadArticle(value);
+    const pageUrl = this.articleUrlFor(value);
+    await this.browserSession.open();
+    let parsed: ParsedArticle;
+    try {
+      ({ parsed } = await this.navigateAndParse(pageUrl));
+    } finally {
+      await this.browserSession.close();
+    }
 
     const date = this.mechanicalDateField(parsed);
     const metadata: GroundedExtraction<MuseumItemFields> = { date };
@@ -328,17 +324,16 @@ export class PapersPastAdapter implements RepositoryAdapter {
    *
    * STEP 1 -- fail-closed rights gate (INV-B): throw unless
    * `record.rightsAssessment?.rightsStatus === 'public-domain'`, BEFORE any
-   * browser/byteFetch/objectStore call (0 side effects on refuse).
+   * browser/fetchBytes/objectStore call (0 side effects on refuse).
    * STEP 2 -- dry-run: return empty assets with `complete:false`, NO fetch/put.
    * STEP 3 -- re-resolve (persist-before-parse) for fresh locators + identity
    * guard (the parsed article code MUST match the record's `papers-past` id).
    * STEP 4 -- VERIFY-ALL-THEN-COMMIT (Principle XII verify-before-upload).
-   * PHASE A (no writes): per segment fetch bytes, image-validity guard (GIF
-   * magic), sha256, remote-change fail-loud (recorded same-sequence checksum
-   * differs). PHASE B (only once EVERY segment verified): idempotent
-   * head-then-put. A mid-sequence PHASE-A failure leaves ZERO orphaned objects.
-   * STEP 5 -- return the page-masters + a raw metadata snapshot, `complete:true`.
-   * No OCR companion asset (out of scope).
+   * PHASE A (no writes): per segment fetch bytes (via `fetchBytes`), image-validity
+   * guard (GIF magic), sha256, remote-change fail-loud. PHASE B (only once EVERY
+   * segment verified): idempotent head-then-put. A mid-sequence PHASE-A failure
+   * leaves ZERO orphaned objects.
+   * STEP 5 -- return the page-masters + a raw metadata snapshot. No OCR asset.
    */
   async acquire(record: RepositoryRecord, ctx: AcquisitionContext): Promise<AcquisitionResult> {
     if (record === null || typeof record !== 'object') {
@@ -357,10 +352,9 @@ export class PapersPastAdapter implements RepositoryAdapter {
 
     const repositoryRecordId = `${record.sourceId} @ ${record.sourceArchive}`;
 
-    // STEP 2 -- dry-run: perform NO acquisition side effect (no navigate, no
-    // byte fetch, no PUT). Empty assets + `complete:false` signal the acquisition
-    // was validated read-only but not performed. Nothing was retrieved, so the
-    // snapshot carries no raw body.
+    // STEP 2 -- dry-run: NO acquisition side effect (no navigate, no byte fetch,
+    // no PUT). Empty assets + `complete:false` signal read-only validation, not
+    // performance; nothing retrieved, so the snapshot carries no raw body.
     if (ctx?.dryRun === true) {
       const drySnapshot: MetadataSnapshot = { raw: '', retrievedAt: this.now() };
       return {
@@ -372,7 +366,6 @@ export class PapersPastAdapter implements RepositoryAdapter {
       };
     }
 
-    // Acquire needs the object store; a resolve-only construction cannot mirror.
     if (this.objectStore === undefined) {
       throw new Error(
         `PapersPastAdapter.acquire: no ObjectStore was injected -- this adapter instance was ` +
@@ -397,104 +390,111 @@ export class PapersPastAdapter implements RepositoryAdapter {
         ? record.sourceUrl.trim()
         : recordedId;
 
-    // STEP 3 -- re-resolve (persist-before-parse) for fresh locators.
-    const { html, parsed } = await this.loadArticle(locatorValue);
-
-    // Identity guard: the freshly parsed article code MUST match the record's
-    // recorded id, else the URL moved to a different article; fail loud rather
-    // than mirror the wrong copy's bytes (remote change).
-    if (parsed.articleId !== recordedId) {
-      throw new Error(
-        `PapersPastAdapter.acquire: page for "${locatorValue}" resolved article code ` +
-          `"${parsed.articleId}" but the record names "${recordedId}" -- refusing to mirror a ` +
-          'mismatched copy (identity guard).',
-      );
-    }
-
     const recordedAssets = record.assets ?? [];
+    const pageUrl = this.articleUrlFor(locatorValue);
 
-    // STEP 4 -- VERIFY-ALL-THEN-COMMIT (Principle XII): a mid-sequence failure
-    // must leave ZERO orphaned objects, so ALL segments are verified (PHASE A,
-    // no writes) before ANY segment is PUT (PHASE B).
-    /** One PHASE-A-verified segment, carried into PHASE B for the idempotent commit. */
-    interface VerifiedSegment {
-      readonly locator: { url: string; sequence: number };
-      readonly bytes: Uint8Array;
-      readonly checksum: string;
-      readonly key: string;
-    }
+    // STEP 3 -- open ONCE, keeping the WAF-cleared session open across the page
+    // read AND every image `fetchBytes` (research.md R1: `/imageserver/` is
+    // WAF-gated too); always closed (try/finally).
+    await this.browserSession.open();
+    try {
+      const { html, parsed } = await this.navigateAndParse(pageUrl);
 
-    // PHASE A -- verify every segment (NO writes), in `area`/sequence order.
-    const verified: VerifiedSegment[] = [];
-    for (const locator of parsed.imageLocators) {
-      const bytes = await this.byteFetch.getBytes(locator.url);
-
-      // Image-validity guard: never mirror a challenge page / non-image as a
-      // facsimile. A real segment is a GIF; anything else fails loud.
-      if (!isGif(bytes)) {
+      // Identity guard: the freshly parsed article code MUST match the record's
+      // recorded id, else the URL moved to a different article; fail loud.
+      if (parsed.articleId !== recordedId) {
         throw new Error(
-          `PapersPastAdapter.acquire: bytes fetched from ${locator.url} for "${recordedId}" are ` +
-            'not a GIF (no GIF87a/GIF89a magic) -- refusing to mirror a non-image/challenge ' +
-            'response as a facsimile (image-validity guard).',
+          `PapersPastAdapter.acquire: page for "${locatorValue}" resolved article code ` +
+            `"${parsed.articleId}" but the record names "${recordedId}" -- refusing to mirror a ` +
+            'mismatched copy (identity guard).',
         );
       }
 
-      const checksum = sha256OfBytes(bytes);
-
-      // Remote-change fail-loud: a recorded same-sequence page-master whose
-      // checksum differs means the remote bytes changed -- never overwrite.
-      const recordedForSeq = recordedAssets.find(
-        (asset) => asset.role === 'page-master' && asset.sequence === locator.sequence,
-      );
-      if (recordedForSeq !== undefined && recordedForSeq.checksum !== checksum) {
-        throw new Error(
-          `PapersPastAdapter.acquire: segment ${locator.sequence} at ${locator.url} for ` +
-            `"${recordedId}" now checksums ${checksum} but the record pins a preserved master at ` +
-            `${recordedForSeq.checksum} -- the remote bytes changed; refusing to overwrite or ` +
-            'auto-version (remote-change fail-loud).',
-        );
+      // STEP 4 -- VERIFY-ALL-THEN-COMMIT (Principle XII): a mid-sequence failure
+      // must leave ZERO orphaned objects -- ALL segments verified (PHASE A, no
+      // writes) before ANY is PUT (PHASE B).
+      /** One PHASE-A-verified segment, carried into PHASE B for the idempotent commit. */
+      interface VerifiedSegment {
+        readonly locator: { url: string; sequence: number };
+        readonly bytes: Uint8Array;
+        readonly checksum: string;
+        readonly key: string;
       }
 
-      verified.push({
-        locator,
-        bytes,
-        checksum,
-        key: objectKeyForSegment(parsed.articleId, checksum),
-      });
-    }
+      // PHASE A -- verify every segment (NO writes), in `area`/sequence order.
+      const verified: VerifiedSegment[] = [];
+      for (const locator of parsed.imageLocators) {
+        // Fetch bytes INSIDE the same WAF-cleared context (research.md R1).
+        const bytes = await this.browserSession.fetchBytes(locator.url);
 
-    // PHASE B -- commit (only reached once ALL segments verified): idempotent
-    // head-then-put; PUT only when not already present at this verified checksum.
-    const pageMasters: AcquiredAsset[] = [];
-    for (const segment of verified) {
-      const head = await objectStore.head(segment.key);
-      if (!(head.exists && head.sha256 === segment.checksum)) {
-        await objectStore.put(segment.key, segment.bytes, {
-          sha256: segment.checksum,
-          contentType: GIF_MEDIA_TYPE,
+        // Image-validity guard: a real segment is a GIF; anything else fails loud.
+        if (!isGif(bytes)) {
+          throw new Error(
+            `PapersPastAdapter.acquire: bytes fetched from ${locator.url} for "${recordedId}" are ` +
+              'not a GIF (no GIF87a/GIF89a magic) -- refusing to mirror a non-image/challenge ' +
+              'response as a facsimile (image-validity guard).',
+          );
+        }
+
+        const checksum = sha256OfBytes(bytes);
+
+        // Remote-change fail-loud: a recorded same-sequence master whose checksum
+        // differs means the remote bytes changed -- never overwrite.
+        const recordedForSeq = recordedAssets.find(
+          (asset) => asset.role === 'page-master' && asset.sequence === locator.sequence,
+        );
+        if (recordedForSeq !== undefined && recordedForSeq.checksum !== checksum) {
+          throw new Error(
+            `PapersPastAdapter.acquire: segment ${locator.sequence} at ${locator.url} for ` +
+              `"${recordedId}" now checksums ${checksum} but the record pins a preserved master at ` +
+              `${recordedForSeq.checksum} -- the remote bytes changed; refusing to overwrite or ` +
+              'auto-version (remote-change fail-loud).',
+          );
+        }
+
+        verified.push({
+          locator,
+          bytes,
+          checksum,
+          key: objectKeyForSegment(parsed.articleId, checksum),
         });
       }
 
-      pageMasters.push({
-        sourceUrl: segment.locator.url,
-        mediaType: GIF_MEDIA_TYPE,
-        objectStoreKey: segment.key,
-        checksum: segment.checksum,
-        byteLength: segment.bytes.length,
-        provenancePath: provenancePathForSegment(parsed.articleId, segment.checksum),
-        role: 'page-master',
-        sequence: segment.locator.sequence,
-      });
-    }
+      // PHASE B -- commit (only once ALL segments verified): idempotent
+      // head-then-put; PUT only when not already present at this checksum.
+      const pageMasters: AcquiredAsset[] = [];
+      for (const segment of verified) {
+        const head = await objectStore.head(segment.key);
+        if (!(head.exists && head.sha256 === segment.checksum)) {
+          await objectStore.put(segment.key, segment.bytes, {
+            sha256: segment.checksum,
+            contentType: GIF_MEDIA_TYPE,
+          });
+        }
 
-    // STEP 5 -- return the page-masters + a raw metadata snapshot of the page.
-    const metadataSnapshot: MetadataSnapshot = { raw: html, retrievedAt: this.now() };
-    return {
-      repositoryRecordId,
-      assets: pageMasters,
-      metadataSnapshot,
-      complete: true,
-      reconciliationRequired: true,
-    };
+        pageMasters.push({
+          sourceUrl: segment.locator.url,
+          mediaType: GIF_MEDIA_TYPE,
+          objectStoreKey: segment.key,
+          checksum: segment.checksum,
+          byteLength: segment.bytes.length,
+          provenancePath: provenancePathForSegment(parsed.articleId, segment.checksum),
+          role: 'page-master',
+          sequence: segment.locator.sequence,
+        });
+      }
+
+      // STEP 5 -- return the page-masters + a raw metadata snapshot.
+      const metadataSnapshot: MetadataSnapshot = { raw: html, retrievedAt: this.now() };
+      return {
+        repositoryRecordId,
+        assets: pageMasters,
+        metadataSnapshot,
+        complete: true,
+        reconciliationRequired: true,
+      };
+    } finally {
+      await this.browserSession.close();
+    }
   }
 }

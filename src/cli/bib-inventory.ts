@@ -126,9 +126,11 @@ async function buildResolveOnlyAdapter(repository: RepositoryName): Promise<Repo
     return new InternetArchiveAdapter({ client: new HttpClient() });
   }
   if (repository === 'papers-past') {
+    // Resolve-only: no objectStore. The browser session both reads the page
+    // and (at acquire, not here) fetches image bytes inside the WAF-cleared
+    // context (research.md R1); resolve never fetches bytes.
     return new PapersPastAdapter({
       browserSession: new PlaywrightBrowserSession(),
-      byteFetch: new HttpClient(),
     });
   }
   throw new Error(

@@ -1,16 +1,16 @@
 /**
  * Shared no-network test doubles for the Papers Past repository adapter's
  * unit tests (T009-T012). Mirrors the spec-014 fake shape
- * (tests/unit/sourcequery/fakes.ts) for the browser session, and adds
- * doubles for the injected byte-fetch client and object store the adapter
- * depends on:
+ * (tests/unit/sourcequery/fakes.ts) for the browser session, and adds a
+ * double for the injected object store the adapter depends on:
  * - {@link FakeBrowserSession} -- scripts the HTML returned per article URL
  *   (a test loads a fixture, e.g.
  *   tests/unit/repository/papers-past/fixtures/de-rays-article.html, and
- *   passes its contents in here).
- * - {@link FakeByteFetchClient} -- scripts bytes returned per image URL
- *   (matching `HttpClient.getBytes`'s signature), including a scripted
- *   non-image/challenge body for the image-validity-guard test.
+ *   passes its contents in here) AND scripts the image bytes returned per
+ *   `/imageserver/` URL from its WAF-cleared `fetchBytes` (research.md R1:
+ *   image bytes are fetched inside the same browser context that read the
+ *   page, not via a separate stateless client). A scripted non-image /
+ *   challenge body drives the image-validity-guard test.
  * - {@link FakeObjectStore} -- in-memory `ObjectStore` recording every
  *   `head`/`put` call, with pre-seeding support so a test can assert
  *   idempotent skip (head returns exists+matching checksum) or dry-run
@@ -35,6 +35,14 @@ export interface FakeBrowserSessionScript {
   html?: Map<string, string>;
   /** HTML returned for any URL not present in `html`, when provided. */
   defaultHtml?: string;
+  /**
+   * image URL -> raw bytes returned by `fetchBytes(url)` (the WAF-cleared
+   * in-page byte fetch). Script a non-image/challenge body here to exercise
+   * the adapter's image-validity guard.
+   */
+  bytes?: Map<string, Uint8Array>;
+  /** Bytes returned by `fetchBytes` for any URL not present in `bytes`, when provided. */
+  defaultBytes?: Uint8Array;
 }
 
 /**
@@ -47,19 +55,32 @@ export interface FakeBrowserSessionScript {
  * which article URL(s) were fetched. Enforces the open-before-navigate
  * precondition, mirroring the spec-014 fake and the real persistent-Chrome
  * session it stands in for.
+ *
+ * ALSO scripts `fetchBytes(url)` -- the WAF-cleared in-page byte fetch the
+ * adapter uses for image bytes (research.md R1) -- keyed by URL with an
+ * optional `defaultBytes` fallback, recording every requested URL in
+ * `fetchBytesCalls` (call order). This subsumes the retired
+ * `FakeByteFetchClient`: image bytes now flow through the SAME browser
+ * session that read the page, never a separate stateless client.
  */
 export class FakeBrowserSession implements BrowserSession {
   /** URLs passed to `navigate()`, in call order. */
   readonly navigateCalls: string[] = [];
+  /** URLs passed to `fetchBytes()`, in call order (duplicates included). */
+  readonly fetchBytesCalls: string[] = [];
 
   private readonly html: Map<string, string>;
   private readonly defaultHtml: string | undefined;
+  private readonly bytes: Map<string, Uint8Array>;
+  private readonly defaultBytes: Uint8Array | undefined;
   private opened = false;
   private closed = false;
 
   constructor(script: FakeBrowserSessionScript = {}) {
     this.html = script.html ?? new Map();
     this.defaultHtml = script.defaultHtml;
+    this.bytes = script.bytes ?? new Map();
+    this.defaultBytes = script.defaultBytes;
   }
 
   /** Whether `open()` has been called and `close()` has not (yet). */
@@ -90,54 +111,14 @@ export class FakeBrowserSession implements BrowserSession {
     return { status: 200, html: body, snapshotMarkdown: body, errored: false };
   }
 
-  async close(): Promise<void> {
-    this.closed = true;
-  }
-}
-
-/**
- * Byte-fetch client shape the adapter depends on for image bytes -- matches
- * `HttpClient.getBytes` (src/gallica/http-client.ts) so the real `HttpClient`
- * and this fake are interchangeable via DI.
- */
-export interface ByteFetchClient {
-  getBytes(url: string): Promise<Uint8Array>;
-}
-
-/**
- * Script for a {@link FakeByteFetchClient}: a per-URL bytes map plus an
- * optional fallback used for any URL not present in `bytes`.
- */
-export interface FakeByteFetchClientScript {
-  /** image URL -> bytes to return for that URL. */
-  bytes?: Map<string, Uint8Array>;
-  /** Bytes returned for any URL not present in `bytes`, when provided. */
-  defaultBytes?: Uint8Array;
-}
-
-/**
- * No-network test double for the adapter's injected byte-fetch client.
- *
- * Returns scripted bytes keyed by URL, falling back to `defaultBytes` when
- * provided. Script a non-image/challenge body (e.g. an HTML challenge page
- * encoded as bytes) at a given URL to exercise the image-validity guard's
- * throw path. Records every URL requested, in call order, plus a per-URL
- * call count.
- */
-export class FakeByteFetchClient implements ByteFetchClient {
-  /** URLs passed to `getBytes()`, in call order (duplicates included). */
-  readonly getBytesCalls: string[] = [];
-
-  private readonly bytes: Map<string, Uint8Array>;
-  private readonly defaultBytes: Uint8Array | undefined;
-
-  constructor(script: FakeByteFetchClientScript = {}) {
-    this.bytes = script.bytes ?? new Map();
-    this.defaultBytes = script.defaultBytes;
-  }
-
-  async getBytes(url: string): Promise<Uint8Array> {
-    this.getBytesCalls.push(url);
+  /**
+   * WAF-cleared in-page byte fetch (research.md R1). Returns scripted bytes
+   * keyed by URL, falling back to `defaultBytes` when provided; a URL with no
+   * scripted bytes and no default throws (fail-loud). Records every requested
+   * URL, in call order, in {@link fetchBytesCalls}.
+   */
+  async fetchBytes(url: string): Promise<Uint8Array> {
+    this.fetchBytesCalls.push(url);
     const scripted = this.bytes.get(url);
     if (scripted !== undefined) {
       return scripted;
@@ -145,12 +126,16 @@ export class FakeByteFetchClient implements ByteFetchClient {
     if (this.defaultBytes !== undefined) {
       return this.defaultBytes;
     }
-    throw new Error(`FakeByteFetchClient: no scripted bytes for URL: ${url}`);
+    throw new Error(`FakeBrowserSession: fetchBytes not scripted for URL: ${url}`);
   }
 
-  /** Test helper: number of times `getBytes()` was called for `url`. */
-  callCountFor(url: string): number {
-    return this.getBytesCalls.filter((called) => called === url).length;
+  async close(): Promise<void> {
+    this.closed = true;
+  }
+
+  /** Test helper: number of times `fetchBytes()` was called for `url`. */
+  fetchBytesCountFor(url: string): number {
+    return this.fetchBytesCalls.filter((called) => called === url).length;
   }
 }
 
