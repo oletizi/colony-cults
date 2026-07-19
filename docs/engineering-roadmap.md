@@ -174,3 +174,7 @@ Spun out of 009's research loop (backlog TASK-32). SRCH-0013 verified that the d
 - status: planned
 - analyze-clean: yes
 - spec: specs/015-papers-past-acquisition
+
+## impl:feature/acquire-metadata-completion
+- status: planned
+- ref: Constitution Principle XV (v1.4.0); backlog TASK-46; supersedes-history TASK-20/21
