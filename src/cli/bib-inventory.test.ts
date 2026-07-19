@@ -76,6 +76,18 @@ describe('parseInventoryArgs', () => {
     expect(parsed.locator).toBe('nouvellefrancec00groogoog');
   });
 
+  it('parses --repository papers-past', () => {
+    const parsed = parseInventoryArgs([
+      'https://paperspast.natlib.govt.nz/papers/example/1900/01/01/1',
+      '--group',
+      'PB-S006',
+      '--repository',
+      'papers-past',
+    ]);
+    expect(parsed.repository).toBe('papers-past');
+    expect(parsed.locator).toBe('https://paperspast.natlib.govt.nz/papers/example/1900/01/01/1');
+  });
+
   it('throws (fail loud) on an unknown --repository name', () => {
     expect(() =>
       parseInventoryArgs([
@@ -85,7 +97,7 @@ describe('parseInventoryArgs', () => {
         '--repository',
         'not-a-real-repository',
       ]),
-    ).toThrow(/--repository must be "gallica", "new-italy-museum", or "internet-archive"/);
+    ).toThrow(/--repository must be "gallica", "new-italy-museum", "internet-archive", or "papers-past"/);
   });
 });
 
@@ -121,7 +133,7 @@ describe('runInventoryCli (synchronous fail-loud branches)', () => {
     expect(code).toBe(2);
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining(
-        '--repository must be "gallica", "new-italy-museum", or "internet-archive"',
+        '--repository must be "gallica", "new-italy-museum", "internet-archive", or "papers-past"',
       ),
     );
   });
