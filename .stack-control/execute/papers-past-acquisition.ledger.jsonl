@@ -1,0 +1,4 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commit":"6e433e4","reviewClean":true,"note":"scaffold papers-past dirs + de Rays test fixture (49163 bytes) + integration .gitkeep"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commit":"bcd5292","reviewClean":true,"note":"add 'papers-past' to CopyLevelIdentifierType + COPY_LEVEL_TYPES; tsc 0"}
+{"id":"T003","tierLabel":"fast","model":"haiku","commit":"02469a1","reviewClean":true,"note":"add 'papers-past' to RepositoryName union; tsc 0 (no exhaustive switch)"}
+{"id":"T004","tierLabel":"fast","model":"haiku","commit":"a4c7e50","reviewClean":true,"note":"ParsedArticle parse-result interface in types.ts (interface-first); tsc 0"}
