@@ -241,12 +241,19 @@ interface LeadAndAggregateProvenances {
  * before -- this does NOT widen the French path to an all-folios read it
  * never needed.
  *
- * `unit.folios` is non-empty by the time this is called (`build()` fails
- * loud on a zero-folio unit first), so the lead is always defined.
+ * `build()` already fails loud on a zero-folio unit before this is called; this
+ * function ALSO guards it locally (a self-defending fail-loud, not a coupling to
+ * a remote invariant via doc-comment) so a zero-folio unit can never yield a
+ * silent `undefined` lead provenance (AUDIT-20260719-20).
  */
 async function resolveLeadAndAggregateProvenances(
   unit: SelectedUnit,
 ): Promise<LeadAndAggregateProvenances> {
+  if (unit.folios[0] === undefined) {
+    throw new Error(
+      'resolveLeadAndAggregateProvenances: the resolved unit has no folios -- cannot build.',
+    );
+  }
   if (unit.readingLanguage === 'english') {
     const allProvenances = await Promise.all(unit.folios.map(readFolioSidecar));
     return { leadProvenance: allProvenances[0], allProvenances };
