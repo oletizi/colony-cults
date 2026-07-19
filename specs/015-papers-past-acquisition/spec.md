@@ -10,6 +10,12 @@
 
 Search-log SRCH-0018/0019 established a live, high-yield, previously-untried discovery axis: the de Rays / Port-Breton affair is reported in **695 discrete Papers Past (National Library of New Zealand) newspaper articles**, and one was validated end-to-end through the governed query client — article `HNS18840103.2.19.3` ("CONVICTION OF MARQUIS DE RAYS", Hawera & Normanby Star, 3 January 1884), carrying NLNZ's explicit **"No known copyright (New Zealand)"** rights statement, with OCR text and page-image scans captured. The corpus can now *query* Papers Past but cannot *acquire* from it: `bib acquire` dispatches strictly on copy kind (Gallica ark, museum accession, Internet-Archive item), and Papers Past is none of these. This feature adds the missing acquisition adapter so a discrete public-domain Papers Past article can be mirrored into the held corpus.
 
+## Clarifications
+
+### Session 2026-07-18
+
+- Q: How is the de Rays article made acquirable so `bib acquire` (which operates on a source-group member with status approved-for-acquisition) can process it? → A: Source-group membership — add the article as a member of a source-group and reuse the existing member-acquire path unchanged; the standalone-source approval path (TASK-27) is NOT pulled into this feature's scope.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Acquire one public-domain Papers Past article end-to-end (Priority: P1) 🎯 MVP
@@ -93,7 +99,7 @@ Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client
 
 - **FR-011**: The `bib acquire` CLI MUST build and dispatch the Papers Past adapter for a member whose selected copy is `papers-past` (mirroring the museum/IA adapter-builders), and MUST NOT pay the adapter's construction cost for a non-papers-past copy.
 - **FR-012**: The `bib inventory` repository allowlist (and any repository enumeration the CLI surfaces) MUST recognize `papers-past` as a supported repository.
-- **FR-013**: The feature MUST provide a corpus Source for the validated de Rays article (kind periodical, case `port-breton`) plus its `papers-past` copy record, made acquirable through the existing member-acquire path.
+- **FR-013**: The feature MUST provide a corpus Source for the validated de Rays article (kind periodical, case `port-breton`) plus its `papers-past` copy record, made acquirable **as a member of a source-group with status `approved-for-acquisition`** so it flows through the EXISTING member-acquire path unchanged (the standalone-source approval path, TASK-27, is out of scope — clarified 2026-07-18).
 
 **Governance + provenance**
 
@@ -124,4 +130,5 @@ Papers Past sits behind an Incapsula WAF that the corpus's stateless HTTP client
 - Papers Past newspaper content in the target era is public-domain in New Zealand and carries NLNZ's "No known copyright (New Zealand)" statement; the operator authors the corresponding rights assessment.
 - The corpus archive root and B2 object-store credentials are configured for a real acquisition run (per the per-session-archive-clone policy); the adapter itself needs no credentials for resolve-only use.
 - MVP scope is one-article acquisition. Batch acquisition of many articles, a deduplicated discrete-item census of the 695, whole-page / whole-issue acquisition, and the US (Chronicling America) / Italian (Camera dei Deputati) axes are explicit follow-ons, out of scope here.
-- Three points are deferred to the plan's research phase: (1) whether the Papers Past image CDN is reachable statelessly or is WAF-gated (fallback: browser byte-fetch); (2) OCR-text storage as a new `ocr-text` asset role vs the metadata snapshot; (3) member acquirability via source-group membership vs the standalone-source approval path (TASK-27).
+- Member acquirability is via **source-group membership**, reusing the existing member-acquire path (clarified 2026-07-18); the standalone-source approval path (TASK-27) is out of scope.
+- Two points remain deferred to the plan's research phase: (1) whether the Papers Past image CDN is reachable statelessly or is WAF-gated (fallback: browser byte-fetch); (2) OCR-text storage as a new `ocr-text` asset role vs the metadata snapshot.
