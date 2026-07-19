@@ -1,0 +1,33 @@
+# Audit-barrage model battery — project override for corpus-print-pdf.
+#
+# Overrides the plugin default (templates/audit-barrage-config.yaml), which ships a
+# 3-lane fleet (claude/opus, codex/gpt-5.5, sonnet/claude-sonnet-4-6).
+#
+# Operator decision (2026-07-18): the `sonnet` lane (claude --model claude-sonnet-4-6)
+# is NOT fit for purpose — it timed out on every whole-feature govern round for spec
+# 015, degrading the fleet and blocking convergence. Dropped here. The remaining two
+# lanes are both frontier, large-context, and cross-family (Anthropic opus + OpenAI
+# gpt-5.5): 2-of-2 agreement ACROSS families is the strong HIGH-confidence signal, and
+# meets the default --require-models 2 floor. This mirrors the plugin's own frontier-
+# only 2-lane self-hosting config. fleet-knowledge.yaml is kept in exact sync.
+models:
+  - name: claude
+    binary: claude
+    model: opus
+    args_template: "-p --model {{model}} --output-format stream-json --verbose {{prompt-stdin}}"
+    readonly_enforcement: "--disallowedTools Bash,Read,Grep,Glob,Edit,Write,WebFetch,WebSearch,Task,NotebookEdit"
+    output_mode: stream-json
+    liveness_signal: stdout
+    liveness_window_seconds: 300
+    timeout_floor_seconds: 420
+    timeout_secs_per_kb: 13
+  - name: codex
+    binary: codex
+    model: gpt-5.5
+    args_template: "exec -m {{model}} -c model_reasoning_summary=detailed --sandbox read-only {{prompt-stdin}}"
+    readonly_enforcement: "--sandbox read-only"
+    output_mode: text
+    liveness_signal: stderr
+    liveness_window_seconds: 60
+    timeout_floor_seconds: 300
+    timeout_secs_per_kb: 7
