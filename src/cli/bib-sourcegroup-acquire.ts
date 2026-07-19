@@ -228,7 +228,13 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
     // its `reconcileArchiveRoot`/`gather`).
     const isB2Direct =
       museumAdapter !== undefined || internetArchiveAdapter !== undefined || papersPastAdapter !== undefined;
-    const objectStoreConfig = isB2Direct ? resolveObjectStoreConfig() : undefined;
+    // Completion + companion machinery needs private archive/B2 configuration
+    // (`resolveObjectStoreConfig` / `resolveArchiveRoot` both fail loud when
+    // their env is unset). A `--dry-run` mirrors nothing and runAcquire's tail is
+    // exempt, so it MUST NOT depend on that configuration (AUDIT-20260719-08):
+    // resolve these ONLY for a real (non-dry-run) acquire. `bib acquire <id>
+    // --dry-run` therefore works in a fresh / metadata-only environment.
+    const objectStoreConfig = !dryRun && isB2Direct ? resolveObjectStoreConfig() : undefined;
 
     // Completion tail dependencies (spec 016, Principle XV): give runAcquire the
     // means to complete the SSOT record as part of the SAME acquire (advance
@@ -236,10 +242,10 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
     // selected copy's dispatch kind (above): a B2-direct copy is completed against
     // the real object store (heads-only); a Gallica copy is completed from the
     // archive's per-page provenance (the member's layout was registered above, so
-    // `gatherProvenance` resolves it). `--dry-run` mirrors nothing, so runAcquire's
-    // own tail is exempt regardless.
-    const completionDeps =
-      isB2Direct && objectStoreConfig !== undefined
+    // `gatherProvenance` resolves it). Empty on `--dry-run` (the tail is exempt).
+    const completionDeps = dryRun
+      ? {}
+      : isB2Direct && objectStoreConfig !== undefined
         ? { completionObjectStore: new S3ObjectStore(objectStoreConfig) }
         : { reconcileArchiveRoot: resolveArchiveRoot(repoRoot), gather: gatherProvenance };
 

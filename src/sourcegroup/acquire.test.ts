@@ -535,7 +535,7 @@ describe('runAcquire', () => {
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
     await expect(
-      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch }),
+      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() }),
     ).rejects.toThrow(/public-domain/i);
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -547,7 +547,7 @@ describe('runAcquire', () => {
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
     await expect(
-      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch }),
+      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() }),
     ).rejects.toThrow(/public-domain/i);
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -615,6 +615,7 @@ describe('runAcquire', () => {
       sourceId: 'PB-P200',
       fetch,
       museumAdapter: adapter,
+      completionObjectStore: fakeObjectStore({}),
     });
 
     // Routed to the museum adapter, never the Gallica fetcher.
@@ -711,6 +712,7 @@ describe('runAcquire', () => {
       fetch,
       museumAdapter,
       internetArchiveAdapter: iaAdapter,
+      completionObjectStore: fakeObjectStore({}),
     });
 
     // Routed to the IA adapter only.
@@ -759,6 +761,7 @@ describe('runAcquire', () => {
       fetch,
       museumAdapter,
       internetArchiveAdapter: iaAdapter,
+      completionObjectStore: fakeObjectStore({}),
     });
 
     expect(museumCalls).toHaveLength(1);
@@ -783,6 +786,7 @@ describe('runAcquire', () => {
       museumAdapter,
       internetArchiveAdapter: iaAdapter,
       papersPastAdapter,
+      completionObjectStore: fakeObjectStore({}),
     });
 
     // Routed to the Papers Past adapter only.

@@ -427,6 +427,34 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
     input.papersPastAdapter,
   );
   const adapter = registry.selectForRecord(record);
+  const isB2Direct = adapter.repository !== 'gallica';
+
+  // PREFLIGHT the completion machinery BEFORE the adapter fetches/mirrors
+  // anything (AUDIT-20260719-06). The path-required completion dependency is
+  // knowable from the dispatched adapter's kind alone -- so validate it here,
+  // before `adapter.acquire`'s durable side effects, rather than after. Failing
+  // afterwards would have already written the orphan-prone state (page images /
+  // provenance, or mirrored B2 masters) this feature exists to make impossible
+  // to finish into -- and would have spent an external fetch the failed command
+  // discards. `--dry-run` mirrors nothing, so it is exempt.
+  if (input.dryRun !== true) {
+    if (!isB2Direct) {
+      if (input.reconcileArchiveRoot === undefined || input.gather === undefined) {
+        throw new Error(
+          `acquire: a non-dry-run ${adapter.repository} acquire requires reconcileArchiveRoot + ` +
+            `gather to complete the SSOT record (advance status from the archive's per-page ` +
+            `provenance) -- refusing to FETCH a copy whose acquisition status could never be ` +
+            `advanced (Principle XV).`,
+        );
+      }
+    } else if (input.completionObjectStore === undefined) {
+      throw new Error(
+        `acquire: a non-dry-run ${adapter.repository} acquire requires a completionObjectStore ` +
+          `to complete + verify any mirrored masters -- refusing to MIRROR object-store bytes ` +
+          `the SSOT record could never confirm (Principle XV).`,
+      );
+    }
+  }
 
   const ctx: GallicaAcquisitionContext = {
     objectStore: input.objectStore,
@@ -527,31 +555,13 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   // mirrored ZERO masters (a metadata/HTML-only cataloging outcome): there are
   // no object-store bytes to orphan, so there is nothing to complete or verify.
   if (input.dryRun !== true) {
-    if (adapter.repository === 'gallica') {
-      // Per-page-provenance: a fetched Gallica copy MUST be reconciled to its
-      // acquired status. Refuse to report success without the machinery to do so
-      // (never leave a fetched copy stuck at `to-collect`; Principle XV).
-      if (input.reconcileArchiveRoot === undefined || input.gather === undefined) {
-        throw new Error(
-          `acquire: a non-dry-run ${adapter.repository} acquire requires reconcileArchiveRoot + ` +
-            `gather to complete the SSOT record (advance status from the archive's per-page ` +
-            `provenance) -- refusing to report success for a copy whose acquisition status was ` +
-            `never advanced (Principle XV).`,
-        );
-      }
+    if (!isB2Direct) {
+      // Per-page-provenance (Gallica): reconcile the fetched copy to its acquired
+      // status. The required machinery was validated in the preflight above.
       await completeAndVerify(input, record, acquisition, false);
     } else if (acquisition.assets.length > 0) {
-      // B2-direct with mirrored masters: those object-store bytes MUST be
-      // completed + verified. Fail loud if the store to verify them against was
-      // not injected (never report success for bytes the record cannot confirm).
-      if (input.completionObjectStore === undefined) {
-        throw new Error(
-          `acquire: a non-dry-run ${adapter.repository} acquire mirrored ` +
-            `${acquisition.assets.length} master(s) to the object store but no ` +
-            `completionObjectStore was injected to complete + verify the record -- refusing to ` +
-            `leave object-store bytes the SSOT record does not reflect (Principle XV).`,
-        );
-      }
+      // B2-direct with mirrored masters: complete + verify those object-store
+      // bytes (completionObjectStore validated in the preflight above).
       await completeAndVerify(input, record, acquisition, true);
     } else if (acquisition.metadataSnapshotRef !== undefined) {
       // A B2-direct adapter that recorded a durable metadata snapshot but ZERO

@@ -83,3 +83,50 @@ The blast radius is high because this breaks a normal operator workflow for mult
 - **AUDIT-20260719-03** — FIXED (commit pending). runAcquire now fails loud on a B2-direct snapshot-only outcome (`assets: []` + `metadataSnapshotRef`) instead of skipping/misrouting; the routing invariant is the adapter kind, not `assets.length` alone. Regression fixture added (`AUDIT-03: ... fails loud`). No shipped adapter currently produces this shape; the guard makes it impossible to complete silently.
 - **AUDIT-20260719-04** — FIXED (commit pending). The explicit adapter kind (`isB2Direct`) is threaded into `CompletenessContext`; the verifier no longer re-derives B2-direct-vs-Gallica from `record.assets` shape alone, and a B2-direct copy presenting ZERO masters now fails loud rather than resolving through the empty-assets Gallica branch. Verifier fixtures added (AUDIT-04 x3).
 - **AUDIT-20260719-05** — FALSE POSITIVE (disposition: invariant-first boundary). The premise (a B2 adapter builder returning an adapter while `--archive` selects a Gallica copy) cannot occur: each `build*AdapterForMember` selects the copy via the SAME `selectRepositoryRecord(candidates, archive)` runAcquire dispatches on and returns `undefined` unless THAT selected copy is its identifier type. Thus `isB2Direct` equals the dispatched kind and `completionDeps` always matches the selected path; a `--archive`-selected Gallica copy is never starved of `reconcileArchiveRoot`/`gather`. Clarified with an explicit invariant comment at `bib-sourcegroup-acquire.ts` (the `isB2Direct` derivation).
+
+## 2026-07-19 — audit-barrage lift (end-govern-after_implement)
+
+### AUDIT-20260719-06 — Gallica completion dependencies are checked only after fetching
+
+Finding-ID: AUDIT-20260719-06
+Status:     open
+Severity:   high
+Per-lane:   codex=high
+Decision:   single-model (gate-counted high)
+Surface:    src/sourcegroup/acquire.ts:431-542
+
+`runAcquire` dispatches and executes `adapter.acquire(record, ctx)` at lines 431-437 before it validates that a non-dry-run Gallica acquire has `reconcileArchiveRoot` and `gather` at lines 530-542. That means the new fail-loud guard can still fire only after the Gallica fetcher has already written durable page images/provenance as side effects. The operation then reports failure, but it has created exactly the incomplete/orphan-prone state this feature is supposed to make mechanically impossible to finish into; it also violates the project’s frugal access discipline by making an external fetch whose result is discarded by the failed command.
+
+The blast radius is high for direct `runAcquire` consumers and tests that inject the core API without CLI wiring: a missing completion dependency now fails loudly, but too late to prevent source requests and archive writes. A reasonable fix is to preflight path-required completion dependencies immediately after `registry.selectForRecord(record)` and before `adapter.acquire` for any non-dry-run `adapter.repository === 'gallica'`. For B2-direct paths, either require the head-capable store before side effects for adapters that can mirror masters, or make the adapter outcome expose a no-bytes plan before commit; the key issue here is that known-required Gallica machinery is already knowable before line 437.
+
+### AUDIT-20260719-07 — Optional `isB2Direct` with silent inference fallback re-opens the exact channel the AUDIT-04 fix closed
+
+Finding-ID: AUDIT-20260719-07
+Status:     open
+Severity:   high
+Per-lane:   claude=high
+Decision:   adjudicated (gate-counted high) — blast-radius=high, reachability=unstated, fix-debt=no; no down-calibration signal — high retained.
+Surface:    src/sourcegroup/acquire-completeness.ts:110-111 (the `const b2Direct = ctx.isB2Direct ?? masters.length > 0` fallback); CompletenessContext.isB2Direct declared optional
+
+The AUDIT-04 fix was explicitly meant to stop a B2-direct acquire that recorded zero masters from being silently reinterpreted as the empty-assets Gallica shape. The mechanism it added is an *optional* `isB2Direct?: boolean`, resolved with `const b2Direct = ctx.isB2Direct ?? masters.length > 0`. Auditing this fix as a fresh surface (round-0 self-red-team): the fix does not close the channel, it gates the closure on every caller remembering to thread the flag. Any call site that omits `isB2Direct` — a future caller, a refactor of `runAcquire`, a test, or a second entry point — silently reverts to `masters.length > 0` inference, which is precisely the buggy behavior AUDIT-04 documented: a B2-direct record that failed to record masters has `masters.length === 0`, infers `b2Direct = false`, takes the Gallica branch, and resolves as complete having HEADed nothing. The module doc asserts "runAcquire always does" thread it, but that assertion is unenforced here and unverifiable from this chunk.
+
+This is the fallback-hides-failure pattern the project's own guidelines forbid ("Never implement fallbacks... Throw errors with a description of the missing functionality"). The blast radius is the core Principle XV guarantee: an unattended acquire could report success over zero verified bytes. A stronger fix makes the field required (`isB2Direct: boolean`) so the type system forces every caller to state the dispatched kind, or throws when it is absent for a record whose kind cannot be safely inferred. The inference-only path should exist, if at all, only behind an explicit `inferKind: true` opt-in that unit tests pass deliberately.
+
+### AUDIT-20260719-08 — Dry-run Gallica acquire still requires an archive root
+
+Finding-ID: AUDIT-20260719-08
+Status:     open
+Severity:   high
+Per-lane:   codex=high
+Decision:   single-model (gate-counted high)
+Surface:    src/cli/bib-sourcegroup-acquire.ts:239-244
+
+The CLI comment says `--dry-run` is exempt because it mirrors nothing, but `completionDeps` eagerly calls `resolveArchiveRoot(repoRoot)` for every non-B2 selected copy before `runAcquire` sees `dryRun`. `resolveArchiveRoot` fails loud when `COLONY_ARCHIVE_ROOT` is unset, so `bib acquire <gallica-id> --dry-run` can fail in a fresh or metadata-only environment even though the completion tail is supposed to be skipped.
+
+This is a real operator-facing correctness bug: dry-run is the safe preflight path, and the new completion wiring makes it depend on private archive worktree configuration that should only be needed for a real Gallica completion. A reasonable fix is to make completion deps conditional on `!dryRun`, or at least avoid resolving `reconcileArchiveRoot` until the non-dry-run Gallica branch actually needs it.
+
+## 2026-07-19 — dispositions (round 3 findings)
+
+- **AUDIT-20260719-06** — FIXED. Completion machinery is now PREFLIGHTED immediately after `registry.selectForRecord(record)` and BEFORE `adapter.acquire` (the fetch/mirror side effect), for both paths: a non-dry-run Gallica acquire requires `reconcileArchiveRoot` + `gather`, a non-dry-run B2-direct acquire requires `completionObjectStore`. Failing before the fetch means no orphan-prone durable state is written and no external fetch is spent on a command that will fail. Dispatch/characterization tests that drive a real acquire now inject the machinery (matching production).
+- **AUDIT-20260719-07** — FIXED. `CompletenessContext.isB2Direct` is now REQUIRED (no `?? masters.length > 0` fallback). The type system forces every caller to state the dispatched kind; the fallback-hides-failure path that could revert to the AUDIT-04 false-negative is gone (Principle V). All verifier unit tests thread the explicit kind.
+- **AUDIT-20260719-08** — FIXED. The CLI resolves completion + companion machinery (`resolveObjectStoreConfig` / `resolveArchiveRoot`) ONLY for a non-dry-run acquire; `bib acquire <id> --dry-run` no longer depends on private archive/B2 configuration and works in a fresh/metadata-only environment.

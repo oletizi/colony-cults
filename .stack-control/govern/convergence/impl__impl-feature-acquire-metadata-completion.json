@@ -3,7 +3,7 @@
   "mode": "impl",
   "item": "impl:feature/acquire-metadata-completion",
   "governedShaBase": "d8171d6",
-  "headSha": "54cbd251d0f0291a080412a320934f164578f6d1",
+  "headSha": "0458be5b0ac91cdc4b27411ae0e74e1947139c38",
   "chunkIds": [
     "650e889e848d2722",
     "9c08e223058cd9ed",
@@ -12,18 +12,18 @@
   "rounds": 1,
   "liftedFindings": [
     {
-      "id": "650e889e848d2722::AUDIT-BARRAGE-claude-01",
-      "title": "Completion tail routes on `assets.length` alone, so a B2-direct adapter that emitted a `metadataSnapshotRef` with zero assets is silently skipped — orphaned snapshot bytes",
+      "id": "650e889e848d2722::AUDIT-BARRAGE-codex-01",
+      "title": "Gallica completion dependencies are checked only after fetching",
       "severity": "high"
     },
     {
       "id": "9c08e223058cd9ed::AUDIT-BARRAGE-claude-01",
-      "title": "Completeness path is re-derived from record shape, so a B2-direct acquire with an empty asset list passes through the Gallica branch untouched",
+      "title": "Optional `isB2Direct` with silent inference fallback re-opens the exact channel the AUDIT-04 fix closed",
       "severity": "high"
     },
     {
       "id": "9c08e223058cd9ed::AUDIT-BARRAGE-codex-01",
-      "title": "Completion deps are chosen from built adapters, not the selected acquire path",
+      "title": "Dry-run Gallica acquire still requires an archive root",
       "severity": "high"
     }
   ],

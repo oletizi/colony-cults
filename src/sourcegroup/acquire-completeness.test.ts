@@ -88,6 +88,7 @@ describe('verifyRecordComplete', () => {
     await expect(
       verifyRecordComplete(b2Record(), {
         objectStore: store,
+        isB2Direct: true,
         reconciled: { status: 'archived', advanced: true },
       }),
     ).resolves.toBeUndefined();
@@ -98,6 +99,7 @@ describe('verifyRecordComplete', () => {
     await expect(
       verifyRecordComplete(b2Record(), {
         objectStore: store,
+        isB2Direct: true,
         reconciled: { status: 'archived', advanced: true },
       }),
     ).rejects.toThrow(/archive\/cases\/x\/museum\/y\/Y-0001\.jpg/);
@@ -108,6 +110,7 @@ describe('verifyRecordComplete', () => {
     await expect(
       verifyRecordComplete(b2Record(), {
         objectStore: store,
+        isB2Direct: true,
         reconciled: { status: 'archived', advanced: true },
       }),
     ).rejects.toThrow(/sha256|checksum|mismatch/i);
@@ -118,6 +121,7 @@ describe('verifyRecordComplete', () => {
     await expect(
       verifyRecordComplete(b2Record({ status: 'to-collect' }), {
         objectStore: store,
+        isB2Direct: true,
         reconciled: { status: 'to-collect', advanced: false },
       }),
     ).rejects.toThrow(/status|archived|advanced/i);
@@ -128,6 +132,7 @@ describe('verifyRecordComplete', () => {
     await expect(
       verifyRecordComplete(gallicaRecord(), {
         objectStore: store,
+        isB2Direct: false,
         reconciled: { status: 'collected', advanced: true },
       }),
     ).resolves.toBeUndefined();
@@ -138,6 +143,7 @@ describe('verifyRecordComplete', () => {
     await expect(
       verifyRecordComplete(gallicaRecord({ status: 'to-collect' }), {
         objectStore: store,
+        isB2Direct: false,
         reconciled: { status: 'to-collect', advanced: false },
       }),
     ).rejects.toThrow(/status|advance|collected|archived/i);
@@ -148,6 +154,7 @@ describe('verifyRecordComplete', () => {
     await expect(
       verifyRecordComplete(b2Record({ metadataSnapshot: undefined }), {
         objectStore: store,
+        isB2Direct: true,
         reconciled: { status: 'archived', advanced: true },
         expectsMetadataSnapshot: true,
       }),
@@ -159,6 +166,7 @@ describe('verifyRecordComplete', () => {
     await expect(
       verifyRecordComplete(b2Record({ metadataSnapshot: undefined }), {
         objectStore: store,
+        isB2Direct: true,
         reconciled: { status: 'archived', advanced: true },
         expectsMetadataSnapshot: false,
       }),
@@ -179,6 +187,7 @@ describe('verifyRecordComplete', () => {
         }),
         {
           objectStore: store,
+          isB2Direct: true,
           reconciled: { status: 'archived', advanced: true },
           expectsMetadataSnapshot: true,
         },
@@ -230,6 +239,7 @@ describe('verifyRecordComplete', () => {
     await expect(
       verifyRecordComplete(b2Record({ assets: [master(), second] }), {
         objectStore: store,
+        isB2Direct: true,
         reconciled: { status: 'archived', advanced: true },
       }),
     ).rejects.toThrow(/Y-0002\.jpg/);

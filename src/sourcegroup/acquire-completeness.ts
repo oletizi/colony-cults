@@ -58,11 +58,14 @@ export interface CompletenessContext {
    * matching; a B2-direct acquire presenting ZERO masters is a fail-loud
    * incompleteness, NOT silently reinterpreted as the empty-assets Gallica
    * shape. `false` = per-page-provenance (Gallica): an empty asset list is
-   * legitimate. Omitted (unit tests that construct records directly) => fall
-   * back to inferring the kind from the record's asset shape (the prior
-   * behavior), which stays correct for a well-formed record.
+   * legitimate.
+   *
+   * REQUIRED (AUDIT-20260719-07): there is NO shape-inference fallback. A
+   * fallback (`?? masters.length > 0`) would silently revert to the exact
+   * false-negative AUDIT-04 closed for any caller that forgot to thread the
+   * kind (Principle V -- no fallbacks: state the kind or it is a type error).
    */
-  isB2Direct?: boolean;
+  isB2Direct: boolean;
   /**
    * True when the adapter emitted a durable record-level `metadataSnapshot`
    * ref for this acquire (museum / papers-past / internet-archive); then the
@@ -92,12 +95,11 @@ export async function verifyRecordComplete(
 ): Promise<void> {
   const where = `"${record.sourceId}" at "${record.sourceArchive}"`;
   const masters = objectStoreMasters(record);
-  // Use the EXPLICIT kind when the caller threaded it (runAcquire always does);
-  // otherwise infer from the record's asset shape (direct-construction unit
-  // tests). An explicit B2-direct kind with ZERO recorded masters is a
-  // fail-loud incompleteness (AUDIT-20260719-04) -- it must NOT fall through to
-  // the empty-assets Gallica branch and resolve without HEADing anything.
-  const b2Direct = ctx.isB2Direct ?? masters.length > 0;
+  // The EXPLICIT kind the caller threaded -- NO shape-inference fallback
+  // (AUDIT-20260719-07). An explicit B2-direct kind with ZERO recorded masters
+  // is a fail-loud incompleteness (AUDIT-20260719-04) -- it must NOT be treated
+  // as the empty-assets Gallica shape and resolve without HEADing anything.
+  const b2Direct = ctx.isB2Direct;
 
   if (b2Direct) {
     if (masters.length === 0) {
