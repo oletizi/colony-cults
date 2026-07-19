@@ -1,18 +1,33 @@
-## 2026-07-19: <!-- session title -->
+## 2026-07-19: Spec 015 (Papers Past) executed + first LIVE acquisition; the acquire metadata gap became Constitution Principle XV + spec 016
 
-**Goal:** <!-- compose: what we set out to do -->
+**Goal:** "Pick up last session" — finish executing spec 015 (Papers Past acquisition adapter). It grew, by what each step demanded: execute 015, then actually *acquire* (which surfaced real bugs the hermetic tests structurally could not), then — on the operator's "the metadata is the whole point" — fix the record-completeness gaps, recognize the recurring failure as **constitutional** (Principle XV), and author the next feature (016) that mechanically enforces it. Also designed the Papers Past census (spec 016 discovery work) and closed the session.
 
 **Accomplished:**
-- <!-- compose -->
+- **Executed spec 015 end-to-end.** The compass correctly refused execute (last session *claimed* `analyze-clean` but never recorded the marker) → ran `/speckit-analyze` → operator de-scoped OCR → recorded the marker → 23 tasks at model-sized dispatch, test-first, **adversarial review of the opus adapter core** (confirmed the cardinal rights-fail-closed invariant holds) → govern (6 real findings, all fixed) → graduated under operator-authorized override.
+- **First LIVE Papers Past acquisition.** de Rays article **PB-P061** mirrored to B2 + archive companions, `status: archived` (via reconcile), `metadataSnapshot` recorded, `verify-member` passing — a first-class corpus asset. `bib acquire` now works for public-domain Papers Past articles.
+- **Live validation found real bugs the fakes couldn't:** relative image URLs → resolve-to-absolute; the **WAF-gated image CDN** → built the research-R1 **browser byte-fetch** (`BrowserSession.fetchBytes`, in-page fetch); the `image/gif`→`.bin` companion-extension bug; the missing record-level `metadataSnapshot`; and the acquire→reconcile status split.
+- **Fixed the 4 cross-model govern findings** (base64 `/`-split breaking ~61% of articles; silent dropped-segment loss; Papers Past origin enforcement; persist-before-parse failure-path test) + wired papers-past into `verify-member`/`promote`.
+- **Amended the Constitution to v1.4.0** — added **Principle XV (Metadata Integrity Is Mechanically Enforced — No Orphan Assets)**, propagated to `CLAUDE.md` + `GOVERNANCE.md`, and promoted the concrete gap (TASK-46) to the feature-rigor tier.
+- **Designed + authored spec 016 (acquire-metadata-completion)** through the full front door: `/stack-control:design` (brainstorm → design-approved) → `/stack-control:define` (specify → clarify → plan → tasks → analyze) to **runnable**, analyze-clean.
+- **Designed the Papers Past census** (source-agnostic discovery + governed mechanism, reusing the existing `DiscoveryDispatcher`/`Mechanism`/`Candidate` framework), incorporating a strong third-party review (repository-vs-work identity, candidate provenance, advisory classification, census versioning) — queued behind 016.
+- Captured TASK-44 (stale-cookie WAF re-challenge), TASK-45 (govern excludes data paths), TASK-47 (per-adapter metadataSnapshot follow-on).
 
 **Didn't Work:**
-- <!-- compose -->
+- **Rapid repeat `bib acquire` got WAF-challenged** — the persistent Playwright profile's Incapsula cookies go stale, so the article page returned a challenge interstitial; the adapter correctly fail-loud (refused to mirror a non-article page). Clearing the browser profile forced a fresh challenge-solve and the acquire succeeded. Root cause = stale cookies, not IP rate-limiting. Captured as TASK-44.
+- **govern (round 2) FATAL'd** on the committed 49KB source-page capture exceeding the 24KB per-file audit envelope — a tooling/data-file payload limit, NOT a code finding. Graduated under operator-authorized `--override` (which short-circuits the barrage cleanly). Captured as TASK-45 (upstream stackctl gap).
+- **Mis-diagnosed the companions as unwritten** — I searched the B2-key path (`archive/papers-past/`) when page-master companions live under `archive/cases/<case>/`; they WERE written (with the `.bin` ext bug, since fixed). Corrected by reading `write-record-companions.ts`.
 
 **Course Corrections:**
-- <!-- compose -->
+- The operator caught that the acquire "doesn't record the asset in metadata" — `status` stayed `to-collect` with masters in B2. That reframed the work from "acquire works" to "the record must **reflect** the asset," and became Principle XV + spec 016.
+- The operator challenged whether the census capability already existed — it did (`DiscoveryDispatcher`/`Mechanism`/`Candidate` + the promote→acquire flow). Corrected the census design to **reuse** the framework (add a Papers Past mechanism + generalize the dispatcher) instead of a parallel census module.
+- The operator asked whether the census would make discovery source-agnostic AND route through the governed infrastructure — it would; folded both into the design (with the nuance that governance is per-transport: browser for WAF web, HTTP for a clean API — not "browser everything").
+- De-scoped OCR from the papers-past adapter per operator ("nice-to-have; we have an OCR/translation pipeline") — resolved analyze finding H1 with no shared-contract change.
 
 **Insights:**
-- <!-- compose -->
+- **Live acquisition is a stronger integration test than any fake.** Every real bug this session (relative URL, WAF-gated CDN, GIF extension, status-not-advancing) was structurally invisible to the hermetic suite — the fake byte-fetch was keyed on any string, the fake object store never parsed a URL, and the status split only shows when you inspect the *real* record after a *real* acquire. Using the thing found what auditing the thing missed — again.
+- **"Remember to update the metadata" is not a mechanism.** The acquire→reconcile split let a real acquisition leave a stale record. The durable fix is structural — weld the metadata completion to the retrieval, fail-loud. That realization IS Principle XV, and it is the metadata analogue of X (No Git Hooks) and XIII (No Agent Memory): correctness lives in a mechanism you cannot route around.
+- **A found gap climbed the entire lifecycle in one session:** live failure → operator names the principle → constitution amendment (v1.4.0) → runtime propagation → backlog promotion (feature-rigor) → design → spec → runnable. The stack-control front door made each transition navigable and un-skippable.
+- **The govern override worked exactly as designed** where the whole-barrage FATAL'd on a data-file: `--override` short-circuits the render/barrage/lift/slush and records the operator's authorization — the escape valve for a tooling limit that isn't a code defect.
 
 **Quantitative (auto-derived from git; verify before publishing):**
 - Commits: 45
