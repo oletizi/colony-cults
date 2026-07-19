@@ -25,19 +25,45 @@ const CANONICAL_SELECTOR = 'link[rel="canonical"]';
 /** The rights statement heading inside the `.copyright` block. */
 const RIGHTS_HEADING_SELECTOR = '.copyright h5';
 
+/** The `/imageserver/` path markers, most-specific first, that precede the base64 payload. */
+const IMAGESERVER_MARKERS = ['/imageserver/newspapers/', '/imageserver/'];
+
 /**
  * Decodes the base64 `imageserver` path segment (e.g.
  * `P29pZD1ITlMxODg0MDEwMy4yLjE5LjMmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD0zNzA=`)
  * into its query string (e.g.
  * `?oid=HNS18840103.2.19.3&colours=32&ext=gif&area=1&width=370`) and returns
  * the `area` value as a number.
+ *
+ * The base64 payload is isolated by the KNOWN `/imageserver/` marker (everything
+ * after the LAST `/imageserver/newspapers/`, or failing that `/imageserver/`),
+ * NEVER by `split('/').pop()`: STANDARD base64 (the decoder used here) legitimately
+ * contains `/`, so a last-slash split truncates the majority of real article codes
+ * into garbage and throws. Any trailing `?…`/`#…` is stripped before decoding
+ * (standard base64 never contains `?`/`#`, so this cannot truncate the payload).
  */
-function decodeImageArea(imageUrl: string): number {
-  const segment = imageUrl.split('/').pop();
-  if (!segment) {
-    throw new Error(`parseArticle: malformed /imageserver/ url, no path segment: "${imageUrl}"`);
+export function decodeImageArea(imageUrl: string): number {
+  let segment: string | undefined;
+  for (const marker of IMAGESERVER_MARKERS) {
+    const idx = imageUrl.lastIndexOf(marker);
+    if (idx !== -1) {
+      segment = imageUrl.slice(idx + marker.length);
+      break;
+    }
   }
-  const decoded = Buffer.from(segment, 'base64').toString('utf-8');
+  if (segment === undefined || segment.length === 0) {
+    throw new Error(
+      `parseArticle: cannot isolate the base64 payload from "${imageUrl}" -- ` +
+        'no /imageserver/ path marker (fail-loud, never guess a segment).',
+    );
+  }
+  const payload = segment.split(/[?#]/, 1)[0];
+  if (payload.length === 0) {
+    throw new Error(
+      `parseArticle: empty base64 payload after the /imageserver/ marker in "${imageUrl}".`,
+    );
+  }
+  const decoded = Buffer.from(payload, 'base64').toString('utf-8');
   const params = new URLSearchParams(decoded.replace(/^\?/, ''));
   const area = params.get('area');
   if (area === null || area.trim() === '') {

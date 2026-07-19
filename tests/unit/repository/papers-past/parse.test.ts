@@ -11,7 +11,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseArticle } from '@/repository/papers-past/parse';
+import { parseArticle, decodeImageArea } from '@/repository/papers-past/parse';
 
 const FIXTURE_HTML = readFileSync(
   join(__dirname, 'fixtures', 'de-rays-article.html'),
@@ -55,5 +55,41 @@ describe('parseArticle -- real fixture de-rays-article.html', () => {
   it('throws on a non-article page', () => {
     const nonArticleHtml = '<html><body><h1>Search results</h1></body></html>';
     expect(() => parseArticle(nonArticleHtml, FIXTURE_URL)).toThrow();
+  });
+});
+
+describe('decodeImageArea -- standard base64 containing a "/" (AUDIT-01 regression)', () => {
+  // A STANDARD-base64 payload that legitimately contains a "/" MID-STRING (the
+  // byte "?" at a triplet boundary encodes to "/"): `area=42&width=370&oid=A?&z=99`
+  // -> this base64, whose "/" sits at index 31. The OLD `split('/').pop()` keeps
+  // only the tail after that "/" ("Jno9OTk="), which decodes to "&z=99" -- NO
+  // "area" param, so the old code THROWS. This is exactly the ~61% production-break
+  // AUDIT-01 describes. The marker-based isolation decodes the FULL payload -> 42.
+  const BASE64_WITH_SLASH = 'YXJlYT00MiZ3aWR0aD0zNzAmb2lkPUE/Jno9OTk=';
+
+  it('is a base64 whose alphabet actually contains a MID-STRING "/" (guards the vector)', () => {
+    expect(BASE64_WITH_SLASH).toContain('/');
+    expect(BASE64_WITH_SLASH.indexOf('/')).toBeLessThan(BASE64_WITH_SLASH.length - 1);
+    expect(Buffer.from(BASE64_WITH_SLASH, 'base64').toString('utf-8')).toBe(
+      'area=42&width=370&oid=A?&z=99',
+    );
+    // The OLD split('/').pop() tail drops "area" entirely -> old code would throw.
+    expect(BASE64_WITH_SLASH.split('/').pop()).toBe('Jno9OTk=');
+  });
+
+  it('isolates the payload by the /imageserver/newspapers/ marker, not the last "/"', () => {
+    const src = `/imageserver/newspapers/${BASE64_WITH_SLASH}`;
+    expect(decodeImageArea(src)).toBe(42);
+  });
+
+  it('also works for the bare /imageserver/ marker and strips a trailing query', () => {
+    const src = `https://paperspast.natlib.govt.nz/imageserver/${BASE64_WITH_SLASH}?cachebust=1`;
+    expect(decodeImageArea(src)).toBe(42);
+  });
+
+  it('throws (fail-loud) when no /imageserver/ marker is present', () => {
+    expect(() => decodeImageArea(`https://example.test/${BASE64_WITH_SLASH}`)).toThrow(
+      /imageserver/,
+    );
   });
 });

@@ -32,19 +32,24 @@ import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { CopyIdentifier, RepositoryRecord } from '@/model/repository-record';
 import type {
   GroundedExtraction,
-  GroundedField,
   MuseumItemFields,
 } from '@/extraction/structured-extractor';
 import type { ObjectStore } from '@/archive/object-store';
 import type { BrowserSession } from '@/sourcequery/browser-session';
 import type { ParsedArticle } from '@/repository/papers-past/types';
 import { parseArticle } from '@/repository/papers-past/parse';
-import { persistCapture } from '@/sourcequery/persistence';
+import { persistCapture, repoRelativeCapturePath } from '@/sourcequery/persistence';
 import { sha256OfBytes } from '@/archive/checksum';
 import {
   objectKeyForSegment,
   provenancePathForSegment,
 } from '@/repository/papers-past/keys';
+import {
+  assertAllRecordedSegmentsCovered,
+  assertPapersPastArticleUrl,
+  assertPapersPastImageUrl,
+} from '@/repository/papers-past/guards';
+import { mechanicalDateField } from '@/repository/papers-past/date';
 
 /** Base URL for a Papers Past newspaper-article page (locator value may be a bare article id). */
 const ARTICLE_BASE = 'https://paperspast.natlib.govt.nz/newspapers';
@@ -54,6 +59,9 @@ const CAPTURE_SOURCE = 'papers-past-article';
 
 /** GIF media type -- the Papers Past `/imageserver/` facsimile is always a GIF. */
 const GIF_MEDIA_TYPE = 'image/gif';
+
+/** Normalization scheme version for the record-level metadata snapshot reference. */
+const SNAPSHOT_NORMALIZATION_VERSION = 1;
 
 /** Construction dependencies for {@link PapersPastAdapter} (all injected). */
 export interface PapersPastAdapterDeps {
@@ -151,66 +159,16 @@ export class PapersPastAdapter implements RepositoryAdapter {
   }
 
   /**
-   * Build the mechanical grounded `date` field for an article, derived from the
-   * article code (`oid`) where Papers Past encodes the publication date
-   * (`HNS18840103.2.19.3` -> `1884-01-03`). A DETERMINISTIC parse, never a model
-   * call: {@link GroundedField} hard-codes `provenance.modelAssisted: true`, so
-   * `engine`/`model` NAME the mechanical parse honestly (the Internet Archive
-   * `rights.ts` convention) rather than inventing a model. Fails loud (no
-   * fabrication) if the article code carries no `YYYYMMDD` date.
+   * Resolve a raw locator (article code or full URL) to the article-page URL,
+   * ENFORCING the Papers Past origin (origin guard, AUDIT-05): the result MUST be
+   * an `https://paperspast.natlib.govt.nz/newspapers/...` URL, else it throws
+   * BEFORE any navigate/persist/parse -- a malformed/compromised `sourceUrl`
+   * cannot mirror an off-origin page under a legitimate identifier.
    */
-  private mechanicalDateField(parsed: ParsedArticle): GroundedField<string> {
-    const match = /^[A-Za-z]+(\d{4})(\d{2})(\d{2})\./.exec(parsed.articleId);
-    if (match === null) {
-      throw new Error(
-        `PapersPastAdapter: cannot derive a publication date from article code ` +
-          `"${parsed.articleId}" (expected <PAPER><YYYYMMDD>.<edition>.<article>) -- ` +
-          'refusing to fabricate a grounded date.',
-      );
-    }
-    const [, year, month, day] = match;
-    const yearNum = Number.parseInt(year, 10);
-    const monthNum = Number.parseInt(month, 10);
-    const dayNum = Number.parseInt(day, 10);
-    // Coarse range gate (month 1-12, day 1-31) THEN a real-calendar gate: a UTC
-    // date normalises overflow (1884-02-30, non-leap 1885-02-29), so a genuine
-    // date round-trips its UTC Y/M/D back to the decoded digits (never Date.now).
-    const inRange = monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31;
-    const probe = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
-    const realCalendarDate =
-      probe.getUTCFullYear() === yearNum &&
-      probe.getUTCMonth() === monthNum - 1 &&
-      probe.getUTCDate() === dayNum;
-    if (!inRange || !realCalendarDate) {
-      throw new Error(
-        `PapersPastAdapter: article code "${parsed.articleId}" encodes an implausible date ` +
-          `${year}-${month}-${day} -- refusing to fabricate a grounded date.`,
-      );
-    }
-    const value = `${year}-${month}-${day}`;
-    return {
-      value,
-      evidence: {
-        excerpt: parsed.articleId,
-        selector: 'link[rel="canonical"] (article code / oid)',
-      },
-      interpretation:
-        'publication date mechanically decoded from the Papers Past article code ' +
-        '(YYYYMMDD segment); a fact for the operator to weigh, not a legal determination',
-      provenance: {
-        modelAssisted: true,
-        engine: 'papers-past-mechanical-parse',
-        model: 'papers-past-article-code-date',
-        promptVersion: 'papers-past-mechanical-v1',
-        at: this.now(),
-      },
-    };
-  }
-
-  /** Resolve a raw locator (article code or full URL) to the article-page URL. */
   private articleUrlFor(locatorValue: string): string {
     const raw = locatorValue.trim();
-    return raw.startsWith('http') ? raw : `${ARTICLE_BASE}/${raw}`;
+    const candidate = raw.startsWith('http') ? raw : `${ARTICLE_BASE}/${raw}`;
+    return assertPapersPastArticleUrl(candidate);
   }
 
   /**
@@ -223,12 +181,13 @@ export class PapersPastAdapter implements RepositoryAdapter {
    */
   private async navigateAndParse(
     pageUrl: string,
-  ): Promise<{ html: string; parsed: ParsedArticle }> {
+  ): Promise<{ html: string; parsed: ParsedArticle; htmlPath: string }> {
     const query = pageUrl.split('/').filter((segment) => segment.length > 0).pop() ?? pageUrl;
 
     const page = await this.browserSession.navigate(pageUrl);
     // Persist BEFORE parsing (governed-read invariant): raw bytes on disk first.
-    await persistCapture({
+    // The written htmlPath is threaded out for the record-level metadata snapshot.
+    const capture = await persistCapture({
       source: CAPTURE_SOURCE,
       query,
       url: pageUrl,
@@ -238,7 +197,7 @@ export class PapersPastAdapter implements RepositoryAdapter {
       baseDir: this.captureBaseDir,
     });
     const parsed = parseArticle(page.html, pageUrl);
-    return { html: page.html, parsed };
+    return { html: page.html, parsed, htmlPath: capture.htmlPath };
   }
 
   /**
@@ -271,7 +230,7 @@ export class PapersPastAdapter implements RepositoryAdapter {
       await this.browserSession.close();
     }
 
-    const date = this.mechanicalDateField(parsed);
+    const date = mechanicalDateField(parsed, this.now);
     const metadata: GroundedExtraction<MuseumItemFields> = { date };
     const assetLocators: AssetLocator[] = parsed.imageLocators.map((locatorEntry) => ({
       url: locatorEntry.url,
@@ -398,7 +357,7 @@ export class PapersPastAdapter implements RepositoryAdapter {
     // WAF-gated too); always closed (try/finally).
     await this.browserSession.open();
     try {
-      const { html, parsed } = await this.navigateAndParse(pageUrl);
+      const { html, parsed, htmlPath } = await this.navigateAndParse(pageUrl);
 
       // Identity guard: the freshly parsed article code MUST match the record's
       // recorded id, else the URL moved to a different article; fail loud.
@@ -424,6 +383,10 @@ export class PapersPastAdapter implements RepositoryAdapter {
       // PHASE A -- verify every segment (NO writes), in `area`/sequence order.
       const verified: VerifiedSegment[] = [];
       for (const locator of parsed.imageLocators) {
+        // Origin guard (AUDIT-05): the resolved image locator MUST be on the
+        // Papers Past origin BEFORE any byte fetch -- never mirror off-origin bytes.
+        assertPapersPastImageUrl(locator.url);
+
         // Fetch bytes INSIDE the same WAF-cleared context (research.md R1).
         const bytes = await this.browserSession.fetchBytes(locator.url);
 
@@ -460,6 +423,14 @@ export class PapersPastAdapter implements RepositoryAdapter {
         });
       }
 
+      // Dropped-segment guard (AUDIT-04): a sequence the record PINS that the
+      // fresh parse no longer yields is silent partial loss -- fail loud (the
+      // drop-direction complement of the per-segment remote-change checksum guard).
+      assertAllRecordedSegmentsCovered(
+        recordedAssets,
+        new Set(verified.map((segment) => segment.locator.sequence)),
+      );
+
       // PHASE B -- commit (only once ALL segments verified): idempotent
       // head-then-put; PUT only when not already present at this checksum.
       const pageMasters: AcquiredAsset[] = [];
@@ -484,7 +455,10 @@ export class PapersPastAdapter implements RepositoryAdapter {
         });
       }
 
-      // STEP 5 -- return the page-masters + a raw metadata snapshot.
+      // STEP 5 -- return the page-masters + a raw metadata snapshot AND a
+      // record-level metadata-snapshot reference (GAP 2) pointing at the persisted
+      // raw `.html` capture (repo-relative under `bibliography/repository-responses/`),
+      // so the acquired record carries a durable snapshot ref like the Museum/IA path.
       const metadataSnapshot: MetadataSnapshot = { raw: html, retrievedAt: this.now() };
       return {
         repositoryRecordId,
@@ -492,6 +466,12 @@ export class PapersPastAdapter implements RepositoryAdapter {
         metadataSnapshot,
         complete: true,
         reconciliationRequired: true,
+        metadataSnapshotRef: {
+          path: repoRelativeCapturePath(htmlPath),
+          retrievedAt: this.now(),
+          endpoint: pageUrl,
+          normalizationVersion: SNAPSHOT_NORMALIZATION_VERSION,
+        },
       };
     } finally {
       await this.browserSession.close();

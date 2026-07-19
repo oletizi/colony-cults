@@ -107,6 +107,26 @@ async function writeCaptureFile(filePath: string, contents: string): Promise<voi
   }
 }
 
+/**
+ * Derive the repo-relative capture path (starting `bibliography/repository-responses/...`,
+ * forward-slash separated) from an absolute or base-dir-rooted capture htmlPath —
+ * i.e. the `path` a `MetadataSnapshotRef` records. Works whether the capture was
+ * written under a temp `baseDir` (tests) or `process.cwd()` (prod), by slicing at
+ * the `bibliography/repository-responses` marker. Throws (fail-loud) if the path
+ * is not under that tree rather than returning an unusable reference.
+ */
+export function repoRelativeCapturePath(htmlPath: string): string {
+  const marker = path.join(...REPOSITORY_RESPONSES_SUBDIR);
+  const idx = htmlPath.indexOf(marker);
+  if (idx === -1) {
+    throw new Error(
+      `repoRelativeCapturePath: "${htmlPath}" is not under "${marker}" ` +
+        '(cannot derive a repo-relative snapshot reference).',
+    );
+  }
+  return htmlPath.slice(idx).split(path.sep).join('/');
+}
+
 /** Input to {@link persistCapture}. */
 export interface PersistCaptureArgs {
   /** Source id (also the `repository-responses/<source>/` dir name). */

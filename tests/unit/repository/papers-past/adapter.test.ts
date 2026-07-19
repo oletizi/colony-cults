@@ -24,6 +24,7 @@ import { objectKeyForSegment } from '@/repository/papers-past/keys';
 import { parseArticle } from '@/repository/papers-past/parse';
 import { sha256OfBytes } from '@/archive/checksum';
 import type { RepositoryRecord } from '@/model/repository-record';
+import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { RightsAssessment } from '@/model/rights';
 import { FakeBrowserSession, FakeObjectStore } from './fakes';
 
@@ -64,6 +65,36 @@ function scriptedImageBytes(): Map<string, Uint8Array> {
 function expectedKey(index: number): string {
   return objectKeyForSegment(ARTICLE_ID, sha256OfBytes(gifBytes(index + 1)));
 }
+
+/** Build a recorded page-master AcquiredAsset that PINS a given sequence at a checksum. */
+function pageMaster(url: string, checksum: string, sequence: number): AcquiredAsset {
+  return {
+    sourceUrl: url,
+    mediaType: 'image/gif',
+    objectStoreKey: `archive/papers-past/hns18840103.2.19.3/${checksum}.gif`,
+    checksum,
+    byteLength: 9,
+    provenancePath: `archive/papers-past/hns18840103.2.19.3/${checksum}.yml`,
+    role: 'page-master',
+    sequence,
+  };
+}
+
+/** The base64 payload of the fixture's area=3 (`/imageserver/newspapers/`) image. */
+const AREA3_B64 =
+  'P29pZD1ITlMxODg0MDEwMy4yLjE5LjMmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MyZ3aWR0aD00MTc=';
+
+/** The fixture with the area=3 `<img>` removed -> a page that now parses only [1,2]. */
+const TWO_SEGMENT_HTML = FIXTURE_HTML.replace(
+  new RegExp(`<img\\b[^>]*${AREA3_B64}[^>]*>`, 'g'),
+  '',
+);
+
+/** The fixture with every root-relative `/imageserver/` src rehomed to an off-origin host. */
+const OFF_ORIGIN_IMAGE_HTML = FIXTURE_HTML.replaceAll(
+  'src="/imageserver/newspapers/',
+  'src="https://evil.example/imageserver/newspapers/',
+);
 
 const PUBLIC_DOMAIN: RightsAssessment = {
   rightsStatus: 'public-domain',
@@ -474,6 +505,158 @@ describe('PapersPastAdapter', () => {
       expect(result.assets.map((asset) => asset.objectStoreKey)).toContain(
         LITERAL_SEGMENT_1_KEY,
       );
+    });
+  });
+
+  describe('governed read persists BEFORE parse on the FAILURE path (AUDIT-03)', () => {
+    it('persists the raw capture even when the parse throws', async () => {
+      // Navigable but UNPARSABLE: no canonical/title/images -> parseArticle throws.
+      const unparsable = '<html><body>no article</body></html>';
+      const browser = new FakeBrowserSession({ html: new Map([[FIXTURE_URL, unparsable]]) });
+      const adapter = new PapersPastAdapter({
+        browserSession: browser,
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+
+      await expect(
+        adapter.resolve({ repository: 'papers-past', value: FIXTURE_URL }, {}),
+      ).rejects.toThrow();
+
+      // The parse threw, yet the raw capture is already on disk -> persist ran FIRST.
+      const dir = captureDir();
+      expect(existsSync(dir)).toBe(true);
+      const htmlCaptures = readdirSync(dir).filter((name) => name.endsWith('.html'));
+      expect(htmlCaptures).toHaveLength(1);
+      expect(readFileSync(path.join(dir, htmlCaptures[0]), 'utf-8')).toBe(unparsable);
+    });
+  });
+
+  describe('dropped-segment coverage guard (AUDIT-04)', () => {
+    it('throws with 0 puts when the record pins [1,2,3] but the page now yields only [1,2]', async () => {
+      // Sanity: the reduced fixture parses to exactly [1,2].
+      const twoLocators = parseArticle(TWO_SEGMENT_HTML, FIXTURE_URL).imageLocators;
+      expect(twoLocators.map((locator) => locator.sequence)).toEqual([1, 2]);
+
+      const bytes = new Map<string, Uint8Array>([
+        [twoLocators[0].url, gifBytes(1)],
+        [twoLocators[1].url, gifBytes(2)],
+      ]);
+      const browser = new FakeBrowserSession({
+        html: new Map([[FIXTURE_URL, TWO_SEGMENT_HTML]]),
+        bytes,
+      });
+      const objectStore = new FakeObjectStore();
+      const adapter = new PapersPastAdapter({
+        browserSession: browser,
+        objectStore,
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+
+      const record = recordWith(PUBLIC_DOMAIN);
+      // Segments 1,2 checksums MATCH the fetched bytes (so PHASE A passes), and the
+      // record additionally PINS segment 3 that the fresh parse no longer yields.
+      record.assets = [
+        pageMaster(twoLocators[0].url, sha256OfBytes(gifBytes(1)), 1),
+        pageMaster(twoLocators[1].url, sha256OfBytes(gifBytes(2)), 2),
+        pageMaster(
+          'https://paperspast.natlib.govt.nz/imageserver/newspapers/gone',
+          'cafef00dcafef00dcafef00dcafef00dcafef00dcafef00dcafef00dcafef00d',
+          3,
+        ),
+      ];
+
+      await expect(adapter.acquire(record, {})).rejects.toThrow(/remote-change fail-loud/);
+      // Coverage guard fires AFTER PHASE A, BEFORE any commit -> 0 puts.
+      expect(objectStore.putCalls).toHaveLength(0);
+    });
+  });
+
+  describe('Papers Past origin enforcement (AUDIT-05)', () => {
+    it('acquire throws before any navigate/fetch when record.sourceUrl is off-origin', async () => {
+      const browser = fixtureBrowser(scriptedImageBytes());
+      const objectStore = new FakeObjectStore();
+      const adapter = new PapersPastAdapter({
+        browserSession: browser,
+        objectStore,
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+
+      const record = recordWith(PUBLIC_DOMAIN);
+      record.sourceUrl = 'https://evil.example/newspapers/HNS18840103.2.19.3';
+
+      await expect(adapter.acquire(record, {})).rejects.toThrow(/origin guard/);
+      expect(browser.navigateCalls).toHaveLength(0);
+      expect(browser.fetchBytesCalls).toHaveLength(0);
+      expect(objectStore.putCalls).toHaveLength(0);
+    });
+
+    it('resolve throws before any navigate when the locator value is off-origin', async () => {
+      const browser = fixtureBrowser();
+      const adapter = new PapersPastAdapter({
+        browserSession: browser,
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+
+      await expect(
+        adapter.resolve(
+          { repository: 'papers-past', value: 'https://evil.example/newspapers/HNS18840103.2.19.3' },
+          {},
+        ),
+      ).rejects.toThrow(/origin guard/);
+      expect(browser.navigateCalls).toHaveLength(0);
+    });
+
+    it('acquire throws before fetch when a resolved image locator is off-origin', async () => {
+      // The article page is on-origin and parses fine, but its image src resolves
+      // off-origin -> the per-locator origin guard throws BEFORE any byte fetch.
+      const browser = new FakeBrowserSession({
+        html: new Map([[FIXTURE_URL, OFF_ORIGIN_IMAGE_HTML]]),
+        // No bytes scripted: reaching fetchBytes at all would itself throw, but the
+        // origin guard must fire first, so fetchBytesCalls stays empty.
+      });
+      const objectStore = new FakeObjectStore();
+      const adapter = new PapersPastAdapter({
+        browserSession: browser,
+        objectStore,
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+
+      await expect(adapter.acquire(recordWith(PUBLIC_DOMAIN), {})).rejects.toThrow(/origin guard/);
+      expect(browser.fetchBytesCalls).toHaveLength(0);
+      expect(objectStore.putCalls).toHaveLength(0);
+    });
+  });
+
+  describe('record-level metadataSnapshotRef (GAP 2)', () => {
+    it('acquire returns a metadataSnapshotRef under bibliography/repository-responses/papers-past-article/', async () => {
+      const objectStore = new FakeObjectStore();
+      const browser = fixtureBrowser(scriptedImageBytes());
+      const adapter = new PapersPastAdapter({
+        browserSession: browser,
+        objectStore,
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+
+      const result = await adapter.acquire(recordWith(PUBLIC_DOMAIN), {});
+
+      expect(result.metadataSnapshotRef).toBeDefined();
+      const ref = result.metadataSnapshotRef;
+      if (ref === undefined) {
+        throw new Error('expected a metadataSnapshotRef');
+      }
+      expect(ref.path.startsWith('bibliography/repository-responses/papers-past-article/')).toBe(
+        true,
+      );
+      expect(ref.path.endsWith('.html')).toBe(true);
+      expect(ref.retrievedAt).toBe(FIXED_NOW);
+      expect(ref.endpoint).toBe(FIXTURE_URL);
+      expect(ref.normalizationVersion).toBe(1);
     });
   });
 });
