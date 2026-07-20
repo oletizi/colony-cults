@@ -1,18 +1,30 @@
-## 2026-07-20: <!-- session title -->
+## 2026-07-20: Spec 016 (acquire-metadata-completion) executed, 14-round govern-converged, and shipped
 
-**Goal:** <!-- compose: what we set out to do -->
+**Goal:** "Proceed" from a fresh session-start on the active spec — execute spec 016 (weld SSOT metadata completion into `bib acquire`, Principle XV) via `/stack-control:execute`, drive the whole-feature govern-at-end to convergence, then `/stack-control:ship` on the operator's "ship it".
 
 **Accomplished:**
-- <!-- compose -->
+- **Executed spec 016 end-to-end** (all 11 tasks, test-first RED→GREEN): a pure per-repository completeness verifier (`acquire-completeness.ts`), the reconcile-status + verify completion tail welded into `runAcquire` so it is mechanically impossible to finish an acquire with an incomplete record, and the CLI wiring so a real `bib acquire` completes inline (no separate `bib reconcile`). Source-agnostic across gallica / new-italy-museum / internet-archive / papers-past; fail-loud everywhere.
+- **Drove the whole-feature govern to convergence** — full 2/2 model fleet (claude + codex) across 7 chunks, **0 lifted findings, terminal-outcome=graduated**. The converged record is written to `.stack-control/govern/convergence/impl__impl-feature-acquire-metadata-completion.json` (what the graduate gate reads).
+- **Fixed ~20 cross-model govern findings** across 14 rounds (all logged + dispositioned in `specs/016/audit-log.md`): the silent-skip + lying-doc-comment on the completion path; **adapter-kind path selection** (explicit, not inferred from `assets.length`); a fallback that re-opened a false-negative (made `isB2Direct` REQUIRED); **preflight completion machinery BEFORE the fetch's side effects**; recording (not throwing on) a snapshot-only outcome; validating the FULL asset set; the complete-flag guard distinguishing a legitimate zero-master museum HTML-only catalog from an incomplete acquire; **verifying the on-disk record against its PERSISTED `status`** (not a divergent in-memory shape / the in-memory reconcile outcome); and negative tests that assert the on-disk status stayed `to-collect`.
+- **Refactored under Constitution VI** — split `acquire.test.ts`/`acquire.ts` (which govern FATAL'd on at 25–33KB) into `acquire-fixtures.ts` + `acquire-completion.test.ts` and extracted the completion machinery into `acquire-complete.ts`; every feature file now under the 500-line/24576-byte cap, no behavior change.
+- **Shipped:** `status: shipped` recorded via the graduate weld on the lifecycle branch (`feature/corpus-gap-closure`), phase now `validating`. Consistent with the single-long-lived-branch model, no per-spec merge to `main` (main is 345 commits behind; prior specs shipped the same way).
+- Filed **TASK-48** (dry-run-lightweight-b2-adapter-builders) for a pre-existing cross-adapter concern surfaced during govern.
 
 **Didn't Work:**
-- <!-- compose -->
+- **govern FATAL'd on file size mid-convergence (round 9)** — `acquire.test.ts` (25954B) and `acquire.ts` (33005B) exceeded the 24576-byte chunk envelope after I had grown them across rounds. It surfaces late (a hard stop, after ~8 rounds) rather than as an up-front size gate — forced a wasted round + the file split. Captured as friction.
+- **govern `--item` scoped the audit to the whole long-lived-branch diff**, pulling in a 455KB pre-existing data file (`bibliography/repository-responses/PB-P055/*.json`) that FATAL'd before any lane ran; worked around with `--diff-base <feature-base>`. Related to backlog TASK-45 but distinct (this is a FATAL, not a skip).
+- **The claude audit lane hit a transient API 500** in round 5, degrading the fleet (produced 1/2); govern correctly refused to price the quiet round as convergence, and a plain re-run recovered.
 
 **Course Corrections:**
-- <!-- compose -->
+- Repeatedly, a govern finding reframed the design: the completion path is chosen by the **explicit dispatched adapter kind**, never inferred from `assets.length` + which optional deps happened to be injected (AUDIT-01/02); machinery is **preflighted before** the fetch, not checked after the orphan-prone write (AUDIT-06); the verifier judges the **persisted `record.status`**, cross-checked against reconcile's report (AUDIT-08/09).
+- Made `CompletenessContext.isB2Direct` **required** (no `?? masters.length` fallback) after a finding showed the optional-with-fallback was the exact fallback-hides-failure anti-pattern the project forbids (AUDIT-07).
+- Recognized a zero-master B2-direct outcome is **legitimate** (the shipped museum HTML-only path returns `assets: [], complete: true`) — the fix was a `complete: true` guard, NOT a blanket fail-loud that would have broken a real adapter path (AUDIT-05).
 
 **Insights:**
-- <!-- compose -->
+- **The cross-model govern loop is real design pressure, not ceremony.** Over 14 rounds it drove the implementation from "welds the tail" to a genuinely hardened mechanism — each round surfaced a real, if progressively more defensive, hole. The trajectory (cross-model correctness bugs early → single-lane test-fidelity nits late) is what convergence looks like.
+- **Verify what is on disk, against the field that encodes the claim.** Two separate findings (AUDIT-07, then AUDIT-09) hammered the same lesson: a completion verifier that judges a reconstructed in-memory shape, or the in-memory reconcile *outcome*, is not verifying the SSOT — re-load the record and assert its own persisted `status`. That is the metadata analogue of "use the thing, don't audit a model of it."
+- **Fixture fidelity is a correctness property.** A test fixture using `role: 'front'` where the shipped adapter records `role: 'primary'` could bless an on-disk shape the real adapter would never treat as acquired — the audit caught it (AUDIT-11). Tests that model production loosely can pass while shipping the bug.
+- **File-size caps are load-bearing for the audit, not just style.** The govern chunk envelope means an over-long file doesn't just violate Constitution VI — it FATALs the gate. Keeping modules small is what lets the cross-model audit run at all.
 
 **Quantitative (auto-derived from git; verify before publishing):**
 - Commits: 17
