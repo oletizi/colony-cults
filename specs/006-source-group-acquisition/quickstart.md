@@ -1,6 +1,6 @@
 # Quickstart: Source-Group Acquisition
 
-Validates the pipeline end-to-end. Assumes the shipped `gallica` CLI builds and the private archive / B2 object store are configured (`COLONY_ARCHIVE_ROOT`, B2 credentials) as for the existing fetcher.
+Validates the pipeline end-to-end. Assumes the shipped `bib` CLI builds and the private archive / B2 object store are configured (`COLONY_ARCHIVE_ROOT`, B2 credentials) as for the existing fetcher.
 
 ## Prerequisites
 

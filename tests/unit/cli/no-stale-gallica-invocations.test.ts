@@ -32,8 +32,22 @@ describe('no stale gallica umbrella invocations in docs', () => {
         ],
         { cwd: repoRoot, encoding: 'utf-8' },
       );
-    } catch {
-      hits = ''; // git grep exits 1 (non-zero) when there are no matches
+    } catch (error) {
+      // `execFileSync` throws an error carrying a numeric `status` on
+      // non-zero exit. git grep exits 1 (and only 1) when there are no
+      // matches — that is the sole case we treat as "no hits". Any other
+      // status (bad pathspec/regex, git error, ...) must not pass silently.
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'status' in error &&
+        typeof error.status === 'number' &&
+        error.status === 1
+      ) {
+        hits = '';
+      } else {
+        throw error;
+      }
     }
     expect(hits.trim()).toBe('');
   });

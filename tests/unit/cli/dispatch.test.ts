@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runCli } from '@/cli/dispatch';
+import { readPackageVersion, runCli } from '@/cli/dispatch';
 
 describe('runCli flat dispatch', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
@@ -47,5 +47,9 @@ describe('runCli flat dispatch', () => {
     const code = await runCli(['no-such-verb']);
     expect(code).toBe(2);
     expect(errorSpy.mock.calls.map((c) => String(c[0])).join('\n')).toContain('no-such-verb');
+  });
+
+  it('readPackageVersion resolves the real version on the tsx/source path (regression: was ENOENT on src/package.json)', () => {
+    expect(readPackageVersion()).toMatch(/^\d+\.\d+\.\d+/);
   });
 });

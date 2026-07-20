@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parse } from '@/cli/parse';
 import type { Command, ParsedArgs } from '@/cli/parse';
 import { runBibliography, isBibSubaction } from '@/cli/bibliography';
@@ -23,10 +25,33 @@ const HANDLERS: Partial<Record<Command, Handler>> = {
   'restore-images': (args) => runRestoreImages(args),
 };
 
+/**
+ * Walk up from `startDir` to the nearest ancestor containing a
+ * `package.json`, stopping at the filesystem root. This is depth-agnostic:
+ * it works whether this module runs from `src/cli/` (tsx/source, depth 2
+ * below the repo root) or from `dist/` (the esbuild bundle, depth 1) — a
+ * single hardcoded relative path cannot be correct for both.
+ */
+function findPackageJsonUpward(startDir: string): string {
+  let dir = startDir;
+  for (;;) {
+    const candidate = join(dir, 'package.json');
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) {
+      throw new Error(`bib: could not locate package.json above ${startDir}`);
+    }
+    dir = parent;
+  }
+}
+
 /** Read this package's version from package.json (no hardcoded duplicate). */
 export function readPackageVersion(): string {
-  const url = new URL('../package.json', import.meta.url);
-  const raw = readFileSync(url, 'utf-8');
+  const moduleDir = dirname(fileURLToPath(import.meta.url));
+  const packageJsonPath = findPackageJsonUpward(moduleDir);
+  const raw = readFileSync(packageJsonPath, 'utf-8');
   const parsed: unknown = JSON.parse(raw);
   if (
     typeof parsed === 'object' &&
@@ -37,7 +62,7 @@ export function readPackageVersion(): string {
   ) {
     return parsed.version;
   }
-  throw new Error(`bib: could not read a valid "version" from ${url.pathname}`);
+  throw new Error(`bib: could not read a valid "version" from ${packageJsonPath}`);
 }
 
 export const HELP_TEXT = `bib - Corpus bibliography SSOT + acquisition CLI
