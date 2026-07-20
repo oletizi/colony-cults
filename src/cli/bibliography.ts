@@ -35,7 +35,7 @@ import type { Source } from '@/model/source';
 type Subaction = 'migrate' | 'show' | 'validate' | 'regenerate' | 'inventory' | 'verify-member' | 'promote' | 'exclude-member' | 'acquire' | 'reconcile' | 'discover' | 'coverage' | 'rights-assess' | 'query-source';
 const SUBACTIONS: readonly Subaction[] = ['migrate', 'show', 'validate', 'regenerate', 'inventory', 'verify-member', 'promote', 'exclude-member', 'acquire', 'reconcile', 'discover', 'coverage', 'rights-assess', 'query-source'];
 
-function isSubaction(value: string): value is Subaction {
+export function isBibSubaction(value: string): value is Subaction {
   return (SUBACTIONS as readonly string[]).includes(value);
 }
 
@@ -468,7 +468,7 @@ async function runRegenerate(rest: string[]): Promise<number> {
  */
 export async function runBibliography(argv: string[]): Promise<number> {
   const [subaction, ...rest] = argv;
-  if (subaction === undefined || !isSubaction(subaction)) {
+  if (subaction === undefined || !isBibSubaction(subaction)) {
     console.error(
       `bib: unknown subaction "${subaction ?? ''}" (expected one of: ${SUBACTIONS.join(', ')})`,
     );
