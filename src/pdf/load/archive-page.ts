@@ -75,9 +75,11 @@ export interface ArchivePageContent {
    */
   english: string;
   /**
-   * True when the page's translation artifact is labeled `untranslatable`
-   * (FRENCH path only). Always `false` on the ENGLISH path -- an English page
-   * has no translation dimension.
+   * True for a blank-recto page (the blank-column marker). On the FRENCH path,
+   * that is a page whose translation artifact is labeled `untranslatable`. On
+   * the ENGLISH path (which has no translation dimension), it is a folio marked
+   * `blank_recto` in its provenance -- an intentionally-blank plate/cover/blank
+   * leaf (FR-014, T015); a normal English text page is `false`.
    */
   untranslatable: boolean;
   /**
