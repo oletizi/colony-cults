@@ -215,3 +215,22 @@ Blast radius is high because these tests are executable specification for future
 - **AUDIT-20260720-03** — FIXED. The per-page-provenance (isB2Direct:false) verifier branch now asserts its invariant: a per-page copy carrying object-store assets fails loud (its bytes would otherwise bypass every objectStoreKey/checksum/HEAD check). Regression fixture added.
 - **AUDIT-20260720-04** — PARTIAL / SCOPED. My AUDIT-08 comment overclaimed that dry-run is fully config-free. Corrected: spec 016 no longer makes dry-run resolve archive/B2 config (Gallica dry-run in particular), but the PRE-EXISTING B2 adapter builders (specs 011/013/015) resolve B2 config while constructing the adapter regardless of --dry-run. Making those builders dry-run-lightweight is a cross-adapter change out of this feature's scope — filed as backlog TASK-48 (dry-run-lightweight-b2-adapter-builders). Comment corrected to not overclaim.
 - **AUDIT-20260720-05** — RESOLVED (working-as-intended, guarded + clarified). A zero-master B2-direct outcome is LEGITIMATE for the documented museum HTML-only path (`masterImageUrl === null` -> `assets: [], complete: true`), so failing it loud would break a real adapter path. But codex's concern (zero-master must not BLINDLY pass) is now guarded: a zero-master B2-direct outcome succeeds ONLY when the adapter AFFIRMS `complete: true`; `complete: false` fails loud. Tests clarified to cite the museum HTML-only path + the complete-flag guard; a fail-loud fixture for `complete: false` added.
+
+## 2026-07-20 — audit-barrage lift (end-govern-after_implement)
+
+### AUDIT-20260720-06 — Idempotency test measures only the completion store, not duplicate acquire writes
+
+Finding-ID: AUDIT-20260720-06
+Status:     open
+Severity:   high
+Per-lane:   codex=high
+Decision:   single-model (gate-counted high)
+Surface:    src/sourcegroup/acquire.test.ts:876-905
+
+The re-run test says it “heals it with 0 duplicate object-store writes,” but the only write counter is `fakeObjectStore.putCount` on the completion store at lines 889 and 904-905. That store is only used by the completion tail’s HEAD checks; it is not the store used by the adapter to mirror bytes. The adapter fixture at line 888 is `acquiringMuseumAdapter([asset])`, which always behaves as if acquisition happened again and has no instrumentation for fetches or uploads.
+
+The blast radius is high because this test can bless a non-idempotent rerun path: production may re-fetch or re-upload an already-recorded master while the test still reports “0 duplicate writes.” Given this project’s frugal acquisition policy and rate-limit sensitivity, that is a real operational defect. A reasonable fix is to either make `runAcquire` short-circuit already-recorded assets into reconcile/verify only, or instrument the adapter-side write/fetch path in this test and assert it is not invoked on the orphan-healing rerun.
+
+## 2026-07-20 — dispositions (round 8 finding)
+
+- **AUDIT-20260720-06** — FIXED (test). The idempotent re-run test asserted "0 duplicate object-store writes" via the COMPLETION store's putCount, which is heads-only and therefore vacuously 0 — it never proved the ADAPTER did not re-mirror already-held bytes. Replaced the fixture with `idempotentMuseumAdapter`, which models the shipped adapter's content-addressed INV-E (short-circuit when the master is already recorded + present) and instruments its own mirror path; the re-run test now asserts `mirrorCount() === 0` (adapter did not re-fetch/re-upload) in addition to status healing to archived. Adapter-level idempotency itself is still owned + tested by the adapter's own suite; this asserts runAcquire's re-run drives that short-circuit rather than forcing a re-mirror.

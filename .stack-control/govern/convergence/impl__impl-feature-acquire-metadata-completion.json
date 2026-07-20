@@ -3,7 +3,7 @@
   "mode": "impl",
   "item": "impl:feature/acquire-metadata-completion",
   "governedShaBase": "d8171d6",
-  "headSha": "6709f7132699a20940140aeb2f3f67cb15a2de0b",
+  "headSha": "4e81aabf4bc1b2c492b3e70250e57fbf9a51314b",
   "chunkIds": [
     "2c9bacfeeaaa6c6c",
     "3d4e129ddd799ffe",
@@ -14,18 +14,8 @@
   "rounds": 1,
   "liftedFindings": [
     {
-      "id": "3d4e129ddd799ffe::AUDIT-BARRAGE-codex-01",
-      "title": "Per-page path silently skips verification when assets are present",
-      "severity": "high"
-    },
-    {
-      "id": "def77d578a8255b6::AUDIT-BARRAGE-codex-01",
-      "title": "B2 dry-runs still construct B2 adapters before the dry-run exemption applies",
-      "severity": "high"
-    },
-    {
-      "id": "e6bcee6fc31c4cdd::AUDIT-BARRAGE-codex-01",
-      "title": "Zero-asset B2-direct success tests encode a contract contradiction",
+      "id": "e6bcee6fc31c4cdd::AUDIT-BARRAGE-codex-02",
+      "title": "Idempotency test measures only the completion store, not duplicate acquire writes",
       "severity": "high"
     }
   ],

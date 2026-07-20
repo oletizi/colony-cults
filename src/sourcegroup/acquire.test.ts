@@ -354,6 +354,57 @@ function gallicaCompletionDeps(
   return { reconcileArchiveRoot: '/archive/root', gather };
 }
 
+/**
+ * A museum {@link RepositoryAdapter} that MODELS the shipped adapter's
+ * content-addressed idempotency (INV-E): on `acquire`, if the record already
+ * records the master AND it heads present with a matching checksum in the
+ * adapter's own object store, it returns the recorded asset WITHOUT re-mirroring
+ * (no fetch, no PUT). Otherwise it "mirrors" (increments `mirrorCount`). Used to
+ * assert that an orphan-healing RE-RUN does not re-mirror already-held bytes --
+ * instrumenting the ADAPTER-side write path, not the completion store's
+ * heads-only tail (AUDIT-20260720-06).
+ */
+function idempotentMuseumAdapter(
+  asset: AcquiredAsset,
+  store: ObjectStore,
+): { adapter: RepositoryAdapter; mirrorCount: () => number } {
+  let mirrors = 0;
+  const adapter: RepositoryAdapter = {
+    repository: 'new-italy-museum',
+    async resolve() {
+      throw new Error('idempotentMuseumAdapter.resolve: not used on the acquire dispatch path');
+    },
+    async collectRightsEvidence() {
+      throw new Error('idempotentMuseumAdapter.collectRightsEvidence: not used on the acquire dispatch path');
+    },
+    async acquire(record) {
+      const recorded = (record.assets ?? []).find((a) => a.objectStoreKey === asset.objectStoreKey);
+      if (recorded !== undefined) {
+        const head = await store.head(asset.objectStoreKey);
+        if (head.exists && head.sha256 === asset.checksum) {
+          // Already held -- return it without re-fetching or re-PUTting (INV-E).
+          return {
+            repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
+            assets: [asset],
+            metadataSnapshot: { raw: '', retrievedAt: '2026-07-14T00:00:00.000Z' },
+            complete: true,
+            reconciliationRequired: true,
+          };
+        }
+      }
+      mirrors += 1; // a real fetch + PUT would happen here
+      return {
+        repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
+        assets: [asset],
+        metadataSnapshot: { raw: '', retrievedAt: '2026-07-14T00:00:00.000Z' },
+        complete: true,
+        reconciliationRequired: true,
+      };
+    },
+  };
+  return { adapter, mirrorCount: () => mirrors };
+}
+
 async function seedSourcesDir(
   entries: { source: Source; records: AuthoredRepositoryRecord[] }[],
 ): Promise<string> {
@@ -885,8 +936,10 @@ describe('runAcquire', () => {
       },
     ]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
-    const adapter = acquiringMuseumAdapter([asset]);
+    // The master is already held in the object store (a prior acquire mirrored
+    // it); the adapter models INV-E, so a re-run must NOT re-mirror it.
     const objectStore = fakeObjectStore({ [asset.objectStoreKey]: { sha256: asset.checksum } });
+    const { adapter, mirrorCount } = idempotentMuseumAdapter(asset, objectStore);
 
     await runAcquire({
       sourcesDir: dir,
@@ -901,7 +954,11 @@ describe('runAcquire', () => {
       .find((l) => l.source.sourceId === 'PB-P200')
       ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
     expect(record?.status).toBe('archived');
-    // The completion tail is heads-only: no bytes were re-uploaded.
+    // The ADAPTER short-circuited (already-held master) -- no re-fetch/re-upload
+    // (AUDIT-20260720-06: assert the adapter-side write path, not the heads-only
+    // completion store).
+    expect(mirrorCount()).toBe(0);
+    // And the completion tail itself is heads-only (no PUTs).
     expect(objectStore.putCount).toBe(0);
   });
 
