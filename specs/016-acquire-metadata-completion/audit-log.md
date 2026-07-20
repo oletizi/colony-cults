@@ -324,3 +324,22 @@ The fix mirrors the positive tests: after each `await expect(...).rejects.toThro
 ## 2026-07-20 — dispositions (round 12 finding)
 
 - **AUDIT-20260720-10** — FIXED (test). The three fail-loud B2-direct negatives (master-missing, checksum-mismatch, complete:false) asserted only `rejects.toThrow` and never that the on-disk record stayed unadvanced, so a regression that advanced status before verifying would pass green while leaving an orphan. Each negative now re-loads the sources dir after the throw and asserts `record.status === 'to-collect'`. This also empirically confirms the AUDIT-08 resolution — a failed acquire leaves no falsely-advanced status.
+
+## 2026-07-20 — audit-barrage lift (end-govern-after_implement)
+
+### AUDIT-20260720-11 — Museum idempotency fixture uses the wrong asset role
+
+Finding-ID: AUDIT-20260720-11
+Status:     open
+Severity:   high
+Per-lane:   codex=high
+Decision:   adjudicated (gate-counted high) — blast-radius=unstated, reachability=unstated, fix-debt=no; no down-calibration signal — high retained.
+Surface:    src/sourcegroup/acquire-fixtures.ts:247-259, src/sourcegroup/acquire-fixtures.ts:365-386
+
+`sampleAsset()` emits a museum master with `role: 'front'` at line 256, but the shipped New Italy Museum adapter’s convergence seam records and recognizes the master as `role: 'primary'`. The idempotency fixture then compounds that mismatch by finding a recorded asset by `objectStoreKey` only at line 379 and returning the passed-in `asset` at lines 384-386. That does not model production behavior, where the adapter only short-circuits when the recorded primary master is present with its recorded checksum.
+
+The blast radius is high because downstream tests using `sampleAsset()` plus `idempotentMuseumAdapter()` can assert “orphan-healing rerun does not re-fetch/re-mirror” for an on-disk shape the real adapter would not treat as already acquired. A reasonable fix is to make the museum fixture use `role: 'primary'` and make `idempotentMuseumAdapter()` mirror the production lookup more closely: select the recorded primary asset, `head(recorded.objectStoreKey)`, compare against `recorded.checksum`, and return `recorded` on the idempotent path.
+
+## 2026-07-20 — dispositions (round 13 finding)
+
+- **AUDIT-20260720-11** — FIXED (fixture fidelity). `sampleAsset()` used `role: 'front'`, but the shipped New Italy Museum adapter records + recognizes its master as `role: 'primary'` (recordedMasterAsset finds `role === 'primary'`), and `idempotentMuseumAdapter` matched by objectStoreKey only and returned the passed-in asset. Fixed both: sampleAsset now uses `role: 'primary'`, and the idempotency fixture mirrors the production seam — find the recorded `primary` master, HEAD its own recorded key, compare its recorded checksum, and return the RECORDED asset on the short-circuit. The re-run idempotency assertion now models an on-disk shape the real adapter would treat as already acquired.

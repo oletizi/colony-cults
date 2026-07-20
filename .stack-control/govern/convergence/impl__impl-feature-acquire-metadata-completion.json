@@ -3,7 +3,7 @@
   "mode": "impl",
   "item": "impl:feature/acquire-metadata-completion",
   "governedShaBase": "d8171d6",
-  "headSha": "05eef7aa0436343d1000eb0344b42e06754748ee",
+  "headSha": "0509a832a9a51d9ac30e99ea9d75ebdc6b01e232",
   "chunkIds": [
     "07cdb1abe8a68828",
     "2c9bacfeeaaa6c6c",
@@ -16,8 +16,8 @@
   "rounds": 1,
   "liftedFindings": [
     {
-      "id": "ebd0db0d480a3f9b::AUDIT-BARRAGE-claude-01",
-      "title": "Fail-loud negative tests assert the throw but never assert the persisted record stayed unadvanced",
+      "id": "07cdb1abe8a68828::AUDIT-BARRAGE-codex-01",
+      "title": "Museum idempotency fixture uses the wrong asset role",
       "severity": "high"
     }
   ],

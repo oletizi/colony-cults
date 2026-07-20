@@ -253,7 +253,10 @@ export function sampleAsset(overrides: Partial<AcquiredAsset> = {}): AcquiredAss
     checksum: 'c'.repeat(64),
     byteLength: 987654,
     provenancePath: 'archive/cases/new-italy/museum/nimi-0844/NIMI-0844.provenance.json',
-    role: 'front',
+    // The shipped New Italy Museum adapter records + recognizes its master as
+    // `role: 'primary'` (recordedMasterAsset finds `role === 'primary'`), so the
+    // fixture must match that role (AUDIT-20260720-11).
+    role: 'primary',
     sequence: 1,
     representationChoice: 'max-resolution',
     ...overrides,
@@ -376,14 +379,18 @@ export function idempotentMuseumAdapter(
       throw new Error('idempotentMuseumAdapter.collectRightsEvidence: not used on the acquire dispatch path');
     },
     async acquire(record) {
-      const recorded = (record.assets ?? []).find((a) => a.objectStoreKey === asset.objectStoreKey);
+      // Mirror the shipped adapter's convergence seam (AUDIT-20260720-11):
+      // find the recorded `primary` master, HEAD its own recorded key, and
+      // compare against ITS recorded checksum -- returning the RECORDED asset
+      // (not the passed-in one) on the idempotent short-circuit.
+      const recorded = (record.assets ?? []).find((a) => a.role === 'primary');
       if (recorded !== undefined) {
-        const head = await store.head(asset.objectStoreKey);
-        if (head.exists && head.sha256 === asset.checksum) {
+        const head = await store.head(recorded.objectStoreKey);
+        if (head.exists && head.sha256 === recorded.checksum) {
           // Already held -- return it without re-fetching or re-PUTting (INV-E).
           return {
             repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
-            assets: [asset],
+            assets: [recorded],
             metadataSnapshot: { raw: '', retrievedAt: '2026-07-14T00:00:00.000Z' },
             complete: true,
             reconciliationRequired: true,
