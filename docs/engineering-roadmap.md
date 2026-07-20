@@ -176,7 +176,7 @@ Spun out of 009's research loop (backlog TASK-32). SRCH-0013 verified that the d
 - spec: specs/015-papers-past-acquisition
 
 ## impl:feature/acquire-metadata-completion
-- status: in-flight
+- status: shipped
 - analyze-clean: yes
 - spec: specs/016-acquire-metadata-completion
 - design-approved: yes
