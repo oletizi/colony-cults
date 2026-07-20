@@ -1,4 +1,4 @@
-# Contract: `gallica bib` CLI verbs
+# Contract: `bib` CLI verbs
 
 New verb group beside the existing `gallica` verbs (`src/cli/bibliography.ts`, wired through `src/index.ts`). Text in / text out; errors → stderr; non-zero exit on validation findings (matches the repo's fail-loud posture).
 

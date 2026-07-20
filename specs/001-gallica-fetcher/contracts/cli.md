@@ -1,6 +1,6 @@
 # Contract: CLI command surface
 
-Invoked via `tsx` (e.g. `pnpm gallica <command> [args] [flags]`). Text out → stdout; errors → stderr, non-zero exit. All commands are usable independently.
+Invoked via `tsx` (e.g. `pnpm bib <command> [args] [flags]`). Text out → stdout; errors → stderr, non-zero exit. All commands are usable independently.
 
 ## Global flags
 

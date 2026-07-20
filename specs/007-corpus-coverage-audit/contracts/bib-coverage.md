@@ -6,7 +6,7 @@ The single derived-view command. Added to the existing bibliography CLI dispatch
 ## Invocation
 
 ```
-gallica bib coverage [--json]
+bib coverage [--json]
 ```
 
 - No positional arguments (reports over the whole corpus).

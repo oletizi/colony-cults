@@ -1,6 +1,6 @@
 # CLI Command Contracts: Source-Group Acquisition
 
-All verbs are `gallica bib <subaction>` (dispatched via `runBibliography`). Convention: `--dry-run` reports intended writes and writes nothing; errors → stderr, non-zero exit; success → stdout. All commands **fail loud** — no fallbacks.
+All verbs are `bib <subaction>` (dispatched via `runBibliography`). Convention: `--dry-run` reports intended writes and writes nothing; errors → stderr, non-zero exit; success → stdout. All commands **fail loud** — no fallbacks.
 
 ---
 

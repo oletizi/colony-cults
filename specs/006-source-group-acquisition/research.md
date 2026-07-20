@@ -4,7 +4,7 @@ All items below resolve a Technical-Context unknown or a spec decision. Format: 
 
 ## D-01 — CLI surface: `bib` subactions, not top-level commands
 
-**Decision**: Add `inventory`, `verify-member`, `promote`, `exclude-member`, and `acquire` as subactions of the existing `bib` command (`gallica bib inventory …`), dispatched through `runBibliography` in `src/index.ts`.
+**Decision**: Add `inventory`, `verify-member`, `promote`, `exclude-member`, and `acquire` as subactions of the existing `bib` command (`bib inventory …`), dispatched through `runBibliography` in `src/index.ts`.
 
 **Rationale**: They mutate the bibliography SSOT (`bibliography/sources/*.yml`), exactly like the existing `bib migrate` / `bib show`. Keeping them under `bib` matches the shipped help text ("Bibliography SSOT verbs (migrate, show, …)") and avoids polluting the top-level fetch-oriented command set.
 

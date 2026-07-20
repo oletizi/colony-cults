@@ -33,8 +33,8 @@ On a source-group (`kind: source-group`) only:
 ## Generated views (stdout only — never committed)
 
 ```
-gallica bib coverage          # human-readable report
-gallica bib coverage --json   # machine-readable
+bib coverage          # human-readable report
+bib coverage --json   # machine-readable
 ```
 
 The coverage report derives, per campaign: member counts by lifecycle state,
