@@ -1,15 +1,17 @@
 {
-  "name": "gallica-fetcher",
+  "name": "bib",
   "version": "0.1.0",
   "type": "module",
   "description": "TypeScript CLI for mirroring public-domain BnF Gallica sources",
   "bin": {
-    "gallica": "src/index.ts",
-    "translate": "src/translate-index.ts"
+    "bib": "dist/index.js",
+    "translate": "dist/translate-index.js"
   },
   "scripts": {
+    "build": "esbuild src/index.ts src/translate-index.ts --bundle --platform=node --format=esm --packages=external --outdir=dist --banner:js='#!/usr/bin/env node'",
+    "prepare": "npm run build",
     "browser:test": "vitest run tests/unit/browser tests/integration/browser",
-    "gallica": "tsx src/index.ts",
+    "bib": "tsx src/index.ts",
     "translate": "tsx src/translate-index.ts",
     "site:build": "astro build --root site && pagefind --site site/dist",
     "site:export-public": "tsx scripts/export-public.ts",
@@ -45,6 +47,7 @@
   "devDependencies": {
     "@types/node": "^20.10.6",
     "astro": "^7.0.7",
+    "esbuild": "^0.28.1",
     "pagefind": "^1.1.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",

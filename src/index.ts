@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { runCli } from '@/cli/dispatch';
 
 runCli(process.argv.slice(2))
