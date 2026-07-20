@@ -3,7 +3,7 @@
   "mode": "impl",
   "item": "impl:feature/acquire-metadata-completion",
   "governedShaBase": "d8171d6",
-  "headSha": "0509a832a9a51d9ac30e99ea9d75ebdc6b01e232",
+  "headSha": "436884b758a8eff8871bec6d1659c312bac2d1f6",
   "chunkIds": [
     "07cdb1abe8a68828",
     "2c9bacfeeaaa6c6c",
@@ -14,13 +14,7 @@
     "ebd0db0d480a3f9b"
   ],
   "rounds": 1,
-  "liftedFindings": [
-    {
-      "id": "07cdb1abe8a68828::AUDIT-BARRAGE-codex-01",
-      "title": "Museum idempotency fixture uses the wrong asset role",
-      "severity": "high"
-    }
-  ],
+  "liftedFindings": [],
   "closedInLoopFindings": [],
   "seamResult": {
     "boundaryPairs": [
@@ -115,6 +109,6 @@
   "splitClusterRefs": [
     "cdf4fe7027abeb5f"
   ],
-  "outcome": "override-eligible",
+  "outcome": "converged",
   "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-gap-closure"
 }
