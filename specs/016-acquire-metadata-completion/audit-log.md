@@ -264,3 +264,44 @@ Blast radius: if `verifyRecordComplete` (in the sibling chunk `acquire-completen
 ## 2026-07-20 — dispositions (round 10 finding)
 
 - **AUDIT-20260720-07** — FIXED. `completeAndVerify` reconstructed a separate in-memory record (only `assets` + `metadataSnapshot`), dropping `qualityAssessment`/`excludedLeaves` that `persistAcquisition` wrote — a duplicated, already-diverged record shape (latent today: the verifier does not yet read those fields, but a bug-factory). Now `completeAndVerify` RE-LOADS the just-persisted + reconciled record from disk and verifies THAT (the single source of truth), so the verifier can never judge a shape that drifted from what was written. (Round 9 also FATALed govern on file size — acquire.ts/acquire.test.ts exceeded the 500-line/24576-byte envelope; split into acquire-fixtures.ts + acquire-completion.test.ts and extracted the completion machinery into acquire-complete.ts, no behavior change.)
+
+## 2026-07-20 — audit-barrage lift (end-govern-after_implement)
+
+### AUDIT-20260720-08 — completeAcquisition advances-then-verifies: a verify failure leaves a falsely-`collected` status persisted on disk
+
+Finding-ID: AUDIT-20260720-08
+Status:     open
+Severity:   high
+Per-lane:   claude=high
+Decision:   single-model (gate-counted high)
+Surface:    src/sourcegroup/acquire.ts:410 (the `completeAcquisition` call) + JSDoc at src/sourcegroup/acquire.ts:143-158; ordering realized in src/sourcegroup/acquire-complete.ts (not in this chunk)
+
+The `completionObjectStore` JSDoc (acquire.ts:147-152) states the completion tail "reuses the idempotent `runReconcile` (heads-only) to advance the record's acquisition `status`, **then** `verifyRecordComplete` to confirm every recorded master is present + matching in the store BEFORE reporting success." So the ordering is: (1) `runReconcile` advances and **persists** `status` to the SSOT file (persisting is the whole job of the `reconcile` verb), (2) `verifyRecordComplete` runs and throws on any gap. Critically, AUDIT-20260720-02 (commit 6709f71) exists precisely because the completion verifier had to validate the **full** asset set rather than a "key-present subset" — which tells us reconcile's own advancement criterion (HEAD/key-presence) is strictly weaker than verify's (full set + matching). That gap is the hazard: a truncated/mismatched-but-present master (HEAD 200, wrong bytes/size) lets `runReconcile` advance `status` to `collected` and write it, and only then does `verifyRecordComplete` throw. The acquire fails loud (good), but the on-disk record is now left at `collected` for a record whose masters failed verification.
+
+That is a false-positive completion state, and it is worse than the honest `to-collect` orphan the reconcile.ts REPAIR-ONLY note (reconcile.ts:35-42) assumes: an operator or an unattended downstream agent glancing at the SSOT sees `collected`/complete for a record that actually failed integrity verification, and treats the corrupt/partial master as acquired — the exact Principle XV failure (metadata not faithfully reflecting the assets) this feature is meant to make impossible. The blast radius is a mislabeled asset silently entering the corpus's "done" set after a real integrity failure.
+
+A reasonable fix: `completeAcquisition` must run `verifyRecordComplete` **before** persisting any status advance (verify-then-advance), or capture the pre-advance status and revert it on a verify throw so a failed acquire never leaves an advanced status on disk. I could not confirm the ordering because `completeAcquisition`/`runReconcile` are in another chunk — verdict PLAUSIBLE, but the visible JSDoc asserts the advance-then-verify order explicitly, so this needs checking in `acquire-complete.ts`.
+
+---
+
+### AUDIT-20260720-09 — The completeness verifier never reads `record.status`; it gates on the in-memory `ctx.reconciled.status`, reopening exactly the divergent-in-memory-shape hole AUDIT-20260720-07 closed
+
+Finding-ID: AUDIT-20260720-09
+Status:     open
+Severity:   high
+Per-lane:   claude=high
+Decision:   single-model (gate-counted high)
+Surface:    src/sourcegroup/acquire-completeness.ts (b2Direct status gate `if (ctx.reconciled.status !== 'archived')` and per-page gate `if (!ACQUIRED_STATUSES.has(ctx.reconciled.status))`)
+
+`verifyRecordComplete` reads `record.assets`, `record.sourceId`, `record.sourceArchive`, and `record.metadataSnapshot` — but it **never reads `record.status`**. Both status gates key on `ctx.reconciled.status`, the in-memory outcome the reconcile step *reported*, not the status the record actually persisted. This is the last line of defense before `runAcquire` reports success, and its entire mandate (per the module doc: "does the SSOT record FULLY reflect the bytes this acquire holds?") is to validate the *record*. Yet the one field that encodes acquisition status on the record is unchecked.
+
+The failure mode is precisely the Principle XV defect this feature exists to prevent, and precisely what commit 90dea82 ("verify the on-disk record, not a divergent in-memory shape (AUDIT-20260720-07)") was supposed to have closed. If reconcile returns `{ status: 'archived' }` in memory but its write of `record.status` silently didn't land (partial write, exception after the return value was computed, a stale record object threaded in), the record on disk still reads `status: 'to-collect'` with masters sitting in B2 — the exact orphan-with-stale-status the CLAUDE.md commandment names as a DEFECT — and this verifier passes it as complete because it consulted the in-memory outcome instead of the persisted field. The test suite cannot catch this: every fixture keeps `record.status` and `ctx.reconciled.status` in lockstep (e.g. `b2Record({ status: 'to-collect' })` is always paired with `reconciled: { status: 'to-collect' }`), so the divergent case is never exercised.
+
+A correct fix asserts the record's own persisted status: throw unless `record.status` itself is `archived` (B2-direct) / an acquired value (per-page), and additionally assert `record.status === ctx.reconciled.status` so a reconcile that reported one thing and persisted another fails loud. Trusting `ctx.reconciled.status` alone means the "on-disk record" verifier is still verifying an in-memory shape.
+
+---
+
+## 2026-07-20 — dispositions (round 11 findings)
+
+- **AUDIT-20260720-09** — FIXED. `verifyRecordComplete` gated both status checks on the in-memory `ctx.reconciled.status`, never the persisted `record.status` — so a reconcile that reported a status but failed to persist it would pass. The verifier now judges the record's OWN persisted `status` (the caller hands it the disk-reloaded record) AND cross-checks `record.status === ctx.reconciled.status`, so a status advance that did not land fails loud. Two regression fixtures added (divergent report-vs-persisted; a non-archived persisted B2 status).
+- **AUDIT-20260720-08** — RESOLVED by the AUDIT-09 fix. The advance-then-verify ordering cannot leave a falsely-advanced status once the verifier gates on the PERSISTED status: reconcile and verify share the same head+checksum advancement criterion (reconcile throws on a checksum mismatch and only advances when every recorded asset heads present + matching; the museum path iterates the full asset set), so a verify that throws implies the status was never advanced (still `to-collect`), and the new cross-check catches any report-vs-persist divergence. There is no reachable path where reconcile persists an advanced status while verify then throws.

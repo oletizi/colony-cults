@@ -94,6 +94,20 @@ export async function verifyRecordComplete(
   // as the empty-assets Gallica shape and resolve without HEADing anything.
   const b2Direct = ctx.isB2Direct;
 
+  // Judge the record's OWN PERSISTED `status`, not just the in-memory outcome the
+  // reconcile step reported (AUDIT-20260720-09). Cross-check the two: a reconcile
+  // that reported one status but persisted another (or whose status write did not
+  // land) fails loud rather than passing on the strength of the in-memory value.
+  // The caller (`completeAndVerify`) hands the record RE-LOADED from disk, so
+  // `record.status` is the SSOT truth.
+  if (record.status !== ctx.reconciled.status) {
+    throw new Error(
+      `acquire-completeness: ${where} -- reconcile reported acquisition status ` +
+        `"${ctx.reconciled.status}" but the persisted record carries "${record.status}"; the ` +
+        `status advance did not land, so the record does not reflect the acquire (Principle XV).`,
+    );
+  }
+
   if (b2Direct) {
     if (assets.length === 0) {
       throw new Error(
@@ -103,16 +117,16 @@ export async function verifyRecordComplete(
           `shape; Principle XV).`,
       );
     }
-    // B2-direct: status must be advanced to `archived`, and EVERY recorded
+    // B2-direct: the PERSISTED status must be `archived`, and EVERY recorded
     // asset must be a well-formed master present in the object store with a
     // matching checksum. Iterate the FULL recorded asset set (never a
     // key-present subset): an asset missing its `objectStoreKey`/`checksum` is a
     // malformed master that must fail loud, not be silently skipped
     // (AUDIT-20260720-02).
-    if (ctx.reconciled.status !== 'archived') {
+    if (record.status !== 'archived') {
       throw new Error(
         `acquire-completeness: ${where} recorded ${assets.length} object-store master(s) ` +
-          `but its acquisition status is "${ctx.reconciled.status}", not "archived" -- the ` +
+          `but its persisted acquisition status is "${record.status}", not "archived" -- the ` +
           `record does not fully reflect the held bytes (Principle XV).`,
       );
     }
@@ -170,12 +184,12 @@ export async function verifyRecordComplete(
           `recorded assets are wrong.`,
       );
     }
-    // Complete when reconcile advanced `status` to an acquired value; an empty
-    // asset list is NOT a failure (FR-008).
-    if (!ACQUIRED_STATUSES.has(ctx.reconciled.status)) {
+    // Complete when the PERSISTED status is an acquired value; an empty asset
+    // list is NOT a failure (FR-008).
+    if (!ACQUIRED_STATUSES.has(record.status)) {
       throw new Error(
         `acquire-completeness: ${where} acquired no object-store masters (per-page-provenance ` +
-          `path) but its acquisition status is "${ctx.reconciled.status}" -- the ` +
+          `path) but its persisted acquisition status is "${record.status}" -- the ` +
           `archive-provenance reconcile did not advance it to an acquired state ` +
           `("collected"/"archived") (Principle XV).`,
       );

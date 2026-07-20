@@ -239,6 +239,31 @@ describe('verifyRecordComplete', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('AUDIT-20260720-09: THROWS when the persisted record.status DIVERGES from the reconcile-reported status (status advance did not land)', async () => {
+    const store = fakeObjectStore({ [master().objectStoreKey]: { sha256: CHECKSUM } });
+    // Reconcile REPORTED archived, but the record on disk still reads to-collect
+    // (the status write did not land) -- the verifier must fail loud, not trust
+    // the in-memory outcome.
+    await expect(
+      verifyRecordComplete(b2Record({ status: 'to-collect' }), {
+        objectStore: store,
+        isB2Direct: true,
+        reconciled: { status: 'archived', advanced: true },
+      }),
+    ).rejects.toThrow(/did not land|persisted record carries|reconcile reported/i);
+  });
+
+  it('AUDIT-20260720-09: judges the record.status field itself -- a B2 record whose reconcile+record agree on a non-archived status THROWS on the persisted value', async () => {
+    const store = fakeObjectStore({ [master().objectStoreKey]: { sha256: CHECKSUM } });
+    await expect(
+      verifyRecordComplete(b2Record({ status: 'collected' }), {
+        objectStore: store,
+        isB2Direct: true,
+        reconciled: { status: 'collected', advanced: true },
+      }),
+    ).rejects.toThrow(/persisted acquisition status is "collected", not "archived"/i);
+  });
+
   it('AUDIT-20260720-02: THROWS when a B2-direct record has a valid master AND a second asset MISSING its objectStoreKey (partial omission not silently ignored)', async () => {
     const malformed = master({ objectStoreKey: '', checksum: 'e'.repeat(64), sequence: 2 });
     const store = fakeObjectStore({ [master().objectStoreKey]: { sha256: CHECKSUM } });
