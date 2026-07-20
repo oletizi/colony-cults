@@ -130,3 +130,22 @@ This is a real operator-facing correctness bug: dry-run is the safe preflight pa
 - **AUDIT-20260719-06** — FIXED. Completion machinery is now PREFLIGHTED immediately after `registry.selectForRecord(record)` and BEFORE `adapter.acquire` (the fetch/mirror side effect), for both paths: a non-dry-run Gallica acquire requires `reconcileArchiveRoot` + `gather`, a non-dry-run B2-direct acquire requires `completionObjectStore`. Failing before the fetch means no orphan-prone durable state is written and no external fetch is spent on a command that will fail. Dispatch/characterization tests that drive a real acquire now inject the machinery (matching production).
 - **AUDIT-20260719-07** — FIXED. `CompletenessContext.isB2Direct` is now REQUIRED (no `?? masters.length > 0` fallback). The type system forces every caller to state the dispatched kind; the fallback-hides-failure path that could revert to the AUDIT-04 false-negative is gone (Principle V). All verifier unit tests thread the explicit kind.
 - **AUDIT-20260719-08** — FIXED. The CLI resolves completion + companion machinery (`resolveObjectStoreConfig` / `resolveArchiveRoot`) ONLY for a non-dry-run acquire; `bib acquire <id> --dry-run` no longer depends on private archive/B2 configuration and works in a fresh/metadata-only environment.
+
+## 2026-07-20 — audit-barrage lift (end-govern-after_implement)
+
+### AUDIT-20260720-01 — Snapshot-only guard still creates the orphan it rejects
+
+Finding-ID: AUDIT-20260720-01
+Status:     open
+Severity:   high
+Per-lane:   codex=high
+Decision:   single-model (gate-counted high)
+Surface:    src/sourcegroup/acquire.ts:479-500, src/sourcegroup/acquire.ts:566-581
+
+For B2-direct adapters, `runAcquire` persists adapter-emitted `metadataSnapshotRef` only inside the `acquisition.assets.length > 0` block at lines 479-500. The new snapshot-only branch at lines 566-581 throws when `metadataSnapshotRef` is present with zero assets, but that check runs after `adapter.acquire(record, ctx)` has already completed. A `metadataSnapshotRef` is, by contract, a reference to a durable snapshot the adapter already wrote, so this path refuses success while still leaving the durable snapshot unrecorded in the SSOT.
+
+That means the fail-loud guard prevents a false success but does not prevent the orphaned snapshot state it names. The blast radius is high for any B2-direct adapter that follows the `AcquisitionResult` contract and emits a snapshot ref without page masters: an unattended adapter author can reasonably read this branch as protective, but the side effect has already happened. A reasonable fix would either make snapshot-only completion a real path in `runAcquire` before throwing is possible, or make the adapter contract reject/predict that shape before durable snapshot creation.
+
+## 2026-07-20 — dispositions (round 5 finding)
+
+- **AUDIT-20260720-01** — FIXED. The snapshot-only fail-loud fired AFTER `adapter.acquire` had already written the durable snapshot, so it refused success while leaving the snapshot unrecorded (the orphan it named). Replaced the throw with the real completion: the persist block now records `metadataSnapshotRef` on the SSOT whenever the adapter emits one (decoupled from `assets.length`), so a snapshot-only outcome is reflected in the record (no orphan) and the acquire succeeds — companions are still written only for mirrored masters. The AUDIT-03 test now asserts the snapshot is recorded, not a throw. No shipped adapter produces this shape; the persist decoupling makes it impossible to drop silently.

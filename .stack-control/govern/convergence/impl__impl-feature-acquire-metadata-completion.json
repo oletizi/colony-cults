@@ -3,27 +3,18 @@
   "mode": "impl",
   "item": "impl:feature/acquire-metadata-completion",
   "governedShaBase": "d8171d6",
-  "headSha": "0458be5b0ac91cdc4b27411ae0e74e1947139c38",
+  "headSha": "3f94f72de7540d081b0166603b478063f181081b",
   "chunkIds": [
-    "650e889e848d2722",
+    "2c9bacfeeaaa6c6c",
     "9c08e223058cd9ed",
+    "e6348290a1d854d7",
     "e6bcee6fc31c4cdd"
   ],
   "rounds": 1,
   "liftedFindings": [
     {
-      "id": "650e889e848d2722::AUDIT-BARRAGE-codex-01",
-      "title": "Gallica completion dependencies are checked only after fetching",
-      "severity": "high"
-    },
-    {
-      "id": "9c08e223058cd9ed::AUDIT-BARRAGE-claude-01",
-      "title": "Optional `isB2Direct` with silent inference fallback re-opens the exact channel the AUDIT-04 fix closed",
-      "severity": "high"
-    },
-    {
-      "id": "9c08e223058cd9ed::AUDIT-BARRAGE-codex-01",
-      "title": "Dry-run Gallica acquire still requires an archive root",
+      "id": "2c9bacfeeaaa6c6c::AUDIT-BARRAGE-codex-01",
+      "title": "Snapshot-only guard still creates the orphan it rejects",
       "severity": "high"
     }
   ],
@@ -31,15 +22,27 @@
   "seamResult": {
     "boundaryPairs": [
       {
-        "a": "650e889e848d2722",
+        "a": "2c9bacfeeaaa6c6c",
         "b": "9c08e223058cd9ed"
       },
       {
-        "a": "650e889e848d2722",
+        "a": "2c9bacfeeaaa6c6c",
+        "b": "e6348290a1d854d7"
+      },
+      {
+        "a": "2c9bacfeeaaa6c6c",
         "b": "e6bcee6fc31c4cdd"
       },
       {
         "a": "9c08e223058cd9ed",
+        "b": "e6348290a1d854d7"
+      },
+      {
+        "a": "9c08e223058cd9ed",
+        "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "e6348290a1d854d7",
         "b": "e6bcee6fc31c4cdd"
       }
     ],
@@ -47,7 +50,7 @@
     "suppressedCompatible": 0
   },
   "splitClusterRefs": [
-    "52343ce950faa887"
+    "02344543b13e66a5"
   ],
   "outcome": "override-eligible",
   "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-gap-closure"

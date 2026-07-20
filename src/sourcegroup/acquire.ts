@@ -476,15 +476,25 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   // museum acquire persists nothing either -- the adapter honors `ctx.dryRun`
   // and returns an EMPTY `assets` array (mirroring no master), so this block is
   // skipped (TASK-29).
-  if (acquisition.assets.length > 0) {
+  // Persist whenever the adapter produced ANY durable record-level output --
+  // mirrored masters OR an authored metadata-snapshot reference. Gating the
+  // whole persist on `assets.length > 0` would drop a `metadataSnapshotRef` an
+  // adapter emitted with zero masters, leaving the durable snapshot unrecorded
+  // in the SSOT (the orphan AUDIT-20260720-01 named). The snapshot IS its own
+  // completion here -- recording the ref is what makes it findable; no shipped
+  // adapter currently emits this shape, but the persist is decoupled so it can
+  // never be silently dropped if one does.
+  const hasDurableOutput =
+    acquisition.assets.length > 0 || acquisition.metadataSnapshotRef !== undefined;
+  if (hasDurableOutput) {
     const updatedRecords = authoredRecords.map((authored) =>
       authored.sourceArchive === record.sourceArchive
         ? {
             ...authored,
-            assets: acquisition.assets,
             // Durable record-level provenance the adapter authored (SC-003):
             // written only when the adapter produced it (Gallica/museum leave
             // these unset, so `...authored` preserves whatever was there).
+            ...(acquisition.assets.length > 0 ? { assets: acquisition.assets } : {}),
             ...(acquisition.qualityAssessment !== undefined
               ? { qualityAssessment: acquisition.qualityAssessment }
               : {}),
@@ -501,10 +511,15 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
 
     // Close the B2-direct loop: write the archive companions for the mirrored
     // masters, so they are DISCOVERABLE by the pipeline (spec 013). Gallica
-    // reaches here with `assets: []` (handled by the enclosing guard) and writes
-    // its own companions via the fetcher, so this only fires for the B2-direct
-    // adapters. Skipped when the archive/object-store coordinates are absent.
-    if (input.companionArchiveRoot !== undefined && input.companionObjectStore !== undefined) {
+    // reaches here with `assets: []` and writes its own companions via the
+    // fetcher, so this only fires for the B2-direct adapters. Skipped for a
+    // snapshot-only outcome (no masters) and when the archive/object-store
+    // coordinates are absent.
+    if (
+      acquisition.assets.length > 0 &&
+      input.companionArchiveRoot !== undefined &&
+      input.companionObjectStore !== undefined
+    ) {
       const acquiredRecord: RepositoryRecord = {
         ...record,
         assets: acquisition.assets,
@@ -563,26 +578,19 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
       // B2-direct with mirrored masters: complete + verify those object-store
       // bytes (completionObjectStore validated in the preflight above).
       await completeAndVerify(input, record, acquisition, true);
-    } else if (acquisition.metadataSnapshotRef !== undefined) {
-      // A B2-direct adapter that recorded a durable metadata snapshot but ZERO
-      // page-image masters (a snapshot-only outcome). The completion tail's
-      // status derivation (`runReconcile`) advances status from mirrored masters
-      // or archive provenance -- it has NO path for a snapshot with no masters,
-      // so completing this shape is not yet supported. Fail loud rather than
-      // silently skip (which would orphan the snapshot the record does not
-      // reflect) or misroute it into the Gallica provenance path
-      // (AUDIT-20260719-03). No shipped adapter currently produces this shape;
-      // this guard makes it impossible to do so silently.
-      throw new Error(
-        `acquire: ${adapter.repository} returned a metadata snapshot with ZERO object-store ` +
-          `masters (assets: []) -- snapshot-only acquisition completion is not yet supported. ` +
-          `Refusing to report success for a durable snapshot the completion tail cannot ` +
-          `record/verify (Principle XV); add explicit snapshot-only completion handling if an ` +
-          `adapter begins producing this outcome.`,
-      );
     }
-    // else: a B2-direct outcome that mirrored NO masters AND emitted no durable
-    // snapshot -- no object-store bytes exist to orphan, so there is provably
+    // else if the adapter emitted a metadata snapshot with ZERO masters
+    // (a snapshot-only outcome): the persist block above ALREADY recorded the
+    // `metadataSnapshotRef` on the SSOT record, so the durable snapshot is
+    // reflected -- NOT orphaned (AUDIT-20260720-01). There are no object-store
+    // masters to advance a status from or to HEAD, so recording the snapshot IS
+    // its completion; nothing further to reconcile/verify. Throwing here would
+    // have refused success while the snapshot (already written by the adapter)
+    // stayed recorded anyway -- a false alarm, not a safeguard. No shipped
+    // adapter currently produces this shape.
+    //
+    // else (a B2-direct outcome that mirrored NO masters AND emitted no durable
+    // snapshot): no object-store bytes exist to orphan, so there is provably
     // nothing to complete/verify (not routed into the Gallica archive-provenance
     // path; AUDIT-20260719-02).
   }
