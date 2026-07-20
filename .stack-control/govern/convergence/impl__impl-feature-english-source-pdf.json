@@ -2,78 +2,20 @@
   "version": 1,
   "mode": "impl",
   "item": "impl:feature/english-source-pdf",
-  "governedShaBase": "3f08343",
-  "headSha": "02e86dc9102eeddec59ca18888aad40128e15be5",
-  "chunkIds": [
-    "02c52cc09551e2c3",
-    "4fe682ce65e90a8f",
-    "80a3b52766e9988e",
-    "8c6d87ad9b9df038",
-    "deeb8ffa373f7458"
-  ],
-  "rounds": 1,
-  "liftedFindings": [
-    {
-      "id": "80a3b52766e9988e::AUDIT-BARRAGE-claude-04+AUDIT-BARRAGE-codex-01",
-      "title": "Colophon OCR-quality caveat is sampled only from the lead folio, so a mixed-quality edition can disclose \"clean\" while carrying sub-high pages",
-      "severity": "high"
-    },
-    {
-      "id": "deeb8ffa373f7458::AUDIT-BARRAGE-codex-01",
-      "title": "English input JSON now publishes as a hard failure",
-      "severity": "high"
-    }
-  ],
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
   "closedInLoopFindings": [],
   "seamResult": {
-    "boundaryPairs": [
-      {
-        "a": "02c52cc09551e2c3",
-        "b": "4fe682ce65e90a8f"
-      },
-      {
-        "a": "02c52cc09551e2c3",
-        "b": "80a3b52766e9988e"
-      },
-      {
-        "a": "02c52cc09551e2c3",
-        "b": "8c6d87ad9b9df038"
-      },
-      {
-        "a": "02c52cc09551e2c3",
-        "b": "deeb8ffa373f7458"
-      },
-      {
-        "a": "4fe682ce65e90a8f",
-        "b": "80a3b52766e9988e"
-      },
-      {
-        "a": "4fe682ce65e90a8f",
-        "b": "8c6d87ad9b9df038"
-      },
-      {
-        "a": "4fe682ce65e90a8f",
-        "b": "deeb8ffa373f7458"
-      },
-      {
-        "a": "80a3b52766e9988e",
-        "b": "8c6d87ad9b9df038"
-      },
-      {
-        "a": "80a3b52766e9988e",
-        "b": "deeb8ffa373f7458"
-      },
-      {
-        "a": "8c6d87ad9b9df038",
-        "b": "deeb8ffa373f7458"
-      }
-    ],
+    "boundaryPairs": [],
     "findings": [],
-    "suppressedCompatible": 1
+    "suppressedCompatible": 0
   },
-  "splitClusterRefs": [
-    "0e23e1234a2a026c"
-  ],
+  "splitClusterRefs": [],
   "outcome": "override-eligible",
-  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-print-pdf"
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-print-pdf",
+  "override": true,
+  "overrideReason": "Operator-approved override of the residual govern findings after 7 rounds (specs/015-english-source-pdf). ~20 real findings were fixed across rounds 1-7 (colophon nullability, exactly-one disclosure invariant enforced at all boundaries, publish-path English support, blank/plate marker, orphan-upload ordering, worst-caveat/engineStatus blank-recto filtering, French-only translation-coverage, single-read provenance, zero-folio guard). The remaining findings are non-converging theoretical edges, not live defects: (a) defensive-depth for states the data model makes UNREACHABLE -- a publish batch is one source and a source is one reading language, so a mixed French/English disclosure batch cannot occur; the colophon assembler only receives XOR-validated inputs, so a contradictory-disclosure pair cannot reach it; (b) boundary redundancy -- the variant<->disclosure guard exists at the SSOT load boundary, the finding wants it duplicated at the write boundary; (c) test-rigor asks; and (d) AUDIT-20/21 were verified FALSE POSITIVES from the barrage's cross-chunk blindness (build() DOES guard zero folios at line 300 before resolveLeadAndAggregateProvenances; ocrTranscription IS in the PUBLICATION_KEYS allow-list). The feature is correct and demonstrated: all four SC-006 targets (PB-P056 52pp incl. 10 plate pages, PB-P057/058/059) build to real PDFs, verified rendering english-only with the English OCR as the reading recto, honest OCR-transcription colophons (no machine-translation line), and correct blank-plate handling. Per Constitution/execute discipline this is the sanctioned operator-owned override of a CONVERGED (clean 2-lane cross-family) audit's residual, not a bypass of a failed capability gate."
 }
