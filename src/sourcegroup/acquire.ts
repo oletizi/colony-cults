@@ -1,15 +1,17 @@
 import { loadAllSources } from '@/bibliography/load';
-import { writeSourceFile } from '@/bibliography/source-writer';
-import { writeRecordCompanions } from '@/archive/write-record-companions';
 import type { CompanionObjectStore } from '@/archive/write-record-companions';
 import { isFetchableWork } from '@/bibliography/scope';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { RepositoryAdapterRegistry } from '@/repository/registry';
 import { GallicaAdapter, type GallicaAcquisitionContext } from '@/repository/gallica/adapter';
-import { runReconcile, type GatherProvenanceFn } from '@/sourcegroup/reconcile';
-import { verifyRecordComplete } from '@/sourcegroup/acquire-completeness';
+import type { GatherProvenanceFn } from '@/sourcegroup/reconcile';
+import {
+  preflightCompletion,
+  persistAcquisition,
+  completeAcquisition,
+} from '@/sourcegroup/acquire-complete';
 import type { ParsedArgs } from '@/cli/parse';
-import type { RepositoryAdapter, AcquisitionResult } from '@/repository/adapter';
+import type { RepositoryAdapter } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { ObjectStore } from '@/archive/object-store';
 import type { ArkResolver } from '@/sourcegroup/inventory';
@@ -292,55 +294,6 @@ function assertWellFormed(input: AcquireInput): void {
 }
 
 /**
- * The completion tail's reconcile + verify, shared by both the per-page-provenance
- * (gallica) and B2-direct branches of {@link runAcquire} (spec 016). Advances the
- * record's acquisition `status` via the idempotent {@link runReconcile} (heads-only;
- * NO source re-fetch -- the single source of status derivation, Principle VIII),
- * then confirms the record fully reflects the held bytes via {@link
- * verifyRecordComplete}, which throws (fail-loud) on any incompleteness. Reconcile
- * picks its own path from the persisted record's asset shape; the caller has already
- * asserted the path-appropriate machinery is present (fail-loud otherwise), so a
- * missing dependency here would be an internal error, not a silent skip.
- */
-async function completeAndVerify(
-  input: AcquireInput,
-  record: RepositoryRecord,
-  acquisition: AcquisitionResult,
-  isB2Direct: boolean,
-): Promise<void> {
-  const reconciled = await runReconcile({
-    sourcesDir: input.sourcesDir,
-    sourceId: input.sourceId,
-    archive: input.archive,
-    objectStore: input.completionObjectStore,
-    archiveRoot: input.reconcileArchiveRoot,
-    gather: input.gather,
-  });
-
-  // Verify the completed record. Build the just-acquired shape (the selected
-  // record plus the mirrored assets + any adapter-emitted snapshot ref) rather
-  // than re-loading, and pass reconcile's derived status as the authoritative
-  // `reconciled` outcome.
-  const completedRecord: RepositoryRecord = {
-    ...record,
-    ...(acquisition.assets.length > 0 ? { assets: acquisition.assets } : {}),
-    ...(acquisition.metadataSnapshotRef !== undefined
-      ? { metadataSnapshot: acquisition.metadataSnapshotRef }
-      : {}),
-  };
-  await verifyRecordComplete(completedRecord, {
-    objectStore: input.completionObjectStore,
-    reconciled: { status: reconciled.status, advanced: reconciled.changed },
-    // Explicit repository kind (AUDIT-20260719-04): the verifier must not
-    // re-derive B2-direct-vs-Gallica from `record.assets` shape alone.
-    isB2Direct,
-    // Best-effort per-adapter (FR-009): require the record-level snapshot only
-    // where the adapter actually emitted one.
-    expectsMetadataSnapshot: acquisition.metadataSnapshotRef !== undefined,
-  });
-}
-
-/**
  * Run the `acquire` command (US4, FR-014-017): resolve one member's approved,
  * public-domain copy and dispatch it through the registry to the adapter chosen
  * for its copy-identifier type -- Gallica for an `ark`, the museum for an
@@ -427,34 +380,11 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
     input.papersPastAdapter,
   );
   const adapter = registry.selectForRecord(record);
-  const isB2Direct = adapter.repository !== 'gallica';
 
-  // PREFLIGHT the completion machinery BEFORE the adapter fetches/mirrors
-  // anything (AUDIT-20260719-06). The path-required completion dependency is
-  // knowable from the dispatched adapter's kind alone -- so validate it here,
-  // before `adapter.acquire`'s durable side effects, rather than after. Failing
-  // afterwards would have already written the orphan-prone state (page images /
-  // provenance, or mirrored B2 masters) this feature exists to make impossible
-  // to finish into -- and would have spent an external fetch the failed command
-  // discards. `--dry-run` mirrors nothing, so it is exempt.
-  if (input.dryRun !== true) {
-    if (!isB2Direct) {
-      if (input.reconcileArchiveRoot === undefined || input.gather === undefined) {
-        throw new Error(
-          `acquire: a non-dry-run ${adapter.repository} acquire requires reconcileArchiveRoot + ` +
-            `gather to complete the SSOT record (advance status from the archive's per-page ` +
-            `provenance) -- refusing to FETCH a copy whose acquisition status could never be ` +
-            `advanced (Principle XV).`,
-        );
-      }
-    } else if (input.completionObjectStore === undefined) {
-      throw new Error(
-        `acquire: a non-dry-run ${adapter.repository} acquire requires a completionObjectStore ` +
-          `to complete + verify any mirrored masters -- refusing to MIRROR object-store bytes ` +
-          `the SSOT record could never confirm (Principle XV).`,
-      );
-    }
-  }
+  // Preflight the completion machinery BEFORE the adapter's durable side effects
+  // (fail loud if the dispatched kind's completion deps are absent; spec 016,
+  // AUDIT-20260719-06). `--dry-run` is exempt.
+  preflightCompletion(adapter, input);
 
   const ctx: GallicaAcquisitionContext = {
     objectStore: input.objectStore,
@@ -464,145 +394,20 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   };
   const acquisition = await adapter.acquire(record, ctx);
 
-  // Persist the adapter's mirrored masters back onto the SELECTED record's
-  // `assets` field in the SSOT (TASK-30, spec 011 T005/T030). The museum
-  // adapter mirrors its master to B2 and returns a non-empty `assets` array; a
-  // plain `acquire` otherwise leaves the corpus with NO record of the master,
-  // so `bib reconcile` (which for a museum copy verifies these object-store
-  // keys) has nothing to reconcile and the SSOT drifts from B2. The Gallica
-  // adapter returns `assets: []` (its masters are recorded as per-page archive
-  // provenance, reconciled by the archive-provenance path), so nothing is
-  // written and the Gallica acquire is byte-for-byte unchanged. A `dryRun`
-  // museum acquire persists nothing either -- the adapter honors `ctx.dryRun`
-  // and returns an EMPTY `assets` array (mirroring no master), so this block is
-  // skipped (TASK-29).
-  // Persist whenever the adapter produced ANY durable record-level output --
-  // mirrored masters OR an authored metadata-snapshot reference. Gating the
-  // whole persist on `assets.length > 0` would drop a `metadataSnapshotRef` an
-  // adapter emitted with zero masters, leaving the durable snapshot unrecorded
-  // in the SSOT (the orphan AUDIT-20260720-01 named). The snapshot IS its own
-  // completion here -- recording the ref is what makes it findable; no shipped
-  // adapter currently emits this shape, but the persist is decoupled so it can
-  // never be silently dropped if one does.
-  const hasDurableOutput =
-    acquisition.assets.length > 0 || acquisition.metadataSnapshotRef !== undefined;
-  if (hasDurableOutput) {
-    const updatedRecords = authoredRecords.map((authored) =>
-      authored.sourceArchive === record.sourceArchive
-        ? {
-            ...authored,
-            // Durable record-level provenance the adapter authored (SC-003):
-            // written only when the adapter produced it (Gallica/museum leave
-            // these unset, so `...authored` preserves whatever was there).
-            ...(acquisition.assets.length > 0 ? { assets: acquisition.assets } : {}),
-            ...(acquisition.qualityAssessment !== undefined
-              ? { qualityAssessment: acquisition.qualityAssessment }
-              : {}),
-            ...(acquisition.excludedLeaves !== undefined
-              ? { excludedLeaves: acquisition.excludedLeaves }
-              : {}),
-            ...(acquisition.metadataSnapshotRef !== undefined
-              ? { metadataSnapshot: acquisition.metadataSnapshotRef }
-              : {}),
-          }
-        : authored,
-    );
-    writeSourceFile(input.sourcesDir, { source, records: updatedRecords });
-
-    // Close the B2-direct loop: write the archive companions for the mirrored
-    // masters, so they are DISCOVERABLE by the pipeline (spec 013). Gallica
-    // reaches here with `assets: []` and writes its own companions via the
-    // fetcher, so this only fires for the B2-direct adapters. Skipped for a
-    // snapshot-only outcome (no masters) and when the archive/object-store
-    // coordinates are absent.
-    if (
-      acquisition.assets.length > 0 &&
-      input.companionArchiveRoot !== undefined &&
-      input.companionObjectStore !== undefined
-    ) {
-      const acquiredRecord: RepositoryRecord = {
-        ...record,
-        assets: acquisition.assets,
-        ...(acquisition.qualityAssessment !== undefined
-          ? { qualityAssessment: acquisition.qualityAssessment }
-          : {}),
-        ...(acquisition.excludedLeaves !== undefined
-          ? { excludedLeaves: acquisition.excludedLeaves }
-          : {}),
-      };
-      await writeRecordCompanions({
-        source,
-        record: acquiredRecord,
-        archiveRoot: input.companionArchiveRoot,
-        objectStore: input.companionObjectStore,
-        now: acquisition.qualityAssessment?.assessedAt ?? new Date().toISOString(),
-      });
-    }
-  }
-
-  // Completion tail (spec 016, Constitution Principle XV -- NO ORPHAN ASSETS):
-  // completing the SSOT record is an INSEPARABLE part of the acquire, not a
-  // separate `bib reconcile` the operator must remember. After the mirror +
-  // persist-assets block, reuse the idempotent, heads-only `runReconcile`
-  // (`src/sourcegroup/reconcile.ts` -- the single source of status derivation,
-  // Principle VIII; NO source re-fetch) to advance the record's acquisition
-  // `status`, then verify the record fully reflects the held bytes with the
-  // per-repository `verifyRecordComplete`. `runAcquire` returns success ONLY
-  // after verification passes; any incompleteness throws (fail-loud, Principle
-  // V), naming the gap.
-  //
-  // Which completion path applies is chosen by the DISPATCHED ADAPTER'S KIND --
-  // an explicit signal (AUDIT-20260719-01/02), never inferred from
-  // `assets.length` + which optional deps happened to be injected:
-  //   - `gallica` is the per-page-provenance kind: its masters are archive
-  //     per-page provenance (adapter returns `assets: []`), reconciled from the
-  //     archive under `reconcileArchiveRoot` via the injected `gather`.
-  //   - every other adapter (new-italy-museum / internet-archive / papers-past)
-  //     is B2-direct: its masters are recorded object-store assets, reconciled
-  //     + verified against the injected `completionObjectStore`.
-  // A NEW per-page-provenance-style adapter MUST be added to the gallica branch
-  // here (else it would be misrouted to the B2-direct branch).
-  //
-  // `--dry-run` is exempt (the adapter mirrored nothing -- nothing to complete).
-  // Otherwise the tail FAILS LOUD when its required machinery is absent -- it is
-  // NEVER silently skipped for a copy that needs completing (the exact XV hole
-  // AUDIT-20260719-01 named). The only safe no-op is a B2-direct outcome the
-  // adapter AFFIRMED `complete: true` with ZERO masters (the documented
-  // catalog-only / metadata-only shape): there are no object-store bytes to
-  // orphan, so there is nothing to complete or verify. A zero-master B2-direct
-  // outcome the adapter did NOT affirm complete fails loud (AUDIT-20260720-05).
-  if (input.dryRun !== true) {
-    if (!isB2Direct) {
-      // Per-page-provenance (Gallica): reconcile the fetched copy to its acquired
-      // status. The required machinery was validated in the preflight above.
-      await completeAndVerify(input, record, acquisition, false);
-    } else if (acquisition.assets.length > 0) {
-      // B2-direct with mirrored masters: complete + verify those object-store
-      // bytes (completionObjectStore validated in the preflight above).
-      await completeAndVerify(input, record, acquisition, true);
-    } else if (acquisition.complete !== true) {
-      // B2-direct, ZERO masters, and the adapter did NOT affirm completeness.
-      // A B2-direct acquire whose adapter neither mirrored a master NOR reported
-      // `complete: true` is an incomplete acquire, not a legitimate catalog-only
-      // outcome -- fail loud rather than blessing a zero-master success
-      // (AUDIT-20260720-05). (`--dry-run`, the other empty-assets producer, is
-      // already excluded above.)
-      throw new Error(
-        `acquire: ${adapter.repository} acquire produced ZERO object-store masters and did not ` +
-          `report the item complete (complete: ${String(acquisition.complete)}) -- refusing to ` +
-          `report a successful acquire for a copy that mirrored nothing and is not a deliberate ` +
-          `catalog-only outcome (Principle XV).`,
-      );
-    }
-    // else: a B2-direct outcome the adapter AFFIRMED complete with ZERO masters
-    // -- the documented catalog-only / metadata-only shape (e.g. the New Italy
-    // Museum HTML-only path: `masterImageUrl === null` -> `assets: [],
-    // complete: true`). There are no object-store bytes to orphan; the persist
-    // block above already recorded any `metadataSnapshotRef` (AUDIT-20260720-01),
-    // so the record reflects everything acquired. Nothing to reconcile/HEAD, and
-    // it is NOT routed into the Gallica archive-provenance path
-    // (AUDIT-20260719-02). Status stays as authored (no master was collected).
-  }
+  // Persist the adapter's durable output onto the SSOT + write master companions
+  // (spec 011/013; snapshot decoupled per AUDIT-20260720-01), then complete the
+  // record as an inseparable part of the acquire (reconcile status + verify;
+  // spec 016, Principle XV). Both are `--dry-run`-exempt internally.
+  await persistAcquisition({
+    sourcesDir: input.sourcesDir,
+    source,
+    authoredRecords,
+    record,
+    acquisition,
+    companionArchiveRoot: input.companionArchiveRoot,
+    companionObjectStore: input.companionObjectStore,
+  });
+  await completeAcquisition(input, record, adapter, acquisition);
 
   // `adapter.acquire` succeeded, so the record carried the identifier its
   // dispatch keyed on (the registry would have thrown otherwise); read it back
