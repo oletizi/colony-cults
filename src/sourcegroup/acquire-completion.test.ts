@@ -91,6 +91,13 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
         completionObjectStore: objectStore,
       }),
     ).rejects.toThrow(/status|archived|missing|advance/i);
+
+    // The failure must NOT leave a falsely-advanced status on disk
+    // (AUDIT-20260720-10): the record stays `to-collect`, never `archived`.
+    const record = loadAllSources(dir)
+      .find((l) => l.source.sourceId === 'PB-P200')
+      ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
+    expect(record?.status).toBe('to-collect');
   });
 
   it('T007/US2: a B2-direct acquire whose stored checksum MISMATCHES the recorded master fails loud', async () => {
@@ -111,6 +118,12 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
         completionObjectStore: objectStore,
       }),
     ).rejects.toThrow(/mismatch|checksum|sha256/i);
+
+    // A mismatched master must never advance the status (AUDIT-20260720-10).
+    const record = loadAllSources(dir)
+      .find((l) => l.source.sourceId === 'PB-P200')
+      ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
+    expect(record?.status).toBe('to-collect');
   });
 
   it('T007/US2: re-running acquire over an assets-recorded-but-unadvanced record heals it with 0 duplicate object-store writes', async () => {
@@ -390,5 +403,11 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
         completionObjectStore: fakeObjectStore({}),
       }),
     ).rejects.toThrow(/ZERO object-store masters|not report the item complete|Principle XV/i);
+
+    // The failure leaves the record unadvanced (AUDIT-20260720-10).
+    const record = loadAllSources(dir)
+      .find((l) => l.source.sourceId === 'PB-P200')
+      ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
+    expect(record?.status).toBe('to-collect');
   });
 });

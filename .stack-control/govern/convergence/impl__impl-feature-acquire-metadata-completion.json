@@ -3,7 +3,7 @@
   "mode": "impl",
   "item": "impl:feature/acquire-metadata-completion",
   "governedShaBase": "d8171d6",
-  "headSha": "90dea82369512917f0501e211b476628181dbfd8",
+  "headSha": "05eef7aa0436343d1000eb0344b42e06754748ee",
   "chunkIds": [
     "07cdb1abe8a68828",
     "2c9bacfeeaaa6c6c",
@@ -16,13 +16,8 @@
   "rounds": 1,
   "liftedFindings": [
     {
-      "id": "2c9bacfeeaaa6c6c::AUDIT-BARRAGE-claude-01",
-      "title": "completeAcquisition advances-then-verifies: a verify failure leaves a falsely-`collected` status persisted on disk",
-      "severity": "high"
-    },
-    {
-      "id": "31ca4a6640a7b71e::AUDIT-BARRAGE-claude-01",
-      "title": "The completeness verifier never reads `record.status`; it gates on the in-memory `ctx.reconciled.status`, reopening exactly the divergent-in-memory-shape hole AUDIT-20260720-07 closed",
+      "id": "ebd0db0d480a3f9b::AUDIT-BARRAGE-claude-01",
+      "title": "Fail-loud negative tests assert the throw but never assert the persisted record stayed unadvanced",
       "severity": "high"
     }
   ],

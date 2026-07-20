@@ -305,3 +305,22 @@ A correct fix asserts the record's own persisted status: throw unless `record.st
 
 - **AUDIT-20260720-09** — FIXED. `verifyRecordComplete` gated both status checks on the in-memory `ctx.reconciled.status`, never the persisted `record.status` — so a reconcile that reported a status but failed to persist it would pass. The verifier now judges the record's OWN persisted `status` (the caller hands it the disk-reloaded record) AND cross-checks `record.status === ctx.reconciled.status`, so a status advance that did not land fails loud. Two regression fixtures added (divergent report-vs-persisted; a non-archived persisted B2 status).
 - **AUDIT-20260720-08** — RESOLVED by the AUDIT-09 fix. The advance-then-verify ordering cannot leave a falsely-advanced status once the verifier gates on the PERSISTED status: reconcile and verify share the same head+checksum advancement criterion (reconcile throws on a checksum mismatch and only advances when every recorded asset heads present + matching; the museum path iterates the full asset set), so a verify that throws implies the status was never advanced (still `to-collect`), and the new cross-check catches any report-vs-persist divergence. There is no reachable path where reconcile persists an advanced status while verify then throws.
+
+## 2026-07-20 — audit-barrage lift (end-govern-after_implement)
+
+### AUDIT-20260720-10 — Fail-loud negative tests assert the throw but never assert the persisted record stayed unadvanced
+
+Finding-ID: AUDIT-20260720-10
+Status:     open
+Severity:   high
+Per-lane:   claude=high
+Decision:   adjudicated (gate-counted high) — blast-radius=high, reachability=unstated, fix-debt=no; no down-calibration signal — high retained.
+Surface:    src/sourcegroup/acquire-completion.test.ts:74-110, 362-394 (tests: master-missing, checksum-mismatch, complete:false)
+
+The three negative B2-direct tests verify only that `runAcquire` rejects — they never re-load the sources dir and assert the record was left `to-collect`. This is exactly the invariant this feature spent its last three commits welding down: "verify the PERSISTED record.status." Consider a regression where the completion tail advances the record to `archived` on disk *first* and only *then* runs the master-present / checksum verification and throws. All three tests (`fakeObjectStore({})` → master missing; stored `sha256:'d'*64` → mismatch; `complete:false` → zero-master) would still pass on the `rejects.toThrow` alone, while leaving precisely the orphan the spec forbids — an `archived`-status record whose master is absent or checksum-mismatched. The blast radius is high: an unattended agent refactoring `acquire.ts` (advance/verify ordering, transaction boundaries) gets a green suite while shipping the orphan-status corruption Principle XV exists to prevent, because the negative path's *only observable* is the exception, not the surviving on-disk state.
+
+The fix mirrors the positive tests: after each `await expect(...).rejects.toThrow(...)`, `loadAllSources(dir)` and assert `record?.status === 'to-collect'` and (for the missing/mismatch cases) that no divergent `metadataSnapshot`/`assets` were persisted. Test 1 already demonstrates the load-and-assert pattern; the negative tests should apply it to the failure path, which is where the corruption actually lands.
+
+## 2026-07-20 — dispositions (round 12 finding)
+
+- **AUDIT-20260720-10** — FIXED (test). The three fail-loud B2-direct negatives (master-missing, checksum-mismatch, complete:false) asserted only `rejects.toThrow` and never that the on-disk record stayed unadvanced, so a regression that advanced status before verifying would pass green while leaving an orphan. Each negative now re-loads the sources dir after the throw and asserts `record.status === 'to-collect'`. This also empirically confirms the AUDIT-08 resolution — a failed acquire leaves no falsely-advanced status.
