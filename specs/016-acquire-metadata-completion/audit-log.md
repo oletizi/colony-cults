@@ -168,3 +168,50 @@ The downstream blast radius is high because this verifier is the fail-loud gate 
 ## 2026-07-20 — dispositions (round 6 finding)
 
 - **AUDIT-20260720-02** — FIXED. The B2-direct verifier iterated only `objectStoreMasters()` (assets WITH a non-empty `objectStoreKey`), so a record with one valid asset plus one asset missing its key passed while silently ignoring the malformed one (the zero-master guard only caught the all-missing case). The verifier now iterates the FULL recorded asset set and fails loud on any asset missing its `objectStoreKey` or `checksum` before HEADing — no partial omission slips through. Two regression fixtures added.
+
+## 2026-07-20 — audit-barrage lift (end-govern-after_implement)
+
+### AUDIT-20260720-03 — Per-page path silently skips verification when assets are present
+
+Finding-ID: AUDIT-20260720-03
+Status:     open
+Severity:   high
+Per-lane:   codex=high
+Decision:   single-model (gate-counted high)
+Surface:    src/sourcegroup/acquire-completeness.ts:157-168
+
+The `isB2Direct === false` branch treats the record as per-page-provenance and only checks that `ctx.reconciled.status` is `collected` or `archived`. It does not assert that `assets` is empty, even though the documented Gallica/per-page shape is explicitly `assets: []` and “acquired no object-store masters” in the error text. That means a caller bug, bad migration, or malformed record with recorded object-store assets plus `isB2Direct: false` will bypass every `objectStoreKey`, `checksum`, and `ObjectStore.head` check and still report complete.
+
+Blast radius is high because this verifier is the fail-loud completion gate: a downstream acquire can be reported complete while recorded masters are missing or corrupt, which directly breaks the stated “FULL asset set” / no-orphan-assets guarantee. A reasonable fix is to make the false branch enforce its invariant, e.g. reject `assets.length > 0` for per-page-provenance unless there is a separately modeled, verified non-B2 asset shape.
+
+### AUDIT-20260720-04 — B2 dry-runs still construct B2 adapters before the dry-run exemption applies
+
+Finding-ID: AUDIT-20260720-04
+Status:     open
+Severity:   high
+Per-lane:   codex=high
+Decision:   single-model (gate-counted high)
+Surface:    src/cli/bib-sourcegroup-acquire.ts:203-250
+
+The new dry-run exemption only delays `resolveObjectStoreConfig()` for the completion object store at lines 237-250, but the CLI has already called `buildMuseumAdapterForMember`, `buildInternetArchiveAdapterForMember`, and `buildPapersPastAdapterForMember` at lines 203-209. For a selected B2-direct record, those builders construct the real adapter and resolve B2/private archive dependencies before `completionDeps` is computed. In particular, the museum and Papers Past builders resolve B2 config while building their adapters, and the IA builder resolves both archive root and B2 config. So `bib acquire <B2-direct id> --dry-run` can still fail in a fresh metadata-only environment even though lines 231-250 state dry-run “MUST NOT depend on that configuration.”
+
+Blast radius is high because this is a user-visible correctness defect in the advertised dry-run path and in the explicit AUDIT-20260719-08 fix surface: an operator validating a B2-direct acquire without private config will fail before the acquire dry-run can run. A reasonable fix is to thread dry-run into the adapter-builder decision, or provide dry-run-capable lightweight adapters that do not resolve B2/archive dependencies until a real mirror is requested.
+
+### AUDIT-20260720-05 — Zero-asset B2-direct success tests encode a contract contradiction
+
+Finding-ID: AUDIT-20260720-05
+Status:     open
+Severity:   high
+Per-lane:   codex=high
+Decision:   single-model (gate-counted high)
+Surface:    src/sourcegroup/acquire.test.ts:1009-1060, src/sourcegroup/acquire.test.ts:1063-1105
+
+The new tests assert that B2-direct acquires with `assets: []` should succeed, persist only a snapshot, or leave status untouched. That conflicts with the verifier contract introduced for spec 016: B2-direct completion is supposed to prove object-store-backed masters are present and advance status to `archived`; zero B2-direct masters are an incompleteness, not a completed acquire. The tests at lines 1009-1060 and 1063-1105 make this no-op/snapshot-only path a blessed behavior.
+
+Blast radius is high because these tests are executable specification for future implementation work. A downstream agent can reasonably preserve this behavior and bypass the completion verifier for B2-direct zero-master outcomes, causing `runAcquire` to report success while the SSOT remains `to-collect` or only partially updated. A reasonable fix is to align the tests with the invariant: B2-direct non-dry-run outcomes either produce verifiable masters and advance to `archived`, or fail loud with a specific completeness error.
+
+## 2026-07-20 — dispositions (round 7 findings)
+
+- **AUDIT-20260720-03** — FIXED. The per-page-provenance (isB2Direct:false) verifier branch now asserts its invariant: a per-page copy carrying object-store assets fails loud (its bytes would otherwise bypass every objectStoreKey/checksum/HEAD check). Regression fixture added.
+- **AUDIT-20260720-04** — PARTIAL / SCOPED. My AUDIT-08 comment overclaimed that dry-run is fully config-free. Corrected: spec 016 no longer makes dry-run resolve archive/B2 config (Gallica dry-run in particular), but the PRE-EXISTING B2 adapter builders (specs 011/013/015) resolve B2 config while constructing the adapter regardless of --dry-run. Making those builders dry-run-lightweight is a cross-adapter change out of this feature's scope — filed as backlog TASK-48 (dry-run-lightweight-b2-adapter-builders). Comment corrected to not overclaim.
+- **AUDIT-20260720-05** — RESOLVED (working-as-intended, guarded + clarified). A zero-master B2-direct outcome is LEGITIMATE for the documented museum HTML-only path (`masterImageUrl === null` -> `assets: [], complete: true`), so failing it loud would break a real adapter path. But codex's concern (zero-master must not BLINDLY pass) is now guarded: a zero-master B2-direct outcome succeeds ONLY when the adapter AFFIRMS `complete: true`; `complete: false` fails loud. Tests clarified to cite the museum HTML-only path + the complete-flag guard; a fail-loud fixture for `complete: false` added.

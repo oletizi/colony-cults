@@ -228,12 +228,21 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
     // its `reconcileArchiveRoot`/`gather`).
     const isB2Direct =
       museumAdapter !== undefined || internetArchiveAdapter !== undefined || papersPastAdapter !== undefined;
-    // Completion + companion machinery needs private archive/B2 configuration
-    // (`resolveObjectStoreConfig` / `resolveArchiveRoot` both fail loud when
-    // their env is unset). A `--dry-run` mirrors nothing and runAcquire's tail is
-    // exempt, so it MUST NOT depend on that configuration (AUDIT-20260719-08):
-    // resolve these ONLY for a real (non-dry-run) acquire. `bib acquire <id>
-    // --dry-run` therefore works in a fresh / metadata-only environment.
+    // The completion + companion machinery THIS feature added needs private
+    // archive/B2 configuration (`resolveObjectStoreConfig` / `resolveArchiveRoot`
+    // both fail loud when their env is unset). A `--dry-run` mirrors nothing and
+    // runAcquire's tail is exempt, so spec 016 does NOT make it resolve that
+    // configuration (AUDIT-20260719-08): resolve these ONLY for a real
+    // (non-dry-run) acquire. In particular a Gallica `--dry-run` no longer
+    // resolves the archive root.
+    //
+    // NOTE (AUDIT-20260720-04): this does NOT make a B2-direct `--dry-run` fully
+    // config-free -- the PRE-EXISTING B2 adapter builders above
+    // (`build{Museum,InternetArchive,PapersPast}AdapterForMember`, specs
+    // 011/013/015) resolve B2/archive config while CONSTRUCTING the adapter,
+    // regardless of `--dry-run`. Making those builders dry-run-lightweight is a
+    // cross-adapter change tracked in the backlog (see TASK for
+    // `dry-run-lightweight-b2-adapter-builders`), out of this feature's scope.
     const objectStoreConfig = !dryRun && isB2Direct ? resolveObjectStoreConfig() : undefined;
 
     // Completion tail dependencies (spec 016, Principle XV): give runAcquire the

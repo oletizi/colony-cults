@@ -1060,13 +1060,17 @@ describe('runAcquire', () => {
     expect(record?.assets).toBeUndefined();
   });
 
-  it('AUDIT-02: a zero-asset B2-direct acquire (HTML-only outcome) is NOT misrouted into the Gallica provenance path -- no throw, status untouched', async () => {
+  it('AUDIT-02/AUDIT-05: a zero-asset B2-direct acquire the adapter AFFIRMS complete (museum HTML-only) succeeds, is NOT misrouted to Gallica, and leaves status untouched', async () => {
     dir = await seedSourcesDir([
       { source: museumMember(), records: [museumAuthoredRecord()] },
     ]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
-    // A B2-direct adapter that legitimately mirrors NO master (assets: []),
-    // like the museum HTML-only path (complete: true, no bytes).
+    // The DOCUMENTED museum HTML-only outcome: `masterImageUrl === null` ->
+    // `assets: [], complete: true` (src/repository/new-italy-museum/adapter.ts).
+    // This is a legitimate catalog-only acquire (mirror nothing), NOT an
+    // incomplete acquire -- succeeding is correct because `complete: true` is
+    // affirmed and there are no object-store bytes to orphan (AUDIT-20260720-05).
+    // `acquiringMuseumAdapter` returns `complete: true`.
     const adapter = acquiringMuseumAdapter([]);
     // A store whose head THROWS if consulted -- proving we neither run the B2
     // completion (nothing mirrored) nor misroute to the Gallica provenance path
@@ -1103,6 +1107,43 @@ describe('runAcquire', () => {
       .find((l) => l.source.sourceId === 'PB-P200')
       ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
     expect(record?.status).toBe('to-collect');
+  });
+
+  it('AUDIT-05: a zero-master B2-direct acquire the adapter did NOT affirm complete (complete: false) fails loud -- not blessed as success', async () => {
+    dir = await seedSourcesDir([
+      { source: museumMember(), records: [museumAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    // A B2-direct adapter that mirrored no master AND did not report the item
+    // complete -- an incomplete acquire, not a deliberate catalog-only outcome.
+    const adapter: RepositoryAdapter = {
+      repository: 'new-italy-museum',
+      async resolve() {
+        throw new Error('unused');
+      },
+      async collectRightsEvidence() {
+        throw new Error('unused');
+      },
+      async acquire(record) {
+        return {
+          repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
+          assets: [],
+          metadataSnapshot: { raw: '', retrievedAt: '2026-07-14T00:00:00.000Z' },
+          complete: false,
+          reconciliationRequired: true,
+        };
+      },
+    };
+
+    await expect(
+      runAcquire({
+        sourcesDir: dir,
+        sourceId: 'PB-P200',
+        fetch,
+        museumAdapter: adapter,
+        completionObjectStore: fakeObjectStore({}),
+      }),
+    ).rejects.toThrow(/ZERO object-store masters|not report the item complete|Principle XV/i);
   });
 
   it('scenario 4: the source-group itself (e.g. PB-P004) is refused before any fetch is attempted, relying on the approved-status precondition -- no guardrail is reimplemented here', async () => {

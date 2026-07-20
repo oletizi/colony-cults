@@ -206,6 +206,17 @@ describe('verifyRecordComplete', () => {
     ).rejects.toThrow(/B2-direct|ZERO|master/i);
   });
 
+  it('AUDIT-20260720-03: THROWS when a per-page-provenance (isB2Direct:false) record carries object-store assets (its bytes would go unverified)', async () => {
+    const store = fakeObjectStore({ [master().objectStoreKey]: { sha256: CHECKSUM } });
+    await expect(
+      verifyRecordComplete(gallicaRecord({ assets: [master()] }), {
+        objectStore: store,
+        isB2Direct: false,
+        reconciled: { status: 'collected', advanced: true },
+      }),
+    ).rejects.toThrow(/per-page|object-store asset|unverified/i);
+  });
+
   it('AUDIT-04: an explicit isB2Direct:false verifies a zero-asset record via the per-page-provenance rule (empty assets OK)', async () => {
     const store = fakeObjectStore({});
     await expect(

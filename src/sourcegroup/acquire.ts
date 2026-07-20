@@ -566,9 +566,11 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   // `--dry-run` is exempt (the adapter mirrored nothing -- nothing to complete).
   // Otherwise the tail FAILS LOUD when its required machinery is absent -- it is
   // NEVER silently skipped for a copy that needs completing (the exact XV hole
-  // AUDIT-20260719-01 named). The only safe no-op is a B2-direct outcome that
-  // mirrored ZERO masters (a metadata/HTML-only cataloging outcome): there are
-  // no object-store bytes to orphan, so there is nothing to complete or verify.
+  // AUDIT-20260719-01 named). The only safe no-op is a B2-direct outcome the
+  // adapter AFFIRMED `complete: true` with ZERO masters (the documented
+  // catalog-only / metadata-only shape): there are no object-store bytes to
+  // orphan, so there is nothing to complete or verify. A zero-master B2-direct
+  // outcome the adapter did NOT affirm complete fails loud (AUDIT-20260720-05).
   if (input.dryRun !== true) {
     if (!isB2Direct) {
       // Per-page-provenance (Gallica): reconcile the fetched copy to its acquired
@@ -578,21 +580,28 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
       // B2-direct with mirrored masters: complete + verify those object-store
       // bytes (completionObjectStore validated in the preflight above).
       await completeAndVerify(input, record, acquisition, true);
+    } else if (acquisition.complete !== true) {
+      // B2-direct, ZERO masters, and the adapter did NOT affirm completeness.
+      // A B2-direct acquire whose adapter neither mirrored a master NOR reported
+      // `complete: true` is an incomplete acquire, not a legitimate catalog-only
+      // outcome -- fail loud rather than blessing a zero-master success
+      // (AUDIT-20260720-05). (`--dry-run`, the other empty-assets producer, is
+      // already excluded above.)
+      throw new Error(
+        `acquire: ${adapter.repository} acquire produced ZERO object-store masters and did not ` +
+          `report the item complete (complete: ${String(acquisition.complete)}) -- refusing to ` +
+          `report a successful acquire for a copy that mirrored nothing and is not a deliberate ` +
+          `catalog-only outcome (Principle XV).`,
+      );
     }
-    // else if the adapter emitted a metadata snapshot with ZERO masters
-    // (a snapshot-only outcome): the persist block above ALREADY recorded the
-    // `metadataSnapshotRef` on the SSOT record, so the durable snapshot is
-    // reflected -- NOT orphaned (AUDIT-20260720-01). There are no object-store
-    // masters to advance a status from or to HEAD, so recording the snapshot IS
-    // its completion; nothing further to reconcile/verify. Throwing here would
-    // have refused success while the snapshot (already written by the adapter)
-    // stayed recorded anyway -- a false alarm, not a safeguard. No shipped
-    // adapter currently produces this shape.
-    //
-    // else (a B2-direct outcome that mirrored NO masters AND emitted no durable
-    // snapshot): no object-store bytes exist to orphan, so there is provably
-    // nothing to complete/verify (not routed into the Gallica archive-provenance
-    // path; AUDIT-20260719-02).
+    // else: a B2-direct outcome the adapter AFFIRMED complete with ZERO masters
+    // -- the documented catalog-only / metadata-only shape (e.g. the New Italy
+    // Museum HTML-only path: `masterImageUrl === null` -> `assets: [],
+    // complete: true`). There are no object-store bytes to orphan; the persist
+    // block above already recorded any `metadataSnapshotRef` (AUDIT-20260720-01),
+    // so the record reflects everything acquired. Nothing to reconcile/HEAD, and
+    // it is NOT routed into the Gallica archive-provenance path
+    // (AUDIT-20260719-02). Status stays as authored (no master was collected).
   }
 
   // `adapter.acquire` succeeded, so the record carried the identifier its

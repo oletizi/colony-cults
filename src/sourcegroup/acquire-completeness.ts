@@ -155,9 +155,23 @@ export async function verifyRecordComplete(
       }
     }
   } else {
-    // Per-page-provenance (Gallica, empty assets): the archive-provenance path
-    // is the master record. Complete when reconcile advanced `status` to an
-    // acquired value; an empty asset list is NOT a failure (FR-008).
+    // Per-page-provenance (Gallica): the archive-provenance path is the master
+    // record, so this shape's INVARIANT is an empty object-store asset list. A
+    // per-page record carrying object-store assets is malformed (a caller/kind
+    // bug or bad migration) and MUST fail loud rather than bypass every
+    // objectStoreKey/checksum/HEAD check the B2-direct branch would run
+    // (AUDIT-20260720-03).
+    if (assets.length > 0) {
+      throw new Error(
+        `acquire-completeness: ${where} is a per-page-provenance (Gallica) copy but carries ` +
+          `${assets.length} object-store asset(s) -- a per-page copy's masters are archive ` +
+          `provenance, not object-store assets, so this record's kind and shape disagree and its ` +
+          `object-store bytes would go UNVERIFIED (Principle XV). Its kind (isB2Direct) or its ` +
+          `recorded assets are wrong.`,
+      );
+    }
+    // Complete when reconcile advanced `status` to an acquired value; an empty
+    // asset list is NOT a failure (FR-008).
     if (!ACQUIRED_STATUSES.has(ctx.reconciled.status)) {
       throw new Error(
         `acquire-completeness: ${where} acquired no object-store masters (per-page-provenance ` +

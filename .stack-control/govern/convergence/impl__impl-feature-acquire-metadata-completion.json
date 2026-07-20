@@ -3,18 +3,29 @@
   "mode": "impl",
   "item": "impl:feature/acquire-metadata-completion",
   "governedShaBase": "d8171d6",
-  "headSha": "452482e5de0b7584dc0b1ad91680579cc225b91c",
+  "headSha": "6709f7132699a20940140aeb2f3f67cb15a2de0b",
   "chunkIds": [
     "2c9bacfeeaaa6c6c",
-    "9c08e223058cd9ed",
+    "3d4e129ddd799ffe",
+    "def77d578a8255b6",
     "e6348290a1d854d7",
     "e6bcee6fc31c4cdd"
   ],
   "rounds": 1,
   "liftedFindings": [
     {
-      "id": "9c08e223058cd9ed::AUDIT-BARRAGE-codex-01",
-      "title": "B2-direct completeness silently ignores recorded assets without objectStoreKey",
+      "id": "3d4e129ddd799ffe::AUDIT-BARRAGE-codex-01",
+      "title": "Per-page path silently skips verification when assets are present",
+      "severity": "high"
+    },
+    {
+      "id": "def77d578a8255b6::AUDIT-BARRAGE-codex-01",
+      "title": "B2 dry-runs still construct B2 adapters before the dry-run exemption applies",
+      "severity": "high"
+    },
+    {
+      "id": "e6bcee6fc31c4cdd::AUDIT-BARRAGE-codex-01",
+      "title": "Zero-asset B2-direct success tests encode a contract contradiction",
       "severity": "high"
     }
   ],
@@ -23,7 +34,11 @@
     "boundaryPairs": [
       {
         "a": "2c9bacfeeaaa6c6c",
-        "b": "9c08e223058cd9ed"
+        "b": "3d4e129ddd799ffe"
+      },
+      {
+        "a": "2c9bacfeeaaa6c6c",
+        "b": "def77d578a8255b6"
       },
       {
         "a": "2c9bacfeeaaa6c6c",
@@ -34,11 +49,23 @@
         "b": "e6bcee6fc31c4cdd"
       },
       {
-        "a": "9c08e223058cd9ed",
+        "a": "3d4e129ddd799ffe",
+        "b": "def77d578a8255b6"
+      },
+      {
+        "a": "3d4e129ddd799ffe",
         "b": "e6348290a1d854d7"
       },
       {
-        "a": "9c08e223058cd9ed",
+        "a": "3d4e129ddd799ffe",
+        "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "def77d578a8255b6",
+        "b": "e6348290a1d854d7"
+      },
+      {
+        "a": "def77d578a8255b6",
         "b": "e6bcee6fc31c4cdd"
       },
       {
