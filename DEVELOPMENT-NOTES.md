@@ -1,3 +1,41 @@
+## 2026-07-20: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 17
+  - workflow(graduate): impl:feature/acquire-metadata-completion merging -> validating
+  - chore(016-acquire-metadata-completion): record whole-feature govern convergence
+  - test(016-acquire-metadata-completion): museum fixtures model the production role/convergence seam (AUDIT-20260720-11)
+  - test(016-acquire-metadata-completion): negative fail-loud tests assert the on-disk status stayed to-collect (AUDIT-20260720-10)
+  - fix(016-acquire-metadata-completion): verifier judges the PERSISTED record.status, cross-checked against reconcile (AUDIT-20260720-08/09)
+  - fix(016-acquire-metadata-completion): verify the on-disk record, not a divergent in-memory shape (AUDIT-20260720-07)
+  - refactor(016-acquire-metadata-completion): split oversized files under the 500-line/envelope cap (Constitution VI)
+  - test(016-acquire-metadata-completion): assert adapter-side idempotency on orphan-heal re-run (AUDIT-20260720-06)
+  - fix(016-acquire-metadata-completion): per-page empty-assets invariant + complete-flag guard for zero-master B2 + dry-run comment (AUDIT-20260720-03/04/05)
+  - fix(016-acquire-metadata-completion): B2-direct verifier validates the FULL asset set, not a key-present subset (AUDIT-20260720-02)
+  - fix(016-acquire-metadata-completion): record snapshot-only output instead of failing loud after the fact (AUDIT-20260720-01)
+  - fix(016-acquire-metadata-completion): preflight completion machinery + required isB2Direct + dry-run config exemption (AUDIT-20260719-06/07/08)
+  - fix(016-acquire-metadata-completion): thread explicit adapter kind end-to-end (AUDIT-20260719-03/04/05)
+  - fix(016-acquire-metadata-completion): explicit adapter-kind path selection + fail-loud (AUDIT-20260719-01/02)
+  - feat(016-acquire-metadata-completion): wire CLI completion deps + repair-only docs + tasks (T009-T011)
+  - feat(016-acquire-metadata-completion): weld the completion tail into runAcquire (T004-T008)
+  - feat(016-acquire-metadata-completion): pure per-repository completeness verifier (T002/T003)
+- Files changed: 19
+- Backlog touched: TASK-48
+
 ## 2026-07-19: Spec 015 (Papers Past) executed + first LIVE acquisition; the acquire metadata gap became Constitution Principle XV + spec 016
 
 **Goal:** "Pick up last session" — finish executing spec 015 (Papers Past acquisition adapter). It grew, by what each step demanded: execute 015, then actually *acquire* (which surfaced real bugs the hermetic tests structurally could not), then — on the operator's "the metadata is the whole point" — fix the record-completeness gaps, recognize the recurring failure as **constitutional** (Principle XV), and author the next feature (016) that mechanically enforces it. Also designed the Papers Past census (spec 016 discovery work) and closed the session.
