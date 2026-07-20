@@ -1,6 +1,6 @@
 import { parseArgs as nodeParseArgs } from 'node:util';
 
-/** Commands recognized by the gallica CLI (see contracts/cli.md). */
+/** Commands recognized by the CLI (see contracts/cli.md). */
 export type Command =
   | 'census'
   | 'fetch-issue'
@@ -43,7 +43,7 @@ export function parseCheckpointEvery(raw: string | undefined): number | undefine
   const n = Number(raw);
   if (!Number.isInteger(n) || n < 1) {
     throw new Error(
-      `gallica: --checkpoint-every must be a positive integer (got "${raw}")`,
+      `--checkpoint-every must be a positive integer (got "${raw}")`,
     );
   }
   return n;
@@ -178,19 +178,19 @@ export function parse(argv: string[]): ParsedArgs {
 
   if (commandArg === undefined) {
     throw new Error(
-      `gallica: missing command (expected one of: ${COMMANDS.join(', ')})`,
+      `missing command (expected one of: ${COMMANDS.join(', ')})`,
     );
   }
 
   if (!isCommand(commandArg)) {
     throw new Error(
-      `gallica: unknown command "${commandArg}" (expected one of: ${COMMANDS.join(', ')})`,
+      `unknown command "${commandArg}" (expected one of: ${COMMANDS.join(', ')})`,
     );
   }
 
   if (rest.length === 0) {
     throw new Error(
-      `gallica ${commandArg}: missing required argument <${REQUIRED_POSITIONAL_NAME[commandArg]}>`,
+      `${commandArg}: missing required argument <${REQUIRED_POSITIONAL_NAME[commandArg]}>`,
     );
   }
 
