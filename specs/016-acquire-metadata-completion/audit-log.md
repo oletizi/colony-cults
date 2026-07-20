@@ -234,3 +234,33 @@ The blast radius is high because this test can bless a non-idempotent rerun path
 ## 2026-07-20 — dispositions (round 8 finding)
 
 - **AUDIT-20260720-06** — FIXED (test). The idempotent re-run test asserted "0 duplicate object-store writes" via the COMPLETION store's putCount, which is heads-only and therefore vacuously 0 — it never proved the ADAPTER did not re-mirror already-held bytes. Replaced the fixture with `idempotentMuseumAdapter`, which models the shipped adapter's content-addressed INV-E (short-circuit when the master is already recorded + present) and instruments its own mirror path; the re-run test now asserts `mirrorCount() === 0` (adapter did not re-fetch/re-upload) in addition to status healing to archived. Adapter-level idempotency itself is still owned + tested by the adapter's own suite; this asserts runAcquire's re-run drives that short-circuit rather than forcing a re-mirror.
+
+## 2026-07-20 — audit-barrage lift (end-govern-after_implement)
+
+### AUDIT-20260720-07 — completeAndVerify verifies an in-memory record shape that drops `qualityAssessment`/`excludedLeaves` that `persistAcquisition` wrote to disk
+
+Finding-ID: AUDIT-20260720-07
+Status:     open
+Severity:   high
+Per-lane:   claude=high
+Decision:   single-model (gate-counted high)
+Surface:    src/sourcegroup/acquire-complete.ts:55-66 (completeAndVerify's `completedRecord`) vs :129-165 (`persistAcquisition`'s `updatedRecords`)
+
+`persistAcquisition` writes the acquired record to the SSOT with four adapter-authored fields — `assets`, `qualityAssessment`, `excludedLeaves`, and `metadataSnapshot`. But `completeAndVerify` reconstructs a *separate* in-memory `completedRecord` for `verifyRecordComplete` that spreads only **two** of them:
+
+```js
+const completedRecord: RepositoryRecord = {
+  ...record,
+  ...(acquisition.assets.length > 0 ? { assets: acquisition.assets } : {}),
+  ...(acquisition.metadataSnapshotRef !== undefined
+    ? { metadataSnapshot: acquisition.metadataSnapshotRef } : {}),
+};
+```
+
+`qualityAssessment` and `excludedLeaves` are silently omitted. `verifyRecordComplete` trusts the record it is *handed* (it is not re-loaded from disk — otherwise the param would be pointless), so the verifier sees a shape that has already drifted from what was persisted. This is duplicated record-shape construction (persist builds it once with four fields, complete rebuilds it with two) that has *already* diverged — the exact bug-factory the project guidelines warn about.
+
+Blast radius: if `verifyRecordComplete` (in the sibling chunk `acquire-completeness.ts`, not visible here) derives its expected-vs-held asset count from `excludedLeaves` — the natural way to express "N pages total minus K deliberately-excluded = expected masters" — then verifying against a record *missing* `excludedLeaves` yields the wrong expected count and a wrong verdict. A false-complete verdict is precisely the Principle XV orphan-slips-through failure this feature exists to prevent; a false-incomplete verdict fails a good acquire loud. This escalates to `blocking` if `acquire-completeness.ts` references either field, and is at minimum a latent fragility today. Fix: build the completed shape **once** (share a helper with `persistAcquisition`, or have `completeAndVerify` re-load the just-persisted record) so verify can never diverge from what was written.
+
+## 2026-07-20 — dispositions (round 10 finding)
+
+- **AUDIT-20260720-07** — FIXED. `completeAndVerify` reconstructed a separate in-memory record (only `assets` + `metadataSnapshot`), dropping `qualityAssessment`/`excludedLeaves` that `persistAcquisition` wrote — a duplicated, already-diverged record shape (latent today: the verifier does not yet read those fields, but a bug-factory). Now `completeAndVerify` RE-LOADS the just-persisted + reconciled record from disk and verifies THAT (the single source of truth), so the verifier can never judge a shape that drifted from what was written. (Round 9 also FATALed govern on file size — acquire.ts/acquire.test.ts exceeded the 500-line/24576-byte envelope; split into acquire-fixtures.ts + acquire-completion.test.ts and extracted the completion machinery into acquire-complete.ts, no behavior change.)

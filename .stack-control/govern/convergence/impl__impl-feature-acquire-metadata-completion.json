@@ -3,19 +3,21 @@
   "mode": "impl",
   "item": "impl:feature/acquire-metadata-completion",
   "governedShaBase": "d8171d6",
-  "headSha": "4e81aabf4bc1b2c492b3e70250e57fbf9a51314b",
+  "headSha": "1ebf776b0fa3a5c06d9f333f812d7bbdd10698d5",
   "chunkIds": [
+    "07cdb1abe8a68828",
     "2c9bacfeeaaa6c6c",
-    "3d4e129ddd799ffe",
-    "def77d578a8255b6",
+    "31ca4a6640a7b71e",
+    "bd7774c09db89a37",
     "e6348290a1d854d7",
-    "e6bcee6fc31c4cdd"
+    "e6bcee6fc31c4cdd",
+    "ebd0db0d480a3f9b"
   ],
   "rounds": 1,
   "liftedFindings": [
     {
-      "id": "e6bcee6fc31c4cdd::AUDIT-BARRAGE-codex-02",
-      "title": "Idempotency test measures only the completion store, not duplicate acquire writes",
+      "id": "bd7774c09db89a37::AUDIT-BARRAGE-claude-01",
+      "title": "completeAndVerify verifies an in-memory record shape that drops `qualityAssessment`/`excludedLeaves` that `persistAcquisition` wrote to disk",
       "severity": "high"
     }
   ],
@@ -23,12 +25,36 @@
   "seamResult": {
     "boundaryPairs": [
       {
-        "a": "2c9bacfeeaaa6c6c",
-        "b": "3d4e129ddd799ffe"
+        "a": "07cdb1abe8a68828",
+        "b": "2c9bacfeeaaa6c6c"
+      },
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "31ca4a6640a7b71e"
+      },
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "bd7774c09db89a37"
+      },
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "e6348290a1d854d7"
+      },
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "ebd0db0d480a3f9b"
       },
       {
         "a": "2c9bacfeeaaa6c6c",
-        "b": "def77d578a8255b6"
+        "b": "31ca4a6640a7b71e"
+      },
+      {
+        "a": "2c9bacfeeaaa6c6c",
+        "b": "bd7774c09db89a37"
       },
       {
         "a": "2c9bacfeeaaa6c6c",
@@ -39,35 +65,55 @@
         "b": "e6bcee6fc31c4cdd"
       },
       {
-        "a": "3d4e129ddd799ffe",
-        "b": "def77d578a8255b6"
+        "a": "2c9bacfeeaaa6c6c",
+        "b": "ebd0db0d480a3f9b"
       },
       {
-        "a": "3d4e129ddd799ffe",
+        "a": "31ca4a6640a7b71e",
+        "b": "bd7774c09db89a37"
+      },
+      {
+        "a": "31ca4a6640a7b71e",
         "b": "e6348290a1d854d7"
       },
       {
-        "a": "3d4e129ddd799ffe",
+        "a": "31ca4a6640a7b71e",
         "b": "e6bcee6fc31c4cdd"
       },
       {
-        "a": "def77d578a8255b6",
+        "a": "31ca4a6640a7b71e",
+        "b": "ebd0db0d480a3f9b"
+      },
+      {
+        "a": "bd7774c09db89a37",
         "b": "e6348290a1d854d7"
       },
       {
-        "a": "def77d578a8255b6",
+        "a": "bd7774c09db89a37",
         "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "bd7774c09db89a37",
+        "b": "ebd0db0d480a3f9b"
       },
       {
         "a": "e6348290a1d854d7",
         "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "e6348290a1d854d7",
+        "b": "ebd0db0d480a3f9b"
+      },
+      {
+        "a": "e6bcee6fc31c4cdd",
+        "b": "ebd0db0d480a3f9b"
       }
     ],
     "findings": [],
     "suppressedCompatible": 0
   },
   "splitClusterRefs": [
-    "02344543b13e66a5"
+    "cdf4fe7027abeb5f"
   ],
   "outcome": "override-eligible",
   "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-gap-closure"

@@ -1,5 +1,6 @@
 import { runReconcile } from '@/sourcegroup/reconcile';
 import { verifyRecordComplete } from '@/sourcegroup/acquire-completeness';
+import { loadAllSources } from '@/bibliography/load';
 import { writeSourceFile } from '@/bibliography/source-writer';
 import { writeRecordCompanions } from '@/archive/write-record-companions';
 import type { CompanionObjectStore } from '@/archive/write-record-companions';
@@ -44,17 +45,24 @@ async function completeAndVerify(
     gather: input.gather,
   });
 
-  // Verify the completed record. Build the just-acquired shape (the selected
-  // record plus the mirrored assets + any adapter-emitted snapshot ref) rather
-  // than re-loading, and pass reconcile's derived status as the authoritative
-  // `reconciled` outcome.
-  const completedRecord: RepositoryRecord = {
-    ...record,
-    ...(acquisition.assets.length > 0 ? { assets: acquisition.assets } : {}),
-    ...(acquisition.metadataSnapshotRef !== undefined
-      ? { metadataSnapshot: acquisition.metadataSnapshotRef }
-      : {}),
-  };
+  // Verify the record EXACTLY as persisted -- re-load it from disk rather than
+  // reconstructing an in-memory shape that could drift from what
+  // `persistAcquisition` wrote (AUDIT-20260720-07). `persistAcquisition` +
+  // `runReconcile` have already written every adapter-authored field (assets,
+  // qualityAssessment, excludedLeaves, metadataSnapshot) plus the advanced
+  // status, so the on-disk record is the single source of truth the verifier
+  // must judge. `reconciled.status` is passed as the authoritative outcome.
+  const loaded = loadAllSources(input.sourcesDir);
+  const persisted = loaded
+    .find((l) => l.source.sourceId === input.sourceId)
+    ?.records.find((r) => r.sourceArchive === record.sourceArchive);
+  if (persisted === undefined) {
+    throw new Error(
+      `acquire-complete: internal invariant -- "${input.sourceId}" at "${record.sourceArchive}" ` +
+        `was not found on disk after persist + reconcile.`,
+    );
+  }
+  const completedRecord: RepositoryRecord = { ...persisted, sourceId: input.sourceId };
   await verifyRecordComplete(completedRecord, {
     objectStore: input.completionObjectStore,
     reconciled: { status: reconciled.status, advanced: reconciled.changed },
