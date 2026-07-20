@@ -1,3 +1,67 @@
+## 2026-07-20: English-source facsimile PDF (spec 015) executed → governed → shipped; all four English targets rendered
+
+**Goal:** Run spec 015 (English-source facsimile PDF) through the stack-control front door to shipped, and produce the real English PDFs (PB-P056 + the PB-P057–P059 press leaves).
+
+**Accomplished:**
+- **Shipped 014 first (unblocked 015).** `archive-direct-pdf` was verified done + govern-converged at the merge waypoint; recorded `status: shipped` via the graduate weld, which cleared 015's dependency block.
+- **Implemented + shipped 015 (English-source path).** Language-keyed branch in the archive-direct reader: English OCR is the reading recto (placed in the `english` field, `ocrFrench=""`, rendered by the existing english-only Typst variant — no template change), French path byte-for-byte unchanged. Executed T001–T014 (fresh tier-sized subagents, test-first), governed (override after 7 rounds), recorded `status: shipped`.
+- **Two operator-approved spec extensions surfaced mid-execution:** FR-013 — the shared `assembleColophon` mandated a machine-assist label so English sources couldn't even assemble; amended the spec, designed the colophon OCR-transcription line via `/frontend-design`, made it the sole FR-010 template exception, verified with a real `typst compile`. FR-014 — a `blank_recto` folio-provenance marker (mirroring the French `untranslatable` page) so PB-P056's 10 plate/blank pages render a blank recto instead of failing loud.
+- **All four SC-006 targets build to real PDFs**, verified english-only with honest OCR-transcription colophons and correct blank-plate handling, and served on the tailnet (`orion-m4:47850`) for the operator to inspect.
+- **~20 real govern findings fixed** across 7 barrage rounds (colophon nullability + worst-caveat/engineStatus blank-recto filtering; the exactly-one provenance-disclosure invariant enforced at every boundary; publish-path English support incl. SSOT write/read; orphan-upload ordering; variant↔disclosure guard), plus the two real cleanups the operator green-lit (French-only translation-coverage; single-read folio provenance).
+
+**Didn't Work:**
+- **The audit-barrage did not converge.** Finding count grew round over round (2→4→3→4→6→7) because every fix enlarges the diff the next round re-audits (myopic convergence); the process-drivers mitigate but didn't prevent it on a mid-size feature.
+- **The default audit fleet's `sonnet` lane** (claude --model claude-sonnet-4-6) timed out on every whole-feature payload, degrading then FATAL-ing the run.
+- **Long govern runs were repeatedly reaped** by the environment when launched via the Bash tool's `run_in_background` before they could finish.
+- **Cross-chunk blindness produced 2 false-positive HIGH findings** (a zero-folio guard and an allow-list key each present in a different chunk than the code depending on them) — cost a verify cycle.
+
+**Course Corrections:**
+- Dropped `sonnet` from the audit fleet (operator: "not fit for purpose") → a 2-lane frontier fleet (claude/opus + codex/gpt-5.5), matching the plugin's own frontier-only self-hosting config; runs then completed cleanly.
+- Switched govern to **detached `nohup`/`disown` runs + log polling** to survive the environment reaping.
+- **Operator caught a blank French OCR column** on PB-P056 — it had built with the parallel (config-default) variant; rebuilt all four with `--no-french` (english-only). Root cause flagged: English sources should auto-default to english-only (still open).
+- After 7 non-converging rounds, **overrode the marginal residue** (defensive-depth for unreachable states + verified false positives) with a written justification rather than grinding indefinitely — the sanctioned operator-owned override of a converged audit.
+
+**Insights:**
+- **Myopic convergence is real on a growing diff:** an audit-barrage that re-scrutinizes the whole feature each round can find new marginal edges faster than fixes retire them, once the real bugs are gone. The practical closure is a frontier-only fleet + detached runs + an honest operator override anchored to blast-radius triage, not chasing zero.
+- **Reuse beat new machinery again:** the English path rides the existing english-only variant + the French blank-recto flag, so the only template change in the whole feature was one colophon line — everything else is a data/routing branch.
+- **The parallel-vs-english-only default is a footgun:** a correct English edition built with the config default renders a blank French column; the reading language is known, so the build should select english-only for English sources (surfaced, not yet built).
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 31
+  - workflow(graduate): impl:feature/english-source-pdf merging -> validating
+  - chore(english-source-pdf): record govern rounds + override graduation (audit trail)
+  - docs(english-source-pdf): correct ArchivePageContent.untranslatable doc for blank_recto (FR-014)
+  - fix(english-source-pdf): local zero-folio guard in resolveLeadAndAggregateProvenances (AUDIT-20 defensive)
+  - refactor(english-source-pdf): AUDIT-16 French-only translation-coverage check + AUDIT-19 single-read folio provenance
+  - refactor(english-source-pdf): split oversized test files under govern envelope + line cap
+  - fix(english-source-pdf): AUDIT-10/11/12/13 orphan-upload, blank-recto caveat, disclosure test rigor
+  - fix(english-source-pdf): AUDIT-07/08/09 disclosure consistency (variant XOR, publish seed, colophon status)
+  - chore(english-source-pdf): mark T015 complete (blank/plate marker)
+  - feat(english-source-pdf): T015 blank/plate marker for English pages (FR-014)
+  - refine(english-source-pdf): FR-014 blank/plate marker for English pages (operator-approved)
+  - feat(english-source-pdf): register PB-P056-P059 archive layouts (SC-006 targets)
+  - fix(english-source-pdf): AUDIT-03/04/05/06 enforce exactly-one provenance-disclosure invariant at all boundaries
+  - chore(english-source-pdf): record govern round (2 HIGH findings, both fixed)
+  - fix(english-source-pdf): AUDIT-02 publish path handles English OCR-transcription editions (nullable machineAssist)
+  - fix(english-source-pdf): AUDIT-01 colophon caveat reflects worst OCR tier across folios
+  - chore(govern): project override drops sonnet lane from audit-barrage fleet
+  - chore(govern): drop sonnet from audit-barrage fleet (operator: not fit for purpose)
+  - chore(english-source-pdf): mark T001-T012+T014 complete; ledger T010-T014
+  - test(english-source-pdf): T014 English end-to-end integration (build → toTypstInput)
+  - feat(english-source-pdf): T010 English colophon OCR-transcription line (FR-013)
+  - design(english-source-pdf): capture colophon OCR-transcription line direction (frontend-design, FR-013)
+  - refine(english-source-pdf): FR-013 colophon-template exception (operator-approved)
+  - chore(english-source-pdf): ledger T004-T009 (US1 routing + covered test tasks)
+  - feat(english-source-pdf): T004+T005 English-source routing (OCR as reading recto)
+  - chore(english-source-pdf): ledger T001-T003 (foundational)
+  - test(english-source-pdf): T003 English-source fixture (no translation dir, OCR-condition option)
+  - feat(english-source-pdf): T002 reading-language resolution (FR-001/006/006a)
+  - research(english-source-pdf): T001 confirm V1 language vocabulary (full-word English/French)
+  - workflow(graduate): impl:feature/archive-direct-pdf merging -> validating
+  - refine(english-source-pdf): close analyze findings C1/F1, record V2 deferral
+- Files changed: 54
+- Backlog touched: (none)
+
 ## 2026-07-18: Archive-direct PDF rendering (spec 014) built + governed + French PDFs produced; English-source rendering (spec 015) designed + specced
 
 **Goal:** Dissolve the Gallica coupling in `pdf:build` so facsimile-edition PDFs render from our own normalized archive (any source archive), build the French PDFs from the newly-acquired assets, and then design + spec rendering for the English-language sources that don't fit the FR-OCR │ EN-translation model.
