@@ -77,13 +77,6 @@ export interface CompletenessContext {
   expectsMetadataSnapshot?: boolean;
 }
 
-/** The object-store-keyed masters recorded on a record (the B2-direct masters). */
-function objectStoreMasters(record: RepositoryRecord): NonNullable<RepositoryRecord['assets']> {
-  return (record.assets ?? []).filter(
-    (asset) => typeof asset.objectStoreKey === 'string' && asset.objectStoreKey.length > 0,
-  );
-}
-
 /**
  * Verify the record fully reflects the bytes this acquire holds; resolve when
  * complete, THROW a descriptive Error naming the incompleteness otherwise
@@ -94,7 +87,7 @@ export async function verifyRecordComplete(
   ctx: CompletenessContext,
 ): Promise<void> {
   const where = `"${record.sourceId}" at "${record.sourceArchive}"`;
-  const masters = objectStoreMasters(record);
+  const assets = record.assets ?? [];
   // The EXPLICIT kind the caller threaded -- NO shape-inference fallback
   // (AUDIT-20260719-07). An explicit B2-direct kind with ZERO recorded masters
   // is a fail-loud incompleteness (AUDIT-20260719-04) -- it must NOT be treated
@@ -102,7 +95,7 @@ export async function verifyRecordComplete(
   const b2Direct = ctx.isB2Direct;
 
   if (b2Direct) {
-    if (masters.length === 0) {
+    if (assets.length === 0) {
       throw new Error(
         `acquire-completeness: ${where} is a B2-direct copy but recorded ZERO object-store ` +
           `masters -- refusing to report a complete acquire that mirrored no verifiable bytes ` +
@@ -111,10 +104,14 @@ export async function verifyRecordComplete(
       );
     }
     // B2-direct: status must be advanced to `archived`, and EVERY recorded
-    // master must be present in the object store with a matching checksum.
+    // asset must be a well-formed master present in the object store with a
+    // matching checksum. Iterate the FULL recorded asset set (never a
+    // key-present subset): an asset missing its `objectStoreKey`/`checksum` is a
+    // malformed master that must fail loud, not be silently skipped
+    // (AUDIT-20260720-02).
     if (ctx.reconciled.status !== 'archived') {
       throw new Error(
-        `acquire-completeness: ${where} recorded ${masters.length} object-store master(s) ` +
+        `acquire-completeness: ${where} recorded ${assets.length} object-store master(s) ` +
           `but its acquisition status is "${ctx.reconciled.status}", not "archived" -- the ` +
           `record does not fully reflect the held bytes (Principle XV).`,
       );
@@ -122,11 +119,24 @@ export async function verifyRecordComplete(
     if (ctx.objectStore === undefined) {
       throw new Error(
         `acquire-completeness: ${where} is a B2-direct copy but no object store was injected to ` +
-          `verify its ${masters.length} recorded master(s) -- refusing to report a complete ` +
+          `verify its ${assets.length} recorded master(s) -- refusing to report a complete ` +
           `acquire that was never verified against the store (Principle XV).`,
       );
     }
-    for (const asset of masters) {
+    for (const asset of assets) {
+      if (typeof asset.objectStoreKey !== 'string' || asset.objectStoreKey.length === 0) {
+        throw new Error(
+          `acquire-completeness: ${where} recorded a B2-direct master (checksum ` +
+            `${asset.checksum ?? '(none)'}) with NO objectStoreKey -- a mirrored master with no ` +
+            `object-store linkage cannot be located or verified (Principle XV).`,
+        );
+      }
+      if (typeof asset.checksum !== 'string' || asset.checksum.length === 0) {
+        throw new Error(
+          `acquire-completeness: ${where} recorded master "${asset.objectStoreKey}" with NO ` +
+            `checksum -- its integrity cannot be verified against the object store (Principle XV).`,
+        );
+      }
       const head = await ctx.objectStore.head(asset.objectStoreKey);
       if (!head.exists) {
         throw new Error(

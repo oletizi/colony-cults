@@ -149,3 +149,22 @@ That means the fail-loud guard prevents a false success but does not prevent the
 ## 2026-07-20 — dispositions (round 5 finding)
 
 - **AUDIT-20260720-01** — FIXED. The snapshot-only fail-loud fired AFTER `adapter.acquire` had already written the durable snapshot, so it refused success while leaving the snapshot unrecorded (the orphan it named). Replaced the throw with the real completion: the persist block now records `metadataSnapshotRef` on the SSOT whenever the adapter emits one (decoupled from `assets.length`), so a snapshot-only outcome is reflected in the record (no orphan) and the acquire succeeds — companions are still written only for mirrored masters. The AUDIT-03 test now asserts the snapshot is recorded, not a throw. No shipped adapter produces this shape; the persist decoupling makes it impossible to drop silently.
+
+## 2026-07-20 — audit-barrage lift (end-govern-after_implement)
+
+### AUDIT-20260720-02 — B2-direct completeness silently ignores recorded assets without objectStoreKey
+
+Finding-ID: AUDIT-20260720-02
+Status:     open
+Severity:   high
+Per-lane:   codex=high
+Decision:   single-model (gate-counted high)
+Surface:    src/sourcegroup/acquire-completeness.ts:75-133
+
+`objectStoreMasters()` filters `record.assets` down to only assets with a non-empty `objectStoreKey`, and the B2-direct branch verifies only that filtered list. That means a B2-direct record with mixed assets, for example one valid `objectStoreKey` asset plus one emitted asset missing `objectStoreKey`, will pass completeness while silently ignoring the malformed recorded asset. The zero-master guard only catches the all-missing case; it does not catch partial omission.
+
+The downstream blast radius is high because this verifier is the fail-loud gate before acquire reports success. A B2-direct adapter or record writer regression could lose object-store linkage for one page/master while still passing as complete if another page has a valid key. A reasonable fix is to make the B2-direct path validate the asset set before filtering: every asset that represents a mirrored master must have a non-empty `objectStoreKey` and checksum, or the verifier should throw naming the offending asset/source.
+
+## 2026-07-20 — dispositions (round 6 finding)
+
+- **AUDIT-20260720-02** — FIXED. The B2-direct verifier iterated only `objectStoreMasters()` (assets WITH a non-empty `objectStoreKey`), so a record with one valid asset plus one asset missing its key passed while silently ignoring the malformed one (the zero-master guard only caught the all-missing case). The verifier now iterates the FULL recorded asset set and fails loud on any asset missing its `objectStoreKey` or `checksum` before HEADing — no partial omission slips through. Two regression fixtures added.

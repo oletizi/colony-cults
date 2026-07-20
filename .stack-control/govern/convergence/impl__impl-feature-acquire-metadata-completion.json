@@ -3,7 +3,7 @@
   "mode": "impl",
   "item": "impl:feature/acquire-metadata-completion",
   "governedShaBase": "d8171d6",
-  "headSha": "3f94f72de7540d081b0166603b478063f181081b",
+  "headSha": "452482e5de0b7584dc0b1ad91680579cc225b91c",
   "chunkIds": [
     "2c9bacfeeaaa6c6c",
     "9c08e223058cd9ed",
@@ -13,8 +13,8 @@
   "rounds": 1,
   "liftedFindings": [
     {
-      "id": "2c9bacfeeaaa6c6c::AUDIT-BARRAGE-codex-01",
-      "title": "Snapshot-only guard still creates the orphan it rejects",
+      "id": "9c08e223058cd9ed::AUDIT-BARRAGE-codex-01",
+      "title": "B2-direct completeness silently ignores recorded assets without objectStoreKey",
       "severity": "high"
     }
   ],

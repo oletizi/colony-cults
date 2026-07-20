@@ -228,6 +228,30 @@ describe('verifyRecordComplete', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('AUDIT-20260720-02: THROWS when a B2-direct record has a valid master AND a second asset MISSING its objectStoreKey (partial omission not silently ignored)', async () => {
+    const malformed = master({ objectStoreKey: '', checksum: 'e'.repeat(64), sequence: 2 });
+    const store = fakeObjectStore({ [master().objectStoreKey]: { sha256: CHECKSUM } });
+    await expect(
+      verifyRecordComplete(b2Record({ assets: [master(), malformed] }), {
+        objectStore: store,
+        isB2Direct: true,
+        reconciled: { status: 'archived', advanced: true },
+      }),
+    ).rejects.toThrow(/objectStoreKey|object-store linkage/i);
+  });
+
+  it('AUDIT-20260720-02: THROWS when a B2-direct master is missing its checksum', async () => {
+    const noChecksum = master({ objectStoreKey: 'archive/x/museum/y/Y-0002.jpg', checksum: '', sequence: 2 });
+    const store = fakeObjectStore({ [master().objectStoreKey]: { sha256: CHECKSUM } });
+    await expect(
+      verifyRecordComplete(b2Record({ assets: [master(), noChecksum] }), {
+        objectStore: store,
+        isB2Direct: true,
+        reconciled: { status: 'archived', advanced: true },
+      }),
+    ).rejects.toThrow(/checksum/i);
+  });
+
   it('verifies EVERY recorded master, not just the first (a later missing master still THROWS)', async () => {
     const second = master({
       objectStoreKey: 'archive/cases/x/museum/y/Y-0002.jpg',
