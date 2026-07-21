@@ -81,3 +81,63 @@ consolidates the technical decisions).
   to a future re-acquire).
 - Public/site export = out of scope (internal-first, G-3).
 - Colophon (group) = one edition-level colophon + per-section source attribution.
+
+## T001 findings (real member shape)
+
+**Task**: Confirm the real member shape against the pinned archive clone + bibliography: a member's `ocr-text` asset (role/objectStoreKey/sha256/sourceRepresentation), its page-image segment `sequence` ordering, and the object-store reader used to fetch asset text. Verify the derived archive slug matches the on-disk dir for PB-P061.
+
+### Bibliography source-of-truth locations
+- PB-P060 (source-group): `/Users/orion/work/colony-cults-work/corpus-print-pdf/bibliography/sources/PB-P060.yml`
+- PB-P061 (member): `/Users/orion/work/colony-cults-work/corpus-print-pdf/bibliography/sources/PB-P061.yml`
+- Siblings (PB-P062, PB-P063, etc): `/Users/orion/work/colony-cults-work/corpus-print-pdf/bibliography/sources/PB-P062.yml`, etc.
+
+### PB-P060 structure (source-group)
+- `kind: source-group` ✓
+- `case: port-breton`
+- NO `repositoryRecords` field ✓
+- Members reference via `partOf: PB-P060` (confirmed in PB-P061, PB-P062, PB-P063)
+
+### PB-P061 member shape
+
+**OCR-text asset** (from `repositoryRecords[0].assets`):
+```yaml
+role: ocr-text
+sequence: 0
+objectStoreKey: archive/papers-past/hns18840103.2.19.3/6d9400da4acfd67ade5b3ce9c6a1f5bdfe1ab7f4073110c83e4610304ca9bfa4.txt
+checksum: 6d9400da4acfd67ade5b3ce9c6a1f5bdfe1ab7f4073110c83e4610304ca9bfa4
+sourceRepresentation: papers-past-text-tab
+mediaType: text/plain; charset=utf-8
+byteLength: 422
+```
+
+**Page-image segments** (ascending sequence order):
+1. Sequence 1: role=`page-master`, mediaType=`image/gif`, objectStoreKey=`archive/papers-past/hns18840103.2.19.3/6418101df384ebf00caab4d7fd50b780d53bcf67aefc75e3742907c2480c78b7.gif`, checksum=`6418101df384ebf00caab4d7fd50b780d53bcf67aefc75e3742907c2480c78b7`, byteLength=3005
+2. Sequence 2: role=`page-master`, mediaType=`image/gif`, objectStoreKey=`archive/papers-past/hns18840103.2.19.3/bf16a475f0e59dbcd0eea2111ded0718d56cb8206b233758b6d8a8debe35d62d.gif`, checksum=`bf16a475f0e59dbcd0eea2111ded0718d56cb8206b233758b6d8a8debe35d62d`, byteLength=1365
+3. Sequence 3: role=`page-master`, mediaType=`image/gif`, objectStoreKey=`archive/papers-past/hns18840103.2.19.3/28a283ecb00175bdbe0895b19626d91043603dc7bf86cab1a5eb6afe1de1a007.gif`, checksum=`28a283ecb00175bdbe0895b19626d91043603dc7bf86cab1a5eb6afe1de1a007`, byteLength=20657
+
+### Object-store reader interface
+- **Interface name**: `ObjectStore`
+- **Module path**: `src/archive/object-store.ts`
+- **Read method signature**: `get(key: string): Promise<Uint8Array>`
+- **Usage context**: Injected S3-compatible abstraction for archive-writer; implementations (B2, S3, test doubles) swapped via dependency injection. Throws descriptive errors on transport/auth failures; no fallbacks or mock data.
+
+### Archive slug verification for PB-P061
+- **Derived slug logic** (`deriveSourceLayout` in `src/archive/location.ts`):
+  - Case: member has no `case` field → falls back to owning group's case → `port-breton`
+  - Type: member `kind: periodical` → type=`newspapers`
+  - Slug: canonical title "CONVICTION OF MARQUIS DE RAYS" → slugified → `conviction-of-marquis-de-rays`
+    - Slugify process: normalize NFD, strip diacritics, lowercase, collapse non-alphanumeric runs to `-`, trim leading/trailing hyphens, cap at 80 chars at word boundary.
+  - Kind: periodical → `periodical` (though stored flat, without date+ark subdirs, like a monograph)
+
+- **Derived slug result**: `conviction-of-marquis-de-rays`
+- **On-disk directory** (from `COLONY_ARCHIVE_ROOT=/Users/orion/work/colony-cults-work/edition-publishing-archive`):
+  - Full path: `/Users/orion/work/colony-cults-work/edition-publishing-archive/archive/cases/port-breton/newspapers/conviction-of-marquis-de-rays/`
+  - Confirmed EXISTS with folio files: `f001.yml`, `f002.yml`, `f003.yml`
+  - Folio `f001.yml` header confirms `id: "PB-P061"` and archive path
+
+- **Slug match verification**: ✓ VERIFIED — derived slug `conviction-of-marquis-de-rays` matches on-disk directory exactly
+
+### Sibling member slug verification
+Verified the derivation applies consistently across source-group members:
+- PB-P062 ("ARREST OF THE MARQUIS DE RAYS (New Zealand Herald, 21 October 1882)") → `arrest-of-the-marquis-de-rays-new-zealand-herald-21-october-1882` → on-disk dir EXISTS ✓
+- PB-P063 ("THE MARQUIS DE RAYS IN GAOL") → `the-marquis-de-rays-in-gaol` → on-disk dir EXISTS ✓
