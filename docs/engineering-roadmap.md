@@ -182,3 +182,7 @@ Spun out of 009's research loop (backlog TASK-32). SRCH-0013 verified that the d
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-19-acquire-metadata-completion-design.md
 - ref: Constitution Principle XV (v1.4.0); backlog TASK-46; supersedes-history TASK-20/21
+
+## impl:feature/asset-summaries
+- status: planned
+- depends-on: impl:feature/corpus-browser
