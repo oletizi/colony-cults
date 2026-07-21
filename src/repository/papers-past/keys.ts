@@ -38,3 +38,21 @@ export function objectKeyForSegment(articleId: string, sha256Hex: string): strin
 export function provenancePathForSegment(articleId: string, sha256Hex: string): string {
   return `${KEY_PREFIX}/${sanitizeArticleId(articleId)}/${sha256Hex}.yml`;
 }
+
+/**
+ * The deterministic object-store key for the source-OCR text asset extracted
+ * from an article's `#text-tab` panel, derived from the sanitized article code
+ * and the content sha256. Always `.txt` (the OCR is stored as faithful plain
+ * text, not a facsimile image).
+ */
+export function objectKeyForOcr(articleId: string, sha256Hex: string): string {
+  return `${KEY_PREFIX}/${sanitizeArticleId(articleId)}/${sha256Hex}.txt`;
+}
+
+/**
+ * The companion provenance path for the source-OCR text asset (mirrors the
+ * object key, `.yml`) -- the same convention as `provenancePathForSegment`.
+ */
+export function provenancePathForOcr(articleId: string, sha256Hex: string): string {
+  return `${KEY_PREFIX}/${sanitizeArticleId(articleId)}/${sha256Hex}.yml`;
+}

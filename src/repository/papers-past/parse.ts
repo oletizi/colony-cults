@@ -171,11 +171,18 @@ function extractRightsRaw(root: ReturnType<typeof parse>): string {
  * fabricated. Not fail-loud: the `#text-tab` panel is expected on every real
  * article page (already required to exist for the non-article-page rejection
  * below), but empty/whitespace-only text is treated as "not present" rather
- * than an error, since OCR is out of scope as an acquired asset.
+ * than an error.
+ *
+ * FAITHFUL, not whitespace-collapsed: this text is now the source of a stored
+ * corpus asset (`objectKeyForOcr`), so the panel's line structure is preserved
+ * rather than flattened to a single line. `structuredText` (node-html-parser)
+ * inserts a `\n` at block-element boundaries (e.g. between `<p>` paragraphs),
+ * which is what makes the correctable-text layout survive; only the outer
+ * whitespace is trimmed.
  */
 function extractOcrText(root: ReturnType<typeof parse>): string | undefined {
   const container = root.querySelector(OCR_SELECTOR);
-  const text = container ? container.text.trim().replace(/\s+/g, ' ') : '';
+  const text = container ? container.structuredText.trim() : '';
   return text.length > 0 ? text : undefined;
 }
 

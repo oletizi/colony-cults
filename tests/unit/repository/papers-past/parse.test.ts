@@ -12,6 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArticle, decodeImageArea } from '@/repository/papers-past/parse';
+import { objectKeyForOcr, provenancePathForOcr } from '@/repository/papers-past/keys';
 
 const FIXTURE_HTML = readFileSync(
   join(__dirname, 'fixtures', 'de-rays-article.html'),
@@ -55,6 +56,46 @@ describe('parseArticle -- real fixture de-rays-article.html', () => {
   it('throws on a non-article page', () => {
     const nonArticleHtml = '<html><body><h1>Search results</h1></body></html>';
     expect(() => parseArticle(nonArticleHtml, FIXTURE_URL)).toThrow();
+  });
+});
+
+describe('objectKeyForOcr / provenancePathForOcr', () => {
+  it('are deterministic .txt/.yml under the article dir', () => {
+    const sha = 'a'.repeat(64);
+    expect(objectKeyForOcr('HNS18840103.2.19.3', sha)).toBe(
+      `archive/papers-past/hns18840103.2.19.3/${sha}.txt`,
+    );
+    expect(provenancePathForOcr('HNS18840103.2.19.3', sha)).toBe(
+      `archive/papers-past/hns18840103.2.19.3/${sha}.yml`,
+    );
+  });
+});
+
+describe('extractOcrText (via parseArticle) -- faithful, not whitespace-collapsed', () => {
+  it('preserves internal line structure across a multi-paragraph #text-tab panel', () => {
+    const articleId = 'ABC18990101.2.5.1';
+    const sourceUrl = `https://paperspast.natlib.govt.nz/newspapers/${articleId}`;
+    // Encode a real /imageserver/ payload so extractImageLocators succeeds --
+    // parseArticle also requires image locators, a title, and a rights heading.
+    const imageQuery = `?oid=${articleId}&colours=32&ext=gif&area=1&width=370`;
+    const imagePayload = Buffer.from(imageQuery, 'utf-8').toString('base64');
+    const html = `<html><head>
+      <link rel="canonical" href="${sourceUrl}">
+    </head><body>
+      <h3 class="article-title">TEST ARTICLE</h3>
+      <div id="image-tab"><img src="/imageserver/newspapers/${imagePayload}"></div>
+      <div id="text-tab"><p>LINE ONE</p><p>LINE TWO</p></div>
+      <div class="copyright"><h5>No known copyright restrictions</h5></div>
+    </body></html>`;
+
+    const article = parseArticle(html, sourceUrl);
+
+    expect(article.ocrText).toBeDefined();
+    // The two <p> block boundaries must survive as a newline, not collapse to
+    // a single space -- proof the ".replace(/\s+/g, ' ')" collapse is gone.
+    expect(article.ocrText).toContain('\n');
+    expect(article.ocrText).toContain('LINE ONE');
+    expect(article.ocrText).toContain('LINE TWO');
   });
 });
 
