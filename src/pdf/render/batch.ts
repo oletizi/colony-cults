@@ -37,6 +37,7 @@ import {
   resolveArchiveRoot,
   sourceLayout,
 } from '@/archive/location';
+import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
 import { buildItem, type BuildItemOptions } from '@/pdf/render/build';
 import { resolveArchiveSource, type ArchiveSourceResolution } from '@/pdf/load/archive-source';
 
@@ -109,13 +110,24 @@ function hasArchiveDir(sourceId: string, archiveRoot: string): boolean {
  * (`bibliography/sources/*.yml`) that both has a registered archive layout
  * and an existing archive directory under `archiveRoot`. Sorted for a
  * deterministic, reproducible `--all` build order (T026/SC-004).
+ *
+ * Spec 017 T002: `ensureMemberLayoutRegistered` (`@/archive/member-layout`)
+ * runs for EVERY loaded bibliography source BEFORE the `hasArchiveDir`
+ * filter -- a source-group MEMBER (e.g. PB-P061) is never hand-added to the
+ * static `SOURCE_LAYOUTS` registry, so without this its layout stays
+ * unregistered and `hasArchiveDir` (which checks `isSourceLayoutRegistered`
+ * first) always excludes it, no matter how much is on disk. The call is a
+ * no-op for every already-registered source, non-member, or source-group
+ * (see the bridge's own doc comment), so this is safe across the whole
+ * bibliography.
  */
 function discoverBuildableSourceIds(repoRoot: string, archiveRoot: string): string[] {
   const bibliographyDir = path.join(repoRoot, 'bibliography', 'sources');
-  return loadAllSources(bibliographyDir)
-    .map((loaded) => loaded.source.sourceId)
-    .filter((sourceId) => hasArchiveDir(sourceId, archiveRoot))
-    .sort();
+  const sourceIds = loadAllSources(bibliographyDir).map((loaded) => loaded.source.sourceId);
+  for (const sourceId of sourceIds) {
+    ensureMemberLayoutRegistered(sourceId, bibliographyDir);
+  }
+  return sourceIds.filter((sourceId) => hasArchiveDir(sourceId, archiveRoot)).sort();
 }
 
 /**
@@ -138,6 +150,12 @@ export async function buildSource(
   const env = opts.env ?? process.env;
   const repoRoot = resolveRepoRoot();
   const archiveRoot = resolveArchiveRoot(repoRoot, opts.archiveRoot, env);
+
+  // Spec 017 T002: a source-group MEMBER (e.g. PB-P061) is never hand-added
+  // to the static `SOURCE_LAYOUTS` registry -- derive+register its layout
+  // BEFORE `resolveArchiveSource` needs it (a no-op for every other source,
+  // see the bridge's own doc comment).
+  ensureMemberLayoutRegistered(sourceId, path.join(repoRoot, 'bibliography', 'sources'));
 
   const resolution = await resolveArchiveSource({ sourceId, archiveRoot });
   const itemIds = enumerateArchiveItemIds(resolution);
