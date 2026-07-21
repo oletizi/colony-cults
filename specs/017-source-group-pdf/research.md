@@ -1,5 +1,47 @@
 # Phase 0 Research: Source-Group Facsimile PDF
 
+> **T006 design direction (stacked-segment verso) — via `/frontend-design`, 2026-07-21.**
+> Layout direction for the member verso, captured before any template edit (Principle XI).
+> Grounded in the existing locked system (`pdf/template/theme.typ`: 6 colours, 4 faces;
+> `spread.typ` `facsimile-verso`). Implementation is T006 in `pdf/template/spread.typ`.
+>
+> **Concept — one reconstructed plate, not N.** A member's N `page-master` segments are
+> vertical column-strips CUT from ONE physical clipping. The verso must read as that one
+> clipping restored, so the whole vertical stack sits inside a SINGLE 0.5pt `rule-col`
+> keyline box (the existing "plate" frame), never one keyline per segment. N framed boxes
+> would assert N plates and contradict the reconstruction — the honest and legible reading
+> is one column, one frame.
+>
+> **Seam — butt, don't rule.** Segments join with a near-zero seam (≈0.5–1pt gap) so the
+> column reads continuous. Do NOT draw a hairline/rule between segments (a rule asserts them
+> as separate plates — the opposite of the intent). The one outer keyline is the only frame.
+>
+> **Width is the shared axis.** Scale every segment to ONE common content width (the plate's
+> inner measure) and centre-align horizontally, so the strips share a single column width the
+> way strips of one clipping do. This inverts the single-image rule (which constrains by
+> `height: 6.2in`): the stack constrains by WIDTH, and total height is the sum of the scaled
+> segment heights.
+>
+> **Overflow — fit the whole stack, never crop or distort.** If the summed stacked height
+> exceeds the verso cell's height budget (~6.2in), scale the ENTIRE stack down by one uniform
+> factor so it fits within both width and height, preserving every segment's aspect ratio and
+> the reconstruction's proportions. Never crop, never stretch, never per-segment-distort. A
+> tall clipping simply renders smaller — still one plate. (Continuation of a very tall clipping
+> across multiple versos is a possible future option; OUT of scope for T006 — the member is one
+> reconstructed clipping on one verso. Surface, don't silently cap.)
+>
+> **Caption — honest about the reconstruction.** Keep the existing faint `face-en` 6.5pt
+> caption but state the assembly: `Facsimile · <source-short> · reconstructed from N segments ·
+> scan is authoritative` (N = segment count). The verso is assembled, and the edition's ethic
+> is to say so (Principle I; mirrors the honest OCR-transcription colophon). Keep the single
+> `face-mono` folio marker (one item = one member); the segments are its parts, not separate folios.
+>
+> **Constraints honoured.** No new colour or face (theme.typ's hard rule): keyline `rule-col`,
+> caption `faint`/`face-en`, marker `face-mono`. The verso stays "otherwise silent"; the oxblood
+> provenance rail remains the signature and lives on the RECTO, unchanged by this feature.
+> Data-shape note for T008: `TypstVerso.imagePath` (single filename) must become a LIST of
+> segment image paths (ascending `sequence`) for `facsimile-verso` to stack.
+
 All unknowns from Technical Context are resolved below (the design record
 2026-07-21-source-group-pdf-design.md already settled the approach; this
 consolidates the technical decisions).
