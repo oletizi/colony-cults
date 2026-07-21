@@ -2,11 +2,11 @@
  * Pure result of the mechanical Papers Past article parse (see `./parse.ts`).
  *
  * Mechanically extracted from the article page's DOM (never an LLM field).
- * `ocrText` is OPTIONAL: OCR is out of scope as an acquired asset for this
- * adapter -- the corpus's existing OCR/translation pipeline produces OCR from
- * the held page-image facsimile (clarified 2026-07-19). The field only
- * documents the on-page OCR text when present; it is never fabricated and is
- * not propagated to `acquire`.
+ * `ocrText` is OPTIONAL: it documents the on-page OCR text (`#text-tab`) when
+ * present; it is never fabricated. It IS propagated to `acquire` as a
+ * first-class `ocr-text` asset (welded into the same verify-all-then-commit
+ * as the page-master GIFs, Principle XV) -- when the panel is empty/absent,
+ * `ocrText` is `undefined` and `acquire` mirrors page-masters only, non-fatal.
  */
 export interface ParsedArticle {
   /** The Papers Past article code / `oid`, e.g. `HNS18840103.2.19.3`. */

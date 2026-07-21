@@ -20,7 +20,7 @@ import { readFileSync, existsSync, readdirSync, mkdtempSync, rmSync } from 'node
 import os from 'node:os';
 import path from 'node:path';
 import { PapersPastAdapter } from '@/repository/papers-past/adapter';
-import { objectKeyForSegment } from '@/repository/papers-past/keys';
+import { objectKeyForSegment, objectKeyForOcr } from '@/repository/papers-past/keys';
 import { parseArticle } from '@/repository/papers-past/parse';
 import { sha256OfBytes } from '@/archive/checksum';
 import type { RepositoryRecord } from '@/model/repository-record';
@@ -38,6 +38,15 @@ const FIXED_NOW = '2026-07-18T00:00:00.000Z';
 
 /** The 3 relative image locators the fixture yields, sorted ascending by area. */
 const IMAGE_LOCATORS = parseArticle(FIXTURE_HTML, FIXTURE_URL).imageLocators;
+
+/** The fixture's `#text-tab` OCR text -- present on every real article page (Task 3). */
+const FIXTURE_OCR_TEXT = parseArticle(FIXTURE_HTML, FIXTURE_URL).ocrText;
+if (FIXTURE_OCR_TEXT === undefined) {
+  throw new Error('de-rays-article.html fixture parsed to no ocrText -- test setup invariant violated.');
+}
+const OCR_BYTES = new TextEncoder().encode(FIXTURE_OCR_TEXT);
+const OCR_CHECKSUM = sha256OfBytes(OCR_BYTES);
+const OCR_KEY = objectKeyForOcr(ARTICLE_ID, OCR_CHECKSUM);
 
 /**
  * Build a distinct, VALID GIF byte body (starts with the `GIF89a` magic) for a
@@ -88,6 +97,12 @@ const AREA3_B64 =
 const TWO_SEGMENT_HTML = FIXTURE_HTML.replace(
   new RegExp(`<img\\b[^>]*${AREA3_B64}[^>]*>`, 'g'),
   '',
+);
+
+/** The fixture with the `#text-tab` article body emptied -> `ocrText` parses to `undefined`. */
+const NO_OCR_HTML = FIXTURE_HTML.replace(
+  /<div itemprop="articleBody">[\s\S]*?<\/div>/,
+  '<div itemprop="articleBody"></div>',
 );
 
 /** The fixture with every root-relative `/imageserver/` src rehomed to an off-origin host. */
@@ -211,33 +226,133 @@ describe('PapersPastAdapter', () => {
 
       expect(result.complete).toBe(true);
       expect(result.reconciliationRequired).toBe(true);
-      expect(result.assets).toHaveLength(3);
-      expect(result.assets.every((asset) => asset.role === 'page-master')).toBe(true);
-      expect(result.assets.map((asset) => asset.sequence)).toEqual([1, 2, 3]);
-      expect(result.assets.every((asset) => asset.mediaType === 'image/gif')).toBe(true);
+      // The fixture also carries #text-tab OCR, so the OCR asset (Task 3,
+      // asserted in its own describe block below) rides along too -- scope
+      // these page-master-specific assertions to that role.
+      const pageMasters = result.assets.filter((asset) => asset.role === 'page-master');
+      expect(pageMasters).toHaveLength(3);
+      expect(pageMasters.map((asset) => asset.sequence)).toEqual([1, 2, 3]);
+      expect(pageMasters.every((asset) => asset.mediaType === 'image/gif')).toBe(true);
 
       // Bytes flowed through the SAME WAF-cleared browser session (never an ad-hoc fetch).
       expect(browser.fetchBytesCalls).toHaveLength(3);
 
-      // Exactly 3 puts, one per deterministic key.
-      expect(objectStore.putCalls).toHaveLength(3);
-      const putKeys = objectStore.putCalls.map((call) => call.key).sort();
+      // Exactly 3 page-master puts, one per deterministic key.
+      const gifPutCalls = objectStore.putCalls.filter((call) => call.key.endsWith('.gif'));
+      expect(gifPutCalls).toHaveLength(3);
+      const putKeys = gifPutCalls.map((call) => call.key).sort();
       const expectedKeys = [expectedKey(0), expectedKey(1), expectedKey(2)].sort();
       expect(putKeys).toEqual(expectedKeys);
-      for (const call of objectStore.putCalls) {
+      for (const call of gifPutCalls) {
         expect(call.options.contentType).toBe('image/gif');
       }
     });
   });
 
+  describe('OCR asset (ocr-text, Task 3, atomic Principle XV)', () => {
+    it('captures the source OCR as an ocr-text asset alongside the page-masters', async () => {
+      const objectStore = new FakeObjectStore();
+      const browser = fixtureBrowser(scriptedImageBytes());
+      const adapter = new PapersPastAdapter({
+        browserSession: browser,
+        objectStore,
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+
+      const result = await adapter.acquire(recordWith(PUBLIC_DOMAIN), {});
+
+      const ocr = result.assets.filter((asset) => asset.role === 'ocr-text');
+      expect(ocr).toHaveLength(1);
+      expect(ocr[0].mediaType).toBe('text/plain; charset=utf-8');
+      expect(ocr[0].sourceRepresentation).toBe('papers-past-text-tab');
+      expect(ocr[0].objectStoreKey).toBe(OCR_KEY);
+      expect(ocr[0].objectStoreKey).toMatch(/^archive\/papers-past\/.+\/[0-9a-f]{64}\.txt$/);
+      expect(ocr[0].checksum).toBe(OCR_CHECKSUM);
+      expect(ocr[0].byteLength).toBe(OCR_BYTES.length);
+      expect(ocr[0].sequence).toBe(0);
+      expect(ocr[0].sourceUrl).toBe(FIXTURE_URL);
+
+      const put = objectStore.putCalls.find((call) => call.key === ocr[0].objectStoreKey);
+      expect(put).toBeDefined();
+      if (put === undefined) {
+        throw new Error('expected an ocr-text put call');
+      }
+      expect(new TextDecoder().decode(put.bytes)).toContain('found guilty');
+      expect(put.options.sha256).toBe(OCR_CHECKSUM);
+      expect(put.options.contentType).toBe('text/plain; charset=utf-8');
+
+      expect(result.assets.filter((asset) => asset.role === 'page-master').length).toBeGreaterThan(0);
+    });
+
+    it('is idempotent on the ocr-text object (0 duplicate put on re-run)', async () => {
+      const objectStore = new FakeObjectStore();
+      objectStore.seed(OCR_KEY, { sha256: OCR_CHECKSUM });
+      const adapter = new PapersPastAdapter({
+        browserSession: fixtureBrowser(scriptedImageBytes()),
+        objectStore,
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+
+      const result = await adapter.acquire(recordWith(PUBLIC_DOMAIN), {});
+
+      const ocr = result.assets.filter((asset) => asset.role === 'ocr-text');
+      expect(ocr).toHaveLength(1);
+      expect(objectStore.putCalls.some((call) => call.key === OCR_KEY)).toBe(false);
+      expect(objectStore.headCalls.some((call) => call.key === OCR_KEY)).toBe(true);
+    });
+
+    it('dry-run puts no ocr-text object and returns empty assets', async () => {
+      const objectStore = new FakeObjectStore();
+      const browser = fixtureBrowser(scriptedImageBytes());
+      const adapter = new PapersPastAdapter({
+        browserSession: browser,
+        objectStore,
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+
+      const result = await adapter.acquire(recordWith(PUBLIC_DOMAIN), { dryRun: true });
+
+      expect(result.assets).toEqual([]);
+      expect(objectStore.putCalls.some((call) => call.key === OCR_KEY)).toBe(false);
+      expect(objectStore.headCalls.some((call) => call.key === OCR_KEY)).toBe(false);
+    });
+
+    it('OCR absent -> page-masters only, no ocr-text asset, no throw', async () => {
+      const objectStore = new FakeObjectStore();
+      const browser = new FakeBrowserSession({
+        html: new Map([[FIXTURE_URL, NO_OCR_HTML]]),
+        bytes: scriptedImageBytes(),
+      });
+      const adapter = new PapersPastAdapter({
+        browserSession: browser,
+        objectStore,
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+
+      const result = await adapter.acquire(recordWith(PUBLIC_DOMAIN), {});
+
+      expect(result.assets.some((asset) => asset.role === 'ocr-text')).toBe(false);
+      expect(result.assets.some((asset) => asset.role === 'page-master')).toBe(true);
+      expect(result.assets.filter((asset) => asset.role === 'page-master')).toHaveLength(3);
+    });
+  });
+
   describe('idempotent re-acquire', () => {
-    it('issues 0 duplicate puts when all 3 keys are already present at matching sha256', async () => {
+    it('issues 0 duplicate puts when all 3 page-master keys AND the ocr-text key are already present at matching sha256', async () => {
       const seed = new Map(
         IMAGE_LOCATORS.map((_, index) => {
           const checksum = sha256OfBytes(gifBytes(index + 1));
           return [objectKeyForSegment(ARTICLE_ID, checksum), { sha256: checksum }] as const;
         }),
       );
+      // The fixture also carries #text-tab OCR (Task 3) -- seed its key too so
+      // this "0 duplicate puts" assertion covers the WHOLE commit, not just
+      // the page-masters.
+      seed.set(OCR_KEY, { sha256: OCR_CHECKSUM });
       const objectStore = new FakeObjectStore(new Map(seed));
       const adapter = new PapersPastAdapter({
         browserSession: fixtureBrowser(scriptedImageBytes()),
@@ -248,10 +363,11 @@ describe('PapersPastAdapter', () => {
 
       const result = await adapter.acquire(recordWith(PUBLIC_DOMAIN), {});
 
-      expect(result.assets).toHaveLength(3);
+      expect(result.assets).toHaveLength(4);
       expect(objectStore.putCalls).toHaveLength(0);
-      // Still HEADs each key to detect the already-present-with-matching-checksum state.
-      expect(objectStore.headCalls).toHaveLength(3);
+      // Still HEADs each key (3 page-masters + 1 ocr-text) to detect the
+      // already-present-with-matching-checksum state.
+      expect(objectStore.headCalls).toHaveLength(4);
     });
   });
 

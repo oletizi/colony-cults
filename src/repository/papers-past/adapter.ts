@@ -41,7 +41,9 @@ import { parseArticle } from '@/repository/papers-past/parse';
 import { persistCapture, repoRelativeCapturePath } from '@/sourcequery/persistence';
 import { sha256OfBytes } from '@/archive/checksum';
 import {
+  objectKeyForOcr,
   objectKeyForSegment,
+  provenancePathForOcr,
   provenancePathForSegment,
 } from '@/repository/papers-past/keys';
 import {
@@ -59,6 +61,12 @@ const CAPTURE_SOURCE = 'papers-past-article';
 
 /** GIF media type -- the Papers Past `/imageserver/` facsimile is always a GIF. */
 const GIF_MEDIA_TYPE = 'image/gif';
+
+/** Media type for the source-OCR text asset (`#text-tab` panel), stored as faithful plain text. */
+const OCR_MEDIA_TYPE = 'text/plain; charset=utf-8';
+
+/** `AcquiredAsset.sourceRepresentation` for the source-OCR text asset. */
+const OCR_SOURCE_REPRESENTATION = 'papers-past-text-tab';
 
 /** Normalization scheme version for the record-level metadata snapshot reference. */
 const SNAPSHOT_NORMALIZATION_VERSION = 1;
@@ -291,8 +299,14 @@ export class PapersPastAdapter implements RepositoryAdapter {
    * PHASE A (no writes): per segment fetch bytes (via `fetchBytes`), image-validity
    * guard (GIF magic), sha256, remote-change fail-loud. PHASE B (only once EVERY
    * segment verified): idempotent head-then-put. A mid-sequence PHASE-A failure
-   * leaves ZERO orphaned objects.
-   * STEP 5 -- return the page-masters + a raw metadata snapshot. No OCR asset.
+   * leaves ZERO orphaned objects. When the page-masters are committed, the
+   * source OCR (`parsed.ocrText`, when present) is welded in as one more
+   * checksum-addressed, idempotent head-then-put against the SAME object
+   * store -- run strictly AFTER the page-masters' all-or-nothing PHASE A, so a
+   * page-master verify failure still aborts before any OCR write (Principle XV,
+   * zero orphans).
+   * STEP 5 -- return the page-masters + the source-OCR asset (when present) +
+   * a raw metadata snapshot.
    */
   async acquire(record: RepositoryRecord, ctx: AcquisitionContext): Promise<AcquisitionResult> {
     if (record === null || typeof record !== 'object') {
@@ -455,14 +469,46 @@ export class PapersPastAdapter implements RepositoryAdapter {
         });
       }
 
-      // STEP 5 -- return the page-masters + a raw metadata snapshot AND a
-      // record-level metadata-snapshot reference (GAP 2) pointing at the persisted
-      // raw `.html` capture (repo-relative under `bibliography/repository-responses/`),
+      // OCR capture (Principle XV, welded not follow-up): run STRICTLY AFTER
+      // the page-masters are committed (they are already atomic under PHASE
+      // A/B above), using the SAME objectStore, so a page-master PHASE-A
+      // verify failure still aborts before any OCR write -- zero orphans. The
+      // OCR bytes are already in `parsed.ocrText` (no separate byte-fetch), so
+      // its "verify" is just the checksum; absent OCR is non-fatal.
+      const assets: AcquiredAsset[] = [...pageMasters];
+      if (typeof parsed.ocrText === 'string' && parsed.ocrText.length > 0) {
+        const ocrBytes = new TextEncoder().encode(parsed.ocrText);
+        const ocrChecksum = sha256OfBytes(ocrBytes);
+        const ocrKey = objectKeyForOcr(parsed.articleId, ocrChecksum);
+        const ocrHead = await objectStore.head(ocrKey);
+        if (!(ocrHead.exists && ocrHead.sha256 === ocrChecksum)) {
+          await objectStore.put(ocrKey, ocrBytes, {
+            sha256: ocrChecksum,
+            contentType: OCR_MEDIA_TYPE,
+          });
+        }
+        assets.push({
+          sourceUrl: pageUrl,
+          mediaType: OCR_MEDIA_TYPE,
+          objectStoreKey: ocrKey,
+          checksum: ocrChecksum,
+          byteLength: ocrBytes.length,
+          provenancePath: provenancePathForOcr(parsed.articleId, ocrChecksum),
+          role: 'ocr-text',
+          sequence: 0,
+          sourceRepresentation: OCR_SOURCE_REPRESENTATION,
+        });
+      }
+
+      // STEP 5 -- return the page-masters + the source-OCR asset (when
+      // present) + a raw metadata snapshot AND a record-level
+      // metadata-snapshot reference (GAP 2) pointing at the persisted raw
+      // `.html` capture (repo-relative under `bibliography/repository-responses/`),
       // so the acquired record carries a durable snapshot ref like the Museum/IA path.
       const metadataSnapshot: MetadataSnapshot = { raw: html, retrievedAt: this.now() };
       return {
         repositoryRecordId,
-        assets: pageMasters,
+        assets,
         metadataSnapshot,
         complete: true,
         reconciliationRequired: true,
