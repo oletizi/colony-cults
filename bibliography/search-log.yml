@@ -389,3 +389,17 @@
     - "Acquire the 24-item PD shortlist (spec 015) after rights confirmation; the 1929/1936/1949 retrospectives are rights-blocked/pending."
     - "Reset the NZ exit node when NZ-routed work is done."
   notes: "Six-tranche depletion push (T9-14). The two-consecutive-zeros rule proved impractical for this unusually dense vein; surfacing to the operator with the full curve rather than grinding all ~70 tranches unattended. Governed client only; hybrid triage. Captures: page-9..14 enumerations + the per-tranche article reads."
+
+- id: SRCH-0028
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "Tranches 15-19 (results 141-190, --page 15..19) of the 'Marquis de Rays' census, continuing the operator's standing order to paginate until TWO CONSECUTIVE zero-distinct tranches. DEPLETION REACHED at tranche 19."
+  coverage: "DEPLETED. Final distinct-yield curve over 19 tranches: 5,5,3,1,0,1,3,1,0,3,1,0,1,1,1,2,1,0,0 -- two consecutive zeros at T18 and T19. New distinct in this stretch (T15-17): ODT18800406 'The New Colony at New Ireland' (SMH survey, Apr 1880); NZH18800410 'The Colony of New Ireland' (Chandernagore, 682 tons, arrives Port Jackson, Apr 1880); EP18810913 'A White Man Among Savages' (a survivor-discovery tied to the expedition, 1881); NZH18800614 (the Genil en route with the second division + gendarmerie, Jun 1880). T18-19 = 0,0: generic cable columns, reprints (of the Chandernagore/collapse/white-man pieces), and off-topic keyword matches (an 1900 fiction serial 'The Brothers of the Chain', 1905/1911/1930 items, shipping columns). Final: 190/695 assessed (27%); 28 distinct PD ACQUIRE candidates spanning the whole arc across NZ-mainland + Pacific-regional (Samoa Times) + US-relayed (Philadelphia Press) sources; plus 3 rights-blocked/pending retrospectives (1929/1936/1949). Full record + curve: bibliography/census/papers-past-de-rays-marquis.md. NOTE the criterion validated itself: the four isolated single-zeros (T5/T9/T12) each preceded a non-zero (incl. two spikes to 3), so a single-zero stop would have quit at T5 and lost ~15 distinct pieces."
+  remainingQuestions:
+    - "PIVOT next (operator standing order): run the same tranche census on a narrower handle -- starting with 'Port Breton' (the colony's own name), which should be on-topic with far less cable-column noise than the person's name."
+    - "Acquire the 28-item PD shortlist (spec 015) after rights confirmation; the 1929/1936/1949 retrospectives are rights-blocked/pending and excluded from the PD list."
+    - "Reset the NZ exit node when NZ-routed work is done."
+  notes: "'Marquis de Rays' vein COMPLETE (depleted at two consecutive zeros, T18-19). Governed client only; hybrid triage throughout. Census + shortlist only -- no acquisition. Pivoting to the 'Port Breton' handle next per the standing order. Captures: page-15..19 enumerations + per-tranche article reads."
