@@ -361,3 +361,17 @@
     - "The tail is sparse+reprint-saturated, NOT exhausted -- occasional distinct pieces (e.g. the T6 trial letter) still surface, so a narrower-handle sweep is the way to catch them without the noise."
     - "Acquire the 15-item shortlist (spec 015) after a rights recheck on the 1929/1936 retrospectives; reset the NZ exit node when NZ-routed work is done."
   notes: "Decay-verification tranches (operator wanted >=2 more to confirm the curve was not lumpy). Finding: it IS mildly lumpy at the floor (0 then 1). Governed client only; hybrid triage. Captures: page-5 + page-6 enumerations + 6 article reads."
+
+- id: SRCH-0026
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "Tranches 7-8 (results 61-80, --page 7 and --page 8) of the 'Marquis de Rays' census, run to test a stricter depletion criterion: two CONSECUTIVE zero-distinct tranches before declaring the vein depleted (operator directive). Content-read the 4 non-generic candidates."
+  coverage: "NOT DEPLETED -- the criterion is NOT met and the floor is genuinely lumpy. Tranche 7 SPIKED to 3 new distinct: ESD18800401.2.28 'Threatened Invasion of Western Australia' (1880, 5000ch, PD -- the armed-expedition/prospectus framing, a whole new angle that only surfaced at tranche 7; canonical of a 3-reprint cluster with KUMAT18800419 + NEM18800426); ST18840125.2.17 'A Speedy and Certain Fortune' (Jan 1884, 8457ch, PD -- long trial+biography feature); ODT19490908.2.20 'King Charles of the Bismarcks' (1949, 9778ch -- distinct signed history by Lawrence Constable, but RIGHTS-EXCLUDED: almost certainly still in copyright). Tranche 8 = 1 new distinct: LT18820704.2.29 'The Marquis de Ray's Expedition' (Jul 1882, 1955ch, PD -- the colonists' EVACUATION phase: the Genil landing 88 colonists at Sydney, the Nouvelle Bretagne seized by Spanish officials at Manila). Full distinct-yield curve: 5, 5, 3, 1, 0, 1, 3, 1 -- NO two consecutive zeros anywhere. This OVERTURNS the premature 'poor ROI / stop at tranche 4' read (SRCH-0024): distinct material appears in bursts tied to the affair's phases (founding, invasion-framing, arrest, evacuation, committal, trial, conviction, retrospectives), surfacing non-contiguously in keyword-ranked order. 80/695 assessed; 18 distinct PD ACQUIRE candidates + 3 rights-blocked/pending (1929/1936/1949). Record: bibliography/census/papers-past-de-rays-marquis.md."
+  remainingQuestions:
+    - "Depletion NOT reached (no two consecutive zeros; curve 5,5,3,1,0,1,3,1). Choice: keep paginating (accepting ~70% cable-column noise for periodic distinct bursts) OR pivot to narrower handles (Port Breton / New Ireland / Chandernagore / Nouvelle Bretagne / La Nouvelle-France) to harvest the residual distinct tail with far less noise."
+    - "Acquire the 18-item PD shortlist (spec 015) after confirming rights; the 1929/1936/1949 retrospectives are rights-blocked/pending and must NOT be acquired without a rights determination (the 1949 signed feature is very likely still in copyright)."
+    - "Reset the NZ exit node (tailscale set --exit-node=) when NZ-routed corpus work is done."
+  notes: "Consecutive-zero depletion test. Result: not depleted -- the tail is lumpy with real distinct clusters deep in (tranche 7's 1880 'invasion' framing). Governed client only; hybrid triage (content-read the non-generic minority). Census + shortlist only. Captures: page-7 + page-8 enumerations + 4 article reads."

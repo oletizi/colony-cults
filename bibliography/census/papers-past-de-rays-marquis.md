@@ -22,12 +22,14 @@ Each row is scored on: **topical** (is the affair the subject, vs a bundled one-
 | 4 (31–40) | 10 | 1 | 1 (a comprehensive 11k-char "Story of the Expedition" feature) | 9 | floor — near stop |
 | 5 (41–50) | 10 | 0 | 0 (dedicated-title hits were all reprints of T2 canonicals + 1 off-topic) | 10 | floor |
 | 6 (51–60) | 10 | 1 | 1 (a distinct London-correspondent trial letter) | 9 | floor (lumpy) |
+| 7 (61–70) | 10 | 3 | 3 (an 1880 "invasion" framing + its cluster; a long trial+bio feature; a 1949 signed history) | 7 | **SPIKE** |
+| 8 (71–80) | 10 | 1 | 1 (the colonists' evacuation: *Genil* to Sydney, *Nouvelle Bretagne* seized at Manila) | 9 | floor |
 
-Trend: distinct yield **5 → 5 → 3 → 1 → 0 → 1**; bundled fraction 0 → ~4 → 7 → 9 → 10 → 9.
+Trend: distinct yield **5 → 5 → 3 → 1 → 0 → 1 → 3 → 1**; bundled fraction 0 → ~4 → 7 → 9 → 10 → 9 → 7 → 9.
 
-**Decay-shape finding (tranches 5–6 were run to test this):** the decline is a *predictable trend* to a low floor, but the floor is **lumpy, not a clean monotonic zero** — distinct pieces keep trickling in sporadically at ~0–1 per tranche (T5=0, T6=1). The reason the floor stays low: by ~tranche 4 the distinct set is largely **saturated**, and deeper "dedicated-title" hits are predominantly *reprints of already-canonical distinct pieces* (e.g. T5 NOT18821127 = a reprint of T2's THD "arch-impostor" feature; T5 ODT18840122 = a reprint of T2's NEM post-conviction summary) interleaved with generic cable-column noise.
+**Decay-shape finding (VERIFIED over 8 tranches):** the decline is a predictable *trend*, but the floor is **genuinely lumpy — NOT depleted**. There are no two consecutive zero-distinct tranches anywhere (the lone zero, tranche 5, is bracketed by 1, 0, 1, 3, 1). Tranche 7 **spiked back to 3 distinct**, including a whole new angle (the 1880 "threatened invasion of Western Australia" / prospectus framing) that only surfaced this deep. This **overturns the premature "poor ROI / stop at tranche 4" read**: distinct material appears in *bursts* tied to the affair's phases (founding → invasion-framing → arrest → evacuation → committal → trial → conviction → decade-spanning retrospectives), which surface non-contiguously in keyword-ranked order. Deep "dedicated-title" hits are a *mix* of genuinely-new distinct pieces AND reprints of earlier canonicals (e.g. T5 NOT18821127 = reprint of T2's THD feature).
 
-**Stopping decision:** stop the exhaustive pagination of the `Marquis de Rays` handle. A full harvest of every remaining distinct piece would mean paginating ~64 more tranches for ~0–1 new items each — poor ROI. The remaining sparse distinct material is better reached with **narrower query handles** (`Port Breton`, `New Ireland`, `Chandernagore`, `La Nouvelle-France`) — never run against Papers Past yet (SRCH-0018) — which target the affair without the cable-column noise. NOTE: post-1920s retrospectives (1929, 1936) do NOT carry the "No known copyright (NZ)" statement — rights must be reconfirmed before any of them can be acquired.
+**Stopping status:** NOT depleted by the two-consecutive-zeros criterion (curve 5,5,3,1,0,1,3,1). The walk can continue (bursts of distinct value remain), OR the residual distinct tail can be mined more efficiently with **narrower query handles** (`Port Breton`, `New Ireland`, `Chandernagore`, `La Nouvelle-France` — never run against Papers Past yet, SRCH-0018) that skip the cable-column noise. NOTE: the later retrospectives carry rights risk — **1929/1936 lack the "No known copyright (NZ)" statement, and the 1949 signed feature is almost certainly still in copyright** — reconfirm rights before acquiring any of them.
 
 ## Running ACQUIRE shortlist (distinct stories, across tranches)
 
@@ -46,6 +48,11 @@ Trend: distinct yield **5 → 5 → 3 → 1 → 0 → 1**; bundled fraction 0 �
 13. `ODT19290524.2.100` — 1929 survivor interview (Mr J.O. Mouton, "oldest Papuan planter") — T3 — **rights CHECK (1929)**
 14. `NZH18830825.2.51` — "The Story of the Marquis de Rays' Expedition": comprehensive 11k-char narrative (Aug 1883) — T4 — **richest single piece; high value**
 15. `NZH18840116.2.52` — "Trial of the Marquis de Rays": distinct London-correspondent trial letter (Dec 1883) — T6
+16. `ESD18800401.2.28` — "Threatened Invasion of Western Australia": 1880 armed-expedition/prospectus framing (5000ch) — T7 — canonical of a 3-reprint cluster
+17. `ST18840125.2.17` — "A Speedy and Certain Fortune": long trial + de Rays biography feature (8457ch, Jan 1884) — T7
+18. `LT18820704.2.29` — "The Marquis de Ray's Expedition": colonists' evacuation (*Genil* to Sydney, *Nouvelle Bretagne* seized at Manila), Jul 1882 — T8
+
+**Rights-EXCLUDED (distinct but not acquirable as PD):** `ODT19490908.2.20` — "King Charles of the Bismarcks", a 9778-char signed retrospective by Lawrence Constable (1949) — almost certainly still in copyright. Plus the rights-pending 1929/1936 items above.
 
 ## Tranche 1 — results 1–10 (SRCH-0021)
 
@@ -126,11 +133,18 @@ Run specifically to test whether the tail decay is predictable or lumpy. Only th
 - **Tranche 5 (41–50): 0 new distinct.** Six generic columns (Intercolonial / War in Egypt / Latest Intelligence / Australian / Australia / Sydney); PATM18820526 "A White Man Among the South Sea Islanders" is off-topic (a Solomon Islands adventure); TS18830202 is a bundled cable column under a de-Rays title; NOT18821127 = reprint of T2's THD "arch-impostor" feature; ODT18840122 = reprint of T2's NEM post-conviction summary.
 - **Tranche 6 (51–60): 1 new distinct** — `NZH18840116.2.52` "Trial of the Marquis de Rays" (a distinct London-correspondent trial letter, Dec 1883). The rest are generic columns, an off-topic 1923 item ("Seeing Through Metal"), and a New-Guinea-annexation column with a bundled de-Rays subsection (TH18840104).
 
-## Final shortlist (6 tranches, 60 of 695 assessed)
+## Tranches 7–8 — results 61–80 (SRCH-0026)
 
-**15 distinct ACQUIRE candidates** spanning the full arc: founding (1880 *Chandernagore* voyage; 1881 colony founded) → arrest (Aug–Nov 1882) → committal (Feb 1883) → the "Story of the Expedition" feature + the correspondent's trial letter (Aug 1883 / Dec 1883) → conviction (Jan 1884) → the eyewitness Port-Breton visit → retrospectives (1929 survivor interview, 1936). Two (1929, 1936) are **rights-pending** (no "No known copyright (NZ)" statement). See the running shortlist above.
+Run to test the two-consecutive-zeros depletion criterion. The floor is confirmed lumpy — no consecutive zeros; tranche 7 spiked.
 
-**Coverage note:** 60/695 keyword hits assessed across 6 tranches. The distinct-yield decay (5,5,3,1,0,1) is a predictable trend to a **lumpy floor** of ~0–1 new distinct per tranche — so the tail is not exhausted, just sparse and reprint-saturated. The remaining ~635 hits are NOT covered; harvesting the residual distinct pieces efficiently needs narrower query handles, not exhaustive pagination of this one.
+- **Tranche 7 (61–70): 3 new distinct.** ESD18800401 "Threatened Invasion of Western Australia" (1880, 5000ch, PD — the armed-expedition/prospectus framing; canonical of a 3-reprint cluster with KUMAT18800419 + NEM18800426); ST18840125 "A Speedy and Certain Fortune" (Jan 1884, 8457ch, PD — long trial + biography feature); ODT19490908 "King Charles of the Bismarcks" (1949, 9778ch — distinct signed history, but **rights-excluded**: almost certainly still in copyright). Rest: generic cable columns.
+- **Tranche 8 (71–80): 1 new distinct** — LT18820704 "The Marquis de Ray's Expedition" (Jul 1882, 1955ch, PD — the colonists' evacuation: *Genil* landing 88 at Sydney, *Nouvelle Bretagne* seized at Manila). Rest: generic columns + a Ned-Kelly-Gang column.
+
+## Running shortlist status (8 tranches, 80 of 695 assessed)
+
+**18 distinct PD ACQUIRE candidates** (list above) spanning the full arc: founding (1880 voyage + colony) → the 1880 "invasion"/prospectus framing → arrest (1882) → colonists' evacuation (Jul 1882) → committal (Feb 1883) → "Story of the Expedition" + trial features (Aug/Dec 1883, Jan 1884) → conviction (Jan 1884) → the eyewitness Port-Breton visit. Plus **rights-blocked/pending distinct pieces** (1929, 1936, 1949 retrospectives).
+
+**Coverage / depletion status:** 80/695 assessed across 8 tranches. Distinct-yield curve **5,5,3,1,0,1,3,1** — a predictable decline to a *lumpy, non-depleted* floor (no two consecutive zeros; a tranche-7 spike to 3). The tail is NOT exhausted: distinct material keeps surfacing in bursts. Options: continue paginating (accepting ~70% noise for periodic distinct bursts), or switch to narrower query handles to harvest the residual distinct tail more efficiently. The remaining ~615 hits are uncovered.
 
 ## Provenance
 
