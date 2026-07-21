@@ -445,3 +445,17 @@
     - "The New Italy aftermath (1923 'A Page of History', + the Italian colonists LT18810421) links this case to backlog TASK-34 (New Italy mirror) -- an acquisition thread already tracked."
     - "Acquire the 36-item PD shortlist (spec 015) after rights confirmation; 1923/1929/1936/1949 retrospectives are rights-blocked/pending. Reset the NZ exit node when NZ-routed work is done."
   notes: "'\"Port Breton\"' phrase vein COMPLETE (depleted T4-5). A tight, fast vein (5 tranches vs 19 for Marquis de Rays) because it overlaps the person-name set; its novelty is concentrated in the underweighted early-recruitment/voyage/colonists/New-Italy phases. Governed client only; hybrid triage; dedup against the prior veins. Census + shortlist only. Captures: page-1..5 phrase enumerations + the per-tranche article reads."
+
+- id: SRCH-0032
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "Saturation sweep -- further distinctive/associated handles after the two productive veins (Marquis de Rays, \"Port Breton\") and Rabardy. Tested: 'du Breil' (phrase, full census), and handle-quality of '\"New Italy\"', '\"United Brotherhood\"', '\"Nouvelle Bretagne\"'."
+  coverage: "SATURATION -- all add ZERO new distinct. 'du Breil' (phrase, 16 hits, full census curve 0,0): entirely overlap (The French Colonisation Swindle, The Story of the Expedition, the 1923 New Italy cluster, The South Sea Bubble of Charles du Breil #29) + tangential/rights-blocked (CHP19260313 'A Black Utopia for New Zealand', 1926, a SIGNED A.J. Harrop piece about a DIFFERENT 1840/1858 French NZ-colonisation scheme -- de Rays only referenced) + off-topic ads and a Hemingway item. '\"New Italy\"' (1265) POLLUTED by Mussolini-era 'the New Italy' (Feb 1935 fascist-Italy commentary), not the NSW survivor settlement; REJECTED. '\"United Brotherhood\"' (338) POLLUTED by a different 1897 'United Brotherhood' org (disbanded 1897); REJECTED. '\"Nouvelle Bretagne\"' (8, clean/precise) = 0 new: all overlap (LT18820704 #18, South Sea Bubble #29, Story of Expedition #14) or tangential (a Manila-typhoon disaster report; a bundled news-briefs column re the Genil landing 28 colonists). CONCLUSION: the de Rays / Port-Breton case is SATURATED on Papers Past at 36 distinct PD ACQUIRE candidates (28 Marquis de Rays + 2 Rabardy + 6 \"Port Breton\") plus rights-blocked/pending retrospectives (1923/1929/1936/1949)."
+  remainingQuestions:
+    - "Papers Past coverage of the case is harvested. Next axes (separate discovery, not this handle-space): Chronicling America / Trove (Australian press -- the colonists landed at Sydney/Noumea, so Australian coverage is likely richer) / the New Italy NSW settlement as its own topic (backlog TASK-34)."
+    - "Acquire the 36-item PD shortlist (spec 015) after rights confirmation; 1923/1929/1936/1949 retrospectives are rights-blocked/pending."
+    - "Reset the NZ exit node when NZ-routed work is done."
+  notes: "Saturation sweep confirming the harvest is complete for the Papers Past handle-space of this case. Governed client only. 'New Italy'/'United Brotherhood' are homonym/pollution rejects; 'du Breil'/'Nouvelle Bretagne' are clean but fully-overlapping. Census + shortlist only. Captures: du Breil page-1/2 + 3 handle-test enumerations + article reads."
