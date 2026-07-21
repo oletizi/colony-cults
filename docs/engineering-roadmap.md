@@ -202,6 +202,7 @@ Render English-language sources as facsimile-edition PDFs. English documents (PB
 
 ## impl:feature/source-group-pdf
 - status: planned
+- design-approved: yes
 - design: docs/superpowers/specs/2026-07-21-source-group-pdf-design.md
 - depends-on: impl:feature/english-source-pdf
 Render source-group members (Papers Past NZ press articles PB-P060/PB-P061-P092) as facsimile-edition PDFs. Blocked today: members have no registered archive layout in the PDF build (ensureMemberLayoutRegistered exists but is unwired into buildSource/buildAll), and their archive shape is incompatible with the archive-direct reader -- flat page-image folios (ocr_status:none) under newspapers/<slug>/ with OCR held in a separate ocr-text asset, versus the reader's expectation of monograph issue.txt OCR or periodical <date>_<ark> issue dirs. Needs: wire member-layout registration into the build + a build path that sources the English reading recto from the ocr-text asset for these flat-folio periodical clippings.
