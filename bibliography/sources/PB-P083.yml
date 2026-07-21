@@ -1,0 +1,64 @@
+sourceId: PB-P083
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: THE COLONY OF NEW IRELAND
+    role: canonical
+notes: "Newspaper: New Zealand Herald, 10 April 1880. the Chandernagore (682 tons) arrives Port Jackson. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZH18800410.2.61
+    identifiers:
+      - type: papers-past
+        value: NZH18800410.2.61
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgwMDQxMC4yLjYxJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9MzMz
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18800410.2.61/14f427ae9b9f26bbe9f660fa61c9194d9b2b3e56e9e862159974b6f52b303239.gif
+        checksum: 14f427ae9b9f26bbe9f660fa61c9194d9b2b3e56e9e862159974b6f52b303239
+        byteLength: 2079
+        provenancePath: archive/papers-past/nzh18800410.2.61/14f427ae9b9f26bbe9f660fa61c9194d9b2b3e56e9e862159974b6f52b303239.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgwMDQxMC4yLjYxJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9MzU0
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18800410.2.61/7389f09897c9e067affbe6e98cf7be1253d6d6e5e2d116f5b56c344fa5ac6235.gif
+        checksum: 7389f09897c9e067affbe6e98cf7be1253d6d6e5e2d116f5b56c344fa5ac6235
+        byteLength: 108950
+        provenancePath: archive/papers-past/nzh18800410.2.61/7389f09897c9e067affbe6e98cf7be1253d6d6e5e2d116f5b56c344fa5ac6235.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgwMDQxMC4yLjYxJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTMmd2lkdGg9MzU4
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18800410.2.61/fdf9796b21ee6cf88704bf78f0dcbd4fb8071cedb56322a920c5e33863cc6243.gif
+        checksum: fdf9796b21ee6cf88704bf78f0dcbd4fb8071cedb56322a920c5e33863cc6243
+        byteLength: 63664
+        provenancePath: archive/papers-past/nzh18800410.2.61/fdf9796b21ee6cf88704bf78f0dcbd4fb8071cedb56322a920c5e33863cc6243.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZH18800410.2.61
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/nzh18800410.2.61/b4fa7d5a1c8bf6a1c618c721d5bb768e8299af002365cdc82daa45969b78e394.txt
+        checksum: b4fa7d5a1c8bf6a1c618c721d5bb768e8299af002365cdc82daa45969b78e394
+        byteLength: 5533
+        provenancePath: archive/papers-past/nzh18800410.2.61/b4fa7d5a1c8bf6a1c618c721d5bb768e8299af002365cdc82daa45969b78e394.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-nzh18800410-2-61-2026-07-21T05-25-03-478Z.html
+      retrievedAt: 2026-07-21T05:25:09.791Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/NZH18800410.2.61
+      normalizationVersion: 1

@@ -21,11 +21,12 @@ import type { Source } from '@/model/source';
  * function stays pure and testable without touching the network or the
  * filesystem.
  *
- * ADAPTER-AWARENESS (TASK-28): the two repository-specific checks
+ * ADAPTER-AWARENESS (TASK-28, specs/015): the two repository-specific checks
  * (`identifierResolved`, `rights`) DISPATCH by the record's copy-identifier
- * type (ark->Gallica, accession->museum; see `repositorySpecificChecks`), so
- * this one function verifies both a Gallica member and a museum member. The
- * injected `ArkResolver` is simply unused for an accession record.
+ * type (ark->Gallica, accession->museum, papers-past->Papers Past; see
+ * `repositorySpecificChecks`), so this one function verifies a Gallica, a
+ * museum, and a Papers Past member. The injected `ArkResolver` is simply
+ * unused for an accession or papers-past record.
  *
  * FLOW-ORDER NOTE: a museum member's `rights` check reads the
  * operator-recorded `record.rightsAssessment`, NOT an OAIRecord. Gallica gets
@@ -195,6 +196,21 @@ function accessionOf(record: RepositoryRecord): string | undefined {
   return identifier?.value;
 }
 
+/** The record's Papers Past article code (the first `papers-past`-typed copy identifier), if any. */
+function papersPastOf(record: RepositoryRecord): string | undefined {
+  const identifier = (record.identifiers ?? []).find((id) => id.type === 'papers-past');
+  return identifier?.value;
+}
+
+/**
+ * A well-formed Papers Past article code (`oid`): a paper prefix of letters, an
+ * `YYYYMMDD` 8-digit issue date, then a dot-separated article path, e.g.
+ * `HNS18840103.2.19.3`. Used by the papers-past `identifierResolved` check --
+ * a presence/shape test, NOT a network/browser resolve (verification stays a
+ * pure, injected-I/O function).
+ */
+const PAPERS_PAST_ARTICLE_CODE = /^[A-Za-z]+\d{8}\.[0-9.]+$/;
+
 /** A trimmed non-empty string, or `undefined` when absent/blank. */
 function nonEmpty(value: string | undefined): string | undefined {
   if (value === undefined) {
@@ -228,6 +244,15 @@ interface RepositoryChecks {
  *   museum adapter's resolve). `rights` reads the operator-authored
  *   `record.rightsAssessment?.rightsStatus === 'public-domain'`; it fails
  *   CLOSED otherwise (restricted / uncertain / absent all fail).
+ * - `papers-past` copy identifier (Papers Past): mirrors the museum arm --
+ *   the injected {@link ArkResolver} is UNUSED, identity is presence/shape
+ *   based, and rights are the operator-authored `rightsAssessment`. A verify
+ *   check must be CHEAP and DETERMINISTIC, so `identifierResolved` does NOT
+ *   drive a browser/network resolve -- it passes when the record carries a
+ *   well-formed Papers Past article code (matches {@link PAPERS_PAST_ARTICLE_CODE},
+ *   e.g. `HNS18840103.2.19.3`). `rights` reads
+ *   `record.rightsAssessment?.rightsStatus === 'public-domain'`; it fails
+ *   CLOSED otherwise (restricted / uncertain / absent all fail).
  * - NEITHER supported identifier: both checks fail (never silently pass) --
  *   an unsupported record cannot be verified.
  */
@@ -256,8 +281,21 @@ async function repositorySpecificChecks(
     };
   }
 
-  // Neither a supported ark nor accession copy identifier -> fail both checks
-  // (fail-closed; an unsupported record is never silently passed).
+  const papersPast = nonEmpty(papersPastOf(record));
+  if (papersPast !== undefined) {
+    // Papers Past (papers-past) path -- mirrors the museum arm. The injected
+    // ArkResolver is UNUSED: identifierResolved is a cheap, deterministic
+    // shape check on the already-inventoried article code, never a
+    // browser/network resolve. rights fails closed unless the
+    // operator-authored assessment says public-domain.
+    return {
+      identifierResolved: PAPERS_PAST_ARTICLE_CODE.test(papersPast) ? 'passed' : 'failed',
+      rights: record.rightsAssessment?.rightsStatus === 'public-domain' ? 'passed' : 'failed',
+    };
+  }
+
+  // Neither a supported ark, accession, nor papers-past copy identifier -> fail
+  // both checks (fail-closed; an unsupported record is never silently passed).
   return { identifierResolved: 'failed', rights: 'failed' };
 }
 
@@ -343,11 +381,13 @@ function assertWellFormed(input: VerifyMemberInput): void {
  * - `identifierResolved`: dispatched by copy-identifier type -- an `ark`
  *   record resolves via the injected resolver (Gallica, UNCHANGED); an
  *   `accession` record passes when it carries a non-empty accession value AND
- *   a non-empty `sourceUrl` (museum; no re-fetch). See
- *   `repositorySpecificChecks`.
+ *   a non-empty `sourceUrl` (museum; no re-fetch); a `papers-past` record
+ *   passes when it carries a well-formed article code (Papers Past; no
+ *   browser/network resolve). See `repositorySpecificChecks`.
  * - `rights`: dispatched by copy-identifier type -- an `ark` record's
- *   `rights.status` (Gallica OAIRecord, UNCHANGED); an `accession` record's
- *   operator-authored `rightsAssessment.rightsStatus` (museum, fail-closed).
+ *   `rights.status` (Gallica OAIRecord, UNCHANGED); an `accession` or
+ *   `papers-past` record's operator-authored `rightsAssessment.rightsStatus`
+ *   (museum / Papers Past, fail-closed).
  * - `requiredMetadata`: required member/record fields are present.
  * - `hardDuplicate`: same ark at same archive as another member -> `failed`.
  * - `possibleDuplicate`: matching title/creator/date, DIFFERENT ark ->

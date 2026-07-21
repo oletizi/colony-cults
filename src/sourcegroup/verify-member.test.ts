@@ -438,3 +438,140 @@ describe('verifyMember (museum / accession member)', () => {
     expect(verdict.result).toBe('failed');
   });
 });
+
+/**
+ * `verifyMember` papers-past arm (specs/015-papers-past-acquisition): a Papers
+ * Past member carries a `papers-past` copy identifier (a well-formed article
+ * code, no ark, no OAIRecord `rights`) and its authoritative rights live on the
+ * operator-authored `rightsAssessment`. Mirrors the museum arm -- the injected
+ * ark resolver is UNUSED and `identifierResolved` is a cheap shape check, never
+ * a browser/network resolve. The Gallica and museum arms above must stay
+ * unchanged (no regression).
+ */
+describe('verifyMember (papers-past member)', () => {
+  const ARTICLE_CODE = 'HNS18840103.2.19.3';
+
+  /** An ark resolver that MUST NOT be called for a papers-past record. */
+  const resolverThatThrows: ArkResolver = async () => {
+    throw new Error('resolveArk must not be called for a papers-past record');
+  };
+
+  function publicDomainAssessment(): RightsAssessment {
+    return {
+      rightsStatus: 'public-domain',
+      rightsBasis: 'Published in New Zealand in 1884; Crown copyright expired.',
+      assessedBy: 'operator',
+      assessedAt: '2026-07-16T00:00:00.000Z',
+    };
+  }
+
+  function papersPastMember(overrides: Partial<Source> = {}): Source {
+    return {
+      sourceId: 'PB-N100',
+      titles: [{ text: 'The Marquis de Rays Expedition', role: 'canonical' }],
+      kind: 'archival-item',
+      creator: 'Unknown',
+      identifiers: [],
+      ...overrides,
+    };
+  }
+
+  function papersPastRecord(overrides: Partial<RepositoryRecord> = {}): RepositoryRecord {
+    return {
+      sourceId: 'PB-N100',
+      sourceArchive: 'Papers Past / National Library of New Zealand',
+      status: 'wanted',
+      identifiers: [{ type: 'papers-past', value: ARTICLE_CODE }],
+      sourceUrl: `https://paperspast.natlib.govt.nz/newspapers/${ARTICLE_CODE}`,
+      rightsAssessment: publicDomainAssessment(),
+      ...overrides,
+    };
+  }
+
+  function papersPastInput(overrides: Partial<VerifyMemberInput> = {}): VerifyMemberInput {
+    return {
+      member: papersPastMember(),
+      record: papersPastRecord(),
+      // The ark resolver is injected but must be UNUSED for a papers-past record.
+      resolveArk: resolverThatThrows,
+      existingMembers: [],
+      ...overrides,
+    };
+  }
+
+  it('passes every check for a papers-past member with a well-formed article code + public-domain assessment (resolver never called)', async () => {
+    const verdict = await verifyMember(papersPastInput());
+
+    expect(verdict.result).toBe('passed');
+    expect(verdict.checks).toEqual({
+      identifierResolved: 'passed',
+      rights: 'passed',
+      requiredMetadata: 'passed',
+      hardDuplicate: 'passed',
+      possibleDuplicate: 'passed',
+    });
+  });
+
+  it('fails identifierResolved when the papers-past record carries no identifier at all', async () => {
+    const verdict = await verifyMember(
+      papersPastInput({ record: papersPastRecord({ identifiers: [], rightsAssessment: undefined }) }),
+    );
+
+    expect(verdict.checks.identifierResolved).toBe('failed');
+    expect(verdict.result).toBe('failed');
+  });
+
+  it('fails identifierResolved when the article code is malformed (wrong shape)', async () => {
+    const verdict = await verifyMember(
+      papersPastInput({
+        record: papersPastRecord({ identifiers: [{ type: 'papers-past', value: 'not-an-article-code' }] }),
+      }),
+    );
+
+    expect(verdict.checks.identifierResolved).toBe('failed');
+    expect(verdict.result).toBe('failed');
+    // rights is independent and still passes.
+    expect(verdict.checks.rights).toBe('passed');
+  });
+
+  it('fails identifierResolved when the papers-past identifier value is empty', async () => {
+    const verdict = await verifyMember(
+      papersPastInput({ record: papersPastRecord({ identifiers: [{ type: 'papers-past', value: '' }] }) }),
+    );
+
+    // An empty value classifies as "neither supported identifier" -> both fail.
+    expect(verdict.checks.identifierResolved).toBe('failed');
+    expect(verdict.result).toBe('failed');
+  });
+
+  it('fails rights (fail-closed) when the record has NO rightsAssessment at all', async () => {
+    const verdict = await verifyMember(
+      papersPastInput({ record: papersPastRecord({ rightsAssessment: undefined }) }),
+    );
+
+    expect(verdict.checks.rights).toBe('failed');
+    expect(verdict.result).toBe('failed');
+    // identifierResolved is independent and still passes.
+    expect(verdict.checks.identifierResolved).toBe('passed');
+  });
+
+  it('fails rights (fail-closed) when the assessment is restricted', async () => {
+    const restricted: RightsAssessment = { ...publicDomainAssessment(), rightsStatus: 'restricted' };
+    const verdict = await verifyMember(
+      papersPastInput({ record: papersPastRecord({ rightsAssessment: restricted }) }),
+    );
+
+    expect(verdict.checks.rights).toBe('failed');
+    expect(verdict.result).toBe('failed');
+  });
+
+  it('fails rights (fail-closed) when the assessment is uncertain', async () => {
+    const uncertain: RightsAssessment = { ...publicDomainAssessment(), rightsStatus: 'uncertain' };
+    const verdict = await verifyMember(
+      papersPastInput({ record: papersPastRecord({ rightsAssessment: uncertain }) }),
+    );
+
+    expect(verdict.checks.rights).toBe('failed');
+    expect(verdict.result).toBe('failed');
+  });
+});

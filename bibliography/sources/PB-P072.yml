@@ -1,0 +1,56 @@
+sourceId: PB-P072
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: TRIAL OF THE MARQUIS DE RAYS
+    role: canonical
+notes: "Newspaper: New Zealand Herald, 16 January 1884. distinct London-correspondent trial letter. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZH18840116.2.52
+    identifiers:
+      - type: papers-past
+        value: NZH18840116.2.52
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODg0MDExNi4yLjUyJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9MzIx
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18840116.2.52/f953e8edcb2cc6dabed543c46a707ac89ff296de1b9c88206188addd2241db74.gif
+        checksum: f953e8edcb2cc6dabed543c46a707ac89ff296de1b9c88206188addd2241db74
+        byteLength: 1320
+        provenancePath: archive/papers-past/nzh18840116.2.52/f953e8edcb2cc6dabed543c46a707ac89ff296de1b9c88206188addd2241db74.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODg0MDExNi4yLjUyJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9MzY0
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18840116.2.52/a7ce8c2983990309efff3a0a1404c7a6617a22f03a758e0bd29cc9996a76a6f5.gif
+        checksum: a7ce8c2983990309efff3a0a1404c7a6617a22f03a758e0bd29cc9996a76a6f5
+        byteLength: 129713
+        provenancePath: archive/papers-past/nzh18840116.2.52/a7ce8c2983990309efff3a0a1404c7a6617a22f03a758e0bd29cc9996a76a6f5.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZH18840116.2.52
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/nzh18840116.2.52/a6d9fa6ac21c114f004dbf8d11b17a98a96b0b5849320612cda8f2ab04c0fdbb.txt
+        checksum: a6d9fa6ac21c114f004dbf8d11b17a98a96b0b5849320612cda8f2ab04c0fdbb
+        byteLength: 3003
+        provenancePath: archive/papers-past/nzh18840116.2.52/a6d9fa6ac21c114f004dbf8d11b17a98a96b0b5849320612cda8f2ab04c0fdbb.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-nzh18840116-2-52-2026-07-21T05-21-13-663Z.html
+      retrievedAt: 2026-07-21T05:21:20.376Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/NZH18840116.2.52
+      normalizationVersion: 1

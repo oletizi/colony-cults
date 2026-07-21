@@ -1,0 +1,56 @@
+sourceId: PB-P089
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: NEW IRELAND COLONIZATION SCHEME
+    role: canonical
+notes: "Newspaper: Auckland Star, 17 September 1880. Shuter traveler report; Rabardy + the Genil. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/AS18800917.2.29
+    identifiers:
+      - type: papers-past
+        value: AS18800917.2.29
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1BUzE4ODAwOTE3LjIuMjkmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD0zMTM=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/as18800917.2.29/db43297db752e32cad4e47b321fe7ec8bd3d2f2637cb2fc9d8754dbd6951e606.gif
+        checksum: db43297db752e32cad4e47b321fe7ec8bd3d2f2637cb2fc9d8754dbd6951e606
+        byteLength: 2886
+        provenancePath: archive/papers-past/as18800917.2.29/db43297db752e32cad4e47b321fe7ec8bd3d2f2637cb2fc9d8754dbd6951e606.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1BUzE4ODAwOTE3LjIuMjkmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD0zNDM=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/as18800917.2.29/9c8796b1ac546de604b46ebfe954bf833d9f374d80906f2ce25e0f367510de0c.gif
+        checksum: 9c8796b1ac546de604b46ebfe954bf833d9f374d80906f2ce25e0f367510de0c
+        byteLength: 92834
+        provenancePath: archive/papers-past/as18800917.2.29/9c8796b1ac546de604b46ebfe954bf833d9f374d80906f2ce25e0f367510de0c.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/AS18800917.2.29
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/as18800917.2.29/ce101b9715f7f4d6588b0fcbd06e37d2664d8beb75f9d5d2796066e968b43986.txt
+        checksum: ce101b9715f7f4d6588b0fcbd06e37d2664d8beb75f9d5d2796066e968b43986
+        byteLength: 2065
+        provenancePath: archive/papers-past/as18800917.2.29/ce101b9715f7f4d6588b0fcbd06e37d2664d8beb75f9d5d2796066e968b43986.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-as18800917-2-29-2026-07-21T05-26-38-077Z.html
+      retrievedAt: 2026-07-21T05:26:44.005Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/AS18800917.2.29
+      normalizationVersion: 1

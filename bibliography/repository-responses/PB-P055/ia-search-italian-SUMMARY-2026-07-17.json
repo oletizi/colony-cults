@@ -1,0 +1,442 @@
+[
+  {
+    "handle": "it-nuova-francia",
+    "numFound": 2,
+    "returned": 2,
+    "docs": [
+      {
+        "id": "nouvellefrancec00groogoog",
+        "title": "Nouvelle-France: Colonie libre de Port-Breton, Océanie",
+        "creator": "P. de Groote",
+        "year": 1880,
+        "lang": "French",
+        "mediatype": "texts"
+      },
+      {
+        "id": "capitainepopaul0000raim",
+        "title": "Capitaine Popaul",
+        "creator": "Raimbault, Alain",
+        "year": 2008,
+        "lang": "fre",
+        "mediatype": "texts"
+      }
+    ]
+  },
+  {
+    "handle": "it-de-rays-italian",
+    "numFound": 41,
+    "returned": 41,
+    "docs": [
+      {
+        "id": "cia-readingroom-document-cia-rdp80-00809a000700240032-8",
+        "title": "CIA Reading Room cia-rdp80-00809a000700240032-8: ACHIEVEMENTS OF THE ACADEMY OF SCIENCES USSR IN 1954",
+        "creator": "CIA Reading Room",
+        "year": 1955,
+        "lang": "english",
+        "mediatype": "texts"
+      },
+      {
+        "id": "cia-readingroom-document-cia-rdp86-00513r001031900021-6",
+        "title": "CIA Reading Room cia-rdp86-00513r001031900021-6: SCIENTIFIC ABSTRACT FR:MALTSEVA, L.F. TO:MALTSEV, Y.A.",
+        "creator": "CIA Reading Room",
+        "year": 1967,
+        "lang": "english",
+        "mediatype": "texts"
+      },
+      {
+        "id": "cia-readingroom-document-cia-rdp84-00581r000200550056-5",
+        "title": "CIA Reading Room cia-rdp84-00581r000200550056-5: AUTHORS FR: UGOL NIKOV, N. TO: UKAJI, ROKNO",
+        "creator": "CIA Reading Room",
+        "year": 1972,
+        "lang": "english",
+        "mediatype": "texts"
+      },
+      {
+        "id": "earthunderfirehu0000lavi",
+        "title": "Earth under fire : humanity's survival of the Ice Age",
+        "creator": "LaViolette, Paul A",
+        "year": 2005,
+        "lang": "eng",
+        "mediatype": "texts"
+      },
+      {
+        "id": "wia-news_2010-08-29",
+        "title": "WIA News 2010-08-29",
+        "creator": "Wireless Institute of Australia",
+        "year": 2010,
+        "lang": "eng",
+        "mediatype": "audio"
+      },
+      {
+        "id": "tsp2012-07-31.cmc8.flac24",
+        "title": "Smashing Pumpkins Live at Entertainment Centre on 2012-07-31",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-10-28.tsp2012-10-28",
+        "title": "Smashing Pumpkins Live at Centre Bell on 2012-10-28",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "SP2012-09-28.wav_96-24",
+        "title": "Smashing Pumpkins Live at Cains Ballroom on 2012-09-28",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-10-13.H120.flac16",
+        "title": "Smashing Pumpkins Live at Viejas Arena on 2012-10-13",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-12-09.ca14.flac16",
+        "title": "Smashing Pumpkins Live at Patriot Center on 2012-12-09",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-12-04.live2cd.flac16",
+        "title": "Smashing Pumpkins Live at Newport Music Hall on 2012-12-04",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-12-08.csb.flac24",
+        "title": "Smashing Pumpkins Live at Susquehanna Bank Center on 2012-12-08",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-12-10.nyctaper.flac16",
+        "title": "Smashing Pumpkins Live at Barclays Center on 2012-12-10",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "SP2012-10-18.SP2012-10-18.wav_96-24",
+        "title": "Smashing Pumpkins Live at Chaifetz Arena on 2012-10-18",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "sp2012-12-08.cabbage.flac24",
+        "title": "Smashing Pumpkins Live at Susquehanna Bank Center on 2012-12-08",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-08-02.m10.flac16",
+        "title": "Smashing Pumpkins Live at Hisense Arena on 2012-08-02",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-12-04.live2cd.flac24",
+        "title": "Smashing Pumpkins Live at Newport Music Hall on 2012-12-04",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "wia-news_2012-06-24",
+        "title": "WIA News 2012-06-24",
+        "creator": "Wireless Institute of Australia",
+        "year": 2012,
+        "lang": "eng",
+        "mediatype": "audio"
+      },
+      {
+        "id": "wia-news_2012-05-27",
+        "title": "WIA News 2012-05-27",
+        "creator": "Wireless Institute of Australia",
+        "year": 2012,
+        "lang": "eng",
+        "mediatype": "audio"
+      },
+      {
+        "id": "tsp2012-09-27.ca14.flac16",
+        "title": "Smashing Pumpkins Live at Stubb's Waller Creek Amphitheater on 2012-09-27",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-02-08.flac16",
+        "title": "Smashing Pumpkins Live at Hisense Arena on 2012-08-02",
+        "creator": "Mark.B",
+        "year": 2012,
+        "mediatype": "audio"
+      },
+      {
+        "id": "tsp2012-10-10.aud1",
+        "title": "Smashing Pumpkins Live at Comcast Arena on 2012-10-10",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-10-20.mk4.flac16",
+        "title": "Smashing Pumpkins Live at Roy Wilkins Auditorium on 2012-10-20",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-08-04.auckland",
+        "title": "Smashing Pumpkins Live at Vector Arena on 2012-08-04",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-09-22.dr07.flac16",
+        "title": "Smashing Pumpkins Live at Arena Ciudad de México on 2012-09-22",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-08-02.aud.flac16",
+        "title": "Smashing Pumpkins Live at Hisense Arena on 2012-08-02",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-10-25.flac16",
+        "title": "Smashing Pumpkins Live at Air Canada Centre on 2012-10-25",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-08-08.h1.flac16",
+        "title": "Smashing Pumpkins Live at Smart Araneta Coliseum on 2012-08-08",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "tsp2012-10-12.m10.flac16",
+        "title": "Smashing Pumpkins Live at Bill Graham Civic Auditorium on 2012-10-12",
+        "creator": "Smashing Pumpkins",
+        "year": 2012,
+        "mediatype": "etree"
+      },
+      {
+        "id": "SmashingPumpkinsLiveAtMaxwellC.KingCenterForThePerformingArtsOn",
+        "title": "Smashing Pumpkins Live at Maxwell C. King Center For The Performing Arts on 2013-04-29",
+        "creator": "Smashing Pumpkins",
+        "year": 2013,
+        "mediatype": "etree"
+      },
+      {
+        "id": "wia-news_2014-10-12",
+        "title": "WIA News 2014-10-12",
+        "creator": "Wireless Institute of Australia",
+        "year": 2014,
+        "lang": "eng",
+        "mediatype": "audio"
+      },
+      {
+        "id": "wia-news_2015-05-17",
+        "title": "WIA News 2015-05-17",
+        "creator": "Wireless Institute of Australia",
+        "year": 2015,
+        "lang": "eng",
+        "mediatype": "audio"
+      },
+      {
+        "id": "cia-readingroom-document-cia-rdp82-00850r000100100010-8",
+        "title": "CIA Reading Room cia-rdp82-00850r000100100010-8: JPRS ID: 8701 WORLDWIDE REPORT TELECOMMUNICATIONS POLICY, RESEARCH AND DEVELOPMENT",
+        "creator": "CIA Reading Room",
+        "year": 2016,
+        "lang": "english",
+        "mediatype": "texts"
+      },
+      {
+        "id": "LakePukaki",
+        "title": "Digital Oil Painting of Lake Pukaki",
+        "creator": "Charles W. Bailey, Jr.",
+        "year": 2018,
+        "lang": "eng",
+        "mediatype": "image"
+      },
+      {
+        "id": "wia-news_2018-07-15",
+        "title": "WIA News 2018-07-15",
+        "creator": "Wireless Institute of Australia",
+        "year": 2018,
+        "lang": "eng",
+        "mediatype": "audio"
+      },
+      {
+        "id": "wia-news_2020-11-15",
+        "title": "WIA News 2020-11-15",
+        "creator": "Wireless Institute of Australia",
+        "year": 2020,
+        "lang": "eng",
+        "mediatype": "audio"
+      },
+      {
+        "id": "UUAkron_Servicecast-1087965391_safety_health_on_the_safe_side_episode_17_humor_i",
+        "title": "On the Safe Side Episode #17: Humor in safety and protecting workers from heat illness",
+        "creator": "UUAkron Servicecast",
+        "year": 2021,
+        "lang": "eng",
+        "mediatype": "audio"
+      },
+      {
+        "id": "wia-news_2024-04-07",
+        "title": "WIA News 2024-04-07",
+        "creator": "Wireless Institute of Australia",
+        "year": 2024,
+        "lang": "eng",
+        "mediatype": "audio"
+      },
+      {
+        "id": "space-electronic-collection",
+        "title": "Space & Electronic Collection",
+        "mediatype": "audio"
+      },
+      {
+        "id": "TheDeathmetalhippyShowFebrary23rd2013",
+        "title": "The DeathMetalHippy Show February 23rd 2013",
+        "creator": "Kevin Samuel Haber",
+        "mediatype": "audio"
+      },
+      {
+        "id": "2014_20201105",
+        "title": "Космическая Одиссея (2014)",
+        "mediatype": "audio"
+      }
+    ]
+  },
+  {
+    "handle": "it-nuova-italia-veneti",
+    "numFound": 2,
+    "returned": 2,
+    "docs": [
+      {
+        "id": "BiblioFBK-Ponte-1953-02",
+        "title": "Il Ponte : rivista mensile di politica e letteratura diretta da Piero Calamandrei – 1953 – 2 (Febbraio)",
+        "creator": [
+          "Abbate, Michele",
+          "Albini, Umberto",
+          "Ambrosoli, Luigi",
+          "Antonicelli, Franco",
+          "Barbetti, Emilio",
+          "Barbieri, Giuseppe",
+          "Barbone, Donato",
+          "Bauer, Riccardo",
+          "Calamandrei, Piero",
+          "Caligiani, Alberto",
+          "Cherubini, Arnaldo",
+          "Collotti, Enzo",
+          "David, Sante",
+          "De Angelis, Giulio",
+          "Dessì, Giuseppe",
+          "Doria, Giulio",
+          "Enriques Agnoletti, Enzo",
+          "Facco De Lagarda, Ugo",
+          "Gianni, Angelo",
+          "Grilli, Alfredo",
+          "Guarino, Crescenzo",
+          "Jahier, Piero",
+          "Mannelli, Giulio",
+          "Mazzucchetti, Lavinia",
+          "Pessina, A. F.",
+          "Rodelli, Luigi",
+          "Salvemini, Gaetano",
+          "Silvi, Valeria",
+          "Strachey, John",
+          "Vivante, Paolo"
+        ],
+        "year": 1953,
+        "lang": "Italian",
+        "mediatype": "texts"
+      },
+      {
+        "id": "BIBLIOFBK-FMST-991017448879706186",
+        "title": "Mir parlen italiano : la costruzione sociale del pregiudizio etnico : storia dei trentini nel Vorarlberg / Reinhard Johler ; introduzione di Renato Monteleone",
+        "creator": [
+          "Johler, Reinhard",
+          "Antonelli, Quinto",
+          "Monteleone, Renato"
+        ],
+        "year": 1996,
+        "lang": "italian",
+        "mediatype": "texts"
+      }
+    ]
+  },
+  {
+    "handle": "it-schenini-recruitment",
+    "numFound": 0,
+    "returned": 0,
+    "docs": []
+  },
+  {
+    "handle": "it-emigrazione-oceania",
+    "numFound": 4,
+    "returned": 4,
+    "docs": [
+      {
+        "id": "bub_gb_RImJluWvBjgC",
+        "title": "Elogio di Giovanni da Verrazzano fiorentino scopritore della Nuova Francia nel secolo 16. G. P",
+        "creator": "Giuseppe Bencivenni Pelli",
+        "year": 1769,
+        "lang": "Italian",
+        "mediatype": "texts"
+      },
+      {
+        "id": "McGillLibrary-123909-2185",
+        "title": "La partie occidentale della Nuova Francia o Canada",
+        "creator": [
+          "Zatta, Antonio, active 1757-1797",
+          "Pugsley, William H. (William Howard), 1912-1993, donor",
+          "W.H. Pugsley Collection of Early Canadian Maps"
+        ],
+        "year": 1778,
+        "lang": "Italian",
+        "mediatype": "texts"
+      },
+      {
+        "id": "11-05-2025-selvatica-osteria-di-strada-pesaro-italia",
+        "title": "11/07/2025 Selvatica Osteria di Strada, Pesaro, Italia",
+        "creator": "Bad Bed",
+        "year": 2025,
+        "lang": [
+          "eng",
+          "Italian"
+        ],
+        "mediatype": "audio"
+      },
+      {
+        "id": "08-11-2025-verde-vigna-casa-pacifista-comiso-italia",
+        "title": "08/11/2025 Verde Vigna Casa Pacifista, Comiso, Italia",
+        "creator": "Bad Bed",
+        "year": 2025,
+        "lang": [
+          "eng",
+          "italian"
+        ],
+        "mediatype": "audio"
+      }
+    ]
+  }
+]

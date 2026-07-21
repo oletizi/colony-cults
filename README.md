@@ -74,7 +74,7 @@ summarizes.
 
 ### Commands
 
-Run via `npm run gallica -- <command> ...` (or `npx tsx src/index.ts
+Run via `npm run bib -- <command> ...` (or `npx tsx src/index.ts
 <command> ...`). Global flags: `--dry-run`, `--force`, `--verify`, `--ocr`;
 per-source options: `--source-id <id>` (e.g. `PB-P001`) and `--slug <slug>`.
 `census` requires both explicitly; `fetch-issue`/`fetch-source`/`ocr` require

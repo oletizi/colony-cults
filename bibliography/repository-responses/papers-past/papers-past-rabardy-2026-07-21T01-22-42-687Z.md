@@ -1,0 +1,205 @@
+- banner:
+  - navigation:
+    - list:
+      - listitem:
+        - link "ĀwhinaHelp":
+          - /url: /help
+      - listitem:
+        - link "MōAbout":
+          - /url: /about
+      - listitem:
+        - link "TakiuruLog in":
+          - /url: "#"
+  - link "Papers Past":
+    - /url: /
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=Rabardy
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=Rabardy
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=Rabardy
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=Rabardy
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=Rabardy
+- link "Switch to Māori":
+  - /url: "#"
+  - img "Switch to Māori"
+- heading "Newspapers" [level=3]
+- img "Tukutuku"
+- heading "Search Newspapers" [level=4]
+- textbox "Keyword or name": Rabardy
+- radio "All content" [checked]
+- text: All content
+- radio "Ngā Tānga Reo Māori only"
+- text: Ngā Tānga Reo Māori only
+- link "What is Ngā Tānga Reo Māori?":
+  - /url: /newspapers/he-aha-nga-tanga-reo-maori
+- heading "Filter" [level=5]
+- heading "Between dates" [level=6]
+- button "All dates "
+- heading "Title" [level=6]
+- button "All titles, all regions "
+- heading "Content types" [level=6]
+- button "All types of content "
+- link "Clear search":
+  - /url: /newspapers/reset-search
+- button "Search"
+- paragraph
+- heading "Search results" [level=3]
+- link "Explore Newspapers":
+  - /url: /newspapers/all
+- navigation "Next/previous navigation":
+  - text: Showing results 1-10 of 14
+  - link "Next 10 results":
+    - /url: /newspapers?page=2&query=Rabardy
+- menubar:
+  - text: Sort by
+  - menuitem "Best matchRitenga tino pai rawa": Best match
+- menubar:
+  - text: Items per page
+  - menuitem "10"
+- list:
+  - listitem: Hide preview
+  - listitem:
+    - link "":
+      - /url: /newspapers?query=Rabardy&snippet=false
+- heading "Article" [level=2]
+- heading "Newspaper" [level=2]
+- heading "Date" [level=2]
+- separator
+- link "THE FRENCH MODE OF ANNEXING.":
+  - /url: /newspapers/ESD18840222.2.16?query=Rabardy
+- text: Evening Star 22 February 1884
+- link "Search result preview image":
+  - /url: /newspapers/ESD18840222.2.16?query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "THE FRENCH MODE OF ANNEXING.":
+  - /url: /newspapers/SCANT18840227.2.17?query=Rabardy
+- text: South Canterbury Times 27 February 1884
+- link "Search result preview image":
+  - /url: /newspapers/SCANT18840227.2.17?query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "THE SOUTH SEA BUBBLE OF CHARLES DU BREIL.":
+  - /url: /newspapers/CHP18980101.2.78?query=Rabardy
+- text: Press 1 January 1898
+- link "Search result preview image":
+  - /url: /newspapers/CHP18980101.2.78?query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "THE FRENCH COLONISATION SWINDLE.":
+  - /url: /newspapers/NZH18821216.2.76?query=Rabardy
+- text: New Zealand Herald 16 December 1882
+- link "Search result preview image":
+  - /url: /newspapers/NZH18821216.2.76?query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "HAVING THE SAVAGES.":
+  - /url: /newspapers/WEST18831120.2.14?query=Rabardy
+- text: Westport Times 20 November 1883
+- link "Search result preview image":
+  - /url: /newspapers/WEST18831120.2.14?query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "Untitled":
+  - /url: /newspapers/MPRESS18831122.2.24?query=Rabardy
+- text: Marlborough Press 22 November 1883
+- link "Search result preview image":
+  - /url: /newspapers/MPRESS18831122.2.24?query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "Our Paris Letter.":
+  - /url: /newspapers/MH18940421.2.18?query=Rabardy
+- text: Manawatu Herald 21 April 1894
+- link "Search result preview image":
+  - /url: /newspapers/MH18940421.2.18?query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "Untitled":
+  - /url: /newspapers/NEM18831105.2.18?query=Rabardy
+- text: Nelson Evening Mail 5 November 1883
+- link "Search result preview image":
+  - /url: /newspapers/NEM18831105.2.18?query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "The Ashburton Guardian. Magna est Veritas et Prevalebit. MONDAY, OCTOBER 29, 1883. The Dunedin Libel Case.":
+  - /url: /newspapers/AG18831029.2.9?query=Rabardy
+- text: Ashburton Guardian 29 October 1883
+- link "Search result preview image":
+  - /url: /newspapers/AG18831029.2.9?query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "TOPICS OF THE DAY.":
+  - /url: /newspapers/CHP18940421.2.21?query=Rabardy
+- text: Press 21 April 1894
+- link "Search result preview image":
+  - /url: /newspapers/CHP18940421.2.21?query=Rabardy
+  - img "Search result preview image"
+- separator
+- navigation "Pages of Results":
+  - list:
+    - listitem:
+      - link "1":
+        - /url: "#"
+    - listitem:
+      - link "2":
+        - /url: /newspapers?page=2&query=Rabardy
+    - listitem:
+      - link "Next ›":
+        - /url: /newspapers?page=2&query=Rabardy
+- contentinfo:
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=Rabardy
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=Rabardy
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=Rabardy
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=Rabardy
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=Rabardy
+  - link "National Library of New Zealand":
+    - /url: https://natlib.govt.nz
+    - img "National Library of New Zealand"
+  - link "newzealand.govt.nz":
+    - /url: https://www.govt.nz/
+    - img "newzealand.govt.nz"
+  - navigation:
+    - list:
+      - listitem:
+        - link "Mahere pae tukutuku Sitemap":
+          - /url: /sitemap
+      - listitem:
+        - link "Āheinga Accessibility":
+          - /url: /accessibility
+      - listitem:
+        - link "Ngā ture mō te whakamahi Terms of use":
+          - /url: /terms
+      - listitem:
+        - link "Whakapā mai ki a mātou Contact us":
+          - /url: /contact
+      - listitem:
+        - link "Āwhina Help":
+          - /url: /help
+      - listitem:
+        - link "Mō About":
+          - /url: /about
+      - listitem:
+        - link "Takiuru Log in":
+          - /url: "#"

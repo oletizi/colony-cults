@@ -1,12 +1,16 @@
 <!--
 Sync Impact Report
-- Version change: 1.2.0 → 1.3.0
-- Rationale: MINOR — added Principle XIV (The Operator Owns Scope — No Agent Scope-Cutting),
-  which FORBIDS agent-originated scope trimming/deferral (YAGNI and every equivalent). Only the
-  operator owns scope. Additive (no existing principle changed semantics). (Prior amendments:
-  1.1.0 → 1.2.0 added XIII, No Agent Memory, Ever; 1.0.0 → 1.1.0 added XII, Respect the Source,
-  and reconciled the report with XI, Design Through the Design Skill.)
-- Principles (14):
+- Version change: 1.3.0 → 1.4.0
+- Rationale: MINOR — added Principle XV (Metadata Integrity Is Mechanically Enforced — No Orphan
+  Assets), which REQUIRES any process that retrieves an object from a source or writes an asset
+  to the archive/object-store to update the durable SSOT bibliography metadata as an inseparable,
+  structurally-enforced, fail-loud part of the same operation — never a forgettable follow-up
+  step. Motivated by repeated real failures (bytes mirrored to B2 / the archive with the record
+  left unadvanced). Additive (no existing principle changed semantics); it is the enforcement
+  mechanism behind III (Provenance Is Mandatory). (Prior amendments: 1.2.0 → 1.3.0 added XIV, The
+  Operator Owns Scope; 1.1.0 → 1.2.0 added XIII, No Agent Memory, Ever; 1.0.0 → 1.1.0 added XII,
+  Respect the Source, and reconciled the report with XI, Design Through the Design Skill.)
+- Principles (15):
     I. Evidence Before Narrative
     II. Preserve Disagreement & Uncertainty
     III. Provenance Is Mandatory
@@ -20,15 +24,17 @@ Sync Impact Report
     XI. Design Through the Design Skill
     XII. Respect the Source (Frugal, Polite Access)
     XIII. No Agent Memory, Ever
-    XIV. The Operator Owns Scope (No Agent Scope-Cutting)   [added this amendment]
+    XIV. The Operator Owns Scope (No Agent Scope-Cutting)
+    XV. Metadata Integrity Is Mechanically Enforced (No Orphan Assets)   [added this amendment]
 - Templates reviewed for alignment:
-    ✅ .specify/templates/plan-template.md — the "Constitution Check" gate is principle-generic;
-       plans that touch source acquisition MUST now evaluate XII (frugal/polite access).
+    ✅ .specify/templates/plan-template.md — the "Constitution Check" gate is principle-generic
+       ("[Gates determined based on constitution file]"), so it already evaluates XV; any plan
+       for a feature that retrieves or archives assets MUST show the metadata update is structural
+       (part of the operation's success contract), not a separate step.
     ✅ .specify/templates/spec-template.md — no mandatory-section conflict.
-    ✅ .specify/templates/tasks-template.md — XII-driven task types (frugal fetch,
-       verify-before-upload) are expressible with existing categories.
-- Runtime guidance: the agent memory note `frugal-acquisition` captures XII's operational
-  procedure (the proven two-pass download-keep → verify-locally → upload-if-good flow).
+    ✅ .specify/templates/tasks-template.md — XV-driven task types (weld the SSOT metadata write
+       into the retrieval/acquire task; fail-loud if it cannot be written) are expressible with
+       existing categories.
 - Follow-up TODOs: none deferred.
 -->
 
@@ -176,6 +182,27 @@ and hides it behind a false economy — scope is a product decision the agent la
 authority and the full context to make. This aligns with the stack-control front door's
 capture-over-YAGNI rule (Principle VIII); scoping is a separate, explicit, operator-driven pass.
 
+### XV. Metadata Integrity Is Mechanically Enforced (No Orphan Assets)
+
+Any process that retrieves an object from a source, or writes an asset to the archive or object
+store, MUST update the durable bibliography metadata — the SSOT record (assets, provenance,
+checksum, acquisition status, metadata snapshot) — as an INSEPARABLE part of the SAME operation.
+The metadata update MUST NOT be a separate, forgettable follow-up: not a reminder, not a
+downstream reconcile the operator must remember to run, not manual discipline. It MUST be
+mechanically impossible for such a process to complete successfully while leaving the archive or
+object store holding bytes the SSOT metadata does not record. Enforcement MUST be STRUCTURAL: the
+metadata update is part of the operation's success contract, and the operation FAILS LOUD (Principle
+V) if that metadata cannot be written — never proceeding to mirror bytes it cannot record. A
+retrieved-or-archived object with no corresponding, complete SSOT record is a DEFECT regardless of
+intent, and the mission-critical priority of any acquisition/retrieval work — designed and tested
+FIRST, not bolted on after. Rationale: the archive's value IS its metadata — an object that cannot
+be found through the record is not acquired, it is LOST. Repeated failures (bytes mirrored to B2 or
+the archive with the record left unadvanced) prove that "remember to update the metadata" is not a
+mechanism; the update must be welded to the retrieval/write so it cannot be omitted. This is the
+enforcement mechanism behind Principle III (Provenance Is Mandatory), and the metadata analogue of
+Principle X (No Git Hooks) and Principle XIII (No Agent Memory): correctness lives in a mechanism
+that cannot be routed around, never in discipline or an afterthought.
+
 ## Additional Constraints (Technology & Conventions)
 
 - **Runtime**: TypeScript executed with `tsx`. Do NOT use `ts-node`. (`tsx`, not "nox tsx".)
@@ -209,4 +236,4 @@ expanded guidance, PATCH for clarifications. Compliance is expected in every rev
 deviations MUST be justified in writing (e.g., the plan's Complexity Tracking) or the offending
 work revised.
 
-**Version**: 1.3.0 | **Ratified**: 2026-07-08 | **Last Amended**: 2026-07-16
+**Version**: 1.4.0 | **Ratified**: 2026-07-08 | **Last Amended**: 2026-07-19

@@ -1,0 +1,133 @@
+- banner:
+  - navigation:
+    - list:
+      - listitem:
+        - link "ĀwhinaHelp":
+          - /url: /help
+      - listitem:
+        - link "MōAbout":
+          - /url: /about
+      - listitem:
+        - link "TakiuruLog in":
+          - /url: "#"
+  - link "Papers Past":
+    - /url: /
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=%22La+Nouvelle-France%22
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=%22La+Nouvelle-France%22
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=%22La+Nouvelle-France%22
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=%22La+Nouvelle-France%22
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=%22La+Nouvelle-France%22
+- link "Switch to Māori":
+  - /url: "#"
+  - img "Switch to Māori"
+- heading "Newspapers" [level=3]
+- img "Tukutuku"
+- heading "Search Newspapers" [level=4]
+- textbox "Keyword or name": "\"La Nouvelle-France\""
+- radio "All content" [checked]
+- text: All content
+- radio "Ngā Tānga Reo Māori only"
+- text: Ngā Tānga Reo Māori only
+- link "What is Ngā Tānga Reo Māori?":
+  - /url: /newspapers/he-aha-nga-tanga-reo-maori
+- heading "Filter" [level=5]
+- heading "Between dates" [level=6]
+- button "All dates "
+- heading "Title" [level=6]
+- button "All titles, all regions "
+- heading "Content types" [level=6]
+- button "All types of content "
+- link "Clear search":
+  - /url: /newspapers/reset-search
+- button "Search"
+- paragraph
+- heading "No results found" [level=3]
+- paragraph: Your search has returned zero results, perhaps the term you're looking for was written differently in the original material. For example, instead of searching for John Joseph Johnson, try searching for Mr J Johnson.
+- heading "Elsewhere on Papers Past" [level=5]
+- list:
+  - listitem:
+    - link "Magazines and Journals":
+      - /url: /periodicals?format_code=newspapers&query=%22La+Nouvelle-France%22
+  - listitem:
+    - link "Letters and Diaries":
+      - /url: /manuscripts?format_code=newspapers&query=%22La+Nouvelle-France%22
+  - listitem:
+    - link "Parliamentary Papers":
+      - /url: /parliamentary?format_code=newspapers&query=%22La+Nouvelle-France%22
+  - listitem:
+    - link "Books":
+      - /url: /books?format_code=newspapers&query=%22La+Nouvelle-France%22
+- heading "On other sites" [level=5]
+- link "DigitalNZ logo":
+  - /url: https://digitalnz.org/records?text=%22La+Nouvelle-France%22
+  - img "DigitalNZ logo"
+- paragraph:
+  - 'link "DigitalNZ: Millions of NZ items from the digital stores of libraries, museums, archives, communities, and government."':
+    - /url: https://digitalnz.org/records?text=%22La+Nouvelle-France%22
+- link "Trove logo":
+  - /url: https://trove.nla.gov.au/result?q=%22La+Nouvelle-France%22
+  - img "Trove logo"
+- paragraph:
+  - 'link "Trove Australia: Over 471 million Australian and online resources: books, images, historic newspapers, maps, music, archives and more"':
+    - /url: https://trove.nla.gov.au/result?q=%22La+Nouvelle-France%22
+- paragraph:
+  - emphasis: These links will leave the Papers Past website.
+- contentinfo:
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=%22La+Nouvelle-France%22
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=%22La+Nouvelle-France%22
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=%22La+Nouvelle-France%22
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=%22La+Nouvelle-France%22
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=%22La+Nouvelle-France%22
+  - link "National Library of New Zealand":
+    - /url: https://natlib.govt.nz
+    - img "National Library of New Zealand"
+  - link "newzealand.govt.nz":
+    - /url: https://www.govt.nz/
+    - img "newzealand.govt.nz"
+  - navigation:
+    - list:
+      - listitem:
+        - link "Mahere pae tukutuku Sitemap":
+          - /url: /sitemap
+      - listitem:
+        - link "Āheinga Accessibility":
+          - /url: /accessibility
+      - listitem:
+        - link "Ngā ture mō te whakamahi Terms of use":
+          - /url: /terms
+      - listitem:
+        - link "Whakapā mai ki a mātou Contact us":
+          - /url: /contact
+      - listitem:
+        - link "Āwhina Help":
+          - /url: /help
+      - listitem:
+        - link "Mō About":
+          - /url: /about
+      - listitem:
+        - link "Takiuru Log in":
+          - /url: "#"

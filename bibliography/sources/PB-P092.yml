@@ -1,0 +1,64 @@
+sourceId: PB-P092
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: THE NEW IRELAND COLONISTS
+    role: canonical
+notes: "Newspaper: Lyttelton Times, 21 April 1881. the Italian colonists via the India → Noumea (starving) → Sydney (the New Italy pipeline). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/LT18810421.2.31
+    identifiers:
+      - type: papers-past
+        value: LT18810421.2.31
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1MVDE4ODEwNDIxLjIuMzEmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD0zMzU=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/lt18810421.2.31/4133f47619eb87e6e5f934df66b4da1a287e69646413f191f9751eca697cf03c.gif
+        checksum: 4133f47619eb87e6e5f934df66b4da1a287e69646413f191f9751eca697cf03c
+        byteLength: 2020
+        provenancePath: archive/papers-past/lt18810421.2.31/4133f47619eb87e6e5f934df66b4da1a287e69646413f191f9751eca697cf03c.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1MVDE4ODEwNDIxLjIuMzEmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD0zODY=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/lt18810421.2.31/7cc7dbfa80ab5950519e2fda42efd777818ae3b8422f9770caf161735745db02.gif
+        checksum: 7cc7dbfa80ab5950519e2fda42efd777818ae3b8422f9770caf161735745db02
+        byteLength: 222258
+        provenancePath: archive/papers-past/lt18810421.2.31/7cc7dbfa80ab5950519e2fda42efd777818ae3b8422f9770caf161735745db02.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1MVDE4ODEwNDIxLjIuMzEmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MyZ3aWR0aD0zODk=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/lt18810421.2.31/3f2ca22d5e6975be3bf4649c78a9a2eb91e877299a2ff7b65487099ab0493da8.gif
+        checksum: 3f2ca22d5e6975be3bf4649c78a9a2eb91e877299a2ff7b65487099ab0493da8
+        byteLength: 276504
+        provenancePath: archive/papers-past/lt18810421.2.31/3f2ca22d5e6975be3bf4649c78a9a2eb91e877299a2ff7b65487099ab0493da8.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/LT18810421.2.31
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/lt18810421.2.31/5ea8cfcc7c8baab3546fa195a0aadf38a298634af74a6e8ea03dfa07808b86bd.txt
+        checksum: 5ea8cfcc7c8baab3546fa195a0aadf38a298634af74a6e8ea03dfa07808b86bd
+        byteLength: 8794
+        provenancePath: archive/papers-past/lt18810421.2.31/5ea8cfcc7c8baab3546fa195a0aadf38a298634af74a6e8ea03dfa07808b86bd.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-lt18810421-2-31-2026-07-21T05-27-20-772Z.html
+      retrievedAt: 2026-07-21T05:27:27.900Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/LT18810421.2.31
+      normalizationVersion: 1

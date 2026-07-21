@@ -27,6 +27,7 @@ const IDENTIFIER_TYPE_REPOSITORY: Readonly<
   ark: 'gallica',
   accession: 'new-italy-museum',
   'ia-item': 'internet-archive',
+  'papers-past': 'papers-past',
 };
 
 /** Throw a locating, descriptive error naming the registry and the failure. */

@@ -1,0 +1,56 @@
+sourceId: PB-P073
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: THREATENED INVASION OF WESTERN AUSTRALIA
+    role: canonical
+notes: "Newspaper: Evening Star, 1 April 1880. 1880 armed-expedition / prospectus framing (canonical of a reprint cluster). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/ESD18800401.2.28
+    identifiers:
+      - type: papers-past
+        value: ESD18800401.2.28
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1FU0QxODgwMDQwMS4yLjI4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9NDQz
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/esd18800401.2.28/c003f30b21959ab0ddd8f4f21042f4c9ff6a74b35abcaa5816655f0776577c3a.gif
+        checksum: c003f30b21959ab0ddd8f4f21042f4c9ff6a74b35abcaa5816655f0776577c3a
+        byteLength: 5130
+        provenancePath: archive/papers-past/esd18800401.2.28/c003f30b21959ab0ddd8f4f21042f4c9ff6a74b35abcaa5816655f0776577c3a.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1FU0QxODgwMDQwMS4yLjI4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9NDUz
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/esd18800401.2.28/66da0fc5e40fdb2faf7dd2e0d91b68fdbeb77c68c2d6d4488ae3356995d03f65.gif
+        checksum: 66da0fc5e40fdb2faf7dd2e0d91b68fdbeb77c68c2d6d4488ae3356995d03f65
+        byteLength: 401522
+        provenancePath: archive/papers-past/esd18800401.2.28/66da0fc5e40fdb2faf7dd2e0d91b68fdbeb77c68c2d6d4488ae3356995d03f65.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/ESD18800401.2.28
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/esd18800401.2.28/730b6152c97549c9364c9d7506923bc3791f097abb0fdd4b0eb2a23c53855168.txt
+        checksum: 730b6152c97549c9364c9d7506923bc3791f097abb0fdd4b0eb2a23c53855168
+        byteLength: 5045
+        provenancePath: archive/papers-past/esd18800401.2.28/730b6152c97549c9364c9d7506923bc3791f097abb0fdd4b0eb2a23c53855168.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-esd18800401-2-28-2026-07-21T05-21-28-588Z.html
+      retrievedAt: 2026-07-21T05:21:34.562Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/ESD18800401.2.28
+      normalizationVersion: 1

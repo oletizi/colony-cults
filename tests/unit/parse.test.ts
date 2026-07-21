@@ -127,4 +127,16 @@ describe('parse', () => {
     const a = parse(['translate', 'ark', '--engine', 'codex']);
     expect(a.options.engine).toBe('codex');
   });
+
+  it('error messages carry no umbrella CLI name (bib/gallica)', () => {
+    // The parser is shared by bib and translate bins; each bin's catch
+    // prepends its own name, so the messages must not carry an umbrella name.
+    expect(() => parse(['bogus'])).toThrow(/unknown command/);
+    expect(() => parse(['bogus'])).not.toThrow(/gallica|bib:/);
+    expect(() => parse([])).not.toThrow(/gallica/);
+    expect(() => parse(['ocr'])).not.toThrow(/gallica/);
+    expect(() =>
+      parse(['fetch-source', 'ark:/12148/bpt6k000001', '--checkpoint-every', '0']),
+    ).not.toThrow(/gallica/);
+  });
 });

@@ -1,0 +1,56 @@
+sourceId: PB-P079
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: THE FRENCH MODE OF ANNEXING
+    role: canonical
+notes: "Newspaper: South Canterbury Times, 27 February 1884. Dr Baudoin’s testimony as an expedition doctor on New Ireland. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/SCANT18840227.2.17
+    identifiers:
+      - type: papers-past
+        value: SCANT18840227.2.17
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1TQ0FOVDE4ODQwMjI3LjIuMTcmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD0zMDY=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/scant18840227.2.17/73b0a5f6f692962a07128e3107a12c12f8a0b18c69f43044c05f3c0d12daff63.gif
+        checksum: 73b0a5f6f692962a07128e3107a12c12f8a0b18c69f43044c05f3c0d12daff63
+        byteLength: 2862
+        provenancePath: archive/papers-past/scant18840227.2.17/73b0a5f6f692962a07128e3107a12c12f8a0b18c69f43044c05f3c0d12daff63.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1TQ0FOVDE4ODQwMjI3LjIuMTcmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD0zNjk=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/scant18840227.2.17/2db11aab88b5939cede31b11dc80965239ded6d338741901332042c971a5e249.gif
+        checksum: 2db11aab88b5939cede31b11dc80965239ded6d338741901332042c971a5e249
+        byteLength: 103644
+        provenancePath: archive/papers-past/scant18840227.2.17/2db11aab88b5939cede31b11dc80965239ded6d338741901332042c971a5e249.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/SCANT18840227.2.17
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/scant18840227.2.17/9779adc2ed73a6cb5af8dd59926f249e16651690ad3f6eb3d320afd89fc320a1.txt
+        checksum: 9779adc2ed73a6cb5af8dd59926f249e16651690ad3f6eb3d320afd89fc320a1
+        byteLength: 1655
+        provenancePath: archive/papers-past/scant18840227.2.17/9779adc2ed73a6cb5af8dd59926f249e16651690ad3f6eb3d320afd89fc320a1.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-scant18840227-2-17-2026-07-21T05-24-04-100Z.html
+      retrievedAt: 2026-07-21T05:24:09.807Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/SCANT18840227.2.17
+      normalizationVersion: 1

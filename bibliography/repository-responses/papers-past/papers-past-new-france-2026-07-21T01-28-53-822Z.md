@@ -1,0 +1,211 @@
+- banner:
+  - navigation:
+    - list:
+      - listitem:
+        - link "ĀwhinaHelp":
+          - /url: /help
+      - listitem:
+        - link "MōAbout":
+          - /url: /about
+      - listitem:
+        - link "TakiuruLog in":
+          - /url: "#"
+  - link "Papers Past":
+    - /url: /
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=New+France
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=New+France
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=New+France
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=New+France
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=New+France
+- link "Switch to Māori":
+  - /url: "#"
+  - img "Switch to Māori"
+- heading "Newspapers" [level=3]
+- img "Tukutuku"
+- heading "Search Newspapers" [level=4]
+- textbox "Keyword or name": New France
+- radio "All content" [checked]
+- text: All content
+- radio "Ngā Tānga Reo Māori only"
+- text: Ngā Tānga Reo Māori only
+- link "What is Ngā Tānga Reo Māori?":
+  - /url: /newspapers/he-aha-nga-tanga-reo-maori
+- heading "Filter" [level=5]
+- heading "Between dates" [level=6]
+- button "All dates "
+- heading "Title" [level=6]
+- button "All titles, all regions "
+- heading "Content types" [level=6]
+- button "All types of content "
+- link "Clear search":
+  - /url: /newspapers/reset-search
+- button "Search"
+- paragraph
+- heading "Search results" [level=3]
+- link "Explore Newspapers":
+  - /url: /newspapers/all
+- navigation "Next/previous navigation":
+  - text: Showing results 1-10 of 1,292,244
+  - link "Next 10 results":
+    - /url: /newspapers?page=2&query=New+France
+- menubar:
+  - text: Sort by
+  - menuitem "Best matchRitenga tino pai rawa": Best match
+- menubar:
+  - text: Items per page
+  - menuitem "10"
+- list:
+  - listitem: Hide preview
+  - listitem:
+    - link "":
+      - /url: /newspapers?query=New+France&snippet=false
+- heading "Article" [level=2]
+- heading "Newspaper" [level=2]
+- heading "Date" [level=2]
+- separator
+- link "LEAGUE CUP":
+  - /url: /newspapers/CHP19690224.2.142?query=New+France
+- text: Press 24 February 1969
+- link "Search result preview image":
+  - /url: /newspapers/CHP19690224.2.142?query=New+France
+  - img "Search result preview image"
+- separator
+- link "France To Be Pressed For 1957 Tour":
+  - /url: /newspapers/EP19550226.2.83?query=New+France
+- text: Evening Post 26 February 1955
+- link "Search result preview image":
+  - /url: /newspapers/EP19550226.2.83?query=New+France
+  - img "Search result preview image"
+- separator
+- link "TRADE WORTH £19M. A YEAR France May Refuse To Buy N.Z. Wool":
+  - /url: /newspapers/EP19570808.2.31?query=New+France
+- text: Evening Post 8 August 1957
+- link "Search result preview image":
+  - /url: /newspapers/EP19570808.2.31?query=New+France
+  - img "Search result preview image"
+- separator
+- link "World Cup revived":
+  - /url: /newspapers/CHP19850513.2.154.5?query=New+France
+- text: Press 13 May 1985
+- link "Search result preview image":
+  - /url: /newspapers/CHP19850513.2.154.5?query=New+France
+  - img "Search result preview image"
+- separator
+- link "FRENCH TRADE WITH N.Z.":
+  - /url: /newspapers/CHP19600817.2.142?query=New+France
+- text: Press 17 August 1960
+- link "Search result preview image":
+  - /url: /newspapers/CHP19600817.2.142?query=New+France
+  - img "Search result preview image"
+- separator
+- link "FIRST ROUND DRAW":
+  - /url: /newspapers/CHP19750313.2.100?query=New+France
+- text: Press 13 March 1975
+- link "Search result preview image":
+  - /url: /newspapers/CHP19750313.2.100?query=New+France
+  - img "Search result preview image"
+- separator
+- link "GOODS AVAILABLE FROM FRANCE":
+  - /url: /newspapers/CHP19490819.2.12?query=New+France
+- text: Press 19 August 1949
+- link "Search result preview image":
+  - /url: /newspapers/CHP19490819.2.12?query=New+France
+  - img "Search result preview image"
+- separator
+- link "France's bid to be valued member of South Pacific":
+  - /url: /newspapers/CHP19901112.2.72?query=New+France
+- text: Press 12 November 1990
+- link "Search result preview image":
+  - /url: /newspapers/CHP19901112.2.72?query=New+France
+  - img "Search result preview image"
+- separator
+- link "TRADE WITH FRANCE":
+  - /url: /newspapers/ESD19390626.2.37.1?query=New+France
+- text: Evening Star 26 June 1939
+- link "Search result preview image":
+  - /url: /newspapers/ESD19390626.2.37.1?query=New+France
+  - img "Search result preview image"
+- separator
+- link "TRADE WITH FRANCE":
+  - /url: /newspapers/EP19390622.2.150.1?query=New+France
+- text: Evening Post 22 June 1939
+- link "Search result preview image":
+  - /url: /newspapers/EP19390622.2.150.1?query=New+France
+  - img "Search result preview image"
+- separator
+- navigation "Pages of Results":
+  - list:
+    - listitem:
+      - link "1":
+        - /url: "#"
+    - listitem:
+      - link "2":
+        - /url: /newspapers?page=2&query=New+France
+    - listitem:
+      - link "3":
+        - /url: /newspapers?page=3&query=New+France
+    - listitem:
+      - link "…":
+        - /url: "#"
+    - listitem:
+      - link "Next ›":
+        - /url: /newspapers?page=2&query=New+France
+- contentinfo:
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=New+France
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=New+France
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=New+France
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=New+France
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=New+France
+  - link "National Library of New Zealand":
+    - /url: https://natlib.govt.nz
+    - img "National Library of New Zealand"
+  - link "newzealand.govt.nz":
+    - /url: https://www.govt.nz/
+    - img "newzealand.govt.nz"
+  - navigation:
+    - list:
+      - listitem:
+        - link "Mahere pae tukutuku Sitemap":
+          - /url: /sitemap
+      - listitem:
+        - link "Āheinga Accessibility":
+          - /url: /accessibility
+      - listitem:
+        - link "Ngā ture mō te whakamahi Terms of use":
+          - /url: /terms
+      - listitem:
+        - link "Whakapā mai ki a mātou Contact us":
+          - /url: /contact
+      - listitem:
+        - link "Āwhina Help":
+          - /url: /help
+      - listitem:
+        - link "Mō About":
+          - /url: /about
+      - listitem:
+        - link "Takiuru Log in":
+          - /url: "#"

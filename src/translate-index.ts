@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { readFileSync } from 'node:fs';
 import { parse } from '@/cli/parse';
 import type { Command, ParsedArgs } from '@/cli/parse';

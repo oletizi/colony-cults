@@ -1,0 +1,64 @@
+sourceId: PB-P068
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: THE MARQUIS DE RAYS
+    role: canonical
+notes: "Newspaper: Nelson Evening Mail, 26 January 1884. fuller post-conviction retrospective. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NEM18840126.2.19
+    identifiers:
+      - type: papers-past
+        value: NEM18840126.2.19
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1ORU0xODg0MDEyNi4yLjE5JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9NDA0
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nem18840126.2.19/ebadfc61d6cd8806013f2e31e2dbba3ac96e18e0eaee52066e4c6e4eed821b7b.gif
+        checksum: ebadfc61d6cd8806013f2e31e2dbba3ac96e18e0eaee52066e4c6e4eed821b7b
+        byteLength: 2544
+        provenancePath: archive/papers-past/nem18840126.2.19/ebadfc61d6cd8806013f2e31e2dbba3ac96e18e0eaee52066e4c6e4eed821b7b.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1ORU0xODg0MDEyNi4yLjE5JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9NDU0
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nem18840126.2.19/2f4590a83840207daa743e8b8887daac3109b20e5fa2473a72b3f24ba24376c1.gif
+        checksum: 2f4590a83840207daa743e8b8887daac3109b20e5fa2473a72b3f24ba24376c1
+        byteLength: 92162
+        provenancePath: archive/papers-past/nem18840126.2.19/2f4590a83840207daa743e8b8887daac3109b20e5fa2473a72b3f24ba24376c1.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1ORU0xODg0MDEyNi4yLjE5JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTMmd2lkdGg9NDU1
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nem18840126.2.19/3f11dcf77cc9a2513c978eefcd20e5866856258de9f944ae58ba09cddf02c36f.gif
+        checksum: 3f11dcf77cc9a2513c978eefcd20e5866856258de9f944ae58ba09cddf02c36f
+        byteLength: 38452
+        provenancePath: archive/papers-past/nem18840126.2.19/3f11dcf77cc9a2513c978eefcd20e5866856258de9f944ae58ba09cddf02c36f.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NEM18840126.2.19
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/nem18840126.2.19/770d5cf7507cfb824101326fc1fb632011983cdc994032cd81ff8c2df00345bb.txt
+        checksum: 770d5cf7507cfb824101326fc1fb632011983cdc994032cd81ff8c2df00345bb
+        byteLength: 3365
+        provenancePath: archive/papers-past/nem18840126.2.19/770d5cf7507cfb824101326fc1fb632011983cdc994032cd81ff8c2df00345bb.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-nem18840126-2-19-2026-07-21T05-20-11-984Z.html
+      retrievedAt: 2026-07-21T05:20:15.725Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/NEM18840126.2.19
+      normalizationVersion: 1

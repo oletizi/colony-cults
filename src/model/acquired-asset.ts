@@ -5,11 +5,13 @@ import type { ObjectStoreLocation } from '@/archive/provenance';
  * Represents the function of a multi-asset copy: `front`/`reverse` of a single
  * sheet, `page` numbers in a multi-page item, `primary` (the single master the
  * museum adapter writes), `repository-source` (a preserved source package such
- * as the Internet Archive item PDF), and `page-master` (one per-page image the
- * Internet Archive adapter explodes). The tuple is the single source of truth;
- * the union and the {@link isAcquiredAssetRole} guard derive from it so the
- * loader boundary (`@/bibliography/load-fields`) can fail loud on an unknown
- * stored role rather than silently accepting it (Principle V).
+ * as the Internet Archive item PDF), `page-master` (one per-page image the
+ * Internet Archive adapter explodes), and `ocr-text` (one per-article OCR text
+ * captured from the repository, e.g. the Papers Past correctable-text panel).
+ * The tuple is the single source of truth; the union and the
+ * {@link isAcquiredAssetRole} guard derive from it so the loader boundary
+ * (`@/bibliography/load-fields`) can fail loud on an unknown stored role
+ * rather than silently accepting it (Principle V).
  */
 export const ACQUIRED_ASSET_ROLES = [
   'front',
@@ -18,6 +20,7 @@ export const ACQUIRED_ASSET_ROLES = [
   'primary',
   'repository-source',
   'page-master',
+  'ocr-text',
 ] as const;
 
 export type AcquiredAssetRole = (typeof ACQUIRED_ASSET_ROLES)[number];
@@ -67,4 +70,11 @@ export interface AcquiredAsset {
   sequence?: number;
   /** How "best representation" was chosen, e.g. `max-resolution`. */
   representationChoice?: string;
+  /**
+   * The repository representation this asset was captured from, e.g.
+   * `papers-past-text-tab` for the correctable-text OCR panel. Distinguishes
+   * future alternative OCR sources (ALTO XML, downloadable text, corrected
+   * editions). Optional/additive; absent on image masters.
+   */
+  sourceRepresentation?: string;
 }

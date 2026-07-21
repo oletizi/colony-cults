@@ -154,7 +154,32 @@ describe('approve/acquire gate on isFetchableWork (INV-APPROVE, INV-3)', () => {
       ]);
       const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
-      const result = await runAcquire({ sourcesDir: dir, sourceId: MEMBER_ID, fetch });
+      // A non-dry-run Gallica acquire preflights + runs its completion tail
+      // (spec 016): inject the archive-provenance machinery so the tail can
+      // advance status (a page-image, object-store-backed, for this copy's
+      // archive). This guard test only asserts the acquire is not rejected.
+      const result = await runAcquire({
+        sourcesDir: dir,
+        sourceId: MEMBER_ID,
+        fetch,
+        reconcileArchiveRoot: '/archive/root',
+        gather: async () => [
+          {
+            source_archive: 'Gallica / BnF',
+            local_path: 'archive/cases/x/books/y/f001.jpg',
+            type: 'page-image',
+            sha256: 'a'.repeat(64),
+            object_store: {
+              provider: 'backblaze-b2',
+              bucket: 'colony-cults',
+              key: 'archive/cases/x/books/y/f001.jpg',
+              endpoint: 'https://s3',
+            },
+            format: 'image/jpeg',
+            original_url: 'https://gallica.bnf.fr/x',
+          },
+        ],
+      });
 
       expect(result.ark).toBe(ARK);
       expect(fetch).toHaveBeenCalledTimes(1);

@@ -1,0 +1,56 @@
+sourceId: PB-P090
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: THE CHANDERNAGORE EXPEDITION
+    role: canonical
+notes: "Newspaper: Poverty Bay Herald, 5 April 1880. the captain’s first-person story. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/PBH18800405.2.18
+    identifiers:
+      - type: papers-past
+        value: PBH18800405.2.18
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1QQkgxODgwMDQwNS4yLjE4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9Mzkx
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/pbh18800405.2.18/276437edb1400ca783552f8757da7e2a395a528b8c9bd398f8484df803b0b0d5.gif
+        checksum: 276437edb1400ca783552f8757da7e2a395a528b8c9bd398f8484df803b0b0d5
+        byteLength: 3893
+        provenancePath: archive/papers-past/pbh18800405.2.18/276437edb1400ca783552f8757da7e2a395a528b8c9bd398f8484df803b0b0d5.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1QQkgxODgwMDQwNS4yLjE4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9NDIw
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/pbh18800405.2.18/a18707c27632a1c657082b51105dbb3635471218bc3746a855d891d47f459feb.gif
+        checksum: a18707c27632a1c657082b51105dbb3635471218bc3746a855d891d47f459feb
+        byteLength: 34657
+        provenancePath: archive/papers-past/pbh18800405.2.18/a18707c27632a1c657082b51105dbb3635471218bc3746a855d891d47f459feb.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/PBH18800405.2.18
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/pbh18800405.2.18/671d45bc0e3717f9d48ac01b682a98911acf6d140f9f01a369fc73d37384b1cb.txt
+        checksum: 671d45bc0e3717f9d48ac01b682a98911acf6d140f9f01a369fc73d37384b1cb
+        byteLength: 1122
+        provenancePath: archive/papers-past/pbh18800405.2.18/671d45bc0e3717f9d48ac01b682a98911acf6d140f9f01a369fc73d37384b1cb.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-pbh18800405-2-18-2026-07-21T05-26-52-668Z.html
+      retrievedAt: 2026-07-21T05:26:57.705Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/PBH18800405.2.18
+      normalizationVersion: 1

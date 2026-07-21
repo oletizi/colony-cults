@@ -80,6 +80,7 @@ const ACQUIRED_ASSET_KEYS = new Set([
   'role',
   'sequence',
   'representationChoice',
+  'sourceRepresentation',
 ]);
 const TITLE_KEYS = new Set(['text', 'role', 'language']);
 const IDENTIFIER_KEYS = new Set(['type', 'value']);
@@ -139,7 +140,8 @@ function isCopyLevelType(value: string): value is CopyLevelIdentifierType {
     value === 'ark' ||
     value === 'iiif-manifest' ||
     value === 'scan-doi' ||
-    value === 'ia-item'
+    value === 'ia-item' ||
+    value === 'papers-past'
   );
 }
 
@@ -432,9 +434,10 @@ export function validateVerification(
  * Parse one authored `assets[]` entry (spec 011, T005/T030) -- an
  * {@link AcquiredAsset} an adapter `acquire` mirrored directly to the object
  * store. Every non-optional field is required and fails loud when absent or
- * mistyped (no silent drop, no fabrication); `role`/`representationChoice` are
- * optional strings and `sequence` an optional number, omitted from the result
- * when absent so a load -> serialize round-trip is lossless.
+ * mistyped (no silent drop, no fabrication); `role`/`representationChoice`/
+ * `sourceRepresentation` are optional strings and `sequence` an optional
+ * number, omitted from the result when absent so a load -> serialize
+ * round-trip is lossless.
  */
 export function validateAcquiredAsset(
   value: unknown,
@@ -478,6 +481,14 @@ export function validateAcquiredAsset(
   );
   if (representationChoice !== undefined) {
     asset.representationChoice = representationChoice;
+  }
+  const sourceRepresentation = optionalString(
+    obj.sourceRepresentation,
+    filePath,
+    `${where}.sourceRepresentation`,
+  );
+  if (sourceRepresentation !== undefined) {
+    asset.sourceRepresentation = sourceRepresentation;
   }
   return asset;
 }

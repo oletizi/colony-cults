@@ -1,14 +1,19 @@
 import { loadAllSources } from '@/bibliography/load';
-import { writeSourceFile } from '@/bibliography/source-writer';
-import { writeRecordCompanions } from '@/archive/write-record-companions';
 import type { CompanionObjectStore } from '@/archive/write-record-companions';
 import { isFetchableWork } from '@/bibliography/scope';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { RepositoryAdapterRegistry } from '@/repository/registry';
 import { GallicaAdapter, type GallicaAcquisitionContext } from '@/repository/gallica/adapter';
+import type { GatherProvenanceFn } from '@/sourcegroup/reconcile';
+import {
+  preflightCompletion,
+  persistAcquisition,
+  completeAcquisition,
+} from '@/sourcegroup/acquire-complete';
 import type { ParsedArgs } from '@/cli/parse';
 import type { RepositoryAdapter } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
+import type { ObjectStore } from '@/archive/object-store';
 import type { ArkResolver } from '@/sourcegroup/inventory';
 
 /**
@@ -125,6 +130,55 @@ export interface AcquireInput {
    * (`src/cli/bib-sourcegroup.ts`) always injects it.
    */
   internetArchiveAdapter?: RepositoryAdapter;
+  /**
+   * The injected {@link PapersPastAdapter} (T013/T014, specs/015-papers-past-
+   * acquisition), registered ALONGSIDE Gallica (and the museum/Internet
+   * Archive adapters, when present) so a `papers-past` record dispatches to
+   * it. OPTIONAL: omit it to build a registry with no Papers Past adapter --
+   * a `papers-past` record then fails loud at the registry ("no adapter
+   * registered"), same as any other unregistered repository. Production
+   * wiring (`src/cli/bib-sourcegroup-acquire.ts`) always injects it.
+   */
+  papersPastAdapter?: RepositoryAdapter;
+  /**
+   * Head-capable object store for the completion tail (spec 016, Principle XV).
+   * After the adapter mirror + persist-assets block, `runAcquire` reuses the
+   * idempotent {@link runReconcile} (heads-only) to advance the record's
+   * acquisition `status`, then {@link verifyRecordComplete} to confirm every
+   * recorded master is present + matching in the store BEFORE reporting
+   * success. REQUIRED for a B2-direct acquire (museum / internet-archive /
+   * papers-past) that mirrored masters; a Gallica acquire (`assets: []`,
+   * per-page provenance) does not consult it. Injected so tests pass a fake
+   * that never touches B2. Production wiring
+   * (`src/cli/bib-sourcegroup-acquire.ts`) constructs the real `S3ObjectStore`.
+   *
+   * NB: distinct from the `objectStore?: boolean` field above (which forwards
+   * `--object-store` to the fetcher) -- this is the head-capable store handle
+   * the completion tail HEADs against.
+   */
+  completionObjectStore?: ObjectStore;
+  /**
+   * Archive-clone root the Gallica completion tail gathers per-page provenance
+   * from (`COLONY_ARCHIVE_ROOT`), threaded into {@link runReconcile}'s
+   * archive-provenance path. REQUIRED together with {@link AcquireInput.gather}
+   * for a non-dry-run Gallica acquire: `runAcquire` FAILS LOUD (throws, reports
+   * NO success) when a Gallica acquire is missing either, rather than silently
+   * skipping status advancement for a fetched copy (Principle XV,
+   * AUDIT-20260719-01). Unused on the B2-direct path (whose truth is the object
+   * store). Production wiring (`src/cli/bib-sourcegroup-acquire.ts`) always
+   * injects both for a Gallica acquire.
+   */
+  reconcileArchiveRoot?: string;
+  /**
+   * Injected provenance gatherer for the Gallica completion tail (the same
+   * {@link GatherProvenanceFn} {@link runReconcile} takes -- production passes
+   * `gatherProvenance`, `@/bibliography/derive`). REQUIRED together with
+   * {@link AcquireInput.reconcileArchiveRoot} for a non-dry-run Gallica acquire
+   * (a missing gather makes `runAcquire` fail loud, never silently skip).
+   * Unused on the B2-direct path. Injected so tests never touch a real archive
+   * on disk.
+   */
+  gather?: GatherProvenanceFn;
 }
 
 /** Result of a successful acquisition: what was resolved and handed to the adapter. */
@@ -138,6 +192,8 @@ export interface AcquireResult {
   accession?: string;
   /** The archive.org item id, when the record dispatched to the Internet Archive adapter. */
   iaItem?: string;
+  /** The Papers Past article code, when the record dispatched to the Papers Past adapter. */
+  papersPast?: string;
 }
 
 /** The record's ark value (the first `ark`-typed copy identifier), if any. */
@@ -155,6 +211,12 @@ function accessionOf(record: RepositoryRecord): string | undefined {
 /** The record's archive.org item id (the first `ia-item`-typed copy identifier), if any. */
 function iaItemOf(record: RepositoryRecord): string | undefined {
   const identifier = (record.identifiers ?? []).find((id) => id.type === 'ia-item');
+  return identifier?.value;
+}
+
+/** The record's Papers Past article code (the first `papers-past`-typed copy identifier), if any. */
+function papersPastOf(record: RepositoryRecord): string | undefined {
+  const identifier = (record.identifiers ?? []).find((id) => id.type === 'papers-past');
   return identifier?.value;
 }
 
@@ -179,13 +241,16 @@ const acquirePathNeverResolvesArks: ArkResolver = (_ark: string) => {
  * {@link GallicaAdapter} (wrapping the injected fetcher), plus the injected
  * museum adapter when one was supplied (so an `accession` record dispatches to
  * it), plus the injected Internet Archive adapter when one was supplied (so an
- * `ia-item` record dispatches to it, T026). Gallica-only when both are omitted
- * -- an `ark` record then dispatches exactly as it did pre-cutover.
+ * `ia-item` record dispatches to it, T026), plus the injected Papers Past
+ * adapter when one was supplied (so a `papers-past` record dispatches to it,
+ * T013/T014). Gallica-only when all three are omitted -- an `ark` record then
+ * dispatches exactly as it did pre-cutover.
  */
 function buildRegistry(
   fetch: FetchSourceFn,
   museumAdapter: RepositoryAdapter | undefined,
   internetArchiveAdapter: RepositoryAdapter | undefined,
+  papersPastAdapter: RepositoryAdapter | undefined,
 ): RepositoryAdapterRegistry {
   const gallica = new GallicaAdapter({
     fetch,
@@ -197,6 +262,9 @@ function buildRegistry(
   }
   if (internetArchiveAdapter !== undefined) {
     adapters.push(internetArchiveAdapter);
+  }
+  if (papersPastAdapter !== undefined) {
+    adapters.push(papersPastAdapter);
   }
   return new RepositoryAdapterRegistry(adapters);
 }
@@ -305,8 +373,18 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   // the deliberate cutover consequence pinned in the characterization suite.
   // The selected adapter enforces its own RECORD-level gates (public-domain,
   // identifier-present) and drives its fetch.
-  const registry = buildRegistry(input.fetch, input.museumAdapter, input.internetArchiveAdapter);
+  const registry = buildRegistry(
+    input.fetch,
+    input.museumAdapter,
+    input.internetArchiveAdapter,
+    input.papersPastAdapter,
+  );
   const adapter = registry.selectForRecord(record);
+
+  // Preflight the completion machinery BEFORE the adapter's durable side effects
+  // (fail loud if the dispatched kind's completion deps are absent; spec 016,
+  // AUDIT-20260719-06). `--dry-run` is exempt.
+  preflightCompletion(adapter, input);
 
   const ctx: GallicaAcquisitionContext = {
     objectStore: input.objectStore,
@@ -316,66 +394,20 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   };
   const acquisition = await adapter.acquire(record, ctx);
 
-  // Persist the adapter's mirrored masters back onto the SELECTED record's
-  // `assets` field in the SSOT (TASK-30, spec 011 T005/T030). The museum
-  // adapter mirrors its master to B2 and returns a non-empty `assets` array; a
-  // plain `acquire` otherwise leaves the corpus with NO record of the master,
-  // so `bib reconcile` (which for a museum copy verifies these object-store
-  // keys) has nothing to reconcile and the SSOT drifts from B2. The Gallica
-  // adapter returns `assets: []` (its masters are recorded as per-page archive
-  // provenance, reconciled by the archive-provenance path), so nothing is
-  // written and the Gallica acquire is byte-for-byte unchanged. A `dryRun`
-  // museum acquire persists nothing either -- the adapter honors `ctx.dryRun`
-  // and returns an EMPTY `assets` array (mirroring no master), so this block is
-  // skipped (TASK-29).
-  if (acquisition.assets.length > 0) {
-    const updatedRecords = authoredRecords.map((authored) =>
-      authored.sourceArchive === record.sourceArchive
-        ? {
-            ...authored,
-            assets: acquisition.assets,
-            // Durable record-level provenance the adapter authored (SC-003):
-            // written only when the adapter produced it (Gallica/museum leave
-            // these unset, so `...authored` preserves whatever was there).
-            ...(acquisition.qualityAssessment !== undefined
-              ? { qualityAssessment: acquisition.qualityAssessment }
-              : {}),
-            ...(acquisition.excludedLeaves !== undefined
-              ? { excludedLeaves: acquisition.excludedLeaves }
-              : {}),
-            ...(acquisition.metadataSnapshotRef !== undefined
-              ? { metadataSnapshot: acquisition.metadataSnapshotRef }
-              : {}),
-          }
-        : authored,
-    );
-    writeSourceFile(input.sourcesDir, { source, records: updatedRecords });
-
-    // Close the B2-direct loop: write the archive companions for the mirrored
-    // masters, so they are DISCOVERABLE by the pipeline (spec 013). Gallica
-    // reaches here with `assets: []` (handled by the enclosing guard) and writes
-    // its own companions via the fetcher, so this only fires for the B2-direct
-    // adapters. Skipped when the archive/object-store coordinates are absent.
-    if (input.companionArchiveRoot !== undefined && input.companionObjectStore !== undefined) {
-      const acquiredRecord: RepositoryRecord = {
-        ...record,
-        assets: acquisition.assets,
-        ...(acquisition.qualityAssessment !== undefined
-          ? { qualityAssessment: acquisition.qualityAssessment }
-          : {}),
-        ...(acquisition.excludedLeaves !== undefined
-          ? { excludedLeaves: acquisition.excludedLeaves }
-          : {}),
-      };
-      await writeRecordCompanions({
-        source,
-        record: acquiredRecord,
-        archiveRoot: input.companionArchiveRoot,
-        objectStore: input.companionObjectStore,
-        now: acquisition.qualityAssessment?.assessedAt ?? new Date().toISOString(),
-      });
-    }
-  }
+  // Persist the adapter's durable output onto the SSOT + write master companions
+  // (spec 011/013; snapshot decoupled per AUDIT-20260720-01), then complete the
+  // record as an inseparable part of the acquire (reconcile status + verify;
+  // spec 016, Principle XV). Both are `--dry-run`-exempt internally.
+  await persistAcquisition({
+    sourcesDir: input.sourcesDir,
+    source,
+    authoredRecords,
+    record,
+    acquisition,
+    companionArchiveRoot: input.companionArchiveRoot,
+    companionObjectStore: input.companionObjectStore,
+  });
+  await completeAcquisition(input, record, adapter, acquisition);
 
   // `adapter.acquire` succeeded, so the record carried the identifier its
   // dispatch keyed on (the registry would have thrown otherwise); read it back
@@ -400,6 +432,17 @@ export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
       );
     }
     return { sourceId: input.sourceId, iaItem, sourceArchive: record.sourceArchive };
+  }
+
+  if (adapter.repository === 'papers-past') {
+    const papersPast = papersPastOf(record);
+    if (papersPast === undefined) {
+      throw new Error(
+        `acquire: internal invariant -- ${adapter.repository} acquire succeeded for ` +
+          `"${input.sourceId}" but the record carries no papers-past identifier.`,
+      );
+    }
+    return { sourceId: input.sourceId, papersPast, sourceArchive: record.sourceArchive };
   }
 
   const accession = accessionOf(record);

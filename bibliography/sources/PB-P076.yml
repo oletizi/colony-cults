@@ -1,0 +1,72 @@
+sourceId: PB-P076
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: THE COLLAPSE OF THE MARQUIS DE RAY’S EXPEDITION
+    role: canonical
+notes: "Newspaper: New Zealand Mail, 16 April 1881. SMH Noumea correspondent — disabled steamer, 300 starving souls. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZMAIL18810416.2.23
+    identifiers:
+      - type: papers-past
+        value: NZMAIL18810416.2.23
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWk1BSUwxODgxMDQxNi4yLjIzJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9NDM2
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzmail18810416.2.23/179e2bd4bfa842e5595e885bfcfb22b70f8fd9923d5ee9aa21af4fb1f52e829e.gif
+        checksum: 179e2bd4bfa842e5595e885bfcfb22b70f8fd9923d5ee9aa21af4fb1f52e829e
+        byteLength: 4461
+        provenancePath: archive/papers-past/nzmail18810416.2.23/179e2bd4bfa842e5595e885bfcfb22b70f8fd9923d5ee9aa21af4fb1f52e829e.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWk1BSUwxODgxMDQxNi4yLjIzJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9NDQx
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzmail18810416.2.23/4ed1438da60de7d893b993c697514725c9f3050ce6c8870e1a26f49d2be79808.gif
+        checksum: 4ed1438da60de7d893b993c697514725c9f3050ce6c8870e1a26f49d2be79808
+        byteLength: 86921
+        provenancePath: archive/papers-past/nzmail18810416.2.23/4ed1438da60de7d893b993c697514725c9f3050ce6c8870e1a26f49d2be79808.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWk1BSUwxODgxMDQxNi4yLjIzJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTMmd2lkdGg9NDM3
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzmail18810416.2.23/56a9a3ddad20e9562e5f49b0c1d50da6e7940bd0a7b9699707c31c49785b0054.gif
+        checksum: 56a9a3ddad20e9562e5f49b0c1d50da6e7940bd0a7b9699707c31c49785b0054
+        byteLength: 71085
+        provenancePath: archive/papers-past/nzmail18810416.2.23/56a9a3ddad20e9562e5f49b0c1d50da6e7940bd0a7b9699707c31c49785b0054.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWk1BSUwxODgxMDQxNi4yLjIzJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTQmd2lkdGg9NDM2
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzmail18810416.2.23/eb5fbb0beb1b1c419ad22a1ef1bd011ca2c3abf743623c7aaf9a6eb63c877c38.gif
+        checksum: eb5fbb0beb1b1c419ad22a1ef1bd011ca2c3abf743623c7aaf9a6eb63c877c38
+        byteLength: 44666
+        provenancePath: archive/papers-past/nzmail18810416.2.23/eb5fbb0beb1b1c419ad22a1ef1bd011ca2c3abf743623c7aaf9a6eb63c877c38.yml
+        role: page-master
+        sequence: 4
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZMAIL18810416.2.23
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/nzmail18810416.2.23/6c10fc45f55ba472869a69981eef76d827b0208e21b954d4f1fb4d2968a62658.txt
+        checksum: 6c10fc45f55ba472869a69981eef76d827b0208e21b954d4f1fb4d2968a62658
+        byteLength: 5913
+        provenancePath: archive/papers-past/nzmail18810416.2.23/6c10fc45f55ba472869a69981eef76d827b0208e21b954d4f1fb4d2968a62658.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-nzmail18810416-2-23-2026-07-21T05-23-16-451Z.html
+      retrievedAt: 2026-07-21T05:23:24.327Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/NZMAIL18810416.2.23
+      normalizationVersion: 1

@@ -44,3 +44,20 @@
 - default audit-barrage fleet includes a sonnet lane (claude --model claude-sonnet-4-6) that times out on whole-feature payloads and blocks convergence; had to drop to a 2-lane frontier fleet (claude/opus + codex/gpt-5.5), matching the plugin's own frontier-only self-hosting config. The shipped default should probably be frontier-only.
 - long govern runs (~10 min) launched via Claude Code Bash run_in_background were repeatedly reaped by the environment before completing; had to launch detached via nohup/disown and poll the log. The --background/--status flags the execute skill documents are absent in stackctl 0.58.x.
 - resolve-tiers rejects a task id with a letter suffix (T010a): task checkbox has no T-id. Had to renumber to T015. Minor.
+## session-end 2026-07-17
+- bib acquire --dry-run requires COLONY_S3_* env (resolveObjectStoreConfig) even though a dry-run never uploads to B2 — hit 'required environment variable COLONY_S3_BUCKET is not set' on the first dry-run; had to source .env for a no-upload examine step.
+- IA acquire auto-cleans the staging dir on success, so post-hoc OCR verification of the mirrored master had no local input (silently produced 0 hits); had to download the master back from B2 to verify. A --keep-staging flag (or verifying against B2) would help.
+
+## session-end 2026-07-17
+- stackctl resolve-tiers rejects a task id with a letter suffix (e.g. T009a inserted between T009 and T010) as 'line NN: task checkbox has no T-id' — inserting a task mid-list after /speckit-analyze forces either a full renumber or folding the work into a sibling; supporting Txxx-suffix ids (or naming the offending id) would smooth the analyze-remediation seam.
+
+## session-end 2026-07-19
+- govern FATAL'd on a non-obvious two-file lockstep: removing the sonnet lane from .stack-control/fleet-knowledge.yaml alone is insufficient — it must exactly match the configured barrage lanes (audit-barrage-config.yaml / shipped template), and the mismatch only surfaces as a fatal at govern time, not at edit time. A pre-govern 'stackctl fleet-check' (or a single source of truth for lanes) would catch it early.
+
+## session-end 2026-07-19
+- stackctl govern (implement mode, whole-feature) FATALs during audit-barrage payload assembly when the diff includes a committed data file larger than the 24KB per-file fleet envelope — e.g. a ~49KB source-page capture under bibliography/repository-responses/ (every Papers Past acquire commits one). Govern's code-only scoping excludes .md docs but not large .html/.json data captures. It should exclude the corpus data paths (bibliography/repository-responses/, archive companions) from the CODE audit payload the way it excludes documentation. Workaround this session: operator-authorized govern --override (short-circuits the barrage cleanly). Captured locally as TASK-45; upstream stackctl defect worth a deskwork issue.
+
+## session-end 2026-07-20
+- govern --item scoped the audit payload to the whole long-lived-branch diff, pulling in a 455KB pre-existing data file (bibliography/repository-responses/PB-P055/*.json) that FATAL'd the run before any model lane ran; worked around with --diff-base <feature-base>. Related to backlog TASK-45 (govern-excludes-data-paths) but distinct: the FATAL is a hard stop, not a skip.
+- govern FATALs when ANY single file in the committed diff exceeds the 24576-byte chunk envelope, TEST files included; at round 9 this forced a mid-convergence split of acquire.test.ts (25954B) and acquire.ts (33005B). It surfaces late (after 8 clean-ish rounds) rather than as an up-front size gate; a pre-flight size check or hunk-splitting a single large non-code/test file would avoid a wasted round.
+- govern claude audit lane hit a transient API 500 (server-side) in round 5, degrading the fleet (produced 1/2) and correctly refusing to treat the quiet round as convergence; a plain re-run recovered. Degraded-fleet pricing (FR-007) worked as intended — noting only the transient API instability.

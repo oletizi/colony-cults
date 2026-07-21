@@ -38,6 +38,7 @@ export interface CompanionObjectStore {
 function extForMediaType(mediaType: string): string {
   if (mediaType === 'image/jpeg') return 'jpg';
   if (mediaType === 'image/png') return 'png';
+  if (mediaType === 'image/gif') return 'gif';
   if (mediaType === 'image/tiff') return 'tif';
   if (mediaType === 'application/pdf') return 'pdf';
   return 'bin';
@@ -80,6 +81,7 @@ function placement(
 
 /** Asset `type` label for the companion (drives how the pipeline treats it). */
 function companionType(asset: AcquiredAsset): string {
+  if (asset.role === 'ocr-text') return 'ocr-text';
   if (asset.mediaType === 'application/pdf') return 'source-document';
   return 'page-image';
 }
@@ -132,6 +134,7 @@ export async function writeRecordCompanions(params: {
       ocr_status: 'none',
       size: asset.byteLength,
       object_store: store,
+      source_representation: asset.sourceRepresentation,
       rights_raw: rightsRaw,
       notes: null,
     };

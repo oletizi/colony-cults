@@ -106,6 +106,12 @@ export interface ProvenanceFields {
    * must re-serialize byte-identically.
    */
   blank_recto?: boolean;
+  /**
+   * The repository representation that produced this asset, e.g.
+   * `papers-past-text-tab`. Additive OPTIONAL key: omitted when unset so
+   * records without it re-serialize byte-identically.
+   */
+  source_representation?: string;
   /** Integer byte count of the asset (T008), emitted as a bare integer. */
   size: number;
   /** Object-store master location (T009), or `null` when not yet uploaded. */
@@ -148,6 +154,7 @@ const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'model',
   'translation',
   'blank_recto',
+  'source_representation',
   'object_store',
   'ocr_quality',
   'notes',
@@ -221,7 +228,8 @@ function emitEntry(
       return emitOcrQuality(fields.ocr_quality);
     case 'engine':
     case 'model':
-    case 'translation': {
+    case 'translation':
+    case 'source_representation': {
       // Additive OPTIONAL keys: omit entirely when unset so non-translation
       // records (without them) re-serialize byte-identically.
       const value = fields[key];
@@ -473,6 +481,7 @@ export function parseProvenance(text: string): ProvenanceFields {
     model: scalars.get('model') ?? undefined,
     translation: scalars.get('translation') ?? undefined,
     blank_recto: parseOptionalBoolean(scalars, 'blank_recto'),
+    source_representation: scalars.get('source_representation') ?? undefined,
     object_store: objectStore,
     ocr_quality: ocrQuality,
     notes: scalars.get('notes') ?? null,

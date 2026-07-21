@@ -28,11 +28,13 @@ import { gallicaArkMetadataResolver } from '@/sourcegroup/gallica-ark-resolver';
 import { NewItalyMuseumAdapter } from '@/repository/new-italy-museum/adapter';
 import { createMusarchExtractor } from '@/repository/new-italy-museum/extractor';
 import { InternetArchiveAdapter } from '@/repository/internet-archive/adapter';
+import { PapersPastAdapter } from '@/repository/papers-past/adapter';
 import { RepositoryAdapterRegistry } from '@/repository/registry';
 import type { RepositoryAdapter, RepositoryName } from '@/repository/adapter';
 import { runInventory } from '@/sourcegroup/inventory';
 import { runMuseumInventory } from '@/sourcegroup/museum-inventory';
 import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
+import { PlaywrightBrowserSession } from '@/sourcequery/browser-session-playwright';
 
 /** Narrow the `--kind` flag to the member-kind union (never `source-group`). */
 function asMemberKind(value: string | undefined): 'monograph' | 'periodical' | undefined {
@@ -58,11 +60,11 @@ function asRepositoryName(value: string | undefined): RepositoryName | undefined
   if (value === undefined) {
     return undefined;
   }
-  if (value === 'gallica' || value === 'new-italy-museum' || value === 'internet-archive') {
+  if (value === 'gallica' || value === 'new-italy-museum' || value === 'internet-archive' || value === 'papers-past') {
     return value;
   }
   throw new Error(
-    `--repository must be "gallica", "new-italy-museum", or "internet-archive" (got "${value}")`,
+    `--repository must be "gallica", "new-italy-museum", "internet-archive", or "papers-past" (got "${value}")`,
   );
 }
 
@@ -122,6 +124,14 @@ async function buildResolveOnlyAdapter(repository: RepositoryName): Promise<Repo
   }
   if (repository === 'internet-archive') {
     return new InternetArchiveAdapter({ client: new HttpClient() });
+  }
+  if (repository === 'papers-past') {
+    // Resolve-only: no objectStore. The browser session both reads the page
+    // and (at acquire, not here) fetches image bytes inside the WAF-cleared
+    // context (research.md R1); resolve never fetches bytes.
+    return new PapersPastAdapter({
+      browserSession: new PlaywrightBrowserSession(),
+    });
   }
   throw new Error(
     `bib inventory: no resolve-only adapter is defined for repository "${repository}"`,

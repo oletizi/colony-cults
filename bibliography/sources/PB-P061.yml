@@ -1,0 +1,65 @@
+sourceId: PB-P061
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: CONVICTION OF MARQUIS DE RAYS
+    role: canonical
+notes: "Newspaper: Hawera & Normanby Star, Volume V, Issue 689, 3 January 1884, Page 3 (heading grounded from the persisted article capture). A Paris-datelined (2 Jan 1884) cable reporting the Marquis de Rays convicted of fraud/deception over the New Ireland expedition and sentenced to four years; associates also convicted. Discovered via SRCH-0018 (695-hit 'Marquis de Rays' Papers Past vein) and validated via SRCH-0019 (full content-read: OCR text present under the #text-tab correctable-text panel, three page-image scans, NLNZ rights statement 'No known copyright (New Zealand)'), both using the shipped bib query-source governed client (spec 014). Raw capture: bibliography/repository-responses/papers-past-article/papers-past-article-hns18840103-2-19-3-2026-07-18T23-53-24-461Z.{html,md}. The repositoryRecord below is authored at to-collect: content and rights are validated, but no Papers Past acquisition adapter exists yet (SRCH-0019 remainingQuestions) -- no B2 mirror/assets recorded this session."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/HNS18840103.2.19.3
+    retrievedAt: 2026-07-18T23:53:24.461Z
+    identifiers:
+      - type: papers-past
+        value: HNS18840103.2.19.3
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-19T04:07:35.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1ITlMxODg0MDEwMy4yLjE5LjMmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD0zNzA=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/hns18840103.2.19.3/6418101df384ebf00caab4d7fd50b780d53bcf67aefc75e3742907c2480c78b7.gif
+        checksum: 6418101df384ebf00caab4d7fd50b780d53bcf67aefc75e3742907c2480c78b7
+        byteLength: 3005
+        provenancePath: archive/papers-past/hns18840103.2.19.3/6418101df384ebf00caab4d7fd50b780d53bcf67aefc75e3742907c2480c78b7.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1ITlMxODg0MDEwMy4yLjE5LjMmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD0xOTc=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/hns18840103.2.19.3/bf16a475f0e59dbcd0eea2111ded0718d56cb8206b233758b6d8a8debe35d62d.gif
+        checksum: bf16a475f0e59dbcd0eea2111ded0718d56cb8206b233758b6d8a8debe35d62d
+        byteLength: 1365
+        provenancePath: archive/papers-past/hns18840103.2.19.3/bf16a475f0e59dbcd0eea2111ded0718d56cb8206b233758b6d8a8debe35d62d.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1ITlMxODg0MDEwMy4yLjE5LjMmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MyZ3aWR0aD00MTc=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/hns18840103.2.19.3/28a283ecb00175bdbe0895b19626d91043603dc7bf86cab1a5eb6afe1de1a007.gif
+        checksum: 28a283ecb00175bdbe0895b19626d91043603dc7bf86cab1a5eb6afe1de1a007
+        byteLength: 20657
+        provenancePath: archive/papers-past/hns18840103.2.19.3/28a283ecb00175bdbe0895b19626d91043603dc7bf86cab1a5eb6afe1de1a007.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/HNS18840103.2.19.3
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/hns18840103.2.19.3/6d9400da4acfd67ade5b3ce9c6a1f5bdfe1ab7f4073110c83e4610304ca9bfa4.txt
+        checksum: 6d9400da4acfd67ade5b3ce9c6a1f5bdfe1ab7f4073110c83e4610304ca9bfa4
+        byteLength: 422
+        provenancePath: archive/papers-past/hns18840103.2.19.3/6d9400da4acfd67ade5b3ce9c6a1f5bdfe1ab7f4073110c83e4610304ca9bfa4.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-hns18840103-2-19-3-2026-07-21T05-03-58-672Z.html
+      retrievedAt: 2026-07-21T05:04:03.713Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/HNS18840103.2.19.3
+      normalizationVersion: 1

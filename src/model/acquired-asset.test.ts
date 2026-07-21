@@ -94,7 +94,7 @@ describe('AcquiredAsset', () => {
 
   it('type checks AcquiredAssetRole union type from the tuple source of truth', () => {
     const roles: readonly AcquiredAssetRole[] = ACQUIRED_ASSET_ROLES;
-    expect([...roles]).toEqual(['front', 'reverse', 'page', 'primary', 'repository-source', 'page-master']);
+    expect([...roles]).toEqual(['front', 'reverse', 'page', 'primary', 'repository-source', 'page-master', 'ocr-text']);
   });
 
   it('isAcquiredAssetRole guards known vs unknown roles (loader boundary)', () => {

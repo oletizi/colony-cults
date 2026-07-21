@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/acquire-metadata-completion",
+  "governedShaBase": "d8171d6",
+  "headSha": "436884b758a8eff8871bec6d1659c312bac2d1f6",
+  "chunkIds": [
+    "07cdb1abe8a68828",
+    "2c9bacfeeaaa6c6c",
+    "31ca4a6640a7b71e",
+    "bd7774c09db89a37",
+    "e6348290a1d854d7",
+    "e6bcee6fc31c4cdd",
+    "ebd0db0d480a3f9b"
+  ],
+  "rounds": 1,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "2c9bacfeeaaa6c6c"
+      },
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "31ca4a6640a7b71e"
+      },
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "bd7774c09db89a37"
+      },
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "e6348290a1d854d7"
+      },
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "07cdb1abe8a68828",
+        "b": "ebd0db0d480a3f9b"
+      },
+      {
+        "a": "2c9bacfeeaaa6c6c",
+        "b": "31ca4a6640a7b71e"
+      },
+      {
+        "a": "2c9bacfeeaaa6c6c",
+        "b": "bd7774c09db89a37"
+      },
+      {
+        "a": "2c9bacfeeaaa6c6c",
+        "b": "e6348290a1d854d7"
+      },
+      {
+        "a": "2c9bacfeeaaa6c6c",
+        "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "2c9bacfeeaaa6c6c",
+        "b": "ebd0db0d480a3f9b"
+      },
+      {
+        "a": "31ca4a6640a7b71e",
+        "b": "bd7774c09db89a37"
+      },
+      {
+        "a": "31ca4a6640a7b71e",
+        "b": "e6348290a1d854d7"
+      },
+      {
+        "a": "31ca4a6640a7b71e",
+        "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "31ca4a6640a7b71e",
+        "b": "ebd0db0d480a3f9b"
+      },
+      {
+        "a": "bd7774c09db89a37",
+        "b": "e6348290a1d854d7"
+      },
+      {
+        "a": "bd7774c09db89a37",
+        "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "bd7774c09db89a37",
+        "b": "ebd0db0d480a3f9b"
+      },
+      {
+        "a": "e6348290a1d854d7",
+        "b": "e6bcee6fc31c4cdd"
+      },
+      {
+        "a": "e6348290a1d854d7",
+        "b": "ebd0db0d480a3f9b"
+      },
+      {
+        "a": "e6bcee6fc31c4cdd",
+        "b": "ebd0db0d480a3f9b"
+      }
+    ],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [
+    "cdf4fe7027abeb5f"
+  ],
+  "outcome": "converged",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-gap-closure"
+}

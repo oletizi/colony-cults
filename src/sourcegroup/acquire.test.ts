@@ -1,248 +1,40 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { rm } from 'node:fs/promises';
 import type { Source } from '@/model/source';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
-import type { Rights } from '@/model/rights';
 import type { RepositoryAdapter } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { AcquiredAsset } from '@/model/acquired-asset';
-import { serializeSource } from '@/bibliography/migrate-serialize';
+import type { ObjectStore, ObjectHead } from '@/archive/object-store';
+import type { AssetProvenance } from '@/bibliography/provenance-read';
+import type { GatherProvenanceFn } from '@/sourcegroup/reconcile';
 import { loadAllSources } from '@/bibliography/load';
 import { runAcquire, type FetchSourceFn } from '@/sourcegroup/acquire';
+import {
+  ARK,
+  publicDomainRights,
+  otherRights,
+  member,
+  authoredRecord,
+  museumMember,
+  museumAuthoredRecord,
+  spyMuseumAdapter,
+  internetArchiveMember,
+  internetArchiveAuthoredRecord,
+  spyInternetArchiveAdapter,
+  papersPastMember,
+  papersPastAuthoredRecord,
+  spyPapersPastAdapter,
+  sampleAsset,
+  acquiringMuseumAdapter,
+  fakeObjectStore,
+  pageImage,
+  gallicaCompletionDeps,
+  idempotentMuseumAdapter,
+  seedSourcesDir,
+} from './acquire-fixtures';
 
-/**
- * Tests for `runAcquire` (T029/T030, FR-014-017, D-08): acquire an approved
- * member's copy by REUSING the shipped `runFetchSource` fetcher -- resolving
- * the ARK from the selected RepositoryRecord and driving the fetcher with it.
- * NO new fetch code lives here; the fetcher itself is injected so these tests
- * never touch the network/B2 (US4 scenarios 1-5).
- */
-
-const ARK = 'ark:/12148/bpt6k1234567';
-
-function publicDomainRights(ark: string): Rights {
-  return {
-    ark,
-    status: 'public-domain',
-    rawResponse: '<record/>',
-    dcRights: ['public domain'],
-  };
-}
-
-function otherRights(ark: string): Rights {
-  return {
-    ark,
-    status: 'other',
-    rawResponse: '<record/>',
-    dcRights: ['all rights reserved'],
-  };
-}
-
-function member(overrides: Partial<Source> = {}): Source {
-  return {
-    sourceId: 'PB-P100',
-    titles: [{ text: 'Le Petit Journal', role: 'canonical' }],
-    kind: 'monograph',
-    partOf: 'PB-G001',
-    status: 'approved-for-acquisition',
-    creator: 'Anonyme',
-    identifiers: [],
-    ...overrides,
-  };
-}
-
-function authoredRecord(
-  overrides: Partial<AuthoredRepositoryRecord> = {},
-): AuthoredRepositoryRecord {
-  return {
-    sourceArchive: 'Gallica / BnF',
-    status: 'to-collect',
-    identifiers: [{ type: 'ark', value: ARK }],
-    rights: publicDomainRights(ARK),
-    ...overrides,
-  };
-}
-
-/** A New Italy Museum member (accession copy), approved-for-acquisition. */
-function museumMember(overrides: Partial<Source> = {}): Source {
-  return {
-    sourceId: 'PB-P200',
-    titles: [{ text: 'Pioneers Group Photo', role: 'canonical' }],
-    kind: 'monograph',
-    partOf: 'PB-G001',
-    status: 'approved-for-acquisition',
-    identifiers: [],
-    ...overrides,
-  };
-}
-
-/** A museum RepositoryRecord: carries an `accession` copy identifier. */
-function museumAuthoredRecord(
-  overrides: Partial<AuthoredRepositoryRecord> = {},
-): AuthoredRepositoryRecord {
-  return {
-    sourceArchive: 'New Italy Museum',
-    status: 'to-collect',
-    sourceUrl: 'https://newitaly.org.au/CAT/000844.htm',
-    identifiers: [{ type: 'accession', value: 'NIMI-0844' }],
-    rightsAssessment: {
-      rightsStatus: 'public-domain',
-      rightsBasis: 'Photograph created 1890; Australian pre-1955 term expired.',
-      assessedBy: 'operator',
-      assessedAt: '2026-07-14T00:00:00.000Z',
-    },
-    ...overrides,
-  };
-}
-
-/**
- * A spy {@link RepositoryAdapter} for the museum path: records every `acquire`
- * call so a dispatch test can assert an accession record routed HERE (and the
- * Gallica fetcher was never touched). `resolve`/`collectRightsEvidence` throw
- * -- the acquire dispatch path never calls them.
- */
-function spyMuseumAdapter(): { adapter: RepositoryAdapter; calls: RepositoryRecord[] } {
-  const calls: RepositoryRecord[] = [];
-  const adapter: RepositoryAdapter = {
-    repository: 'new-italy-museum',
-    async resolve() {
-      throw new Error('spyMuseumAdapter.resolve: not used on the acquire dispatch path');
-    },
-    async collectRightsEvidence() {
-      throw new Error('spyMuseumAdapter.collectRightsEvidence: not used on the acquire dispatch path');
-    },
-    async acquire(record) {
-      calls.push(record);
-      return {
-        repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
-        assets: [],
-        metadataSnapshot: { raw: '', retrievedAt: '2026-07-14T00:00:00.000Z' },
-        complete: true,
-        reconciliationRequired: true,
-      };
-    },
-  };
-  return { adapter, calls };
-}
-
-/** An Internet Archive member (`ia-item` copy), approved-for-acquisition. */
-function internetArchiveMember(overrides: Partial<Source> = {}): Source {
-  return {
-    sourceId: 'PB-P300',
-    titles: [{ text: 'De Groote 1880', role: 'canonical' }],
-    kind: 'monograph',
-    partOf: 'PB-G001',
-    status: 'approved-for-acquisition',
-    identifiers: [],
-    ...overrides,
-  };
-}
-
-/** An Internet Archive RepositoryRecord: carries an `ia-item` copy identifier. */
-function internetArchiveAuthoredRecord(
-  overrides: Partial<AuthoredRepositoryRecord> = {},
-): AuthoredRepositoryRecord {
-  return {
-    sourceArchive: 'Internet Archive',
-    status: 'to-collect',
-    identifiers: [{ type: 'ia-item', value: 'nouvellefrancec00groogoog' }],
-    ...overrides,
-  };
-}
-
-/**
- * A spy {@link RepositoryAdapter} for the Internet Archive path (T026):
- * records every `acquire` call so a dispatch test can assert an `ia-item`
- * record routed HERE (and neither the Gallica fetcher nor the museum adapter
- * was ever touched). `resolve`/`collectRightsEvidence` throw -- the acquire
- * dispatch path never calls them.
- */
-function spyInternetArchiveAdapter(): { adapter: RepositoryAdapter; calls: RepositoryRecord[] } {
-  const calls: RepositoryRecord[] = [];
-  const adapter: RepositoryAdapter = {
-    repository: 'internet-archive',
-    async resolve() {
-      throw new Error('spyInternetArchiveAdapter.resolve: not used on the acquire dispatch path');
-    },
-    async collectRightsEvidence() {
-      throw new Error(
-        'spyInternetArchiveAdapter.collectRightsEvidence: not used on the acquire dispatch path',
-      );
-    },
-    async acquire(record) {
-      calls.push(record);
-      return {
-        repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
-        assets: [],
-        metadataSnapshot: { raw: '', retrievedAt: '2026-07-16T00:00:00.000Z' },
-        complete: true,
-        reconciliationRequired: true,
-      };
-    },
-  };
-  return { adapter, calls };
-}
-
-/** A sample master mirrored to B2, as the museum adapter would return it. */
-function sampleAsset(overrides: Partial<AcquiredAsset> = {}): AcquiredAsset {
-  return {
-    sourceUrl: 'https://newitaly.org.au/CAT/000844.htm',
-    mediaType: 'image/jpeg',
-    objectStoreKey: 'archive/cases/new-italy/museum/nimi-0844/NIMI-0844.jpg',
-    checksum: 'c'.repeat(64),
-    byteLength: 987654,
-    provenancePath: 'archive/cases/new-italy/museum/nimi-0844/NIMI-0844.provenance.json',
-    role: 'front',
-    sequence: 1,
-    representationChoice: 'max-resolution',
-    ...overrides,
-  };
-}
-
-/**
- * A museum {@link RepositoryAdapter} whose `acquire` mirrors a master and
- * returns it as a non-empty `assets` array (unlike {@link spyMuseumAdapter},
- * whose `acquire` returns none) -- so a test can assert `runAcquire` persists
- * the acquired asset back onto the SSOT record (TASK-30).
- */
-function acquiringMuseumAdapter(assets: AcquiredAsset[]): RepositoryAdapter {
-  return {
-    repository: 'new-italy-museum',
-    async resolve() {
-      throw new Error('acquiringMuseumAdapter.resolve: not used on the acquire dispatch path');
-    },
-    async collectRightsEvidence() {
-      throw new Error('acquiringMuseumAdapter.collectRightsEvidence: not used on the acquire dispatch path');
-    },
-    async acquire(record) {
-      return {
-        repositoryRecordId: `${record.sourceId} @ ${record.sourceArchive}`,
-        assets,
-        metadataSnapshot: { raw: '', retrievedAt: '2026-07-14T00:00:00.000Z' },
-        complete: true,
-        reconciliationRequired: true,
-      };
-    },
-  };
-}
-
-async function seedSourcesDir(
-  entries: { source: Source; records: AuthoredRepositoryRecord[] }[],
-): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'acquire-'));
-  for (const entry of entries) {
-    await writeFile(
-      join(dir, `${entry.source.sourceId}.yml`),
-      serializeSource(entry),
-      'utf-8',
-    );
-  }
-  return dir;
-}
-
-describe('runAcquire', () => {
+describe('runAcquire — dispatch & gates', () => {
   let dir: string;
 
   afterEach(async () => {
@@ -260,6 +52,7 @@ describe('runAcquire', () => {
       sourceId: 'PB-P100',
       objectStore: true,
       fetch,
+      ...gallicaCompletionDeps(),
     });
 
     expect(result.ark).toBe(ARK);
@@ -298,6 +91,7 @@ describe('runAcquire', () => {
       checkpoint: true,
       checkpointEvery: 25,
       fetch,
+      ...gallicaCompletionDeps(),
     });
 
     const [args] = vi.mocked(fetch).mock.calls[0];
@@ -309,7 +103,7 @@ describe('runAcquire', () => {
     dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
-    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch });
+    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() });
 
     const [args] = vi.mocked(fetch).mock.calls[0];
     expect(args.flags.checkpoint).toBe(false);
@@ -320,7 +114,7 @@ describe('runAcquire', () => {
     dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
-    const result = await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch });
+    const result = await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() });
 
     expect(result.sourceArchive).toBe('Gallica / BnF');
   });
@@ -347,6 +141,7 @@ describe('runAcquire', () => {
       sourceId: 'PB-P100',
       archive: 'State Library of Queensland',
       fetch,
+      ...gallicaCompletionDeps(),
     });
 
     expect(result.ark).toBe(otherArk);
@@ -406,7 +201,7 @@ describe('runAcquire', () => {
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
     await expect(
-      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch }),
+      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() }),
     ).rejects.toThrow(/public-domain/i);
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -418,7 +213,7 @@ describe('runAcquire', () => {
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
     await expect(
-      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch }),
+      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() }),
     ).rejects.toThrow(/public-domain/i);
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -486,6 +281,7 @@ describe('runAcquire', () => {
       sourceId: 'PB-P200',
       fetch,
       museumAdapter: adapter,
+      completionObjectStore: fakeObjectStore({}),
     });
 
     // Routed to the museum adapter, never the Gallica fetcher.
@@ -507,12 +303,18 @@ describe('runAcquire', () => {
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
     const asset = sampleAsset();
     const adapter = acquiringMuseumAdapter([asset]);
+    // The completion tail (spec 016) HEADs the recorded master, so give it a
+    // store where the master is present + matching -- this test still asserts
+    // the round-trip persistence (the tail's status advancement is asserted by
+    // the US1 test below).
+    const objectStore = fakeObjectStore({ [asset.objectStoreKey]: { sha256: asset.checksum } });
 
     await runAcquire({
       sourcesDir: dir,
       sourceId: 'PB-P200',
       fetch,
       museumAdapter: adapter,
+      completionObjectStore: objectStore,
     });
 
     // Re-load the SSOT: the acquired master is now recorded on the copy, and
@@ -534,7 +336,7 @@ describe('runAcquire', () => {
     dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
-    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch });
+    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() });
 
     const loaded = loadAllSources(dir);
     const entry = loaded.find((l) => l.source.sourceId === 'PB-P100');
@@ -552,6 +354,7 @@ describe('runAcquire', () => {
       sourceId: 'PB-P100',
       fetch,
       museumAdapter: adapter,
+      ...gallicaCompletionDeps(),
     });
 
     // Behavior unchanged: ark -> Gallica fetcher; the museum adapter is untouched.
@@ -575,6 +378,7 @@ describe('runAcquire', () => {
       fetch,
       museumAdapter,
       internetArchiveAdapter: iaAdapter,
+      completionObjectStore: fakeObjectStore({}),
     });
 
     // Routed to the IA adapter only.
@@ -600,6 +404,7 @@ describe('runAcquire', () => {
       sourceId: 'PB-P100',
       fetch,
       internetArchiveAdapter: iaAdapter,
+      ...gallicaCompletionDeps(),
     });
 
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -622,12 +427,46 @@ describe('runAcquire', () => {
       fetch,
       museumAdapter,
       internetArchiveAdapter: iaAdapter,
+      completionObjectStore: fakeObjectStore({}),
     });
 
     expect(museumCalls).toHaveLength(1);
     expect(iaCalls).toHaveLength(0);
     expect(fetch).not.toHaveBeenCalled();
     expect(result.accession).toBe('NIMI-0844');
+  });
+
+  it('T014: dispatches a papers-past record to the injected Papers Past adapter (Gallica fetcher + museum/IA adapters untouched)', async () => {
+    dir = await seedSourcesDir([
+      { source: papersPastMember(), records: [papersPastAuthoredRecord()] },
+    ]);
+    const fetch: FetchSourceFn = vi.fn(async () => undefined);
+    const { adapter: papersPastAdapter, calls: papersPastCalls } = spyPapersPastAdapter();
+    const { adapter: museumAdapter, calls: museumCalls } = spyMuseumAdapter();
+    const { adapter: iaAdapter, calls: iaCalls } = spyInternetArchiveAdapter();
+
+    const result = await runAcquire({
+      sourcesDir: dir,
+      sourceId: 'PB-P400',
+      fetch,
+      museumAdapter,
+      internetArchiveAdapter: iaAdapter,
+      papersPastAdapter,
+      completionObjectStore: fakeObjectStore({}),
+    });
+
+    // Routed to the Papers Past adapter only.
+    expect(papersPastCalls).toHaveLength(1);
+    expect(papersPastCalls[0].sourceArchive).toBe('Papers Past');
+    expect(museumCalls).toHaveLength(0);
+    expect(iaCalls).toHaveLength(0);
+    expect(fetch).not.toHaveBeenCalled();
+    // Observable result carries the papers-past article code (not an ark/accession/iaItem).
+    expect(result).toEqual({
+      sourceId: 'PB-P400',
+      papersPast: 'ODT18800101.2.10',
+      sourceArchive: 'Papers Past',
+    });
   });
 
   it('scenario 4: the source-group itself (e.g. PB-P004) is refused before any fetch is attempted, relying on the approved-status precondition -- no guardrail is reimplemented here', async () => {
