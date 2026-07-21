@@ -63,6 +63,12 @@ export interface ProvenanceFields {
   model?: string;
   /** Translation provenance label, e.g. `machine-assisted` (FR-007). */
   translation?: string;
+  /**
+   * The repository representation that produced this asset, e.g.
+   * `papers-past-text-tab`. Additive OPTIONAL key: omitted when unset so
+   * records without it re-serialize byte-identically.
+   */
+  source_representation?: string;
   /** Integer byte count of the asset (T008), emitted as a bare integer. */
   size: number;
   /** Object-store master location (T009), or `null` when not yet uploaded. */
@@ -97,6 +103,7 @@ const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'engine',
   'model',
   'translation',
+  'source_representation',
   'object_store',
   'notes',
   'rights_raw',
@@ -181,7 +188,8 @@ function emitEntry(
       return emitObjectStore(fields.object_store);
     case 'engine':
     case 'model':
-    case 'translation': {
+    case 'translation':
+    case 'source_representation': {
       // Additive OPTIONAL keys: omit entirely when unset so non-translation
       // records (without them) re-serialize byte-identically.
       const value = fields[key];
@@ -418,6 +426,7 @@ export function parseProvenance(text: string): ProvenanceFields {
     engine: scalars.get('engine') ?? undefined,
     model: scalars.get('model') ?? undefined,
     translation: scalars.get('translation') ?? undefined,
+    source_representation: scalars.get('source_representation') ?? undefined,
     object_store: objectStore,
     notes: scalars.get('notes') ?? null,
     rights_raw: requireField(scalars, 'rights_raw'),
