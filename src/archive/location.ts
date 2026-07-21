@@ -226,8 +226,19 @@ function deriveSlug(source: Source): string {
  * - `slug`: derived from the source's canonical (or first) title, lowercased
  *   with non-alphanumeric runs collapsed to `-`; falls back to the lowercased
  *   `sourceId` when the source has no usable title (see {@link deriveSlug}).
- * - `kind`: `periodical` for a periodical source, `monograph` otherwise
- *   (archival items are laid out like monographs).
+ * - `kind`: `periodical` for a STANDALONE periodical source (no `partOf`),
+ *   `monograph` otherwise. `kind` here is a RESOLUTION STRATEGY (which
+ *   directory shape the reader/OCR walk -- {@link issueDir}'s dated
+ *   subdirectories vs {@link monographDir}'s flat directory), not a copy of
+ *   the source's bibliographic `Source.kind`. A source-group MEMBER
+ *   (`source.partOf` set) is filed FLAT on disk regardless of its
+ *   bibliographic kind -- a periodical member's folios sit directly in its
+ *   slug directory (`f001.yml..fNNN.yml`), with no per-issue census (the
+ *   group itself is the organizing structure, not dated issues) -- so a
+ *   member always derives `kind: 'monograph'` to route it at
+ *   {@link monographDir}/flat resolution. Only a standalone periodical (no
+ *   `partOf`) keeps `kind: 'periodical'`, since ONLY that shape is actually
+ *   enumerated by a census into dated issue directories.
  */
 export function deriveSourceLayout(source: Source, fallbackCase?: string): SourceLayout {
   const resolvedCase = source.case ?? fallbackCase;
@@ -238,11 +249,12 @@ export function deriveSourceLayout(source: Source, fallbackCase?: string): Sourc
     );
   }
   const isPeriodical = source.kind === 'periodical';
+  const isMember = source.partOf !== undefined;
   return {
     case: resolvedCase,
     type: isPeriodical ? 'newspapers' : 'books',
     slug: deriveSlug(source),
-    kind: isPeriodical ? 'periodical' : 'monograph',
+    kind: isPeriodical && !isMember ? 'periodical' : 'monograph',
   };
 }
 

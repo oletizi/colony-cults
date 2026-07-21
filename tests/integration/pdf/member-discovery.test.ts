@@ -13,19 +13,23 @@
  * member -- but a FRESH FIXTURE `archiveRoot` (`writeMemberFixture`, T003),
  * so nothing here touches the real private archive/B2.
  *
- * Scope note (per spec 017 tasks.md: "Reader (`archive-source.ts`)
- * unchanged"): a member's derived `SourceLayout.kind` is `'periodical'`
- * (mirrors `Source.kind`), so `resolveArchiveSource` dispatches to
- * `resolvePeriodical`, which expects dated `<date>_<ark>` issue
- * subdirectories -- but a member's real on-disk shape (and this fixture) is
- * FLAT segment folios (T001 finding: "though stored flat, without date+ark
- * subdirs, like a monograph"). So after T002's wiring, resolution reaches
- * PAST registration and fails on a LATER, different error ("no issue
- * directories found") -- reconciling that flat/periodical mismatch (and
- * materializing `issue.txt`) is out of scope here and belongs to later tasks
- * (T005/T008). This test asserts ONLY the T002 concern: the member's layout
- * registers (so the "no archive layout registered" failure is gone) and it
- * is discoverable -- never that the member's build completes.
+ * Scope note (T002b, plan-gap fix): a member's derived `SourceLayout.kind` is
+ * now `'monograph'` (a RESOLUTION STRATEGY, not a copy of the member's
+ * bibliographic `Source.kind: 'periodical'`) -- `deriveSourceLayout`
+ * (`@/archive/location`) derives `monograph` for any source with `partOf`
+ * set, since a member is filed FLAT on disk (T001 finding: "though stored
+ * flat, without date+ark subdirs, like a monograph") regardless of its
+ * bibliographic kind. So `resolveArchiveSource` now dispatches to
+ * `resolveMonograph`, which matches this fixture's flat shape -- resolution
+ * succeeds structurally and per-item build is ATTEMPTED. It still fails,
+ * but on a LATER, unrelated step: this fixture's member carries its OCR text
+ * as a DETACHED `ocr-text` asset (no inline `issue.txt`), and this minimal
+ * test injects no `ObjectStore`/`typst` to fetch/render it -- that wiring
+ * belongs to later tasks (T005/T008). This test asserts ONLY the T002/T002b
+ * concerns: the member's layout registers as `monograph` (so neither "no
+ * archive layout registered" nor the old flat/periodical "no issue
+ * directories found" mismatch recurs) and it is discoverable -- never that
+ * the member's build completes end to end.
  */
 
 import { rmSync } from 'node:fs';
@@ -34,7 +38,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { resolveRepoRoot } from '@/browser/load/repo-root';
-import { isSourceLayoutRegistered } from '@/archive/location';
+import { isSourceLayoutRegistered, sourceLayout } from '@/archive/location';
 import { buildAll, buildSource } from '@/pdf/render/batch';
 
 import { writeMemberFixture } from '../../unit/pdf/member-fixture';
@@ -47,17 +51,7 @@ const MEMBER_GROUP_ID = 'PB-P060';
 const MEMBER_CASE = 'port-breton';
 const MEMBER_SLUG = 'conviction-of-marquis-de-rays';
 
-/** Capture a rejected promise's Error without letting the assertion escape the try/catch. */
-async function captureRejection(promise: Promise<unknown>): Promise<Error> {
-  try {
-    await promise;
-  } catch (error) {
-    return error instanceof Error ? error : new Error(String(error));
-  }
-  throw new Error('captureRejection: promise did not reject');
-}
-
-describe('batch build (T002, spec 017): member-layout registration wiring', () => {
+describe('batch build (T002/T002b, spec 017): member-layout registration + monograph-kind (flat) resolution', () => {
   const repoRoot = resolveRepoRoot();
   const outDir = path.join(
     repoRoot,
@@ -65,7 +59,7 @@ describe('batch build (T002, spec 017): member-layout registration wiring', () =
     `pdf-member-discovery-test-${process.pid}-${Date.now()}`,
   );
 
-  it('buildSource registers the member layout before resolveArchiveSource -- no longer "no archive layout registered"', async () => {
+  it('buildSource registers the member as monograph-kind and resolves its flat directory -- no longer "no archive layout registered" or "no issue directories found"', async () => {
     const fixture = await writeMemberFixture({
       groupId: MEMBER_GROUP_ID,
       sourceId: MEMBER_SOURCE_ID,
@@ -76,23 +70,32 @@ describe('batch build (T002, spec 017): member-layout registration wiring', () =
     });
 
     try {
-      const error = await captureRejection(
-        buildSource(MEMBER_SOURCE_ID, { archiveRoot: fixture.archiveRoot }),
-      );
-
-      // The T002 assertion: registration happened, so the source is no
-      // longer "unregistered" -- resolution gets past that check (and fails
-      // LATER, on the flat/periodical mismatch noted above, which is out of
-      // this task's scope).
-      expect(error.message).not.toMatch(/no archive layout registered/i);
+      // T002/T002b assertion: registration happened, AS monograph-kind (the
+      // flat on-disk shape's correct resolution strategy) -- so resolution
+      // never hits "no archive layout registered" (T002) nor the old
+      // flat/periodical "no issue directories found" mismatch (T002b).
+      const result = await buildSource(MEMBER_SOURCE_ID, { archiveRoot: fixture.archiveRoot });
       expect(isSourceLayoutRegistered(MEMBER_SOURCE_ID)).toBe(true);
+      expect(sourceLayout(MEMBER_SOURCE_ID).kind).toBe('monograph');
+
+      // The member's single flat item is now ATTEMPTED (buildSource no
+      // longer throws a batch-level error for it) and fails only on a LATER,
+      // out-of-scope step: this fixture's member carries a detached
+      // `ocr-text` asset with no inline `issue.txt`, and this minimal test
+      // injects no ObjectStore/typst to fetch/render it (T005/T008's concern,
+      // not this fix's).
+      expect(result.built).toHaveLength(0);
+      expect(result.failed).toHaveLength(1);
+      expect(result.failed[0].itemId).toBe(MEMBER_SOURCE_ID);
+      expect(result.failed[0].error).not.toMatch(/no archive layout registered/i);
+      expect(result.failed[0].error).not.toMatch(/no issue directories found/i);
     } finally {
       fixture.cleanup();
       rmSync(outDir, { recursive: true, force: true });
     }
   });
 
-  it('buildAll discovers the member via discoverBuildableSourceIds -- registered + has an archive dir', async () => {
+  it('buildAll discovers the member via discoverBuildableSourceIds -- registered as monograph-kind + has an archive dir', async () => {
     const fixture = await writeMemberFixture({
       groupId: MEMBER_GROUP_ID,
       sourceId: MEMBER_SOURCE_ID,
@@ -112,12 +115,17 @@ describe('batch build (T002, spec 017): member-layout registration wiring', () =
       expect(results.map((r) => r.sourceId)).toEqual([MEMBER_SOURCE_ID]);
 
       const memberResult = results[0];
+      // Same scope note as above: discovered + registered as monograph-kind,
+      // resolution succeeds structurally, and the per-item failure is now
+      // attributed to the item itself (itemId === sourceId, the monograph
+      // convention) rather than a whole-source `(source ...)` marker --
+      // resolveArchiveSource no longer throws a batch-level error for a
+      // flat member.
       expect(memberResult.built).toHaveLength(0);
       expect(memberResult.failed).toHaveLength(1);
-      expect(memberResult.failed[0].itemId).toBe(`(source ${MEMBER_SOURCE_ID})`);
-      // Same scope note as above: discovered + registered, but resolution
-      // fails later on the flat/periodical mismatch -- never on "unregistered".
+      expect(memberResult.failed[0].itemId).toBe(MEMBER_SOURCE_ID);
       expect(memberResult.failed[0].error).not.toMatch(/no archive layout registered/i);
+      expect(memberResult.failed[0].error).not.toMatch(/no issue directories found/i);
     } finally {
       fixture.cleanup();
       rmSync(outDir, { recursive: true, force: true });
