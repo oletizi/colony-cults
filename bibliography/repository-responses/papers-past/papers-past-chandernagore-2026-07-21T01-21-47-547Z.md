@@ -1,0 +1,211 @@
+- banner:
+  - navigation:
+    - list:
+      - listitem:
+        - link "ĀwhinaHelp":
+          - /url: /help
+      - listitem:
+        - link "MōAbout":
+          - /url: /about
+      - listitem:
+        - link "TakiuruLog in":
+          - /url: "#"
+  - link "Papers Past":
+    - /url: /
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=Chandernagore
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=Chandernagore
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=Chandernagore
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=Chandernagore
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=Chandernagore
+- link "Switch to Māori":
+  - /url: "#"
+  - img "Switch to Māori"
+- heading "Newspapers" [level=3]
+- img "Tukutuku"
+- heading "Search Newspapers" [level=4]
+- textbox "Keyword or name": Chandernagore
+- radio "All content" [checked]
+- text: All content
+- radio "Ngā Tānga Reo Māori only"
+- text: Ngā Tānga Reo Māori only
+- link "What is Ngā Tānga Reo Māori?":
+  - /url: /newspapers/he-aha-nga-tanga-reo-maori
+- heading "Filter" [level=5]
+- heading "Between dates" [level=6]
+- button "All dates "
+- heading "Title" [level=6]
+- button "All titles, all regions "
+- heading "Content types" [level=6]
+- button "All types of content "
+- link "Clear search":
+  - /url: /newspapers/reset-search
+- button "Search"
+- paragraph
+- heading "Search results" [level=3]
+- link "Explore Newspapers":
+  - /url: /newspapers/all
+- navigation "Next/previous navigation":
+  - text: Showing results 1-10 of 649
+  - link "Next 10 results":
+    - /url: /newspapers?page=2&query=Chandernagore
+- menubar:
+  - text: Sort by
+  - menuitem "Best matchRitenga tino pai rawa": Best match
+- menubar:
+  - text: Items per page
+  - menuitem "10"
+- list:
+  - listitem: Hide preview
+  - listitem:
+    - link "":
+      - /url: /newspapers?query=Chandernagore&snippet=false
+- heading "Article" [level=2]
+- heading "Newspaper" [level=2]
+- heading "Date" [level=2]
+- separator
+- link "CHANDERNAGORE MAY MERGE WITH INDIA":
+  - /url: /newspapers/CHP19490519.2.81?query=Chandernagore
+- text: Press 19 May 1949
+- link "Search result preview image":
+  - /url: /newspapers/CHP19490519.2.81?query=Chandernagore
+  - img "Search result preview image"
+- separator
+- link "Chandernagore Merges With India":
+  - /url: /newspapers/ODT19500504.2.73?query=Chandernagore
+- text: Otago Daily Times 4 May 1950
+- link "Search result preview image":
+  - /url: /newspapers/ODT19500504.2.73?query=Chandernagore
+  - img "Search result preview image"
+- separator
+- link "French Chandernagore To Join India":
+  - /url: /newspapers/NA19490811.2.67?query=Chandernagore
+- text: Northern Advocate 11 August 1949
+- link "Search result preview image":
+  - /url: /newspapers/NA19490811.2.67?query=Chandernagore
+  - img "Search result preview image"
+- separator
+- link "FRENCH SETTLEMENTS":
+  - /url: /newspapers/WAITA19490519.2.50?query=Chandernagore
+- text: Wairarapa Times-Age 19 May 1949
+- link "Search result preview image":
+  - /url: /newspapers/WAITA19490519.2.50?query=Chandernagore
+  - img "Search result preview image"
+- separator
+- link "ADMINISTRATION OF CHANDERNAGORE":
+  - /url: /newspapers/CHP19500504.2.70?query=Chandernagore
+- text: Press 4 May 1950
+- link "Search result preview image":
+  - /url: /newspapers/CHP19500504.2.70?query=Chandernagore
+  - img "Search result preview image"
+- separator
+- link "French Colony Comes Under India":
+  - /url: /newspapers/GISH19500504.2.59?query=Chandernagore
+- text: Gisborne Herald 4 May 1950
+- link "Search result preview image":
+  - /url: /newspapers/GISH19500504.2.59?query=Chandernagore
+  - img "Search result preview image"
+- separator
+- link "INDIA TAKES OVER FRENCH SETTLEMENT":
+  - /url: /newspapers/HBHETR19500503.2.77?query=Chandernagore
+- text: Hawke's Bay Herald-Tribune 3 May 1950
+- link "Search result preview image":
+  - /url: /newspapers/HBHETR19500503.2.77?query=Chandernagore
+  - img "Search result preview image"
+- separator
+- link "STRANGEST CORNER":
+  - /url: /newspapers/RMPOST19390116.2.44?query=Chandernagore
+- text: Rotorua Morning Post 16 January 1939
+- link "Search result preview image":
+  - /url: /newspapers/RMPOST19390116.2.44?query=Chandernagore
+  - img "Search result preview image"
+- separator
+- link "Indian-French Pact Over Chandernagore":
+  - /url: /newspapers/GISH19500418.2.40?query=Chandernagore
+- text: Gisborne Herald 18 April 1950
+- link "Search result preview image":
+  - /url: /newspapers/GISH19500418.2.40?query=Chandernagore
+  - img "Search result preview image"
+- separator
+- link "SEDITION IN INDIA.":
+  - /url: /newspapers/EP19081103.2.91?query=Chandernagore
+- text: Evening Post 3 November 1908
+- link "Search result preview image":
+  - /url: /newspapers/EP19081103.2.91?query=Chandernagore
+  - img "Search result preview image"
+- separator
+- navigation "Pages of Results":
+  - list:
+    - listitem:
+      - link "1":
+        - /url: "#"
+    - listitem:
+      - link "2":
+        - /url: /newspapers?page=2&query=Chandernagore
+    - listitem:
+      - link "3":
+        - /url: /newspapers?page=3&query=Chandernagore
+    - listitem:
+      - link "…":
+        - /url: "#"
+    - listitem:
+      - link "Next ›":
+        - /url: /newspapers?page=2&query=Chandernagore
+- contentinfo:
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=Chandernagore
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=Chandernagore
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=Chandernagore
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=Chandernagore
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=Chandernagore
+  - link "National Library of New Zealand":
+    - /url: https://natlib.govt.nz
+    - img "National Library of New Zealand"
+  - link "newzealand.govt.nz":
+    - /url: https://www.govt.nz/
+    - img "newzealand.govt.nz"
+  - navigation:
+    - list:
+      - listitem:
+        - link "Mahere pae tukutuku Sitemap":
+          - /url: /sitemap
+      - listitem:
+        - link "Āheinga Accessibility":
+          - /url: /accessibility
+      - listitem:
+        - link "Ngā ture mō te whakamahi Terms of use":
+          - /url: /terms
+      - listitem:
+        - link "Whakapā mai ki a mātou Contact us":
+          - /url: /contact
+      - listitem:
+        - link "Āwhina Help":
+          - /url: /help
+      - listitem:
+        - link "Mō About":
+          - /url: /about
+      - listitem:
+        - link "Takiuru Log in":
+          - /url: "#"

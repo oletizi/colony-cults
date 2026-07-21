@@ -317,8 +317,18 @@ describe('negative-path sweep: gaps found and filled (T035)', () => {
       ]);
       const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
+      // The completion preflight (spec 016) requires the Gallica completion
+      // machinery before dispatch; production always injects it. The adapter's
+      // public-domain gate throws before the gather is ever consulted, so a
+      // presence-only stub is enough to reach (and assert) the rights rejection.
       await expect(
-        runAcquire({ sourcesDir: dir, sourceId: MEMBER_ID, fetch }),
+        runAcquire({
+          sourcesDir: dir,
+          sourceId: MEMBER_ID,
+          fetch,
+          reconcileArchiveRoot: '/archive/root',
+          gather: async () => [],
+        }),
       ).rejects.toThrow(/State Library of Queensland/);
       expect(fetch).not.toHaveBeenCalled();
     });

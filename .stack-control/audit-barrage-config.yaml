@@ -1,0 +1,48 @@
+# Audit-barrage model battery — PROJECT OVERRIDE for corpus-gap-closure.
+#
+# Overrides the plugin default at:
+#   plugins/stack-control/templates/audit-barrage-config.yaml
+#
+# Sonnet lane REMOVED permanently (operator directive, 2026-07-18). The sonnet
+# lane (binary: claude, model: claude-sonnet-4-6) timed out on EVERY chunk of
+# the whole-feature 014 barrage in this environment, degrading every round to
+# 2-of-3 and adding ~7 min/chunk of dead wait that pushed the run past the
+# background-process runtime limit (killed at ~50 min). The same env limitation
+# is recorded across prior convergence overrides (gallica-fetcher, source-groups,
+# edition-publishing).
+#
+# The remaining fleet is the two FRONTIER, cross-FAMILY lanes that reliably
+# complete here:
+#   claude / opus     (Anthropic family — frontier, large context)
+#   codex  / gpt-5.5  (OpenAI family — frontier)
+# 2-of-2 AGREEMENT ACROSS families is the strong HIGH-confidence signal; sonnet
+# was a same-family-as-claude (Anthropic) redundant lane, so dropping it does not
+# reduce cross-family genetic diversity. This mirrors the plugin's own monorepo
+# override philosophy (one frontier lane per family).
+#
+# The lane definitions below are copied verbatim from the shipped template
+# (config grammar v2; contract: specs/014-audit-barrage-reliability/contracts/
+# barrage-config-schema.md). fleet-knowledge.yaml is kept in exact lane-name
+# lockstep with this file (govern refuses on a mismatch).
+
+models:
+  - name: claude
+    binary: claude
+    model: opus
+    args_template: "-p --model {{model}} --output-format stream-json --verbose {{prompt-stdin}}"
+    readonly_enforcement: "--disallowedTools Bash,Read,Grep,Glob,Edit,Write,WebFetch,WebSearch,Task,NotebookEdit"
+    output_mode: stream-json
+    liveness_signal: stdout
+    liveness_window_seconds: 300
+    timeout_floor_seconds: 420
+    timeout_secs_per_kb: 13
+  - name: codex
+    binary: codex
+    model: gpt-5.5
+    args_template: "exec -m {{model}} -c model_reasoning_summary=detailed --sandbox read-only {{prompt-stdin}}"
+    readonly_enforcement: "--sandbox read-only"
+    output_mode: text
+    liveness_signal: stderr
+    liveness_window_seconds: 60
+    timeout_floor_seconds: 300
+    timeout_secs_per_kb: 7

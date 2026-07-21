@@ -64,9 +64,10 @@ function orderedRecord(record: AuthoredRepositoryRecord): Record<string, unknown
   }
   // Acquired object-store assets (spec 011, T005/T030). Emitted in a FIXED key
   // order per asset, with absent optionals (`role`/`sequence`/
-  // `representationChoice`) omitted, so a load -> serialize round-trip is
-  // byte-identical. Sits after rightsAssessment (the acquisition axis) and
-  // ahead of the derived/serial fields, mirroring the model's field order.
+  // `representationChoice`/`sourceRepresentation`) omitted, so a load ->
+  // serialize round-trip is byte-identical. Sits after rightsAssessment (the
+  // acquisition axis) and ahead of the derived/serial fields, mirroring the
+  // model's field order.
   if (record.assets !== undefined && record.assets.length > 0) {
     out.assets = record.assets.map((asset) => {
       const entry: Record<string, unknown> = {
@@ -85,6 +86,9 @@ function orderedRecord(record: AuthoredRepositoryRecord): Record<string, unknown
       }
       if (asset.representationChoice !== undefined) {
         entry.representationChoice = asset.representationChoice;
+      }
+      if (asset.sourceRepresentation !== undefined) {
+        entry.sourceRepresentation = asset.sourceRepresentation;
       }
       return entry;
     });

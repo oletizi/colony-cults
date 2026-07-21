@@ -1,0 +1,56 @@
+sourceId: PB-P087
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: THE FRENCH COLONISATION SWINDLE
+    role: canonical
+notes: "Newspaper: New Zealand Herald, 16 December 1882. SMH-Paris-correspondent feature on the pending trial of M. du Breil. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZH18821216.2.76
+    identifiers:
+      - type: papers-past
+        value: NZH18821216.2.76
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgyMTIxNi4yLjc2JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9MzYx
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18821216.2.76/110185928a5e524bebf254a04e3e93b7848ce94f17dd2a4a5a0d7ef8a6efe326.gif
+        checksum: 110185928a5e524bebf254a04e3e93b7848ce94f17dd2a4a5a0d7ef8a6efe326
+        byteLength: 2686
+        provenancePath: archive/papers-past/nzh18821216.2.76/110185928a5e524bebf254a04e3e93b7848ce94f17dd2a4a5a0d7ef8a6efe326.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgyMTIxNi4yLjc2JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9Mzcx
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18821216.2.76/e2630650cfbd771476cc5e52e7b8e330c3ca9e584163eb0b6f1026c589917f3f.gif
+        checksum: e2630650cfbd771476cc5e52e7b8e330c3ca9e584163eb0b6f1026c589917f3f
+        byteLength: 383142
+        provenancePath: archive/papers-past/nzh18821216.2.76/e2630650cfbd771476cc5e52e7b8e330c3ca9e584163eb0b6f1026c589917f3f.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZH18821216.2.76
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/nzh18821216.2.76/4e685d5a9454565d2b223dd35cc646d7c9375b19afd5ea4ae8a7fbb1e4bfcf11.txt
+        checksum: 4e685d5a9454565d2b223dd35cc646d7c9375b19afd5ea4ae8a7fbb1e4bfcf11
+        byteLength: 8695
+        provenancePath: archive/papers-past/nzh18821216.2.76/4e685d5a9454565d2b223dd35cc646d7c9375b19afd5ea4ae8a7fbb1e4bfcf11.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-nzh18821216-2-76-2026-07-21T05-26-09-104Z.html
+      retrievedAt: 2026-07-21T05:26:15.429Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/NZH18821216.2.76
+      normalizationVersion: 1

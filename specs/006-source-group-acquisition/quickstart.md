@@ -1,6 +1,6 @@
 # Quickstart: Source-Group Acquisition
 
-Validates the pipeline end-to-end. Assumes the shipped `gallica` CLI builds and the private archive / B2 object store are configured (`COLONY_ARCHIVE_ROOT`, B2 credentials) as for the existing fetcher.
+Validates the pipeline end-to-end. Assumes the shipped `bib` CLI builds and the private archive / B2 object store are configured (`COLONY_ARCHIVE_ROOT`, B2 credentials) as for the existing fetcher.
 
 ## Prerequisites
 
@@ -12,21 +12,21 @@ Validates the pipeline end-to-end. Assumes the shipped `gallica` CLI builds and 
 
 ```bash
 # 1. Inventory a known public-domain legal record into PB-P004
-gallica bib inventory <ark> --group PB-P004 --kind monograph
+bib inventory <ark> --group PB-P004 --kind monograph
 #    → creates bibliography/sources/PB-P007.yml (partOf: PB-P004, status: discovered)
 #      + a RepositoryRecord (status: wanted) + an immutable metadata snapshot
 
 # 2. Verify the copy (deterministic; no status change)
-gallica bib verify-member PB-P007
+bib verify-member PB-P007
 #    → verdict: identifierResolved/rights/requiredMetadata/duplicate = passed
 
 # 3. Promote (reruns verification, records verdict, advances lifecycle)
-gallica bib promote PB-P007
+bib promote PB-P007
 #    → Source discovered → approved-for-acquisition; RepositoryRecord wanted → to-collect;
 #      verification verdict recorded
 
 # 4. Acquire (reuses the shipped fetcher; ARK resolved from the RepositoryRecord)
-gallica bib acquire PB-P007 --object-store
+bib acquire PB-P007 --object-store
 #    → page images → B2, OCR, provenance; the operator never typed the ARK again
 ```
 
@@ -35,9 +35,9 @@ gallica bib acquire PB-P007 --object-store
 ## Scenario B — non-acquirable candidate is excluded (FR-013a)
 
 ```bash
-gallica bib inventory <non-public-domain-ark> --group PB-P004
-gallica bib verify-member PB-P008          # → rights check fails
-gallica bib exclude-member PB-P008 --reason "not public domain"
+bib inventory <non-public-domain-ark> --group PB-P004
+bib verify-member PB-P008          # → rights check fails
+bib exclude-member PB-P008 --reason "not public domain"
 #    → Source discovered → excluded, reason recorded; never promoted or acquired
 ```
 
@@ -45,11 +45,11 @@ gallica bib exclude-member PB-P008 --reason "not public domain"
 
 ```bash
 # A member with two archive copies requires an explicit selector
-gallica bib promote PB-P009                     # → fails loud: --archive required
-gallica bib promote PB-P009 --archive "Gallica / BnF"   # → selects that copy
+bib promote PB-P009                     # → fails loud: --archive required
+bib promote PB-P009 --archive "Gallica / BnF"   # → selects that copy
 
 # Discovery mechanism unavailable → clear failure, no fallback
-gallica bib discover "marquis de Rays procès"   # → fails loud if the mechanism is down
+bib discover "marquis de Rays procès"   # → fails loud if the mechanism is down
 ```
 
 ## Scenario D — reusability on a second source-group (SC-003)

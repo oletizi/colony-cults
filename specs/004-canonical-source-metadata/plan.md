@@ -88,7 +88,7 @@ src/
 │   ├── vocab.ts               # NEW: closed allowed-value sets (status/rights/provider/ocr_status)
 │   └── migrate.ts             # NEW: fold 5 representations → SSOT; restore PB-P001 SLQ record
 ├── cli/
-│   └── bibliography.ts        # NEW: `gallica bib <validate|regenerate|migrate|show>` verbs
+│   └── bibliography.ts        # NEW: `bib <validate|regenerate|migrate|show>` verbs
 └── archive/
     └── source-registry.ts     # RETIRE/REPLACE: SourceMeta singular sourceArchive is the bug
 

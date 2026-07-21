@@ -1,0 +1,41 @@
+[
+  {
+    "slug": "italian-recon-camera-portal-probe",
+    "url": "https://storia.camera.it/ricerca?q=Nuova+Francia+Oceania+emigrazione",
+    "kind": "repository probe (Camera dei deputati Portale storico)",
+    "status": "ok",
+    "bytes": 4521,
+    "file": "bibliography/repository-responses/PB-P055/italian-recon-camera-portal-probe-2026-07-17.html"
+  },
+  {
+    "slug": "italian-recon-camera-portal-base",
+    "url": "https://storia.camera.it/",
+    "kind": "repository probe (portal base — document the access wall)",
+    "status": "ok",
+    "bytes": 4363,
+    "file": "bibliography/repository-responses/PB-P055/italian-recon-camera-portal-base-2026-07-17.html"
+  },
+  {
+    "slug": "italian-recon-wikipedia-isole-del-paradiso",
+    "url": "https://it.wikipedia.org/wiki/Le_isole_del_paradiso",
+    "kind": "secondary (Nievo 1987 novel identification)",
+    "status": "ok",
+    "bytes": 79328,
+    "file": "bibliography/repository-responses/PB-P055/italian-recon-wikipedia-isole-del-paradiso-2026-07-17.html"
+  },
+  {
+    "slug": "italian-recon-gondorcal-derays",
+    "url": "https://www.gondorcal.it/truffatori-e-worldbuilding-il-marchese-de-rays-e-la-nuova-francia/",
+    "kind": "secondary (Italian researcher: primary sources are French)",
+    "status": "ok",
+    "bytes": 144363,
+    "file": "bibliography/repository-responses/PB-P055/italian-recon-gondorcal-derays-2026-07-17.html"
+  },
+  {
+    "slug": "italian-recon-avvenire-disperati",
+    "url": "https://www.avvenire.it/agora/pagine/disperati",
+    "kind": "secondary (Italian authorities tried to stop the emigration)",
+    "status": "error",
+    "error": "HttpClient: non-retryable HTTP 404 for https://www.avvenire.it/agora/pagine/disperati"
+  }
+]

@@ -403,4 +403,112 @@ describe('runPromote', () => {
       expect(source.status).toBe('discovered');
     });
   });
+
+  /**
+   * specs/015-papers-past-acquisition: a Papers Past member (a `papers-past`
+   * copy identifier carrying a well-formed article code, no ark/OAIRecord)
+   * promotes when it carries an operator-authored
+   * `rightsAssessment.rightsStatus: 'public-domain'`. Mirrors the museum arm --
+   * the injected ark resolver is unused for a papers-past record and
+   * `identifierResolved` is a cheap shape check, never a browser/network
+   * resolve. Flow order: inventory -> rights-assess -> verify-member -> promote.
+   */
+  describe('papers-past member', () => {
+    const ARTICLE_CODE = 'HNS18840103.2.19.3';
+    const PAPERS_PAST_SNAPSHOT = 'bibliography/repository-responses/PB-P100/HNS18840103-2-19-3-abc.json';
+
+    /** An ark resolver that MUST NOT be called for a papers-past record. */
+    const resolverThatThrows: ArkResolver = async () => {
+      throw new Error('resolveArk must not be called for a papers-past record');
+    };
+
+    function publicDomainAssessment(): RightsAssessment {
+      return {
+        rightsStatus: 'public-domain',
+        rightsBasis: 'Published in New Zealand in 1884; Crown copyright expired.',
+        assessedBy: 'operator',
+        assessedAt: '2026-07-16T00:00:00.000Z',
+      };
+    }
+
+    function papersPastAuthoredRecord(
+      overrides: Partial<AuthoredRepositoryRecord> = {},
+    ): AuthoredRepositoryRecord {
+      return {
+        sourceArchive: 'Papers Past / National Library of New Zealand',
+        status: 'wanted',
+        sourceUrl: `https://paperspast.natlib.govt.nz/newspapers/${ARTICLE_CODE}`,
+        identifiers: [{ type: 'papers-past', value: ARTICLE_CODE }],
+        rightsAssessment: publicDomainAssessment(),
+        metadataSnapshot: {
+          path: PAPERS_PAST_SNAPSHOT,
+          retrievedAt: '2026-07-01T00:00:00.000Z',
+          endpoint: 'https://paperspast.natlib.govt.nz',
+          normalizationVersion: 1,
+        },
+        ...overrides,
+      };
+    }
+
+    function papersPastEntries(records = [papersPastAuthoredRecord()]): Entry[] {
+      return [
+        { source: group(), records: [] },
+        { source: member({ kind: 'archival-item' }), records },
+      ];
+    }
+
+    function papersPastInput(d: string) {
+      return { ...baseInput(d), resolveArk: resolverThatThrows };
+    }
+
+    it('promotes a papers-past member with a public-domain assessment (ark resolver unused)', async () => {
+      dir = await seed(papersPastEntries());
+
+      const result = await runPromote(papersPastInput(dir));
+
+      expect(result.status).toBe('approved-for-acquisition');
+      expect(result.recordStatus).toBe('to-collect');
+      expect(result.verdict.result).toBe('passed');
+
+      const { source, records } = loadSourceFile(join(dir, `${MEMBER_ID}.yml`));
+      expect(source.status).toBe('approved-for-acquisition');
+      expect(records[0].status).toBe('to-collect');
+      expect(records[0].verification).toEqual({
+        result: 'passed',
+        verifiedAt: VERIFIED_AT,
+        checks: {
+          identifierResolved: 'passed',
+          rights: 'passed',
+          requiredMetadata: 'passed',
+          hardDuplicate: 'passed',
+          possibleDuplicate: 'passed',
+        },
+        snapshotRef: PAPERS_PAST_SNAPSHOT,
+      });
+    });
+
+    it('aborts (records nothing) when the papers-past member has NO rightsAssessment -- rights fails closed', async () => {
+      dir = await seed(papersPastEntries([papersPastAuthoredRecord({ rightsAssessment: undefined })]));
+
+      await expect(runPromote(papersPastInput(dir))).rejects.toThrow(/rights/i);
+
+      const { source, records } = loadSourceFile(join(dir, `${MEMBER_ID}.yml`));
+      expect(source.status).toBe('discovered');
+      expect(records[0].status).toBe('wanted');
+      expect(records[0].verification).toBeUndefined();
+    });
+
+    it('aborts when the article code is malformed -- identifierResolved fails', async () => {
+      dir = await seed(
+        papersPastEntries([
+          papersPastAuthoredRecord({ identifiers: [{ type: 'papers-past', value: 'not-an-article-code' }] }),
+        ]),
+      );
+
+      await expect(runPromote(papersPastInput(dir))).rejects.toThrow(/identifierResolved/i);
+
+      const { source } = loadSourceFile(join(dir, `${MEMBER_ID}.yml`));
+      expect(source.status).toBe('discovered');
+    });
+  });
 });

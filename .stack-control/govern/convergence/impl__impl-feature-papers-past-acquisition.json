@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/papers-past-acquisition",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-gap-closure",
+  "override": true,
+  "overrideReason": "Operator-authorized graduation (operator selected 'override govern'). Govern FATALs during payload assembly on the 49KB source-page capture (bibliography/repository-responses/papers-past-article/...html) exceeding the 24KB per-file envelope — a data-file tooling limit, NOT a code finding. The 4 prior-round govern findings (AUDIT-01/03/04/05) are fixed + test-verified (~140 tests green). Follow-on: govern should exclude repository-responses data paths from the code audit."
+}

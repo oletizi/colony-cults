@@ -1,0 +1,527 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { SourceQueryClient } from '@/sourcequery/source-query-client';
+import type { SourceConfig } from '@/sourcequery/source-config';
+import { DEFAULT_GRACE } from '@/sourcequery/source-config';
+import type {
+  ExitNode,
+  OperatorPermissionRequest,
+  PageResult,
+  QueryResult,
+  QuerySummary,
+} from '@/sourcequery/types';
+import { createFakeClock } from '@/sourcequery/clock';
+import { FakeBrowserSession, FakeTailscaleRunner } from './fakes';
+
+/**
+ * Fixture SourceConfig factory. `buildQueryUrl` is deterministic so tests can
+ * key scripted FakeBrowserSession responses by the exact URL the client
+ * navigates to. `parseSummary` is injectable per case (result / empty /
+ * ungrounded).
+ */
+function makeConfig(
+  parseSummary: (html: string) => QuerySummary,
+  overrides?: Partial<SourceConfig>,
+): SourceConfig {
+  return {
+    id: 'fixture',
+    baseUrl: 'https://fixture.test',
+    buildQueryUrl: (query: string, page?: number) =>
+      `https://fixture.test/search?q=${encodeURIComponent(query)}&page=${page ?? 1}`,
+    resultSelector: 'ul.results',
+    parseSummary,
+    retention: 'persist',
+    attribution: 'Fixture source, no attribution required',
+    minIntervalMs: 1000,
+    grace: DEFAULT_GRACE,
+    ...overrides,
+  };
+}
+
+/**
+ * Build a client whose config resolves to `config` for any source id. An
+ * optional node-carrying {@link FakeTailscaleRunner} lets block-path tests
+ * drive exit-node enumeration/selection; the default is an empty runner (the
+ * happy-path tests never touch it).
+ */
+function makeClient(
+  config: SourceConfig,
+  browser: FakeBrowserSession,
+  tailscale: FakeTailscaleRunner = new FakeTailscaleRunner(),
+) {
+  const { clock, sleep } = createFakeClock(0);
+  return new SourceQueryClient({
+    browser,
+    tailscale,
+    clock,
+    sleep,
+    resolveConfig: () => config,
+  });
+}
+
+function isPermissionRequest(
+  value: QueryResult | OperatorPermissionRequest,
+): value is OperatorPermissionRequest {
+  return 'blockEvidence' in value && 'proposedNode' in value && 'switchCommand' in value;
+}
+
+/** Narrow a query outcome to a {@link QueryResult}, failing loud otherwise. */
+function asQueryResult(value: QueryResult | OperatorPermissionRequest): QueryResult {
+  if (isPermissionRequest(value)) {
+    throw new Error('expected a QueryResult, got an OperatorPermissionRequest');
+  }
+  return value;
+}
+
+describe('sourcequery/SourceQueryClient', () => {
+  let originalCwd: string;
+  let tempDir: string;
+
+  // Hermetic strategy: chdir into a fresh temp dir so persistCapture (whose
+  // baseDir defaults to process.cwd()) writes under the temp dir, never into the
+  // repo tree. Restore + remove afterward.
+  beforeEach(() => {
+    originalCwd = process.cwd();
+    tempDir = mkdtempSync(path.join(tmpdir(), 'sourcequery-client-'));
+    process.chdir(tempDir);
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('result page: returns a grounded persist QueryResult, persists one capture, closes the session', async () => {
+    const html =
+      '<html><body><ul class="results"><li>Hit</li></ul><span>3 results</span></body></html>';
+    const config = makeConfig(() => ({
+      count: 3,
+      candidates: [{ title: 'Hit', ref: 'r1' }],
+    }));
+    const url = config.buildQueryUrl('gold rush', 1);
+    const page: PageResult = { status: 200, html, snapshotMarkdown: '# 3 results', errored: false };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const client = makeClient(config, browser);
+
+    const result = asQueryResult(await client.query('fixture', 'gold rush'));
+
+    expect(result.retention).toBe('persist');
+    expect(result.summary.count).toBe(3);
+    expect(result.source).toBe('fixture');
+    expect(result.query).toBe('gold rush');
+    if (result.retention !== 'persist') throw new Error('expected persist retention');
+    expect(result.captures).toHaveLength(1);
+    expect(existsSync(result.captures[0].htmlPath)).toBe(true);
+    expect(existsSync(result.captures[0].snapshotPath)).toBe(true);
+    expect(browser.navigateCalls).toEqual([url]);
+    expect(browser.isOpen).toBe(false);
+  });
+
+  it('legit empty page: returns count-0 persist QueryResult with one capture, no throw, session closed', async () => {
+    const html = '<html><body><ul class="results"></ul><span>0 results</span></body></html>';
+    const config = makeConfig(() => ({ count: 0, candidates: [] }));
+    const url = config.buildQueryUrl('no such thing', 1);
+    const page: PageResult = { status: 200, html, snapshotMarkdown: '# 0 results', errored: false };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const client = makeClient(config, browser);
+
+    const result = asQueryResult(await client.query('fixture', 'no such thing'));
+
+    expect(result.retention).toBe('persist');
+    expect(result.summary.count).toBe(0);
+    expect(result.summary.candidates).toEqual([]);
+    if (result.retention !== 'persist') throw new Error('expected persist retention');
+    expect(result.captures).toHaveLength(1);
+    expect(existsSync(result.captures[0].htmlPath)).toBe(true);
+    expect(browser.isOpen).toBe(false);
+  });
+
+  it('legit empty on a derived-facts-only source: persists NOTHING, returns derived facts + attribution (FR-009)', async () => {
+    const { readdirSync } = await import('node:fs');
+    const html = '<html><body><ul class="results"></ul><span>0 results</span></body></html>';
+    const config = makeConfig(() => ({ count: 0, candidates: [] }), {
+      retention: 'derived-facts-only',
+      attribution: 'Data sourced from Fixture; reproduced under fair use.',
+    });
+    const url = config.buildQueryUrl('trove empty', 1);
+    const page: PageResult = { status: 200, html, snapshotMarkdown: '# 0 results', errored: false };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const client = makeClient(config, browser);
+
+    const result = asQueryResult(await client.query('fixture', 'trove empty'));
+
+    expect(result.retention).toBe('derived-facts-only');
+    expect(result.summary.count).toBe(0);
+    if (result.retention !== 'derived-facts-only') throw new Error('expected derived-facts-only');
+    expect(result.derivedFacts).toEqual([]);
+    expect(result.attribution).toBe('Data sourced from Fixture; reproduced under fair use.');
+    // Retention-forbidden: NO bytes written under the (temp) cwd tree.
+    expect(readdirSync(tempDir)).toEqual([]);
+    expect(browser.isOpen).toBe(false);
+  });
+
+  it('non-empty result on a derived-facts-only source: persists NOTHING, returns derived facts + attribution (FR-009)', async () => {
+    const { readdirSync } = await import('node:fs');
+    const html =
+      '<html><body><ul class="results"><li>Hit</li></ul><span>2 results</span></body></html>';
+    const candidates = [
+      { title: 'Hit One', ref: 'r1' },
+      { title: 'Hit Two', ref: 'r2' },
+    ];
+    const config = makeConfig(() => ({ count: 2, candidates }), {
+      retention: 'derived-facts-only',
+      attribution: 'Data sourced from Fixture; reproduced under fair use.',
+    });
+    const url = config.buildQueryUrl('trove hits', 1);
+    const page: PageResult = { status: 200, html, snapshotMarkdown: '# 2 results', errored: false };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const client = makeClient(config, browser);
+
+    const result = asQueryResult(await client.query('fixture', 'trove hits'));
+
+    expect(result.retention).toBe('derived-facts-only');
+    expect(result.summary.count).toBe(2);
+    if (result.retention !== 'derived-facts-only') throw new Error('expected derived-facts-only');
+    expect(result.derivedFacts).toEqual(candidates);
+    expect(result.attribution).toBe('Data sourced from Fixture; reproduced under fair use.');
+    // Retention-forbidden: NO bytes written under the (temp) cwd tree, even
+    // though the result was non-empty (grounded facts must not leak to disk).
+    expect(readdirSync(tempDir)).toEqual([]);
+    expect(browser.isOpen).toBe(false);
+  });
+
+  const makeExitNode = (overrides: Partial<ExitNode>): ExitNode => ({
+    ip: '100.64.0.1',
+    hostname: 'node-default',
+    country: 'New Zealand',
+    city: 'Wellington',
+    online: true,
+    ...overrides,
+  });
+
+  it('hard block (HTTP 403) with a usable node: persists evidence, RETURNS an OperatorPermissionRequest, NEVER switches, closes the session', async () => {
+    const config = makeConfig(() => ({ count: 0, candidates: [] }), {
+      id: 'fixture',
+      preferredGeo: 'New Zealand',
+    });
+    const url = config.buildQueryUrl('blocked', 1);
+    const page: PageResult = {
+      status: 403,
+      html: '<html><body>Forbidden</body></html>',
+      snapshotMarkdown: '# Forbidden',
+      errored: false,
+    };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    // Distinct IPs per candidate so an IP-keyed dedup/selection regression is
+    // caught (a shared default IP would mask it).
+    const nzNode = makeExitNode({ ip: '100.64.0.11', hostname: 'nz-1', country: 'New Zealand', online: true });
+    const usNode = makeExitNode({ ip: '100.64.0.12', hostname: 'us-1', country: 'United States', online: true });
+    const runner = new FakeTailscaleRunner([usNode, nzNode], 'prior-node.example.ts.net');
+    const client = makeClient(config, browser, runner);
+
+    const outcome = await client.query('fixture', 'blocked');
+
+    if (!isPermissionRequest(outcome)) {
+      throw new Error('expected an OperatorPermissionRequest');
+    }
+    expect(outcome.source).toBe('fixture');
+    // Block evidence persisted FIRST, and its file exists on disk.
+    expect(outcome.blockEvidence.kind).toBe('status');
+    expect(outcome.blockEvidence.detail).toBe('HTTP 403');
+    expect(existsSync(outcome.blockEvidence.evidencePath)).toBe(true);
+    // Geo-selected the NZ node (preferredGeo match).
+    expect(outcome.proposedNode.hostname).toBe('nz-1');
+    expect(outcome.currentOrigin).toBe('prior-node.example.ts.net');
+    expect(outcome.switchCommand).toBe('tailscale set --exit-node=nz-1');
+    expect(outcome.minimalQueryPlan).toEqual([url]);
+    expect(outcome.hostImpactWarning.length).toBeGreaterThan(0);
+    // SC-003: NO autonomous exit-node switch happened.
+    expect(runner.setCalls).toEqual([]);
+    expect(browser.isOpen).toBe(false);
+  });
+
+  it('hard block with NO usable exit node: rejects, persists evidence, never switches, closes the session', async () => {
+    const config = makeConfig(() => ({ count: 0, candidates: [] }));
+    const url = config.buildQueryUrl('blocked', 1);
+    const page: PageResult = {
+      status: 403,
+      html: '<html><body>Forbidden</body></html>',
+      snapshotMarkdown: '# Forbidden',
+      errored: false,
+    };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    // Only offline nodes => selectNode returns null.
+    const runner = new FakeTailscaleRunner([makeExitNode({ hostname: 'off-1', online: false })]);
+    const client = makeClient(config, browser, runner);
+
+    await expect(client.query('fixture', 'blocked')).rejects.toThrow(/no usable exit node/i);
+    // Evidence was still persisted before the honest stop.
+    expect(existsSync(path.join(tempDir, 'bibliography', 'repository-responses', 'fixture'))).toBe(true);
+    expect(runner.setCalls).toEqual([]);
+    expect(browser.isOpen).toBe(false);
+  });
+
+  it('hard block while Tailscale is unavailable: rejects honestly, never switches, closes the session', async () => {
+    const config = makeConfig(() => ({ count: 0, candidates: [] }));
+    const url = config.buildQueryUrl('blocked', 1);
+    const page: PageResult = {
+      status: 403,
+      html: '<html><body>Forbidden</body></html>',
+      snapshotMarkdown: '# Forbidden',
+      errored: false,
+    };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const runner = new FakeTailscaleRunner();
+    // Simulate Tailscale unavailable: enumeration rejects.
+    runner.listExitNodes = async () => {
+      throw new Error('tailscale CLI not found');
+    };
+    const client = makeClient(config, browser, runner);
+
+    const err = await client.query('fixture', 'blocked').catch((e: unknown) => e);
+    expect(String(err)).toMatch(/tailscale/i);
+    // A status/challenge WAF block carries the stale-cookie remediation hint
+    // (TASK-44) so the agent knows to clear the persistent browser profile.
+    expect(String(err)).toContain('TASK-44');
+    expect(String(err)).toContain('rm -rf');
+    expect(runner.setCalls).toEqual([]);
+    expect(browser.isOpen).toBe(false);
+    // The raw page was persisted BEFORE classify (persist-before-analysis, FR-010):
+    // for a persist source that raw capture IS the block evidence, so a
+    // <slug>-<UTC>.html capture must exist on disk even though the pass ultimately
+    // threw due to Tailscale being unavailable. There is NO separate block-<UTC>
+    // copy of the same bytes.
+    const { readdirSync } = await import('node:fs');
+    const evidenceDir = path.join(tempDir, 'bibliography', 'repository-responses', 'fixture');
+    expect(existsSync(evidenceDir)).toBe(true);
+    const evidenceFiles = readdirSync(evidenceDir);
+    expect(evidenceFiles.some((file) => /^fixture-blocked-.*\.html$/.test(file))).toBe(true);
+    expect(evidenceFiles.some((file) => /^block-.*\.html$/.test(file))).toBe(false);
+  });
+
+  it('unclassifiable persist-retention page: rejects, but the raw page was persisted BEFORE classify (persist-before-analysis)', async () => {
+    // No result container present AND no block fingerprint AND status 200/not
+    // errored => classify() THROWS ("Page could not be classified"). Because the
+    // raw page is persisted BEFORE classify runs, a <slug>-<UTC>.{html,md} capture
+    // must still exist on disk afterward — the evidence needed to bootstrap a
+    // fixed SourceConfig is never lost to a classification failure.
+    const { readdirSync } = await import('node:fs');
+    const html = '<html><body><div class="unexpected">nothing the config recognizes</div></body></html>';
+    const config = makeConfig(() => ({ count: 0, candidates: [] }));
+    const url = config.buildQueryUrl('mystery layout', 1);
+    const page: PageResult = { status: 200, html, snapshotMarkdown: '# mystery', errored: false };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const client = makeClient(config, browser);
+
+    await expect(client.query('fixture', 'mystery layout')).rejects.toThrow(/could not be classified/i);
+
+    // The raw capture (both artifacts) is on disk despite the classify throw.
+    const captureDir = path.join(tempDir, 'bibliography', 'repository-responses', 'fixture');
+    expect(existsSync(captureDir)).toBe(true);
+    const files = readdirSync(captureDir);
+    expect(files.some((file) => /^fixture-mystery-layout-.*\.html$/.test(file))).toBe(true);
+    expect(files.some((file) => /^fixture-mystery-layout-.*\.md$/.test(file))).toBe(true);
+    // Session still closed on the throw path.
+    expect(browser.isOpen).toBe(false);
+  });
+
+  it('unclassifiable derived-facts-only page: rejects and persists NOTHING (retention-forbidden, by design)', async () => {
+    // Symmetric guard: a retention-forbidden source classifies from the in-memory
+    // HTML and persists nothing, so an unclassifiable page leaves no bytes behind.
+    const { readdirSync } = await import('node:fs');
+    const html = '<html><body><div class="unexpected">nothing recognizable</div></body></html>';
+    const config = makeConfig(() => ({ count: 0, candidates: [] }), {
+      retention: 'derived-facts-only',
+      attribution: 'Data sourced from Fixture; reproduced under fair use.',
+    });
+    const url = config.buildQueryUrl('mystery layout', 1);
+    const page: PageResult = { status: 200, html, snapshotMarkdown: '# mystery', errored: false };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const client = makeClient(config, browser);
+
+    await expect(client.query('fixture', 'mystery layout')).rejects.toThrow(/could not be classified/i);
+    expect(readdirSync(tempDir)).toEqual([]);
+    expect(browser.isOpen).toBe(false);
+  });
+
+  it('ungrounded result: rejects via Frugality grounding, session closed', async () => {
+    // Container present + positive count => classified 'result', but the count's
+    // digits are absent from the persisted HTML => grounding must throw.
+    const html = '<html><body><ul class="results"><li>Hit</li></ul></body></html>';
+    const config = makeConfig(() => ({ count: 5, candidates: [{ title: 'Hit', ref: 'r1' }] }));
+    const url = config.buildQueryUrl('ungrounded', 1);
+    const page: PageResult = { status: 200, html, snapshotMarkdown: '# hit', errored: false };
+    const browser = new FakeBrowserSession({ responses: { [url]: page } });
+    const client = makeClient(config, browser);
+
+    await expect(client.query('fixture', 'ungrounded')).rejects.toThrow(/ungrounded/i);
+    expect(browser.isOpen).toBe(false);
+  });
+
+  // A parseSummary that reads a page's own HTML so distinct pages yield distinct
+  // candidates (count is embedded as "total <n>" so it grounds against the bytes).
+  function pageHtml(count: number, refs: string[]): string {
+    return `<html><body><ul class="results" data-refs="${refs.join(',')}"><li>total ${count}</li></ul></body></html>`;
+  }
+  function parseFromHtml(html: string): QuerySummary {
+    const count = Number(html.match(/total (\d+)/)?.[1] ?? '0');
+    const raw = html.match(/data-refs="([^"]*)"/)?.[1] ?? '';
+    const refs = raw.length > 0 ? raw.split(',') : [];
+    return { count, candidates: refs.map((ref) => ({ title: ref, ref })) };
+  }
+
+  it('page: N fetches exactly that result page (1-indexed), not page 1', async () => {
+    const config = makeConfig(parseFromHtml);
+    const url2 = config.buildQueryUrl('long tail', 2);
+    const page: PageResult = {
+      status: 200,
+      html: pageHtml(695, ['p2a', 'p2b']),
+      snapshotMarkdown: '# p2',
+      errored: false,
+    };
+    const browser = new FakeBrowserSession({ responses: { [url2]: page } });
+    const client = makeClient(config, browser);
+
+    const result = asQueryResult(await client.query('fixture', 'long tail', { page: 2 }));
+
+    expect(browser.navigateCalls).toEqual([url2]);
+    expect(result.summary.count).toBe(695);
+    expect(result.summary.candidates.map((c) => c.ref)).toEqual(['p2a', 'p2b']);
+  });
+
+  it('pages > 1: walks the pages in order, unions candidates (dedup by ref), grounds count from the first page', async () => {
+    const config = makeConfig(parseFromHtml);
+    const url1 = config.buildQueryUrl('walk', 1);
+    const url2 = config.buildQueryUrl('walk', 2);
+    const browser = new FakeBrowserSession({
+      responses: {
+        [url1]: { status: 200, html: pageHtml(695, ['a', 'b']), snapshotMarkdown: '# 1', errored: false },
+        // 'b' repeats across pages — the union must de-duplicate it by ref.
+        [url2]: { status: 200, html: pageHtml(695, ['b', 'c']), snapshotMarkdown: '# 2', errored: false },
+      },
+    });
+    const client = makeClient(config, browser);
+
+    const result = asQueryResult(await client.query('fixture', 'walk', { pages: 2 }));
+
+    expect(browser.navigateCalls).toEqual([url1, url2]);
+    expect(result.summary.count).toBe(695);
+    expect(result.summary.candidates.map((c) => c.ref)).toEqual(['a', 'b', 'c']);
+    // Persist source: every walked page leaves a capture.
+    if (result.retention !== 'persist') {
+      throw new Error('expected a persist-retention result');
+    }
+    expect(result.captures).toHaveLength(2);
+  });
+
+  it('rejects a non-positive page or pages (fail-loud) before opening the session', async () => {
+    const config = makeConfig(parseFromHtml);
+    const browser = new FakeBrowserSession({});
+    const client = makeClient(config, browser);
+
+    await expect(client.query('fixture', 'x', { page: 0 })).rejects.toThrow(/page must be a positive integer/i);
+    await expect(client.query('fixture', 'x', { pages: 0 })).rejects.toThrow(/pages must be a positive integer/i);
+    expect(browser.navigateCalls).toEqual([]);
+  });
+
+  describe('approved exit-node pass (FR-012/013/014, SC-004)', () => {
+    it('performs the ONE switch, runs the grace query, returns a grounded result, restores host, closes the session', async () => {
+      // The switched-origin page renders a grounded result.
+      const html =
+        '<html><body><ul class="results"><li>Hit</li></ul><span>3 results</span></body></html>';
+      const config = makeConfig(() => ({ count: 3, candidates: [{ title: 'Hit', ref: 'r1' }] }), {
+        grace: { ...DEFAULT_GRACE, maxRequests: 3, maxWindowMs: 10_000_000 },
+      });
+      const url = config.buildQueryUrl('gold rush', 1);
+      const page: PageResult = { status: 200, html, snapshotMarkdown: '# 3 results', errored: false };
+      const browser = new FakeBrowserSession({ responses: { [url]: page } });
+      const nzNode = makeExitNode({ hostname: 'nz-1', ip: '100.64.0.9', country: 'New Zealand' });
+      const runner = new FakeTailscaleRunner([nzNode], 'prior-node.example.ts.net');
+      const client = makeClient(config, browser, runner);
+
+      const result = asQueryResult(
+        await client.query('fixture', 'gold rush', { approveExitNode: 'nz-1' }),
+      );
+
+      expect(result.summary.count).toBe(3);
+      if (result.retention !== 'persist') throw new Error('expected persist retention');
+      expect(result.captures).toHaveLength(1);
+      expect(existsSync(result.captures[0].htmlPath)).toBe(true);
+      // Exactly two host mutations: the switch, then the restore (SC-004).
+      expect(runner.setCalls).toHaveLength(2);
+      expect(runner.setCalls[0]).toBe('nz-1');
+      expect(runner.setCalls[1]).toBe('prior-node.example.ts.net');
+      // Grace run does not use PolitenessPolicy; it navigates the single planned url.
+      expect(browser.navigateCalls).toEqual([url]);
+      expect(browser.isOpen).toBe(false);
+    });
+
+    it('null prior exit node (fresh host, no active exit node before the switch): restores via the empty-string "clear to direct" call (SC-004)', async () => {
+      const html =
+        '<html><body><ul class="results"><li>Hit</li></ul><span>3 results</span></body></html>';
+      const config = makeConfig(() => ({ count: 3, candidates: [{ title: 'Hit', ref: 'r1' }] }), {
+        grace: { ...DEFAULT_GRACE, maxRequests: 3, maxWindowMs: 10_000_000 },
+      });
+      const url = config.buildQueryUrl('gold rush', 1);
+      const page: PageResult = { status: 200, html, snapshotMarkdown: '# 3 results', errored: false };
+      const browser = new FakeBrowserSession({ responses: { [url]: page } });
+      const nzNode = makeExitNode({ hostname: 'nz-1', ip: '100.64.0.9', country: 'New Zealand' });
+      // No prior exit node (fresh host): initialCurrentExitNode is null.
+      const runner = new FakeTailscaleRunner([nzNode], null);
+      const client = makeClient(config, browser, runner);
+
+      const result = asQueryResult(
+        await client.query('fixture', 'gold rush', { approveExitNode: 'nz-1' }),
+      );
+
+      expect(result.summary.count).toBe(3);
+      // priorState.priorExitNode ?? '' — with a null prior, the restore call
+      // must be the empty-string "clear to direct" representation, never left
+      // switched on the exit node (SC-004).
+      expect(runner.setCalls).toEqual(['nz-1', '']);
+      expect(browser.isOpen).toBe(false);
+    });
+
+    it('approved node not found among enumerated nodes: rejects fail-loud, closes the session', async () => {
+      const config = makeConfig(() => ({ count: 1, candidates: [] }));
+      const browser = new FakeBrowserSession({});
+      const nzNode = makeExitNode({ hostname: 'nz-1', ip: '100.64.0.9' });
+      const runner = new FakeTailscaleRunner([nzNode], null);
+      const client = makeClient(config, browser, runner);
+
+      await expect(
+        client.query('fixture', 'gold rush', { approveExitNode: 'does-not-exist' }),
+      ).rejects.toThrow(/not found among enumerated nodes/i);
+      // No switch happened; the session was still closed.
+      expect(runner.setCalls).toEqual([]);
+      expect(browser.isOpen).toBe(false);
+    });
+
+    it('burned node (grace-run page still blocked): rejects AND host is restored (setCalls[1] present), session closed', async () => {
+      const config = makeConfig(() => ({ count: 0, candidates: [] }));
+      const url = config.buildQueryUrl('blocked', 1);
+      // The switched node is ALSO blocked — a 403 on the grace navigation.
+      const page: PageResult = {
+        status: 403,
+        html: '<html><body>Forbidden</body></html>',
+        snapshotMarkdown: '# Forbidden',
+        errored: false,
+      };
+      const browser = new FakeBrowserSession({ responses: { [url]: page } });
+      const nzNode = makeExitNode({ hostname: 'nz-1', ip: '100.64.0.9' });
+      const runner = new FakeTailscaleRunner([nzNode], 'prior-node.example.ts.net');
+      const client = makeClient(config, browser, runner);
+
+      await expect(
+        client.query('fixture', 'blocked', { approveExitNode: 'nz-1' }),
+      ).rejects.toThrow(/burned node/i);
+      // Switch happened AND host was restored on the abort path (SC-004).
+      expect(runner.setCalls).toHaveLength(2);
+      expect(runner.setCalls[0]).toBe('nz-1');
+      expect(runner.setCalls[1]).toBe('prior-node.example.ts.net');
+      expect(browser.isOpen).toBe(false);
+    });
+  });
+});

@@ -101,6 +101,18 @@ function pageImage(overrides: Partial<AssetProvenance> = {}): AssetProvenance {
   };
 }
 
+/**
+ * Gallica completion-tail machinery (spec 016): a `reconcileArchiveRoot` + a
+ * `gather` returning valid page-image provenance, so a non-dry-run Gallica
+ * acquire's inseparable completion tail can advance status. A non-dry-run
+ * Gallica acquire now PREFLIGHTS these before dispatch (AUDIT-20260719-06), so
+ * a characterization of the fetch path must inject them just as it injects the
+ * fetcher; the fetch-arg PINS below are unchanged by their presence.
+ */
+function gallicaCompletion(): { reconcileArchiveRoot: string; gather: GatherProvenanceFn } {
+  return { reconcileArchiveRoot: '/archive/root', gather: async () => [pageImage()] };
+}
+
 async function seedSourcesDir(
   entries: { source: Source; records: AuthoredRepositoryRecord[] }[],
 ): Promise<string> {
@@ -136,6 +148,7 @@ describe('Gallica acquisition path — characterization (pre-cutover baseline)',
       sourcesDir: dir,
       sourceId: 'PB-P100',
       fetch,
+      ...gallicaCompletion(),
     });
 
     // Observable RESULT contract.
@@ -181,7 +194,7 @@ describe('Gallica acquisition path — characterization (pre-cutover baseline)',
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
     await expect(
-      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch }),
+      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletion() }),
     ).rejects.toThrow(/public-domain/i);
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -193,7 +206,7 @@ describe('Gallica acquisition path — characterization (pre-cutover baseline)',
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
     await expect(
-      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch }),
+      runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletion() }),
     ).rejects.toThrow(/public-domain/i);
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -277,6 +290,7 @@ describe('Gallica acquisition path — characterization (pre-cutover baseline)',
       sourceId: 'PB-P100',
       objectStore: true,
       fetch,
+      ...gallicaCompletion(),
     });
 
     const [args] = vi.mocked(fetch).mock.calls[0];
@@ -293,6 +307,7 @@ describe('Gallica acquisition path — characterization (pre-cutover baseline)',
       checkpoint: true,
       checkpointEvery: 25,
       fetch,
+      ...gallicaCompletion(),
     });
 
     const [args] = vi.mocked(fetch).mock.calls[0];
@@ -304,7 +319,7 @@ describe('Gallica acquisition path — characterization (pre-cutover baseline)',
     dir = await seedSourcesDir([{ source: member(), records: [authoredRecord()] }]);
     const fetch: FetchSourceFn = vi.fn(async () => undefined);
 
-    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch });
+    await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletion() });
 
     const [args] = vi.mocked(fetch).mock.calls[0];
     expect(args.flags.objectStore).toBe(false);

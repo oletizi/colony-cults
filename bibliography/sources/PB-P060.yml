@@ -1,0 +1,14 @@
+sourceId: PB-P060
+kind: source-group
+status: approved-for-acquisition
+case: port-breton
+language: English
+creator: various
+titles:
+  - text: New Zealand newspaper coverage of the Marquis de Rays affair (Papers Past)
+    role: canonical
+rights:
+  status: public-domain
+  basis: "Papers Past (National Library of New Zealand) NZ newspaper coverage of the 1880s Marquis de Rays / Port Breton / New Ireland affair; NLNZ's own rights statement is 'No known copyright (New Zealand)' -- NZ newspaper copyright of this era has expired. This is a class determination for the group; members are acquired per-item and carry their own repositoryRecord rightsAssessment (see e.g. PB-P061)."
+  determinedAt: "2026-07-18"
+notes: "Opened per SRCH-0018/SRCH-0019 (2026-07-18): a first live query of Papers Past (NLNZ) via the shipped bib query-source governed client (spec 014) surfaced 695 NZ newspaper hits for 'Marquis de Rays' -- a previously untried press axis (the prior affair-press coverage was Franco-Anglo-Australian: PB-P001 France/Gallica, PB-P005 Australia/Trove). SRCH-0019 then validated one discrete article end-to-end (OCR text present, rights confirmed public domain, acquirable) -- see member PB-P061, the first validated member. Distinct from PB-P005 (Australian/Trove coverage, modeled as a single non-group periodical Source with no repeated discrete-acquisition target): Papers Past's per-article ref codes make discrete n=1 acquisition the natural unit, so this is modeled as a source-group per plan T015, with each acquirable article becoming its own member Source + repositoryRecord. A deduplicated discrete-item census across the full 695-hit vein (stripping cross-masthead syndication of the same cables) is a larger follow-on (SRCH-0018 remainingQuestions), not attempted here."

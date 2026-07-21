@@ -1,0 +1,177 @@
+- banner:
+  - navigation:
+    - list:
+      - listitem:
+        - link "ĀwhinaHelp":
+          - /url: /help
+      - listitem:
+        - link "MōAbout":
+          - /url: /about
+      - listitem:
+        - link "TakiuruLog in":
+          - /url: "#"
+  - link "Papers Past":
+    - /url: /
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=%22Nouvelle+Bretagne%22
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=%22Nouvelle+Bretagne%22
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=%22Nouvelle+Bretagne%22
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=%22Nouvelle+Bretagne%22
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=%22Nouvelle+Bretagne%22
+- link "Switch to Māori":
+  - /url: "#"
+  - img "Switch to Māori"
+- heading "Newspapers" [level=3]
+- img "Tukutuku"
+- heading "Search Newspapers" [level=4]
+- textbox "Keyword or name": "\"Nouvelle Bretagne\""
+- radio "All content" [checked]
+- text: All content
+- radio "Ngā Tānga Reo Māori only"
+- text: Ngā Tānga Reo Māori only
+- link "What is Ngā Tānga Reo Māori?":
+  - /url: /newspapers/he-aha-nga-tanga-reo-maori
+- heading "Filter" [level=5]
+- heading "Between dates" [level=6]
+- button "All dates "
+- heading "Title" [level=6]
+- button "All titles, all regions "
+- heading "Content types" [level=6]
+- button "All types of content "
+- link "Clear search":
+  - /url: /newspapers/reset-search
+- button "Search"
+- paragraph
+- heading "Search results" [level=3]
+- link "Explore Newspapers":
+  - /url: /newspapers/all
+- navigation "Next/previous navigation": Showing results 1-8 of 8
+- menubar:
+  - text: Sort by
+  - menuitem "Best matchRitenga tino pai rawa": Best match
+- menubar:
+  - text: Items per page
+  - menuitem "10"
+- list:
+  - listitem: Hide preview
+  - listitem:
+    - link "":
+      - /url: /newspapers?query=%22Nouvelle+Bretagne%22&snippet=false
+- heading "Article" [level=2]
+- heading "Newspaper" [level=2]
+- heading "Date" [level=2]
+- separator
+- link "Page 3 Advertisements Column 1":
+  - /url: /newspapers/WAIST18820613.2.16.1?query=%22Nouvelle+Bretagne%22
+- text: Wairarapa Standard 13 June 1882
+- link "Search result preview image":
+  - /url: /newspapers/WAIST18820613.2.16.1?query=%22Nouvelle+Bretagne%22
+  - img "Search result preview image"
+- separator
+- link "THE MARQUIS DE RAY’S EXPEDITION.":
+  - /url: /newspapers/LT18820704.2.29?query=%22Nouvelle+Bretagne%22
+- text: Lyttelton Times 4 July 1882
+- link "Search result preview image":
+  - /url: /newspapers/LT18820704.2.29?query=%22Nouvelle+Bretagne%22
+  - img "Search result preview image"
+- separator
+- link "AUSTRALIAN NEWS.":
+  - /url: /newspapers/LT18820610.2.32?query=%22Nouvelle+Bretagne%22
+- text: Lyttelton Times 10 June 1882
+- link "Search result preview image":
+  - /url: /newspapers/LT18820610.2.32?query=%22Nouvelle+Bretagne%22
+  - img "Search result preview image"
+- separator
+- link "AUSTRALIAN NEWS.":
+  - /url: /newspapers/TS18820609.2.17?query=%22Nouvelle+Bretagne%22
+- text: Star (Christchurch) 9 June 1882
+- link "Search result preview image":
+  - /url: /newspapers/TS18820609.2.17?query=%22Nouvelle+Bretagne%22
+  - img "Search result preview image"
+- separator
+- link "FEARFUL TYPHOON AT MANILLA.":
+  - /url: /newspapers/NZMAIL18830217.2.114.10?query=%22Nouvelle+Bretagne%22
+- text: New Zealand Mail 17 February 1883
+- link "Search result preview image":
+  - /url: /newspapers/NZMAIL18830217.2.114.10?query=%22Nouvelle+Bretagne%22
+  - img "Search result preview image"
+- separator
+- link "FEARFUL TYPHOON AT MANILLA.":
+  - /url: /newspapers/NZTIM18830212.2.30?query=%22Nouvelle+Bretagne%22
+- text: New Zealand Times 12 February 1883
+- link "Search result preview image":
+  - /url: /newspapers/NZTIM18830212.2.30?query=%22Nouvelle+Bretagne%22
+  - img "Search result preview image"
+- separator
+- link "THE SOUTH SEA BUBBLE OF CHARLES DU BREIL.":
+  - /url: /newspapers/CHP18980101.2.78?query=%22Nouvelle+Bretagne%22
+- text: Press 1 January 1898
+- link "Search result preview image":
+  - /url: /newspapers/CHP18980101.2.78?query=%22Nouvelle+Bretagne%22
+  - img "Search result preview image"
+- separator
+- link "THE STORY OF THE MARQUIS DE RATS' EXPEDITION.":
+  - /url: /newspapers/NZH18830825.2.51?query=%22Nouvelle+Bretagne%22
+- text: New Zealand Herald 25 August 1883
+- link "Search result preview image":
+  - /url: /newspapers/NZH18830825.2.51?query=%22Nouvelle+Bretagne%22
+  - img "Search result preview image"
+- separator
+- contentinfo:
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=%22Nouvelle+Bretagne%22
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=%22Nouvelle+Bretagne%22
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=%22Nouvelle+Bretagne%22
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=%22Nouvelle+Bretagne%22
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=%22Nouvelle+Bretagne%22
+  - link "National Library of New Zealand":
+    - /url: https://natlib.govt.nz
+    - img "National Library of New Zealand"
+  - link "newzealand.govt.nz":
+    - /url: https://www.govt.nz/
+    - img "newzealand.govt.nz"
+  - navigation:
+    - list:
+      - listitem:
+        - link "Mahere pae tukutuku Sitemap":
+          - /url: /sitemap
+      - listitem:
+        - link "Āheinga Accessibility":
+          - /url: /accessibility
+      - listitem:
+        - link "Ngā ture mō te whakamahi Terms of use":
+          - /url: /terms
+      - listitem:
+        - link "Whakapā mai ki a mātou Contact us":
+          - /url: /contact
+      - listitem:
+        - link "Āwhina Help":
+          - /url: /help
+      - listitem:
+        - link "Mō About":
+          - /url: /about
+      - listitem:
+        - link "Takiuru Log in":
+          - /url: "#"

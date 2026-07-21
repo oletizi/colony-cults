@@ -9,7 +9,7 @@
 export type WorkLevelIdentifierType = 'isbn' | 'issn' | 'oclc';
 
 /** Identifies a specific *held copy* of a work at an archive. */
-export type CopyLevelIdentifierType = 'accession' | 'ark' | 'iiif-manifest' | 'scan-doi' | 'ia-item';
+export type CopyLevelIdentifierType = 'accession' | 'ark' | 'iiif-manifest' | 'scan-doi' | 'ia-item' | 'papers-past';
 
 const WORK_LEVEL_TYPES: readonly WorkLevelIdentifierType[] = [
   'isbn',
@@ -23,6 +23,7 @@ const COPY_LEVEL_TYPES: readonly CopyLevelIdentifierType[] = [
   'iiif-manifest',
   'scan-doi',
   'ia-item',
+  'papers-past',
 ];
 
 /** Membership over a readonly string list (widens the tuple without a cast). */

@@ -1,0 +1,228 @@
+- banner:
+  - navigation:
+    - list:
+      - listitem:
+        - link "ĀwhinaHelp":
+          - /url: /help
+      - listitem:
+        - link "MōAbout":
+          - /url: /about
+      - listitem:
+        - link "TakiuruLog in":
+          - /url: "#"
+  - link "Papers Past":
+    - /url: /
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=Marquis+de+Rays
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=Marquis+de+Rays
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=Marquis+de+Rays
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=Marquis+de+Rays
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=Marquis+de+Rays
+- link "Switch to Māori":
+  - /url: "#"
+  - img "Switch to Māori"
+- heading "Newspapers" [level=3]
+- img "Tukutuku"
+- heading "Search Newspapers" [level=4]
+- textbox "Keyword or name": Marquis de Rays
+- radio "All content" [checked]
+- text: All content
+- radio "Ngā Tānga Reo Māori only"
+- text: Ngā Tānga Reo Māori only
+- link "What is Ngā Tānga Reo Māori?":
+  - /url: /newspapers/he-aha-nga-tanga-reo-maori
+- heading "Filter" [level=5]
+- heading "Between dates" [level=6]
+- button "All dates "
+- heading "Title" [level=6]
+- button "All titles, all regions "
+- heading "Content types" [level=6]
+- button "All types of content "
+- link "Clear search":
+  - /url: /newspapers/reset-search
+- button "Search"
+- paragraph
+- heading "Search results" [level=3]
+- link "Explore Newspapers":
+  - /url: /newspapers/all
+- navigation "Next/previous navigation":
+  - link "Previous results":
+    - /url: /newspapers?page=10&query=Marquis+de+Rays
+  - text: Showing results 101-110 of 695
+  - link "Next 10 results":
+    - /url: /newspapers?page=12&query=Marquis+de+Rays
+- menubar:
+  - text: Sort by
+  - menuitem "Best matchRitenga tino pai rawa": Best match
+- menubar:
+  - text: Items per page
+  - menuitem "10"
+- list:
+  - listitem: Hide preview
+  - listitem:
+    - link "":
+      - /url: /newspapers?page=11&query=Marquis+de+Rays&snippet=false
+- heading "Article" [level=2]
+- heading "Newspaper" [level=2]
+- heading "Date" [level=2]
+- separator
+- link "LATEST CABLE NEWS.":
+  - /url: /newspapers/WCT18800531.2.8?page=11&query=Marquis+de+Rays
+- text: West Coast Times 31 May 1880
+- link "Search result preview image":
+  - /url: /newspapers/WCT18800531.2.8?page=11&query=Marquis+de+Rays
+  - img "Search result preview image"
+- separator
+- link "Threatened Invasion of Western Australia.":
+  - /url: /newspapers/THS18800605.2.3?page=11&query=Marquis+de+Rays
+- text: Thames Star 5 June 1880
+- link "Search result preview image":
+  - /url: /newspapers/THS18800605.2.3?page=11&query=Marquis+de+Rays
+  - img "Search result preview image"
+- separator
+- link "THREATENED INVASION OF WESTERN AUSTRALIA.":
+  - /url: /newspapers/CHP18800405.2.22?page=11&query=Marquis+de+Rays
+- text: Press 5 April 1880
+- link "Search result preview image":
+  - /url: /newspapers/CHP18800405.2.22?page=11&query=Marquis+de+Rays
+  - img "Search result preview image"
+- separator
+- link "SPECIAL TELEGRAMS.":
+  - /url: /newspapers/NZH18831129.2.30?page=11&query=Marquis+de+Rays
+- text: New Zealand Herald 29 November 1883
+- link "Search result preview image":
+  - /url: /newspapers/NZH18831129.2.30?page=11&query=Marquis+de+Rays
+  - img "Search result preview image"
+- separator
+- link "THE FRENCH MODE OF ANNEXING.":
+  - /url: /newspapers/SCANT18840227.2.17?page=11&query=Marquis+de+Rays
+- text: South Canterbury Times 27 February 1884
+- link "Search result preview image":
+  - /url: /newspapers/SCANT18840227.2.17?page=11&query=Marquis+de+Rays
+  - img "Search result preview image"
+- separator
+- link "Arrest of General Ignatieff.":
+  - /url: /newspapers/BOPT18820815.2.17.1?page=11&query=Marquis+de+Rays
+- text: Bay of Plenty Times 15 August 1882
+- link "Search result preview image":
+  - /url: /newspapers/BOPT18820815.2.17.1?page=11&query=Marquis+de+Rays
+  - img "Search result preview image"
+- separator
+- link "AUSTRALIAN.":
+  - /url: /newspapers/AG18810409.2.11.2?page=11&query=Marquis+de+Rays
+- text: Ashburton Guardian 9 April 1881
+- link "Search result preview image":
+  - /url: /newspapers/AG18810409.2.11.2?page=11&query=Marquis+de+Rays
+  - img "Search result preview image"
+- separator
+- link "AUSTRALIA.":
+  - /url: /newspapers/GLOBE18800529.2.9.2?page=11&query=Marquis+de+Rays
+- text: Globe 29 May 1880
+- link "Search result preview image":
+  - /url: /newspapers/GLOBE18800529.2.9.2?page=11&query=Marquis+de+Rays
+  - img "Search result preview image"
+- separator
+- link "Untitled":
+  - /url: /newspapers/TS18801204.2.10.2?page=11&query=Marquis+de+Rays
+- text: Star (Christchurch) 4 December 1880
+- link "Search result preview image":
+  - /url: /newspapers/TS18801204.2.10.2?page=11&query=Marquis+de+Rays
+  - img "Search result preview image"
+- separator
+- link "Latest Cablegrams.":
+  - /url: /newspapers/WSTAR18810416.2.9?page=11&query=Marquis+de+Rays
+- text: Western Star 16 April 1881
+- link "Search result preview image":
+  - /url: /newspapers/WSTAR18810416.2.9?page=11&query=Marquis+de+Rays
+  - img "Search result preview image"
+- separator
+- navigation "Pages of Results":
+  - list:
+    - listitem:
+      - link "« First":
+        - /url: /newspapers?query=Marquis+de+Rays
+    - listitem:
+      - link "‹ Previous":
+        - /url: /newspapers?page=10&query=Marquis+de+Rays
+    - listitem:
+      - link "…":
+        - /url: "#"
+    - listitem:
+      - link "9":
+        - /url: /newspapers?page=9&query=Marquis+de+Rays
+    - listitem:
+      - link "10":
+        - /url: /newspapers?page=10&query=Marquis+de+Rays
+    - listitem:
+      - link "11":
+        - /url: "#"
+    - listitem:
+      - link "12":
+        - /url: /newspapers?page=12&query=Marquis+de+Rays
+    - listitem:
+      - link "13":
+        - /url: /newspapers?page=13&query=Marquis+de+Rays
+    - listitem:
+      - link "…":
+        - /url: "#"
+    - listitem:
+      - link "Next ›":
+        - /url: /newspapers?page=12&query=Marquis+de+Rays
+- contentinfo:
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=Marquis+de+Rays
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=Marquis+de+Rays
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=Marquis+de+Rays
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=Marquis+de+Rays
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=Marquis+de+Rays
+  - link "National Library of New Zealand":
+    - /url: https://natlib.govt.nz
+    - img "National Library of New Zealand"
+  - link "newzealand.govt.nz":
+    - /url: https://www.govt.nz/
+    - img "newzealand.govt.nz"
+  - navigation:
+    - list:
+      - listitem:
+        - link "Mahere pae tukutuku Sitemap":
+          - /url: /sitemap
+      - listitem:
+        - link "Āheinga Accessibility":
+          - /url: /accessibility
+      - listitem:
+        - link "Ngā ture mō te whakamahi Terms of use":
+          - /url: /terms
+      - listitem:
+        - link "Whakapā mai ki a mātou Contact us":
+          - /url: /contact
+      - listitem:
+        - link "Āwhina Help":
+          - /url: /help
+      - listitem:
+        - link "Mō About":
+          - /url: /about
+      - listitem:
+        - link "Takiuru Log in":
+          - /url: "#"

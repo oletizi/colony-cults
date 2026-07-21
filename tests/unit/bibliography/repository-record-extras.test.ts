@@ -160,6 +160,74 @@ repositoryRecords:
     expect(loaded.records[0].rights).toBeUndefined();
   });
 
+  it('round-trips an asset.sourceRepresentation through serialize -> load, stably', () => {
+    const source: Source = {
+      sourceId: 'PB-P094',
+      kind: 'archival-item',
+      titles: [{ text: 'Test OCR asset', role: 'canonical' }],
+      identifiers: [],
+    };
+    const record: AuthoredRepositoryRecord = {
+      sourceArchive: 'Papers Past',
+      status: 'archived',
+      assets: [
+        {
+          sourceUrl: 'https://paperspast.natlib.govt.nz/newspapers/x/y/article',
+          mediaType: 'text/plain',
+          objectStoreKey: 'archive/papers-past/x/y/article.txt',
+          checksum: 'deadbeef',
+          byteLength: 42,
+          provenancePath: 'archive/papers-past/x/y/article.yml',
+          role: 'ocr-text',
+          sourceRepresentation: 'papers-past-text-tab',
+        },
+      ],
+    };
+
+    const serialized = serializeSource({ source, records: [record] });
+    const filePath = writeSource('PB-P094.yml', serialized);
+
+    const loaded = loadSourceFile(filePath);
+    expect(loaded.records).toHaveLength(1);
+    const loadedAsset = loaded.records[0].assets?.[0];
+    expect(loadedAsset?.sourceRepresentation).toBe('papers-past-text-tab');
+
+    // Idempotent: re-serializing the loaded record yields byte-identical output.
+    const reserialized = serializeSource({ source: loaded.source, records: loaded.records });
+    expect(reserialized).toBe(serialized);
+  });
+
+  it('omits asset.sourceRepresentation when absent -- no field is fabricated', () => {
+    const source: Source = {
+      sourceId: 'PB-P093',
+      kind: 'archival-item',
+      titles: [{ text: 'Test non-OCR asset', role: 'canonical' }],
+      identifiers: [],
+    };
+    const record: AuthoredRepositoryRecord = {
+      sourceArchive: 'Internet Archive',
+      status: 'archived',
+      assets: [
+        {
+          sourceUrl: 'https://archive.org/x',
+          mediaType: 'image/png',
+          objectStoreKey: 'archive/internet-archive/x/pages/1-abc.png',
+          checksum: 'deadbeef',
+          byteLength: 42,
+          provenancePath: 'archive/internet-archive/x/pages/1-abc.yml',
+          role: 'page-master',
+        },
+      ],
+    };
+
+    const serialized = serializeSource({ source, records: [record] });
+    expect(serialized).not.toMatch(/sourceRepresentation/);
+
+    const filePath = writeSource('PB-P093.yml', serialized);
+    const loaded = loadSourceFile(filePath);
+    expect(loaded.records[0].assets?.[0].sourceRepresentation).toBeUndefined();
+  });
+
   it('leaves an existing rights determination with no raw field untouched (backward compatible)', () => {
     const filePath = writeSource(
       'PB-P095.yml',

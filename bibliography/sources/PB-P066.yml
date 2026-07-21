@@ -1,0 +1,64 @@
+sourceId: PB-P066
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: A NOBLEMAN’S SWINDLING SCHEME
+    role: canonical
+notes: "Newspaper: Grey River Argus, 13 August 1883. trial postponed; de Rays the subject. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/GRA18830813.2.16
+    identifiers:
+      - type: papers-past
+        value: GRA18830813.2.16
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1HUkExODgzMDgxMy4yLjE2JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9Mzg1
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/gra18830813.2.16/4cfab2cfbfa8ce980bd1e8b078442d1a302b7ef7a260b61fa99b72787d49bdae.gif
+        checksum: 4cfab2cfbfa8ce980bd1e8b078442d1a302b7ef7a260b61fa99b72787d49bdae
+        byteLength: 3311
+        provenancePath: archive/papers-past/gra18830813.2.16/4cfab2cfbfa8ce980bd1e8b078442d1a302b7ef7a260b61fa99b72787d49bdae.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1HUkExODgzMDgxMy4yLjE2JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9NDYx
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/gra18830813.2.16/3d800f4479bc411c0fb6ef5861015b476f739b6311f4fe268083407052152522.gif
+        checksum: 3d800f4479bc411c0fb6ef5861015b476f739b6311f4fe268083407052152522
+        byteLength: 28263
+        provenancePath: archive/papers-past/gra18830813.2.16/3d800f4479bc411c0fb6ef5861015b476f739b6311f4fe268083407052152522.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1HUkExODgzMDgxMy4yLjE2JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTMmd2lkdGg9NDMy
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/gra18830813.2.16/184b0d4d09cf789732938a2ad2707622aa7210428dd8c012792d678e12a97f3b.gif
+        checksum: 184b0d4d09cf789732938a2ad2707622aa7210428dd8c012792d678e12a97f3b
+        byteLength: 42177
+        provenancePath: archive/papers-past/gra18830813.2.16/184b0d4d09cf789732938a2ad2707622aa7210428dd8c012792d678e12a97f3b.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/GRA18830813.2.16
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/gra18830813.2.16/07ebb4018c17c49c6457cfcb71465a09104cea9060f876f985f8449d0e2a2825.txt
+        checksum: 07ebb4018c17c49c6457cfcb71465a09104cea9060f876f985f8449d0e2a2825
+        byteLength: 1314
+        provenancePath: archive/papers-past/gra18830813.2.16/07ebb4018c17c49c6457cfcb71465a09104cea9060f876f985f8449d0e2a2825.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-gra18830813-2-16-2026-07-21T05-19-42-950Z.html
+      retrievedAt: 2026-07-21T05:19:46.680Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/GRA18830813.2.16
+      normalizationVersion: 1

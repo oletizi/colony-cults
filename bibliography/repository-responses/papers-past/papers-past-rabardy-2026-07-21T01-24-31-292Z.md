@@ -1,0 +1,166 @@
+- banner:
+  - navigation:
+    - list:
+      - listitem:
+        - link "ĀwhinaHelp":
+          - /url: /help
+      - listitem:
+        - link "MōAbout":
+          - /url: /about
+      - listitem:
+        - link "TakiuruLog in":
+          - /url: "#"
+  - link "Papers Past":
+    - /url: /
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=Rabardy
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=Rabardy
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=Rabardy
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=Rabardy
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=Rabardy
+- link "Switch to Māori":
+  - /url: "#"
+  - img "Switch to Māori"
+- heading "Newspapers" [level=3]
+- img "Tukutuku"
+- heading "Search Newspapers" [level=4]
+- textbox "Keyword or name": Rabardy
+- radio "All content" [checked]
+- text: All content
+- radio "Ngā Tānga Reo Māori only"
+- text: Ngā Tānga Reo Māori only
+- link "What is Ngā Tānga Reo Māori?":
+  - /url: /newspapers/he-aha-nga-tanga-reo-maori
+- heading "Filter" [level=5]
+- heading "Between dates" [level=6]
+- button "All dates "
+- heading "Title" [level=6]
+- button "All titles, all regions "
+- heading "Content types" [level=6]
+- button "All types of content "
+- link "Clear search":
+  - /url: /newspapers/reset-search
+- button "Search"
+- paragraph
+- heading "Search results" [level=3]
+- link "Explore Newspapers":
+  - /url: /newspapers/all
+- navigation "Next/previous navigation":
+  - link "Previous results":
+    - /url: /newspapers?query=Rabardy
+  - text: Showing results 11-14 of 14
+- menubar:
+  - text: Sort by
+  - menuitem "Best matchRitenga tino pai rawa": Best match
+- menubar:
+  - text: Items per page
+  - menuitem "10"
+- list:
+  - listitem: Hide preview
+  - listitem:
+    - link "":
+      - /url: /newspapers?page=2&query=Rabardy&snippet=false
+- heading "Article" [level=2]
+- heading "Newspaper" [level=2]
+- heading "Date" [level=2]
+- separator
+- link "The Otago Daily Times. TUESDAY, OCTOBER 80, 1830.":
+  - /url: /newspapers/ODT18831030.2.9?page=2&query=Rabardy
+- text: Otago Daily Times 30 October 1883
+- link "Search result preview image":
+  - /url: /newspapers/ODT18831030.2.9?page=2&query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "LOCAL & GENERAL.":
+  - /url: /newspapers/OW18831103.2.25?page=2&query=Rabardy
+- text: Otago Witness 3 November 1883
+- link "Search result preview image":
+  - /url: /newspapers/OW18831103.2.25?page=2&query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "THE STORY-TELLER. The Awful Duel on Ulund.":
+  - /url: /newspapers/EP19041001.2.101?page=2&query=Rabardy
+- text: Evening Post 1 October 1904
+- link "Search result preview image":
+  - /url: /newspapers/EP19041001.2.101?page=2&query=Rabardy
+  - img "Search result preview image"
+- separator
+- link "Untitled":
+  - /url: /newspapers/NZH18831022.2.14?page=2&query=Rabardy
+- text: New Zealand Herald 22 October 1883
+- link "Search result preview image":
+  - /url: /newspapers/NZH18831022.2.14?page=2&query=Rabardy
+  - img "Search result preview image"
+- separator
+- navigation "Pages of Results":
+  - list:
+    - listitem:
+      - link "« First":
+        - /url: /newspapers?query=Rabardy
+    - listitem:
+      - link "‹ Previous":
+        - /url: /newspapers?query=Rabardy
+    - listitem:
+      - link "1":
+        - /url: /newspapers?query=Rabardy
+    - listitem:
+      - link "2":
+        - /url: "#"
+- contentinfo:
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=Rabardy
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=Rabardy
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=Rabardy
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=Rabardy
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=Rabardy
+  - link "National Library of New Zealand":
+    - /url: https://natlib.govt.nz
+    - img "National Library of New Zealand"
+  - link "newzealand.govt.nz":
+    - /url: https://www.govt.nz/
+    - img "newzealand.govt.nz"
+  - navigation:
+    - list:
+      - listitem:
+        - link "Mahere pae tukutuku Sitemap":
+          - /url: /sitemap
+      - listitem:
+        - link "Āheinga Accessibility":
+          - /url: /accessibility
+      - listitem:
+        - link "Ngā ture mō te whakamahi Terms of use":
+          - /url: /terms
+      - listitem:
+        - link "Whakapā mai ki a mātou Contact us":
+          - /url: /contact
+      - listitem:
+        - link "Āwhina Help":
+          - /url: /help
+      - listitem:
+        - link "Mō About":
+          - /url: /about
+      - listitem:
+        - link "Takiuru Log in":
+          - /url: "#"

@@ -1,0 +1,56 @@
+sourceId: PB-P085
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: THE MARQUIS DE RAYS EXPEDITION (the Genil en route)
+    role: canonical
+notes: "Newspaper: New Zealand Herald, 14 June 1880. the Genil en route to New Ireland with the second division + a corps of gendarmerie. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZH18800614.2.16
+    identifiers:
+      - type: papers-past
+        value: NZH18800614.2.16
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgwMDYxNC4yLjE2JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9MzY4
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18800614.2.16/cf6bdd7ad0100dd1a87e72115c83cb0cfddee0797a6cfcd1d8990793cb8fbdc5.gif
+        checksum: cf6bdd7ad0100dd1a87e72115c83cb0cfddee0797a6cfcd1d8990793cb8fbdc5
+        byteLength: 113303
+        provenancePath: archive/papers-past/nzh18800614.2.16/cf6bdd7ad0100dd1a87e72115c83cb0cfddee0797a6cfcd1d8990793cb8fbdc5.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgwMDYxNC4yLjE2JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9MzU4
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18800614.2.16/64719534bbaf412613a6ce0b1ce15233ffc5e075e77112b140460c835050268a.gif
+        checksum: 64719534bbaf412613a6ce0b1ce15233ffc5e075e77112b140460c835050268a
+        byteLength: 22028
+        provenancePath: archive/papers-past/nzh18800614.2.16/64719534bbaf412613a6ce0b1ce15233ffc5e075e77112b140460c835050268a.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZH18800614.2.16
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/nzh18800614.2.16/48b4b5a11c8f71cd94e877e0a15aa4d722c0fb451ea2f14c414abf087a148b74.txt
+        checksum: 48b4b5a11c8f71cd94e877e0a15aa4d722c0fb451ea2f14c414abf087a148b74
+        byteLength: 3785
+        provenancePath: archive/papers-past/nzh18800614.2.16/48b4b5a11c8f71cd94e877e0a15aa4d722c0fb451ea2f14c414abf087a148b74.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-nzh18800614-2-16-2026-07-21T05-25-33-248Z.html
+      retrievedAt: 2026-07-21T05:25:39.199Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/NZH18800614.2.16
+      normalizationVersion: 1

@@ -1,0 +1,64 @@
+sourceId: PB-P078
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: THE MARQUIS DE RAYS’ NEW COLONY
+    role: canonical
+notes: "Newspaper: Lyttelton Times, 31 January 1881. SMH on the scheme’s mounting difficulties. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: archived
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/LT18810131.2.32
+    identifiers:
+      - type: papers-past
+        value: LT18810131.2.32
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1MVDE4ODEwMTMxLjIuMzImY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD0zMTY=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/lt18810131.2.32/bbbc7cc16b3f6bf12d106f5a4dca346d381caf29aae2ec88094e29f528e202b3.gif
+        checksum: bbbc7cc16b3f6bf12d106f5a4dca346d381caf29aae2ec88094e29f528e202b3
+        byteLength: 3157
+        provenancePath: archive/papers-past/lt18810131.2.32/bbbc7cc16b3f6bf12d106f5a4dca346d381caf29aae2ec88094e29f528e202b3.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1MVDE4ODEwMTMxLjIuMzImY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD0zODY=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/lt18810131.2.32/240d6316f14a61531dc24e77731fd8e236dafb18dd340b821c2e762a65cd5095.gif
+        checksum: 240d6316f14a61531dc24e77731fd8e236dafb18dd340b821c2e762a65cd5095
+        byteLength: 16925
+        provenancePath: archive/papers-past/lt18810131.2.32/240d6316f14a61531dc24e77731fd8e236dafb18dd340b821c2e762a65cd5095.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1MVDE4ODEwMTMxLjIuMzImY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MyZ3aWR0aD0zODA=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/lt18810131.2.32/97179f42b6f6ef2e14009d159be037afceddeb11fa557407a467ecca0a4613d9.gif
+        checksum: 97179f42b6f6ef2e14009d159be037afceddeb11fa557407a467ecca0a4613d9
+        byteLength: 73844
+        provenancePath: archive/papers-past/lt18810131.2.32/97179f42b6f6ef2e14009d159be037afceddeb11fa557407a467ecca0a4613d9.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/LT18810131.2.32
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/lt18810131.2.32/3eeb33db850701ef2be9c1f5d5aefca3ea3d848c46c6ac4ad8a9108dbaca6f72.txt
+        checksum: 3eeb33db850701ef2be9c1f5d5aefca3ea3d848c46c6ac4ad8a9108dbaca6f72
+        byteLength: 2232
+        provenancePath: archive/papers-past/lt18810131.2.32/3eeb33db850701ef2be9c1f5d5aefca3ea3d848c46c6ac4ad8a9108dbaca6f72.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-lt18810131-2-32-2026-07-21T05-23-48-788Z.html
+      retrievedAt: 2026-07-21T05:23:54.926Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/LT18810131.2.32
+      normalizationVersion: 1
