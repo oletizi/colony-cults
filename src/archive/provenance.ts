@@ -40,6 +40,32 @@ export interface OcrQuality {
 }
 
 /**
+ * One input text layer a machine-generated summary was derived from (FR-005):
+ * the archive-relative `path` of the consumed companion (e.g. `issue.txt`,
+ * `issue.en.txt`) and the `sha256` it had at generation time. The pair is the
+ * idempotency key. Emitted as a two-space-indented YAML sequence item under
+ * `input_layers:` with the fixed sub-key order `path`, `sha256`.
+ */
+export interface InputLayer {
+  /** Archive-relative path of the consumed input companion. */
+  path: string;
+  /** Lowercase-hex SHA-256 the input layer had at generation time. */
+  sha256: string;
+}
+
+/**
+ * Low-confidence provenance for a summary whose input OCR was weak (FR-016):
+ * the coarse `tier` inherited from the input and a free-text `note`. Emitted as
+ * a fixed-order nested block (`tier`, `note`).
+ */
+export interface InputQuality {
+  /** Coarse input-fidelity tier (same closed set as {@link OcrQualityTier}). */
+  tier: OcrQualityTier;
+  /** Human note recording the low-confidence caveat. */
+  note: string;
+}
+
+/**
  * The fields of a per-asset companion YAML file, conforming to the archive
  * repo's existing convention (see its `PB-P001.yml`) extended with the
  * FR-005/FR-007 requirements (original URL, checksum, format, ocr_status, and
@@ -90,6 +116,24 @@ export interface ProvenanceFields {
    * records without it re-serialize byte-identically.
    */
   source_representation?: string;
+  /**
+   * The "interpretation, not evidence" label on a machine-generated summary,
+   * e.g. the literal `machine-generated-summary` (FR-005/006). Additive
+   * OPTIONAL key: omitted when unset so non-summary records re-serialize
+   * byte-identically.
+   */
+  interpretation?: string;
+  /**
+   * The input text layers a summary was derived from (FR-005). Additive
+   * OPTIONAL key: omitted (not `[]`) when unset so non-summary records
+   * re-serialize byte-identically.
+   */
+  input_layers?: InputLayer[];
+  /**
+   * Low-confidence input-OCR provenance for a summary (FR-016). Additive
+   * OPTIONAL key: omitted when unset (present only when the input tier is low).
+   */
+  input_quality?: InputQuality;
   /** Integer byte count of the asset (T008), emitted as a bare integer. */
   size: number;
   /** Object-store master location (T009), or `null` when not yet uploaded. */
@@ -132,6 +176,9 @@ const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'model',
   'translation',
   'source_representation',
+  'interpretation',
+  'input_layers',
+  'input_quality',
   'object_store',
   'ocr_quality',
   'notes',
@@ -224,6 +271,38 @@ function emitOcrQuality(quality: OcrQuality | undefined): string | undefined {
   ].join('\n');
 }
 
+/**
+ * Emit the optional `input_layers` sequence: omitted entirely when absent (so
+ * non-summary records re-serialize byte-identically), else a YAML sequence of
+ * `{ path, sha256 }` mappings, each a two-space-indented item with the fixed
+ * sub-key order (`- path:` then a four-space-indented `sha256:`).
+ */
+function emitInputLayers(layers: InputLayer[] | undefined): string | undefined {
+  if (layers === undefined) {
+    return undefined;
+  }
+  const items = layers.flatMap((layer) => [
+    `  - path: ${quotedScalar(layer.path)}`,
+    `    sha256: ${quotedScalar(layer.sha256)}`,
+  ]);
+  return ['input_layers:', ...items].join('\n');
+}
+
+/**
+ * Emit the optional `input_quality` block: omitted entirely when absent, else a
+ * nested block with the fixed sub-key order (`tier`, `note`) as quoted scalars.
+ */
+function emitInputQuality(quality: InputQuality | undefined): string | undefined {
+  if (quality === undefined) {
+    return undefined;
+  }
+  return [
+    'input_quality:',
+    `  tier: ${quotedScalar(quality.tier)}`,
+    `  note: ${quotedScalar(quality.note)}`,
+  ].join('\n');
+}
+
 /** Emit one provenance line/block, dispatching the two non-string fields. */
 function emitEntry(
   key: keyof ProvenanceFields,
@@ -236,10 +315,15 @@ function emitEntry(
       return emitObjectStore(fields.object_store);
     case 'ocr_quality':
       return emitOcrQuality(fields.ocr_quality);
+    case 'input_layers':
+      return emitInputLayers(fields.input_layers);
+    case 'input_quality':
+      return emitInputQuality(fields.input_quality);
     case 'engine':
     case 'model':
     case 'translation':
-    case 'source_representation': {
+    case 'source_representation':
+    case 'interpretation': {
       // Additive OPTIONAL keys: omit entirely when unset so non-translation
       // records (without them) re-serialize byte-identically.
       const value = fields[key];
@@ -303,6 +387,10 @@ interface ParsedRaw {
   objectStoreSeen: boolean;
   /** The parsed `ocr_quality` block, or `undefined` when the key is absent. */
   ocrQuality?: OcrQuality;
+  /** The parsed `input_layers` sequence, or `undefined` when the key is absent. */
+  inputLayers?: InputLayer[];
+  /** The parsed `input_quality` block, or `undefined` when the key is absent. */
+  inputQuality?: InputQuality;
 }
 
 /** Read one required field out of the raw parsed map, failing loud if absent. */
@@ -415,6 +503,77 @@ function parseOcrQualityBlock(
   return { quality, next: i };
 }
 
+/** Strip surrounding double quotes from a sub-value, unescaping when quoted. */
+function readSubScalar(rest: string): string {
+  if (rest.startsWith('"') && rest.endsWith('"') && rest.length >= 2) {
+    return unquoteScalar(rest.slice(1, -1));
+  }
+  return rest;
+}
+
+/**
+ * Parse the `input_layers:` sequence starting at `start`: repeated pairs of a
+ * `  - path: "..."` item line followed by a `    sha256: "..."` continuation
+ * line. Returns the layers and the index of the first line after the block.
+ */
+function parseInputLayersBlock(
+  lines: string[],
+  start: number,
+): { layers: InputLayer[]; next: number } {
+  const layers: InputLayer[] = [];
+  let i = start;
+  while (i < lines.length) {
+    const item = lines[i].match(/^ {2}- path:\s?(.*)$/);
+    if (!item) {
+      break;
+    }
+    const cont = (lines[i + 1] ?? '').match(/^ {4}sha256:\s?(.*)$/);
+    if (!cont) {
+      throw new Error(
+        `parseProvenance: input_layers item missing sha256 for "${lines[i]}"`,
+      );
+    }
+    layers.push({
+      path: readSubScalar(item[1]),
+      sha256: readSubScalar(cont[1]),
+    });
+    i += 2;
+  }
+  if (layers.length === 0) {
+    throw new Error('parseProvenance: input_layers block is empty');
+  }
+  return { layers, next: i };
+}
+
+/**
+ * Parse the two-space-indented `tier`/`note` sub-lines of an `input_quality:`
+ * block starting at `start`. `tier` is validated against the closed set.
+ * Returns the quality and the index of the first line after the block.
+ */
+function parseInputQualityBlock(
+  lines: string[],
+  start: number,
+): { quality: InputQuality; next: number } {
+  const values = new Map<string, string>();
+  let i = start;
+  while (i < lines.length) {
+    const sub = lines[i].match(/^ {2}([a-zA-Z0-9_]+):\s?(.*)$/);
+    if (!sub) {
+      break;
+    }
+    values.set(sub[1], readSubScalar(sub[2]));
+    i += 1;
+  }
+  const tier = requireSub(values, 'tier');
+  if (tier !== 'low' && tier !== 'medium' && tier !== 'high') {
+    throw new Error(
+      `parseProvenance: input_quality.tier must be low|medium|high, got "${tier}"`,
+    );
+  }
+  const quality: InputQuality = { tier, note: requireSub(values, 'note') };
+  return { quality, next: i };
+}
+
 /**
  * Parse the fixed-format companion YAML this module writes back into raw
  * `key -> value` pairs plus the nested `object_store`. This is a round-trip
@@ -430,6 +589,8 @@ function parseRawFields(text: string): ParsedRaw {
   let objectStore: ObjectStoreLocation | null = null;
   let objectStoreSeen = false;
   let ocrQuality: OcrQuality | undefined;
+  let inputLayers: InputLayer[] | undefined;
+  let inputQuality: InputQuality | undefined;
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
@@ -466,6 +627,24 @@ function parseRawFields(text: string): ParsedRaw {
       const block = parseOcrQualityBlock(lines, i + 1);
       ocrQuality = block.quality;
       i = block.next;
+    } else if (key === 'input_layers') {
+      if (rest !== '') {
+        throw new Error(
+          `parseProvenance: malformed input_layers line: "${line}"`,
+        );
+      }
+      const block = parseInputLayersBlock(lines, i + 1);
+      inputLayers = block.layers;
+      i = block.next;
+    } else if (key === 'input_quality') {
+      if (rest !== '') {
+        throw new Error(
+          `parseProvenance: malformed input_quality line: "${line}"`,
+        );
+      }
+      const block = parseInputQualityBlock(lines, i + 1);
+      inputQuality = block.quality;
+      i = block.next;
     } else if (rest === 'null') {
       raw.set(key, null);
       i += 1;
@@ -500,7 +679,14 @@ function parseRawFields(text: string): ParsedRaw {
       i += 1;
     }
   }
-  return { scalars: raw, objectStore, objectStoreSeen, ocrQuality };
+  return {
+    scalars: raw,
+    objectStore,
+    objectStoreSeen,
+    ocrQuality,
+    inputLayers,
+    inputQuality,
+  };
 }
 
 /**
@@ -510,8 +696,14 @@ function parseRawFields(text: string): ParsedRaw {
  * when building the derived PDF/A and text asset provenance (T030).
  */
 export function parseProvenance(text: string): ProvenanceFields {
-  const { scalars, objectStore, objectStoreSeen, ocrQuality } =
-    parseRawFields(text);
+  const {
+    scalars,
+    objectStore,
+    objectStoreSeen,
+    ocrQuality,
+    inputLayers,
+    inputQuality,
+  } = parseRawFields(text);
   if (!objectStoreSeen) {
     throw new Error('parseProvenance: missing required field "object_store"');
   }
@@ -537,6 +729,9 @@ export function parseProvenance(text: string): ProvenanceFields {
     model: scalars.get('model') ?? undefined,
     translation: scalars.get('translation') ?? undefined,
     source_representation: scalars.get('source_representation') ?? undefined,
+    interpretation: scalars.get('interpretation') ?? undefined,
+    input_layers: inputLayers,
+    input_quality: inputQuality,
     object_store: objectStore,
     ocr_quality: ocrQuality,
     notes: scalars.get('notes') ?? null,
