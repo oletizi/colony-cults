@@ -44,10 +44,18 @@ const ROW_SELECTOR = '.result_row, li.result, .results_list li';
  */
 const NUMBER_TOKEN = '\\d{1,3}(?:,\\d{3})+|\\d+';
 
-/** Builds the Chronicling America page-search results URL for a query, optionally paged. */
+/**
+ * Builds the Chronicling America search URL for a query, optionally paged.
+ *
+ * Since the 2025-08 migration the legacy `chroniclingamerica.loc.gov/search/
+ * pages/results/` endpoint is retired (it now 404s — confirmed by a persisted
+ * capture); the collection is served exclusively from the unified loc.gov site,
+ * which server-renders results as HTML. loc.gov paginates with `sp` (start
+ * page, 1-based).
+ */
 function buildQueryUrl(query: string, page?: number): string {
-  const base = `https://chroniclingamerica.loc.gov/search/pages/results/?andtext=${encodeURIComponent(query)}`;
-  return page !== undefined && page > 1 ? `${base}&page=${page}` : base;
+  const base = `https://www.loc.gov/collections/chronicling-america/?q=${encodeURIComponent(query)}`;
+  return page !== undefined && page > 1 ? `${base}&sp=${page}` : base;
 }
 
 /**
@@ -130,7 +138,7 @@ function parseSummary(html: string): QuerySummary {
 
 export const CHRONICLING_AMERICA: SourceConfig = {
   id: 'chronicling-america',
-  baseUrl: 'https://chroniclingamerica.loc.gov',
+  baseUrl: 'https://www.loc.gov',
   buildQueryUrl,
   resultSelector: RESULT_SELECTOR,
   parseSummary,
