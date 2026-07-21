@@ -23,9 +23,33 @@ import { join } from 'node:path';
 import type { ObjectStoreLocation, ProvenanceFields } from '@/archive/provenance';
 import { writeProvenance } from '@/archive/provenance';
 import { deriveSourceLayout, isSourceLayoutRegistered, sourceLayout } from '@/archive/location';
+import { publicObjectUrl, defaultHttpGet, type HttpGet } from '@/archive/public-cache';
+import { sha256OfBytes } from '@/archive/checksum';
+import { assessOcrQuality } from '@/ocr/quality';
+import { defaultOcrCommandRunner } from '@/ocr/run';
+import type { OcrCommandRunner } from '@/ocr/types';
 import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { Source } from '@/model/source';
+
+/** Provenance `language` (human) -> Tesseract code understood by assessOcrQuality. */
+const HUMAN_TO_TESSERACT: Readonly<Record<string, string>> = {
+  French: 'fra',
+  English: 'eng',
+  Italian: 'ita',
+};
+
+function tesseractLangFor(human: string): string {
+  const primary = human.split('/')[0].trim();
+  const code = HUMAN_TO_TESSERACT[primary];
+  if (code === undefined) {
+    throw new Error(
+      `writeRecordCompanions: no Tesseract mapping for language "${human}" ` +
+        `-- extend HUMAN_TO_TESSERACT to score its acquired OCR`,
+    );
+  }
+  return code;
+}
 
 /** Object-store coordinates recorded on each companion (the master's B2 home). */
 export interface CompanionObjectStore {
@@ -97,8 +121,14 @@ export async function writeRecordCompanions(params: {
   archiveRoot: string;
   objectStore: CompanionObjectStore;
   now: string;
+  /** Anonymous B2 GET for pulling acquired OCR text to score (default: real fetch). */
+  httpGet?: HttpGet;
+  /** Command runner for the OCR quality `aspell` call (default: real shell-out). */
+  ocrRunner?: OcrCommandRunner;
 }): Promise<string[]> {
   const { source, record, archiveRoot, objectStore, now } = params;
+  const httpGet = params.httpGet ?? defaultHttpGet;
+  const ocrRunner = params.ocrRunner ?? defaultOcrCommandRunner();
   const written: string[] = [];
   const title = sourceTitle(source);
   const rightsStatus = record.rightsAssessment?.rightsStatus ?? source.rights?.status ?? 'public-domain';
@@ -117,12 +147,46 @@ export async function writeRecordCompanions(params: {
       key: asset.objectStoreKey,
       endpoint: objectStore.endpoint,
     };
+    const type = companionType(asset);
+    const language = source.language ?? 'French';
+
+    // Every `ocr-text` companion MUST carry a computed ocr_quality (Constitution
+    // III / the mandatory-quality gate). This is the SINGLE choke point through
+    // which every acquired-OCR companion passes, so scoring it here -- pulling
+    // the just-uploaded text back from the public bucket, sha-verified -- makes
+    // ANY current or future acquisition adapter compliant without a manual
+    // backfill, and no path can emit an unscored ocr-text artifact.
+    let ocrQuality: ProvenanceFields['ocr_quality'];
+    if (type === 'ocr-text') {
+      const url = publicObjectUrl(store);
+      const res = await httpGet(url);
+      if (!res.ok) {
+        throw new Error(
+          `writeRecordCompanions: GET ${url} failed (${res.status} ${res.statusText}) ` +
+            `-- cannot score acquired OCR for ${yamlPath}`,
+        );
+      }
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const actual = sha256OfBytes(bytes);
+      if (actual !== asset.checksum) {
+        throw new Error(
+          `writeRecordCompanions: acquired OCR sha mismatch for ${asset.objectStoreKey} ` +
+            `(record ${asset.checksum}, fetched ${actual})`,
+        );
+      }
+      ocrQuality = await assessOcrQuality(
+        new TextDecoder().decode(bytes),
+        tesseractLangFor(language),
+        ocrRunner,
+      );
+    }
+
     const fields: ProvenanceFields = {
       id: source.sourceId,
       title,
-      type: companionType(asset),
+      type,
       case: source.case ?? deriveSourceLayout(source).case,
-      language: source.language ?? 'French',
+      language,
       source_archive: record.sourceArchive,
       catalog_url: catalogUrl,
       original_url: record.originalUrl ?? asset.sourceUrl,
@@ -135,6 +199,7 @@ export async function writeRecordCompanions(params: {
       size: asset.byteLength,
       object_store: store,
       source_representation: asset.sourceRepresentation,
+      ocr_quality: ocrQuality,
       rights_raw: rightsRaw,
       notes: null,
     };

@@ -4,8 +4,42 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { writeRecordCompanions } from '@/archive/write-record-companions';
 import type { CompanionObjectStore } from '@/archive/write-record-companions';
+import type { HttpGet } from '@/archive/public-cache';
+import type { OcrCommandRunner } from '@/ocr/types';
+import { sha256OfBytes } from '@/archive/checksum';
 import type { Source } from '@/model/source';
 import type { RepositoryRecord } from '@/model/repository-record';
+
+/** Serve one url->bytes for the OCR-text pull; unknown urls 404. */
+function fakeHttpGet(serve: Map<string, Uint8Array>): HttpGet {
+  return async (url) => {
+    const bytes = serve.get(url);
+    if (bytes === undefined) {
+      return { ok: false, status: 404, statusText: 'Not Found', arrayBuffer: async () => new ArrayBuffer(0) };
+    }
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      arrayBuffer: async () => {
+        const copy = new ArrayBuffer(bytes.byteLength);
+        new Uint8Array(copy).set(bytes);
+        return copy;
+      },
+    };
+  };
+}
+
+/** A fake aspell that reports the given tokens as misspelled. */
+function fakeAspell(misspelled: string[] = []): OcrCommandRunner {
+  return {
+    run: async (command, _args, stdin) => {
+      if (command !== 'aspell') throw new Error(`unexpected command ${command}`);
+      const bad = (stdin ?? '').split('\n').filter((t) => misspelled.includes(t));
+      return { stdout: bad.join('\n'), stderr: '', exitCode: 0 };
+    },
+  };
+}
 
 const COORDS: CompanionObjectStore = {
   provider: 'backblaze-b2',
@@ -45,8 +79,14 @@ describe('writeRecordCompanions: ocr-text companion', () => {
     rmSync(archiveRoot, { recursive: true, force: true });
   });
 
-  it('writes an ocr-text companion with source_representation + charset', async () => {
+  it('writes an ocr-text companion with source_representation + charset + a computed ocr_quality', async () => {
     const source = baseSource();
+    // The OCR text is scored from the B2-resident bytes -> use its REAL sha.
+    const ocrBytes = new TextEncoder().encode(
+      'THE MARQUIS DE RAYS was arrested today at Barcelona.',
+    );
+    const realSha = sha256OfBytes(ocrBytes);
+    const key = `archive/papers-past/PB-P061/${realSha}.txt`;
     const record: RepositoryRecord = {
       sourceId: 'PB-P061',
       sourceArchive: 'Papers Past',
@@ -64,15 +104,16 @@ describe('writeRecordCompanions: ocr-text companion', () => {
         {
           sourceUrl: 'https://paperspast.natlib.govt.nz/newspapers/example/text',
           mediaType: 'text/plain; charset=utf-8',
-          objectStoreKey: `archive/papers-past/PB-P061/${sha}.txt`,
-          checksum: sha,
-          byteLength: 42,
-          provenancePath: `archive/papers-past/PB-P061/${sha}.yml`,
+          objectStoreKey: key,
+          checksum: realSha,
+          byteLength: ocrBytes.byteLength,
+          provenancePath: `archive/papers-past/PB-P061/${realSha}.yml`,
           role: 'ocr-text',
           sourceRepresentation: 'papers-past-text-tab',
         },
       ],
     };
+    const url = `${COORDS.endpoint}/${COORDS.bucket}/${key}`;
 
     const written = await writeRecordCompanions({
       source,
@@ -80,14 +121,55 @@ describe('writeRecordCompanions: ocr-text companion', () => {
       archiveRoot,
       objectStore: COORDS,
       now: NOW,
+      httpGet: fakeHttpGet(new Map([[url, ocrBytes]])),
+      ocrRunner: fakeAspell([]), // no misspellings -> ratio 1, high
     });
 
-    const yamlPath = written.find((p) => p.endsWith(`${sha}.yml`));
+    const yamlPath = written.find((p) => p.endsWith(`${realSha}.yml`));
     if (!yamlPath) throw new Error('expected a written companion .yml path');
     const yml = readFileSync(yamlPath, 'utf-8');
     expect(yml).toContain('type: "ocr-text"');
     expect(yml).toContain('format: "text/plain; charset=utf-8"');
     expect(yml).toContain('source_representation: "papers-past-text-tab"');
+    // The mandatory OCR-quality block, computed from the (fetched) text.
+    expect(yml).toContain('ocr_quality:');
+    expect(yml).toContain('language: "en"');
+    expect(yml).toContain('tier: "high"');
+  });
+
+  it('fails loud when the acquired OCR text sha does not match the record', async () => {
+    const source = baseSource();
+    const key = `archive/papers-past/PB-P061/${sha}.txt`;
+    const record: RepositoryRecord = {
+      sourceId: 'PB-P061',
+      sourceArchive: 'Papers Past',
+      status: 'archived',
+      retrievedAt: NOW,
+      assets: [
+        {
+          sourceUrl: 'https://paperspast.natlib.govt.nz/newspapers/example/text',
+          mediaType: 'text/plain; charset=utf-8',
+          objectStoreKey: key,
+          checksum: sha, // deliberately NOT the sha of the served bytes
+          byteLength: 10,
+          provenancePath: `archive/papers-past/PB-P061/${sha}.yml`,
+          role: 'ocr-text',
+          sourceRepresentation: 'papers-past-text-tab',
+        },
+      ],
+    };
+    const url = `${COORDS.endpoint}/${COORDS.bucket}/${key}`;
+    await expect(
+      writeRecordCompanions({
+        source,
+        record,
+        archiveRoot,
+        objectStore: COORDS,
+        now: NOW,
+        httpGet: fakeHttpGet(new Map([[url, new TextEncoder().encode('mismatch')]])),
+        ocrRunner: fakeAspell([]),
+      }),
+    ).rejects.toThrow(/sha mismatch/i);
   });
 
   it('leaves a sibling non-OCR (repository-source) companion unchanged: no source_representation, type source-document', async () => {
