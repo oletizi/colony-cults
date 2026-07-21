@@ -35,9 +35,27 @@ Distinct-yield curve: **2, 0** (tranche 1 = results 1–10, tranche 2 = results 
 
 **30 distinct PD ACQUIRE candidates** for the de Rays / Port-Breton case: 28 from `Marquis de Rays` (see that doc) + 2 from `Rabardy` (above). Plus rights-blocked/pending retrospectives (1929/1936/1949). The 1898 "South Sea Bubble" retrospective is a standout addition.
 
-## Next promising handle
+## Handle correction — quoted-phrase search beats token search (SRCH-0030)
 
-`du Breil` / `Charles du Breil` (de Rays' real name) — should surface real-name-framed coverage (like the 1898 "South Sea Bubble" piece) that the title search deprioritized. Also `United Brotherhood` (the colonists' self-name, per the 1898 feature). Same tranche process, if the operator wants to continue.
+A follow-up (operator asked about "New France"/"Nouvelle France"/"Port Breton") established the real methodological fix: Papers Past **token-matches**, so multi-word colony names must be searched as a **quoted phrase**.
+
+| Handle | Form | Count | Verdict |
+|---|---|---:|---|
+| `New France` | token | 1,292,244 | useless (every "new" + "France") |
+| `Nouvelle France` | token | 1,212 | useless (nouvelle cuisine, French news) |
+| `Port Breton` | token | 9,593 | polluted (Cape Breton, Nova Scotia) |
+| `"Port Breton"` | **phrase** | **202** | **CLEAN, on-topic — the correct handle** |
+| `"La Nouvelle-France"` | phrase | ~0 | dead — the NZ English press used "New Ireland" / "Port Breton", not the French name (query bounced to the search-home "No results" page; the client fail-loud refused to classify it) |
+
+`"Port Breton"` (phrase, 202) is the strong un-censused vein: its top hits are all on-topic and already include material the person-name search missed — e.g. a syndicated **1923 "A Page of History"** retrospective across 5+ mastheads, plus re-finds of the "Deluded Frenchmen" / "Colonisation Swindle" / "Story of the Expedition" distinct pieces.
+
+## Next promising handles
+
+1. **`"Port Breton"` (phrase, 202 hits)** — the priority next vein (colony-name-focused pieces; ~20 tranches at the same process).
+2. `du Breil` / `Charles du Breil` (de Rays' real name) — real-name-framed coverage (surfaced the 1898 "South Sea Bubble").
+3. `United Brotherhood` (the colonists' self-name, per the 1898 feature).
+
+**Reusable lesson:** default to quoted-phrase search for any multi-word place/colony name on Papers Past.
 
 ## Provenance / method
 

@@ -417,3 +417,17 @@
     - "Acquire the combined 30-item PD shortlist (spec 015) after rights confirmation; the 1929/1936/1949 retrospectives remain rights-blocked/pending."
     - "Reset the NZ exit node when NZ-routed work is done."
   notes: "Pivot vein after the Marquis-de-Rays depletion. Two candidate handles rejected as homonym-polluted (a genuine reconnaissance finding); Rabardy selected and fully censused (only 14 hits). Governed client only; hybrid triage. Census + shortlist only. Captures: 3 handle-test enumerations + Rabardy page-1/2 + the article reads."
+
+- id: SRCH-0030
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "Handle-quality tests prompted by the operator asking about 'New France' / 'Nouvelle France' / 'Port Breton'. Ran tranche-1 of each as a TOKEN search, then re-ran the colony name as a QUOTED PHRASE. Reconnaissance only (assessing handle quality; no per-article reads)."
+  coverage: "METHODOLOGICAL FINDING: Papers Past token-matches, so multi-word colony names must be searched as a QUOTED PHRASE. Token searches are useless: 'New France' = 1,292,244 hits (every 'new'+'France': league cups, trade), 'Nouvelle France' = 1,212 (nouvelle cuisine, French Ruhr policy), 'Port Breton' = 9,593 (dominated by Cape Breton, Nova Scotia). The PHRASE '\"Port Breton\"' = 202 hits, ALL on-topic (no Cape Breton) -- the correct handle; top hits re-find distinct de Rays pieces AND surface new material (a syndicated 1923 'A Page of History' retrospective across 5+ mastheads). '\"La Nouvelle-France\"' (phrase) ~= 0: the query bounced to the Newspapers search-home 'No results' page (NZ English press used 'New Ireland'/'Port Breton', not the French name), and the client correctly FAIL-LOUD refused to classify the ambiguous home page rather than guess (persist-first capture saved). Reusable lesson: default to quoted-phrase search for multi-word place/colony names on Papers Past."
+  remainingQuestions:
+    - "PRIORITY next vein: '\"Port Breton\"' (phrase, 202 on-topic hits, ~20 tranches) -- census with the same tranche-to-two-consecutive-zeros process; it will catch colony-name-focused pieces the person-name search missed (e.g. the 1923 'A Page of History' series)."
+    - "Then 'du Breil' / 'Charles du Breil' (de Rays' real name) and 'United Brotherhood' (colonists' self-name) as further distinctive handles."
+    - "Combined de Rays PD shortlist stands at 30; the '\"Port Breton\"' phrase census is expected to add more. Reset the NZ exit node when NZ-routed work is done."
+  notes: "Handle-quality reconnaissance (no article reads). Corrects the earlier 'place names are hopeless' read: they are fine AS QUOTED PHRASES -- token search was the problem. Governed client only. Captures: New France + Nouvelle France + '\"Port Breton\"' + '\"La Nouvelle-France\"' enumerations (the last is a persisted no-results/home page)."
