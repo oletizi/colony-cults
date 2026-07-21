@@ -14,6 +14,7 @@
  */
 import type { PageView, SourceKind, SourceLanguage } from '@/browser/model';
 import FacsimileViewer from './FacsimileViewer.astro';
+import ClippingFacsimile from './ClippingFacsimile.astro';
 import SourcePane from './SourcePane.astro';
 import TranslationPane from './TranslationPane.astro';
 import PageNav from './PageNav.astro';
@@ -63,6 +64,10 @@ const isBook = kind === 'monograph';
 // An English-language source has no French source layer: its own English text
 // reads beside the scan, with no folded French readings.
 const isEnglishSource = language === 'English';
+// A Papers Past clipping carries its article as several image strips; render the
+// stacked-strip facsimile (natural height) instead of the deep-zoom viewer.
+const clippingStrips = page.strips;
+const isClipping = clippingStrips !== null && clippingStrips.length > 0;
 const pageLabel = `p.${positionInIssue}`;
 // A book page is placed within the whole volume ("p. N / 32"); a periodical page
 // is placed within its dated issue. Frame every label the same way.
@@ -121,8 +126,12 @@ const provenanceLabel = isBook
     </div>
 
     <div class="reading__body">
-      <div class="reading__facsimile">
-        <FacsimileViewer image={page.image} label={facsimileLabel} />
+      <div class:list={['reading__facsimile', isClipping && 'reading__facsimile--clipping']}>
+        {isClipping && clippingStrips !== null ? (
+          <ClippingFacsimile strips={clippingStrips} label={facsimileLabel} />
+        ) : (
+          <FacsimileViewer image={page.image} label={facsimileLabel} />
+        )}
       </div>
       <div
         class="reading__text"
@@ -257,6 +266,15 @@ const provenanceLabel = isBook
     top: 44px;
     align-self: start;
     --facsimile-height: min(calc(100vh - 68px), 860px);
+  }
+
+  /* A clipping's stacked strips are natural height (a clipping is short), so it
+     drops the deep-zoom viewer's fixed height and sticky pin -- the strips sit at
+     the top of the column beside the OCR reading. */
+  .reading__facsimile--clipping {
+    position: static;
+    height: auto;
+    align-self: start;
   }
 
   .reading__text {
