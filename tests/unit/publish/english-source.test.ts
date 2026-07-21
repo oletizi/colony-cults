@@ -67,6 +67,7 @@ const corpusSnapshotReader: CorpusSnapshotReader = {
           sourceId: SOURCE_ID,
           title: 'English Source Test Source',
           kind: 'periodical' as const,
+          language: 'English' as const,
           ark: 'ark:/12148/english-source-test',
           rights: 'public-domain',
           issues: ISSUE_IDS.map((issueId, i) => ({
@@ -220,6 +221,7 @@ describe('publish() English-source edition (AUDIT-20260719-06): two issues with 
             sourceId: CONFLICT_SOURCE_ID,
             title: 'English Source Conflict Test Source',
             kind: 'periodical' as const,
+            language: 'English' as const,
             ark: 'ark:/12148/english-source-conflict-test',
             rights: 'public-domain',
             issues: CONFLICT_ISSUE_IDS.map((issueId, i) => ({

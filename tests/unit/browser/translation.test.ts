@@ -138,18 +138,20 @@ describe('loadPageTranslation', () => {
     expect(() => loadPageTranslation(issueDir, 'p001', '1879-08-15')).toThrow(/rights_status/);
   });
 
-  it('throws when catalog_url has no parseable ark', () => {
+  it('uses a non-Gallica catalog_url (no ark) as the provenance identifier — images come from our archive via the CDN, so no ark is required', () => {
     const issueDir = makeIssueDir();
     writeTranslationFile(issueDir, 'p001.fr.txt', 'Texte corrigé.');
     writeTranslationFile(issueDir, 'p001.en.txt', 'Corrected text.');
     writeSidecar(issueDir, 'p001.fr.txt.yml', {
-      id: 'PB-P001',
-      catalog_url: 'https://gallica.bnf.fr/no-ark-here',
+      id: 'PB-P055',
+      catalog_url: 'https://archive.org/details/nouvellefrancec00groogoog',
       rights_status: 'public-domain',
       sha256: 'e2fac2bd47f230eadb4d85b233f868ab888229cb7e67bf83ef36bf55a18c34a3',
     });
 
-    expect(() => loadPageTranslation(issueDir, 'p001', '1879-08-15')).toThrow();
+    const translation = loadPageTranslation(issueDir, 'p001', '1880');
+    // No Gallica ark to parse, so the catalog_url itself IS the identifier.
+    expect(translation.provenance.ark).toBe('https://archive.org/details/nouvellefrancec00groogoog');
   });
 
   it('throws when neither sidecar file exists', () => {

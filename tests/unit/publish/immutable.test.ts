@@ -70,6 +70,7 @@ const corpusSnapshotReader: CorpusSnapshotReader = {
           sourceId: SOURCE_ID,
           title: 'Test Source',
           kind: 'periodical' as const,
+          language: 'French' as const,
           ark: 'ark:/12148/test-source',
           rights: 'public-domain',
           issues: ISSUE_IDS.map((issueId, i) => ({

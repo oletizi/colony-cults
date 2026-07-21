@@ -205,6 +205,59 @@ describe('snapshot reader fail-loud (no archive needed)', () => {
     };
     expect(() => parseCorpusSnapshot(snap, 'x.json')).toThrow(/unsupported source kind/);
   });
+
+  it('parseCorpusSnapshot preserves an English source language', () => {
+    const snap = {
+      sources: [
+        {
+          sourceId: 'PB-P057',
+          title: 'The China Mail',
+          kind: 'monograph',
+          language: 'English',
+          ark: 'https://archive.org/details/NPCM18801016',
+          rights: 'public-domain',
+          issues: [],
+        },
+      ],
+      skipped: [],
+    };
+    expect(parseCorpusSnapshot(snap, 'x.json').sources[0].language).toBe('English');
+  });
+
+  it('parseCorpusSnapshot defaults a language-less (older) snapshot to French', () => {
+    const snap = {
+      sources: [
+        {
+          sourceId: 'PB-P001',
+          title: 'La Nouvelle France',
+          kind: 'periodical',
+          ark: 'ark:/12148/x',
+          rights: 'public-domain',
+          issues: [],
+        },
+      ],
+      skipped: [],
+    };
+    expect(parseCorpusSnapshot(snap, 'x.json').sources[0].language).toBe('French');
+  });
+
+  it('parseCorpusSnapshot rejects an unknown source language', () => {
+    const snap = {
+      sources: [
+        {
+          sourceId: 'X',
+          title: 'X',
+          kind: 'monograph',
+          language: 'German',
+          ark: 'a',
+          rights: 'r',
+          issues: [],
+        },
+      ],
+      skipped: [],
+    };
+    expect(() => parseCorpusSnapshot(snap, 'x.json')).toThrow(/unsupported source language/);
+  });
 });
 
 describe('loadCorpus archive-vs-snapshot precedence', () => {

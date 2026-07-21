@@ -70,6 +70,7 @@ describe('publish() English-source edition (AUDIT-20260719-08): opts.machineAssi
             sourceId: SEEDED_SOURCE_ID,
             title: 'English Source Seeded-Option Test Source',
             kind: 'periodical' as const,
+            language: 'English' as const,
             ark: 'ark:/12148/english-source-seeded-test',
             rights: 'public-domain',
             issues: SEEDED_ISSUE_IDS.map((issueId, i) => ({
@@ -221,6 +222,7 @@ describe('publish() French edition: opts.machineAssist seed still works for a ma
             sourceId: FRENCH_SOURCE_ID,
             title: 'French Test Source',
             kind: 'periodical' as const,
+            language: 'French' as const,
             ark: 'ark:/12148/french-seeded-test',
             rights: 'public-domain',
             issues: FRENCH_ISSUE_IDS.map((issueId, i) => ({
