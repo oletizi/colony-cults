@@ -431,3 +431,17 @@
     - "Then 'du Breil' / 'Charles du Breil' (de Rays' real name) and 'United Brotherhood' (colonists' self-name) as further distinctive handles."
     - "Combined de Rays PD shortlist stands at 30; the '\"Port Breton\"' phrase census is expected to add more. Reset the NZ exit node when NZ-routed work is done."
   notes: "Handle-quality reconnaissance (no article reads). Corrects the earlier 'place names are hopeless' read: they are fine AS QUOTED PHRASES -- token search was the problem. Governed client only. Captures: New France + Nouvelle France + '\"Port Breton\"' + '\"La Nouvelle-France\"' enumerations (the last is a persisted no-results/home page)."
+
+- id: SRCH-0031
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "Full census of the '\"Port Breton\"' PHRASE vein (202 hits) -- same tranche-to-two-consecutive-zeros process, scoring NEW distinct (not already in the 30-item Marquis-de-Rays + Rabardy shortlist). Tranches 1-5 (--page 1..5)."
+  coverage: "DEPLETED at tranche 5 (two consecutive zeros T4,T5). New-distinct curve: 1,2,3,0,0. The phrase vein FRONT-LOADED value: 6 NEW distinct PD pieces in T1-3, all in the phases the person-name search underweighted -- HBH18791028 'New Guinea and the Chandernagore' (Oct 1879, the EARLIEST: Geneva recruitment ads / pre-departure); AS18800917 'New Ireland Colonization Scheme' (Sep 1880, Shuter traveler report); PBH18800405 'The Chandernagore Expedition' (Apr 1880, the captain's story); LT18800906 'The New Ireland Expedition' (SMH Aug 1880); LT18810421 'The New Ireland Colonists' (Apr 1881, Italian colonists via the India -> Noumea -> Sydney, the NEW ITALY pipeline); and CHP19231106 'A Page of History' (1923, the survivors' New Italy NSW settlement -- rights CHECK, syndicated across 6+ mastheads, connects to backlog TASK-34). T4-5 collapsed to reprints of those same early pieces (1879 Chandernagore across many mastheads, the Threatened-Invasion cluster) + re-finds of the Marquis-de-Rays census. 50/202 assessed; remaining ~150 are, by the reprint pattern, overwhelmingly reprints/bundled. Combined de Rays PD shortlist now 36 (28 + 2 + 6). Record: bibliography/census/papers-past-port-breton-phrase.md."
+  remainingQuestions:
+    - "Further distinctive handles if desired: 'du Breil'/'Charles du Breil' (real name), 'United Brotherhood' (colonists' self-name), '\"New Ireland colony\"' (phrase), 'Rabardy' done. The phrase-search lesson (quote multi-word names) applies to all."
+    - "The New Italy aftermath (1923 'A Page of History', + the Italian colonists LT18810421) links this case to backlog TASK-34 (New Italy mirror) -- an acquisition thread already tracked."
+    - "Acquire the 36-item PD shortlist (spec 015) after rights confirmation; 1923/1929/1936/1949 retrospectives are rights-blocked/pending. Reset the NZ exit node when NZ-routed work is done."
+  notes: "'\"Port Breton\"' phrase vein COMPLETE (depleted T4-5). A tight, fast vein (5 tranches vs 19 for Marquis de Rays) because it overlaps the person-name set; its novelty is concentrated in the underweighted early-recruitment/voyage/colonists/New-Italy phases. Governed client only; hybrid triage; dedup against the prior veins. Census + shortlist only. Captures: page-1..5 phrase enumerations + the per-tranche article reads."

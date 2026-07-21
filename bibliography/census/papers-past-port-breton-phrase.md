@@ -18,6 +18,10 @@ Same tranche-by-tranche process (fetch `--page N`, metadata-triage, content-read
 | 1 (1–10) | 10 | 1 | the **New Italy** aftermath: "A Page of History" (1923 syndicated across 5+ papers) — the de Rays survivors' NSW settlement. Rest = re-finds (Deluded Frenchmen, Swindling Scheme, Story of the Expedition, Colonisation Swindle). |
 | 2 (11–20) | 10 | 2 | **earliest material yet**: "New Guinea and the Chandernagore" (Oct 1879 — the Geneva recruitment ads / pre-departure); "New Ireland Colonization Scheme" (Sep 1880, Shuter traveler report). Rest re-finds + a 1936 "Phantom Paradise" review (rights-blocked). |
 | 3 (21–30) | 10 | 3 | the captain's story of the Chandernagore (Apr 1880); "The New Ireland Expedition" (SMH Aug 1880); "The New Ireland Colonists" (Apr 1881 — Italian colonists via the *India* → Noumea → Sydney, the New Italy pipeline). |
+| 4 (31–40) | 10 | 0 | all re-finds/reprints (1879 Chandernagore ×2, 1923 New Italy, captain's-story reprint, the 1936 item, #25/#35 already banked). |
+| 5 (41–50) | 10 | 0 | reprints (1879 Chandernagore ×2, the "Threatened Invasion" cluster already banked as #16) + generic. **→ two consecutive zeros → DEPLETED.** |
+
+**Depletion:** curve **1, 2, 3, 0, 0** — two consecutive zeros at T4/T5. The phrase vein FRONT-LOADED its value: 6 new distinct in the first 3 tranches, then the tail collapsed to reprints of those same early pieces (and re-finds of the `Marquis de Rays` census). 50/202 assessed; the remaining ~150 are, by the established reprint pattern, overwhelmingly reprints/bundled. Fast, clean depletion — a much tighter vein than `Marquis de Rays` (which took 19 tranches) because the phrase set overlaps the person-name set and its novelty is concentrated in the underweighted early/aftermath phases.
 
 ## New distinct ACQUIRE candidates (this vein)
 
@@ -27,6 +31,8 @@ Same tranche-by-tranche process (fetch `--page N`, metadata-triage, content-read
 - `PBH18800405.2.18` — "The Chandernagore Expedition" (Apr 1880, PD) — the captain's first-person story.
 - `LT18800906.2.37` — "The New Ireland Expedition" (Sep 1880, PD) — SMH (Aug 14) on the persistence after the first failure.
 - `LT18810421.2.31` — "The New Ireland Colonists" (Apr 1881, PD, 8758ch) — the Italian colonists via the *India* → Noumea (starving) → Sydney; the New Italy pipeline.
+
+**6 new distinct PD candidates** from this vein (all early-recruitment / voyage / colonists / aftermath — the phases the person-name search underweighted). Combined de Rays PD shortlist now **36** (28 `Marquis de Rays` + 2 `Rabardy` + 6 `"Port Breton"`), plus the rights-blocked 1923/1929/1936/1949 retrospectives.
 
 ## Provenance / method
 

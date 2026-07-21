@@ -1,0 +1,228 @@
+- banner:
+  - navigation:
+    - list:
+      - listitem:
+        - link "ĀwhinaHelp":
+          - /url: /help
+      - listitem:
+        - link "MōAbout":
+          - /url: /about
+      - listitem:
+        - link "TakiuruLog in":
+          - /url: "#"
+  - link "Papers Past":
+    - /url: /
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=%22Port+Breton%22
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=%22Port+Breton%22
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=%22Port+Breton%22
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=%22Port+Breton%22
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=%22Port+Breton%22
+- link "Switch to Māori":
+  - /url: "#"
+  - img "Switch to Māori"
+- heading "Newspapers" [level=3]
+- img "Tukutuku"
+- heading "Search Newspapers" [level=4]
+- textbox "Keyword or name": "\"Port Breton\""
+- radio "All content" [checked]
+- text: All content
+- radio "Ngā Tānga Reo Māori only"
+- text: Ngā Tānga Reo Māori only
+- link "What is Ngā Tānga Reo Māori?":
+  - /url: /newspapers/he-aha-nga-tanga-reo-maori
+- heading "Filter" [level=5]
+- heading "Between dates" [level=6]
+- button "All dates "
+- heading "Title" [level=6]
+- button "All titles, all regions "
+- heading "Content types" [level=6]
+- button "All types of content "
+- link "Clear search":
+  - /url: /newspapers/reset-search
+- button "Search"
+- paragraph
+- heading "Search results" [level=3]
+- link "Explore Newspapers":
+  - /url: /newspapers/all
+- navigation "Next/previous navigation":
+  - link "Previous results":
+    - /url: /newspapers?page=4&query=%22Port+Breton%22
+  - text: Showing results 41-50 of 202
+  - link "Next 10 results":
+    - /url: /newspapers?page=6&query=%22Port+Breton%22
+- menubar:
+  - text: Sort by
+  - menuitem "Best matchRitenga tino pai rawa": Best match
+- menubar:
+  - text: Items per page
+  - menuitem "10"
+- list:
+  - listitem: Hide preview
+  - listitem:
+    - link "":
+      - /url: /newspapers?page=5&query=%22Port+Breton%22&snippet=false
+- heading "Article" [level=2]
+- heading "Newspaper" [level=2]
+- heading "Date" [level=2]
+- separator
+- link "NEW GUINEA. AND THE CHANDERNAGORE.":
+  - /url: /newspapers/WCT18791031.2.13?page=5&query=%22Port+Breton%22
+- text: West Coast Times 31 October 1879
+- link "Search result preview image":
+  - /url: /newspapers/WCT18791031.2.13?page=5&query=%22Port+Breton%22
+  - img "Search result preview image"
+- separator
+- link "NEW GUINEA AND THE CHANDERNAGORE.":
+  - /url: /newspapers/WSTAR18791115.2.29?page=5&query=%22Port+Breton%22
+- text: Western Star 15 November 1879
+- link "Search result preview image":
+  - /url: /newspapers/WSTAR18791115.2.29?page=5&query=%22Port+Breton%22
+  - img "Search result preview image"
+- separator
+- link "AUSTRALIAN SUMMARY. [PER ROTORUA, AT RUSSEL.]":
+  - /url: /newspapers/EP18810517.2.16?page=5&query=%22Port+Breton%22
+- text: Evening Post 17 May 1881
+- link "Search result preview image":
+  - /url: /newspapers/EP18810517.2.16?page=5&query=%22Port+Breton%22
+  - img "Search result preview image"
+- separator
+- link "NEW SOUTH WALES.":
+  - /url: /newspapers/NOT18800325.2.17.2?page=5&query=%22Port+Breton%22
+- text: North Otago Times 25 March 1880
+- link "Search result preview image":
+  - /url: /newspapers/NOT18800325.2.17.2?page=5&query=%22Port+Breton%22
+  - img "Search result preview image"
+- separator
+- link "NEW SOUTH WALES.":
+  - /url: /newspapers/AS18800325.2.30.2?page=5&query=%22Port+Breton%22
+- text: Auckland Star 25 March 1880
+- link "Search result preview image":
+  - /url: /newspapers/AS18800325.2.30.2?page=5&query=%22Port+Breton%22
+  - img "Search result preview image"
+- separator
+- link "AUSTRALIAN NEWS":
+  - /url: /newspapers/WEST18800330.2.11?page=5&query=%22Port+Breton%22
+- text: Westport Times 30 March 1880
+- link "Search result preview image":
+  - /url: /newspapers/WEST18800330.2.11?page=5&query=%22Port+Breton%22
+  - img "Search result preview image"
+- separator
+- link "THREATENED INVASION OF WESTERN AUSTRALIA.":
+  - /url: /newspapers/ESD18800401.2.28?page=5&query=%22Port+Breton%22
+- text: Evening Star 1 April 1880
+- link "Search result preview image":
+  - /url: /newspapers/ESD18800401.2.28?page=5&query=%22Port+Breton%22
+  - img "Search result preview image"
+- separator
+- link "THREATENED INVASION OF WESTERN AUSTRALIA.":
+  - /url: /newspapers/GLOBE18800405.2.10?page=5&query=%22Port+Breton%22
+- text: Globe 5 April 1880
+- link "Search result preview image":
+  - /url: /newspapers/GLOBE18800405.2.10?page=5&query=%22Port+Breton%22
+  - img "Search result preview image"
+- separator
+- link "THREATENED INVASION OF WESTERN AUSTRALIA.":
+  - /url: /newspapers/KUMAT18800419.2.13?page=5&query=%22Port+Breton%22
+- text: Kumara Times 19 April 1880
+- link "Search result preview image":
+  - /url: /newspapers/KUMAT18800419.2.13?page=5&query=%22Port+Breton%22
+  - img "Search result preview image"
+- separator
+- link "THREATENED INVASION OF WESTERN AUSTRALIA.":
+  - /url: /newspapers/SCANT18800403.2.15?page=5&query=%22Port+Breton%22
+- text: South Canterbury Times 3 April 1880
+- link "Search result preview image":
+  - /url: /newspapers/SCANT18800403.2.15?page=5&query=%22Port+Breton%22
+  - img "Search result preview image"
+- separator
+- navigation "Pages of Results":
+  - list:
+    - listitem:
+      - link "« First":
+        - /url: /newspapers?query=%22Port+Breton%22
+    - listitem:
+      - link "‹ Previous":
+        - /url: /newspapers?page=4&query=%22Port+Breton%22
+    - listitem:
+      - link "…":
+        - /url: "#"
+    - listitem:
+      - link "3":
+        - /url: /newspapers?page=3&query=%22Port+Breton%22
+    - listitem:
+      - link "4":
+        - /url: /newspapers?page=4&query=%22Port+Breton%22
+    - listitem:
+      - link "5":
+        - /url: "#"
+    - listitem:
+      - link "6":
+        - /url: /newspapers?page=6&query=%22Port+Breton%22
+    - listitem:
+      - link "7":
+        - /url: /newspapers?page=7&query=%22Port+Breton%22
+    - listitem:
+      - link "…":
+        - /url: "#"
+    - listitem:
+      - link "Next ›":
+        - /url: /newspapers?page=6&query=%22Port+Breton%22
+- contentinfo:
+  - navigation:
+    - list:
+      - listitem:
+        - link "Ngā Niupepa Newspapers":
+          - /url: /newspapers?query=%22Port+Breton%22
+      - listitem:
+        - link "Ngā Maheni me ngā Hautaka Magazines and Journals":
+          - /url: /periodicals?query=%22Port+Breton%22
+      - listitem:
+        - link "Ngā Reta me ngā Rātaka Letters and Diaries":
+          - /url: /manuscripts?query=%22Port+Breton%22
+      - listitem:
+        - link "Ngā Pepa nō te Whare Pāremata Parliamentary Papers":
+          - /url: /parliamentary?query=%22Port+Breton%22
+      - listitem:
+        - link "Ngā Pukapuka Books":
+          - /url: /books?query=%22Port+Breton%22
+  - link "National Library of New Zealand":
+    - /url: https://natlib.govt.nz
+    - img "National Library of New Zealand"
+  - link "newzealand.govt.nz":
+    - /url: https://www.govt.nz/
+    - img "newzealand.govt.nz"
+  - navigation:
+    - list:
+      - listitem:
+        - link "Mahere pae tukutuku Sitemap":
+          - /url: /sitemap
+      - listitem:
+        - link "Āheinga Accessibility":
+          - /url: /accessibility
+      - listitem:
+        - link "Ngā ture mō te whakamahi Terms of use":
+          - /url: /terms
+      - listitem:
+        - link "Whakapā mai ki a mātou Contact us":
+          - /url: /contact
+      - listitem:
+        - link "Āwhina Help":
+          - /url: /help
+      - listitem:
+        - link "Mō About":
+          - /url: /about
+      - listitem:
+        - link "Takiuru Log in":
+          - /url: "#"
