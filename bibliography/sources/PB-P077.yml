@@ -1,0 +1,25 @@
+sourceId: PB-P077
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: DELUDED FRENCHMEN
+    role: canonical
+notes: "Newspaper: Oamaru Mail, 25 February 1884. long Paris letter via the Philadelphia Press (US-press perspective). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: to-collect
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/OAM18840225.2.19
+    identifiers:
+      - type: papers-past
+        value: OAM18840225.2.19
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z

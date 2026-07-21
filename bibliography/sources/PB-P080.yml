@@ -1,0 +1,25 @@
+sourceId: PB-P080
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: A SUSPICIOUS CRUISER
+    role: canonical
+notes: "Newspaper: New Zealand Times, 26 May 1880. earliest report of the armed ship (ex-Aden for New Britain). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: to-collect
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZTIM18800526.2.11
+    identifiers:
+      - type: papers-past
+        value: NZTIM18800526.2.11
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z

@@ -1,0 +1,25 @@
+sourceId: PB-P064
+kind: periodical
+partOf: PB-P060
+status: approved-for-acquisition
+case: port-breton
+evidenceClass: newspaper
+language: English
+creator: various
+titles:
+  - text: SPECIAL DISPATCHES (Arrest of the Marquis de Rays)
+    role: canonical
+notes: "Newspaper: Auckland Star, 14 August 1882. earliest arrest cable (London, 13 Aug 1882). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+repositoryRecords:
+  - sourceArchive: Papers Past
+    status: to-collect
+    sourceUrl: https://paperspast.natlib.govt.nz/newspapers/AS18820814.2.28.2
+    identifiers:
+      - type: papers-past
+        value: AS18820814.2.28.2
+    rightsAssessment:
+      rightsStatus: public-domain
+      rightsBasis: Papers Past 'No known copyright (New Zealand)'; NZ newspaper, crown copyright expired
+      rightsJurisdiction: NZ
+      assessedBy: operator
+      assessedAt: 2026-07-21T05:30:00.000Z
