@@ -22,6 +22,7 @@ function makePage(overrides: Partial<PageView> & Pick<PageView, 'pageId'>): Page
   return {
     folioId: 'f001',
     image: { kind: 'full-image', url: 'https://example.test/image.jpg' },
+    strips: null,
     ocrFrench: 'OCR brut.',
     correctedFrench: null,
     english: 'English text.',

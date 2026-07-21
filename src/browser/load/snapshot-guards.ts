@@ -117,6 +117,28 @@ function parseProvenance(value: unknown, where: string): ProvenanceRecord {
   return machineAssist === null ? base : { ...base, machineAssist };
 }
 
+/**
+ * Parses the OPTIONAL clipping `strips` handles. `null` -> `null` (an explicit
+ * "no strips"); an array -> a validated list of `{folioId, objectStoreKey}`
+ * (each `objectStoreKey` a string|null). Absent is handled by the caller
+ * (omitted, for back-compat with snapshots predating strips).
+ */
+function parseStrips(
+  value: unknown,
+  where: string
+): { folioId: string; objectStoreKey: string | null }[] | null {
+  if (value === null) {
+    return null;
+  }
+  return requireArray(value, where).map((item, i) => {
+    const record = requireRecord(item, `${where}[${i}]`);
+    return {
+      folioId: requireString(record, 'folioId', `${where}[${i}]`),
+      objectStoreKey: requireStringOrNull(record, 'objectStoreKey', `${where}[${i}]`),
+    };
+  });
+}
+
 function parseRawPage(value: unknown, where: string): RawPage {
   const record = requireRecord(value, where);
   const base: RawPage = {
@@ -133,10 +155,17 @@ function parseRawPage(value: unknown, where: string): RawPage {
   // Additive optional field (the image-master sha256): only attach the key when
   // present, so snapshots predating the extension round-trip unchanged. Present
   // -> string|null (validated); absent -> omitted.
-  if (record.imageSha256 === undefined) {
-    return base;
+  const withSha =
+    record.imageSha256 === undefined
+      ? base
+      : { ...base, imageSha256: requireStringOrNull(record, 'imageSha256', where) };
+  // Additive optional field (a clipping's image strips): only attach the key
+  // when present, so normal single-image pages (and older snapshots) round-trip
+  // unchanged. Present -> array|null (validated); absent -> omitted.
+  if (record.strips === undefined) {
+    return withSha;
   }
-  return { ...base, imageSha256: requireStringOrNull(record, 'imageSha256', where) };
+  return { ...withSha, strips: parseStrips(record.strips, `${where}.strips`) };
 }
 
 function parseRawIssue(value: unknown, where: string): RawIssue {

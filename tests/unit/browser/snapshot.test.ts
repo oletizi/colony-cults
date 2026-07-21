@@ -258,6 +258,108 @@ describe('snapshot reader fail-loud (no archive needed)', () => {
     };
     expect(() => parseCorpusSnapshot(snap, 'x.json')).toThrow(/unsupported source language/);
   });
+
+  it('serialize -> parse round-trips a clipping page carrying multi-strip handles', () => {
+    const clipping: CorpusSnapshot = {
+      sources: [
+        {
+          sourceId: 'PB-P061',
+          title: 'CONVICTION OF MARQUIS DE RAYS',
+          kind: 'periodical',
+          language: 'English',
+          ark: 'https://paperspast.natlib.govt.nz/newspapers/HNS18840103.2.19.3',
+          rights: 'public-domain',
+          issues: [
+            {
+              issueId: 'conviction-of-marquis-de-rays',
+              date: '1884-01-03',
+              sequence: 1,
+              pages: [
+                {
+                  pageId: 'p001',
+                  folioId: 'f001',
+                  ark: 'https://paperspast.natlib.govt.nz/newspapers/HNS18840103.2.19.3',
+                  objectStoreKey: 'archive/papers-past/x/aaa.gif',
+                  imageSha256: 'aaa',
+                  strips: [
+                    { folioId: 'f001', objectStoreKey: 'archive/papers-past/x/aaa.gif' },
+                    { folioId: 'f002', objectStoreKey: 'archive/papers-past/x/bbb.gif' },
+                    { folioId: 'f003', objectStoreKey: null },
+                  ],
+                  ocrFrench: '',
+                  correctedFrench: null,
+                  english: 'CONVICTION OF MARQUIS DE RAYS.',
+                  ocrCondition: null,
+                  provenance: {
+                    sourceId: 'PB-P061',
+                    ark: 'https://paperspast.natlib.govt.nz/newspapers/HNS18840103.2.19.3',
+                    date: '1884-01-03',
+                    rights: 'public-domain',
+                    page: 'p001',
+                    sha256: 'ocr-text-sha',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      skipped: [],
+    };
+
+    const readBack = parseCorpusSnapshot(JSON.parse(serializeSnapshot(clipping)), 'clip.json');
+    expect(readBack).toEqual(clipping);
+    expect(readBack.sources[0].issues[0].pages[0].strips).toEqual(clipping.sources[0].issues[0].pages[0].strips);
+  });
+
+  it('serialize omits an absent strips key (normal page round-trips without strips)', () => {
+    const normal: CorpusSnapshot = {
+      sources: [
+        {
+          sourceId: 'PB-P001',
+          title: 'La Nouvelle France',
+          kind: 'periodical',
+          language: 'French',
+          ark: 'ark:/12148/x',
+          rights: 'public-domain',
+          issues: [
+            {
+              issueId: '1879-08-15_x',
+              date: '1879-08-15',
+              sequence: 1,
+              pages: [
+                {
+                  pageId: 'p001',
+                  folioId: 'f001',
+                  ark: 'ark:/12148/x',
+                  objectStoreKey: null,
+                  ocrFrench: 'OCR.',
+                  correctedFrench: null,
+                  english: 'English.',
+                  ocrCondition: null,
+                  provenance: {
+                    sourceId: 'PB-P001',
+                    ark: 'ark:/12148/x',
+                    date: '1879-08-15',
+                    rights: 'public-domain',
+                    page: 'p001',
+                    sha256: 'h',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      skipped: [],
+    };
+
+    const json = serializeSnapshot(normal);
+    expect(json).not.toContain('strips');
+    const readBack = parseCorpusSnapshot(JSON.parse(json), 'normal.json');
+    expect(readBack).toEqual(normal);
+    expect('strips' in readBack.sources[0].issues[0].pages[0]).toBe(false);
+  });
 });
 
 describe('loadCorpus archive-vs-snapshot precedence', () => {

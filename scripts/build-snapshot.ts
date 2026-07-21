@@ -18,15 +18,20 @@
  * Regenerate + commit whenever the corpus changes (see site/README.md).
  */
 
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { resolveConfig } from '@/browser/config';
+import { loadSourceFile } from '@/bibliography/load';
 import { readRawCorpus } from '@/browser/load/raw-corpus';
+import { isPapersPastSource, papersPastOcrAsset } from '@/browser/load/papers-past';
 import { resolveRepoRoot } from '@/browser/load/repo-root';
 import { snapshotFilePath, writeSnapshotFile } from '@/browser/load/snapshot';
 
-function main(): void {
+/** Default CDN base for the B2-resident OCR pre-fetch when CORPUS_CDN_BASE is unset. */
+const DEFAULT_CDN_BASE = 'https://colony-cults-cdn.oletizi.workers.dev';
+
+async function main(): Promise<void> {
   const config = resolveConfig();
 
   if (config.archivePath === undefined || !existsSync(config.archivePath)) {
@@ -36,6 +41,7 @@ function main(): void {
         `Current value: ${config.archivePath ?? 'unset'}.`
     );
   }
+  const archivePath = config.archivePath;
 
   const repoRoot = resolveRepoRoot();
   const snapshotDir = path.isAbsolute(config.snapshotDir)
@@ -43,6 +49,14 @@ function main(): void {
     : path.join(repoRoot, config.snapshotDir);
 
   mkdirSync(snapshotDir, { recursive: true });
+
+  // Pre-fetch every requested Papers Past source's B2-resident OCR .txt from
+  // the CDN into the archive worktree BEFORE readRawCorpus, so the (synchronous)
+  // clipping loader can read it from a local file. Fail-loud on any non-200.
+  const cdnBase = process.env.CORPUS_CDN_BASE?.trim() || DEFAULT_CDN_BASE;
+  for (const sourceId of config.sources) {
+    await prefetchPapersPastOcr(archivePath, repoRoot, sourceId, cdnBase);
+  }
 
   process.stdout.write(
     `site:snapshot -- reading archive ${config.archivePath}\n` +
@@ -52,7 +66,7 @@ function main(): void {
 
   for (const sourceId of config.sources) {
     // One file per source: read the raw corpus for just this source.
-    const snapshot = readRawCorpus(config.archivePath, [sourceId], repoRoot);
+    const snapshot = readRawCorpus(archivePath, [sourceId], repoRoot);
     const file = snapshotFilePath(snapshotDir, sourceId);
     const bytes = writeSnapshotFile(snapshotDir, sourceId, snapshot);
 
@@ -71,6 +85,53 @@ function main(): void {
   process.stdout.write('\nsite:snapshot done.\n');
 }
 
+/**
+ * If `sourceId` is a Papers Past clipping, fetches its B2-resident OCR `.txt`
+ * from the CDN and writes it into the archive worktree at
+ * `<archiveRoot>/<ocrKey>`, so the synchronous clipping loader can read it as a
+ * local file. A non-Papers-Past source is a no-op. Fail-loud (throws naming the
+ * source + key) on a non-200 response or a write error.
+ */
+async function prefetchPapersPastOcr(
+  archiveRoot: string,
+  repoRoot: string,
+  sourceId: string,
+  cdnBase: string
+): Promise<void> {
+  const ssotPath = path.join(repoRoot, 'bibliography', 'sources', `${sourceId}.yml`);
+  const loaded = loadSourceFile(ssotPath);
+  if (!isPapersPastSource(loaded)) {
+    return;
+  }
+
+  const { objectStoreKey } = papersPastOcrAsset(loaded);
+  const url = `${cdnBase}/${objectStoreKey}`;
+  const dest = path.join(archiveRoot, objectStoreKey);
+
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`site:snapshot(${sourceId}): OCR pre-fetch failed for ${url} -- ${message}`);
+  }
+  if (!response.ok) {
+    throw new Error(
+      `site:snapshot(${sourceId}): OCR pre-fetch got HTTP ${response.status} for ${url}.`
+    );
+  }
+  const text = await response.text();
+
+  try {
+    mkdirSync(path.dirname(dest), { recursive: true });
+    writeFileSync(dest, text, 'utf-8');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`site:snapshot(${sourceId}): could not write OCR text to ${dest} -- ${message}`);
+  }
+  process.stdout.write(`  pre-fetched OCR ${objectStoreKey} (${text.length} chars)\n`);
+}
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) {
     return `${bytes} B`;
@@ -82,4 +143,4 @@ function formatBytes(bytes: number): string {
   return `${(kib / 1024).toFixed(2)} MiB`;
 }
 
-main();
+await main();

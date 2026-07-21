@@ -132,8 +132,14 @@ export interface PageView {
   pageId: string;
   /** The image/view id (`f001`) -- distinct from `pageId` though 1:1 for observed issues. */
   folioId: string;
-  /** Resolved by the active {@link ImageProviderConfig}. */
+  /** Resolved by the active {@link ImageProviderConfig}. For a multi-strip clipping this is the FIRST strip (the primary/search image); {@link strips} carries the full set. */
   image: ImageDescriptor;
+  /**
+   * A CLIPPING's ordered image strips (Papers Past slices one article into
+   * several scan regions), stacked in reading order (`f001…fNNN`) by the reading
+   * view. `null` for a normal single-image page (which uses {@link image}).
+   */
+  strips: ImageDescriptor[] | null;
   /**
    * The FRENCH source layer: raw French OCR (a form-feed segment of `issue.txt`);
    * may be noisy. `''` for an English source, which has no French source layer.
@@ -273,6 +279,14 @@ export interface RawPage {
    * introduced (so those older snapshots still parse).
    */
   imageSha256?: string | null;
+  /**
+   * A CLIPPING's ordered image-strip handles (Papers Past slices one article
+   * into several scan regions). `null`/absent for a normal single-image page
+   * (which uses {@link objectStoreKey}). Present => {@link objectStoreKey} is the
+   * FIRST strip; the reading view stacks the full set in `f001…fNNN` order.
+   * OPTIONAL + additive: absent on snapshots committed before this field.
+   */
+  strips?: { folioId: string; objectStoreKey: string | null }[] | null;
   /**
    * The FRENCH source layer: raw French OCR (a form-feed segment of `issue.txt`);
    * may be noisy. `''` for an English source, which has no French source layer.
