@@ -333,3 +333,17 @@
     - "Rights recheck needed on the two post-1920s retrospectives (ODT 1929, ODT 1936) before either can be acquired -- neither carries NLNZ's 'No known copyright (NZ)' statement in the captured page."
     - "Running ACQUIRE shortlist now ~13 distinct stories (5 T1 + 5 T2 + 3 T3), two of them rights-pending (1929/1936)."
   notes: "Third tranche. Hybrid triage applied more aggressively as the tail dilutes: only the distinct candidates were content-read; the bundled news-column mentions were classified from metadata (title + the recurring 'de Rays is one line among other cables' pattern) and marked SKIP. Governed client only. Captures: page-3 enumeration + 3 article reads."
+
+- id: SRCH-0024
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "Tranche 4 (results 31-40, --page 4) of the 'Marquis de Rays' census, plus the STOP decision. Metadata-triaged all 10; content-read the 2 non-generic candidates (NZH18830825 'The Story of the Marquis de Rays' Expedition'; CHP18840507 'Loss of the S.S. India')."
+  coverage: "FLOOR REACHED -- 8 of 10 are generic cable-column bundled mentions (Australian / Australia / Very Latest / Cable News / Second Edition / Special to Press Assn / News by Cable / Latest Cablegrams). One strong distinct piece: NZH18830825.2.51 'The Story of the Marquis de Rays' Expedition' -- an 11,082-char comprehensive narrative of the whole affair (via the SMH Paris correspondent, occasioned by the appeal dismissal), PD -- the richest single item in the census. CHP18840507 ('Loss of the S.S. India', 1884) is marginal: a steamer foundering off NSW with only a tangential de-Rays-ship link -- SKIP. Distinct-yield curve across the census: 5, 5, 3, 1. STOPPING the walk of this handle: the tail is now ~80% generic-column noise and distinct on-topic material arrives ~1/tranche; paginating the remaining ~65 tranches is a poor ROI. Final: 40/695 assessed, 14 distinct ACQUIRE candidates (2 rights-pending: ODT 1929, ODT 1936). Full record: bibliography/census/papers-past-de-rays-marquis.md."
+  remainingQuestions:
+    - "The remaining ~655 'Marquis de Rays' hits are UNCOVERED. Mine the distinct tail efficiently with NARROWER handles never run against Papers Past (SRCH-0018): 'Port Breton', 'New Ireland', 'Chandernagore' (+ the India/Genil colony ships), 'La Nouvelle-France' -- these target the affair without the cable-column noise."
+    - "Acquire the 14-item shortlist (spec 015 member-acquire), after a rights recheck on the two post-1920s retrospectives (1929/1936)."
+    - "Operator housekeeping: the NZ (Auckland) Tailscale exit node is still set from SRCH-0021 -- reset it (tailscale set --exit-node=) when NZ-routed corpus work is done."
+  notes: "Final tranche of the 'Marquis de Rays' census. The tranche-by-tranche walk was enabled by this session's new --page pagination in the governed client. All queries governed (persist-first); hybrid triage (metadata-classify the bundled majority, content-read the distinct minority). Census + shortlist only -- no acquisition/B2 write. Captures: page-4 enumeration + 2 article reads."

@@ -19,8 +19,9 @@ Each row is scored on: **topical** (is the affair the subject, vs a bundled one-
 | 1 (1–10) | 10 | 10 | 5 | 5 | rich — continue |
 | 2 (11–20) | 10 | ~6 | 4–5 (incl. a unique eyewitness account) | 5 | diluting but still yielding distinct value — continue |
 | 3 (21–30) | 10 | 3 | 3 (early founding-phase 1880/1881 + a 1929 survivor interview) | 7 | bundled mentions now dominate; still new dimensions — continue |
+| 4 (31–40) | 10 | 1 | 1 (a comprehensive 11k-char "Story of the Expedition" feature) | 9 | floor reached — **STOP the walk** |
 
-Trend: distinct yield 5 → 5 → 3; bundled fraction 0 → ~4 → 7. Stop when a tranche yields ~no new distinct on-topic material (mostly reprints / bundled news-column mentions / off-topic). NOTE: post-1920s retrospectives (1929, 1936) do NOT carry the "No known copyright (NZ)" statement — rights must be reconfirmed before any of them can be acquired.
+Trend: distinct yield **5 → 5 → 3 → 1**; bundled fraction 0 → ~4 → 7 → 9. **Stopping decision (after tranche 4):** the `Marquis de Rays` handle has hit diminishing returns — the tail is now ~80% generic cable-column mentions, and distinct on-topic material arrives roughly one item per tranche. Paginating the remaining ~65 tranches would be mostly noise. The remaining distinct gems are better reached with **narrower query handles** (`Port Breton`, `New Ireland`, `Chandernagore`, `La Nouvelle-France`) — never run against Papers Past yet (SRCH-0018) — which target the affair without the cable-column noise. NOTE: post-1920s retrospectives (1929, 1936) do NOT carry the "No known copyright (NZ)" statement — rights must be reconfirmed before any of them can be acquired.
 
 ## Running ACQUIRE shortlist (distinct stories, across tranches)
 
@@ -37,6 +38,7 @@ Trend: distinct yield 5 → 5 → 3; bundled fraction 0 → ~4 → 7. Stop when 
 11. `BOPT18800930.2.6` — "Settlement in New Ireland": the *Chandernagore* voyage (1880) — T3 — earliest founding-phase report
 12. `KUMAT18810202.2.8` — "The Marquis de Ray's New Colony": colony "successfully founded" (1881) — T3 — early founding-phase
 13. `ODT19290524.2.100` — 1929 survivor interview (Mr J.O. Mouton, "oldest Papuan planter") — T3 — **rights CHECK (1929)**
+14. `NZH18830825.2.51` — "The Story of the Marquis de Rays' Expedition": comprehensive 11k-char narrative (Aug 1883) — T4 — **richest single piece; high value**
 
 ## Tranche 1 — results 1–10 (SRCH-0021)
 
@@ -92,6 +94,29 @@ Bundled news-column mentions now dominate (7/10 are generic "Cablegrams" / "Late
 | 28 | ODT19290524.2.100 | Otago Daily Times | 1929-05-24 | 1929 survivor interview (Mouton), 2138ch, rights CHECK | ACQUIRE? (rights recheck) |
 | 29 | TH18831201.2.16 | Taranaki Herald | 1883-12-01 | "News of the World" column | skip (bundled) |
 | 30 | SCANT18810412.2.13.2 | South Canterbury Times | 1881-04-12 | "Australia" news column | skip (bundled) |
+
+## Tranche 4 — results 31–40 (SRCH-0024) — final tranche
+
+Floor reached: 8/10 generic cable columns, 1 comprehensive distinct feature, 1 marginal.
+
+| # | Code | Masthead | Date | Assessment | Verdict |
+|---|---|---|---|---|---|
+| 31 | GLOBE18810416.2.15.2 | Globe | 1881-04-16 | "Australian" column | skip (bundled) |
+| 32 | SCANT18810416.2.14.2 | South Canterbury Times | 1881-04-16 | "Australia" column | skip (bundled) |
+| 33 | CHP18840507.2.3.2 | Press | 1884-05-07 | "Loss of the S.S. India": ship foundered off NSW; de Rays link tangential, PD | skip (marginal) |
+| 34 | MT18840103.2.7 | Manawatu Times | 1884-01-03 | "Very Latest" column; conviction cable | skip (dup/bundled) |
+| 35 | MS18831130.2.10 | Manawatu Standard | 1883-11-30 | "Cable News" column | skip (bundled) |
+| 36 | PATM18820331.2.14 | Patea Mail | 1882-03-31 | "Second Edition Cable Messages" | skip (bundled) |
+| 37 | ST18830804.2.8.2 | Southland Times | 1883-08-04 | "(Special to Press Association)" cable | skip (bundled) |
+| 38 | NZH18830825.2.51 | New Zealand Herald | 1883-08-25 | "The Story of the … Expedition": 11082ch comprehensive narrative, PD | **ACQUIRE (distinct, richest)** |
+| 39 | WAIST18820815.2.14 | Wairarapa Standard | 1882-08-15 | "News by Cable" column | skip (bundled) |
+| 40 | AS18830615.2.31 | Auckland Star | 1883-06-15 | "Latest Cablegrams" column | skip (bundled) |
+
+## Final shortlist (4 tranches, 40 of 695 assessed)
+
+**14 distinct ACQUIRE candidates** spanning the full arc: founding (1880 *Chandernagore* voyage; 1881 colony founded) → arrest (Aug–Nov 1882) → committal (Feb 1883) → the "Story of the Expedition" feature (Aug 1883) → conviction (Jan 1884) → the eyewitness Port-Breton visit → retrospectives (1929 survivor interview, 1936). Two (1929, 1936) are **rights-pending** (no "No known copyright (NZ)" statement). See the running shortlist above.
+
+**Coverage note:** 40/695 keyword hits assessed across 4 tranches; the walk stopped because distinct-yield fell to ~1/tranche (curve 5,5,3,1) against ~80% generic cable-column noise. The remaining ~655 hits are NOT covered — mining them efficiently needs narrower query handles, not further pagination of this one.
 
 ## Provenance
 
