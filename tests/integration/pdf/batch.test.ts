@@ -44,60 +44,9 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 import { resolveRepoRoot } from '@/browser/load/repo-root';
 import { buildAll, buildSource } from '@/pdf/render/batch';
-import type { FetchFn, FetchResponse } from '@/pdf/images/fetch';
-import type { CompileRequest, CompileResult, TypstRunner } from '@/pdf/render/typst-runner';
 
 import { writeFixtureArchive } from '../../unit/pdf/archive-fixture';
-
-// ---------------------------------------------------------------------------
-// Shared fakes: no real `typst` binary, no network (mirrors
-// `tests/integration/pdf/archive-edition.test.ts`'s T006 patterns -- neither
-// module exports these).
-// ---------------------------------------------------------------------------
-
-/** A fake TypstRunner that writes a stub PDF file instead of shelling `typst`. */
-function fakeTypstRunner(): { runner: TypstRunner; calls: CompileRequest[] } {
-  const calls: CompileRequest[] = [];
-  const runner: TypstRunner = {
-    async compile(req: CompileRequest): Promise<CompileResult> {
-      calls.push(req);
-      writeFileSync(req.outPath, `stub pdf (test double) for ${req.outPath}\n`);
-      return { outPath: req.outPath };
-    },
-  };
-  return { runner, calls };
-}
-
-/**
- * A fake HTTP GET serving each folio's real fixture image bytes at the b2 URL
- * `buildItem` requests (`${CORPUS_CDN_BASE}/${objectStoreKey}`, per
- * `makeB2ImageSource`). Matches the trailing `f<NNN>.jpg` the fixture always
- * writes and looks the bytes up by that folio number -- robust to the
- * fixture's own key format, and yields bytes whose sha256 matches the folio
- * sidecar's recorded image-master hash.
- */
-function makeFixtureFetch(imageBytes: Map<string, Uint8Array>): FetchFn {
-  return async (url: string): Promise<FetchResponse> => {
-    const match = /f(\d{3})\.jpg$/.exec(url);
-    const bytes = match ? imageBytes.get(match[1]) : undefined;
-    if (!bytes) {
-      return {
-        ok: false,
-        status: 404,
-        async arrayBuffer() {
-          return new ArrayBuffer(0);
-        },
-      };
-    }
-    return {
-      ok: true,
-      status: 200,
-      async arrayBuffer() {
-        return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-      },
-    };
-  };
-}
+import { fakeTypstRunner, makeFixtureFetch } from '../../unit/pdf/typst-fake';
 
 const CORPUS_CDN_BASE = 'https://cdn.test';
 
