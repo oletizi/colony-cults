@@ -49,8 +49,17 @@ repositoryRecords:
         provenancePath: archive/papers-past/hns18840103.2.19.3/28a283ecb00175bdbe0895b19626d91043603dc7bf86cab1a5eb6afe1de1a007.yml
         role: page-master
         sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/HNS18840103.2.19.3
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/hns18840103.2.19.3/6d9400da4acfd67ade5b3ce9c6a1f5bdfe1ab7f4073110c83e4610304ca9bfa4.txt
+        checksum: 6d9400da4acfd67ade5b3ce9c6a1f5bdfe1ab7f4073110c83e4610304ca9bfa4
+        byteLength: 422
+        provenancePath: archive/papers-past/hns18840103.2.19.3/6d9400da4acfd67ade5b3ce9c6a1f5bdfe1ab7f4073110c83e4610304ca9bfa4.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
     metadataSnapshot:
-      path: bibliography/repository-responses/papers-past-article/papers-past-article-hns18840103-2-19-3-2026-07-19T06-06-58-144Z.html
-      retrievedAt: 2026-07-19T06:06:58.700Z
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-hns18840103-2-19-3-2026-07-21T05-03-58-672Z.html
+      retrievedAt: 2026-07-21T05:04:03.713Z
       endpoint: https://paperspast.natlib.govt.nz/newspapers/HNS18840103.2.19.3
       normalizationVersion: 1
