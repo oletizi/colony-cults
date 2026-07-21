@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Kumara Times, 2 February 1881. colony “successfully founded” (early founding phase). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/KUMAT18810202.2.8
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1LVU1BVDE4ODEwMjAyLjIuOCZjb2xvdXJzPTMyJmV4dD1naWYmYXJlYT0xJndpZHRoPTQwMw==
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/kumat18810202.2.8/5fe2ad7d8dc2586407f75649332b2d00482a79a0b2db6b25e816dcc5a555fba2.gif
+        checksum: 5fe2ad7d8dc2586407f75649332b2d00482a79a0b2db6b25e816dcc5a555fba2
+        byteLength: 3446
+        provenancePath: archive/papers-past/kumat18810202.2.8/5fe2ad7d8dc2586407f75649332b2d00482a79a0b2db6b25e816dcc5a555fba2.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1LVU1BVDE4ODEwMjAyLjIuOCZjb2xvdXJzPTMyJmV4dD1naWYmYXJlYT0yJndpZHRoPTQzNg==
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/kumat18810202.2.8/90ae3688e2f3a2a50bfbd942898a48e465c1d304684c1c913ee521ff2a27ead5.gif
+        checksum: 90ae3688e2f3a2a50bfbd942898a48e465c1d304684c1c913ee521ff2a27ead5
+        byteLength: 139485
+        provenancePath: archive/papers-past/kumat18810202.2.8/90ae3688e2f3a2a50bfbd942898a48e465c1d304684c1c913ee521ff2a27ead5.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/KUMAT18810202.2.8
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/kumat18810202.2.8/17ebb9eb8c38bc535b6bcf55321ed528e789bc4215343bf579a849a6b4f9a69d.txt
+        checksum: 17ebb9eb8c38bc535b6bcf55321ed528e789bc4215343bf579a849a6b4f9a69d
+        byteLength: 2762
+        provenancePath: archive/papers-past/kumat18810202.2.8/17ebb9eb8c38bc535b6bcf55321ed528e789bc4215343bf579a849a6b4f9a69d.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-kumat18810202-2-8-2026-07-21T05-20-38-543Z.html
+      retrievedAt: 2026-07-21T05:20:41.969Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/KUMAT18810202.2.8
+      normalizationVersion: 1

@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Marlborough Daily Times, 23 October 1882. richest single-witness Port-Breton / Italian-immigrant context. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/MDTIM18821023.2.16
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1NRFRJTTE4ODIxMDIzLjIuMTYmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD00MDA=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/mdtim18821023.2.16/68bc3e81a9d05fb98e75f6d42ff1a7531b63eb7df3d2f1547b64de2284ba66c1.gif
+        checksum: 68bc3e81a9d05fb98e75f6d42ff1a7531b63eb7df3d2f1547b64de2284ba66c1
+        byteLength: 1797
+        provenancePath: archive/papers-past/mdtim18821023.2.16/68bc3e81a9d05fb98e75f6d42ff1a7531b63eb7df3d2f1547b64de2284ba66c1.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1NRFRJTTE4ODIxMDIzLjIuMTYmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD00MTE=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/mdtim18821023.2.16/8a6cd1394847821a0cea6b3ba4580ce5893ce29b00640f1ac8c75d047102284e.gif
+        checksum: 8a6cd1394847821a0cea6b3ba4580ce5893ce29b00640f1ac8c75d047102284e
+        byteLength: 214370
+        provenancePath: archive/papers-past/mdtim18821023.2.16/8a6cd1394847821a0cea6b3ba4580ce5893ce29b00640f1ac8c75d047102284e.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/MDTIM18821023.2.16
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/mdtim18821023.2.16/804c410ed7dcf6ee52dc733c0caf9071782ef4ceb372b26b307d2c074ab54550.txt
+        checksum: 804c410ed7dcf6ee52dc733c0caf9071782ef4ceb372b26b307d2c074ab54550
+        byteLength: 4503
+        provenancePath: archive/papers-past/mdtim18821023.2.16/804c410ed7dcf6ee52dc733c0caf9071782ef4ceb372b26b307d2c074ab54550.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-mdtim18821023-2-16-2026-07-21T05-19-01-504Z.html
+      retrievedAt: 2026-07-21T05:19:07.609Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/MDTIM18821023.2.16
+      normalizationVersion: 1

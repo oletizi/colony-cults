@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: New Zealand Times, 26 May 1880. earliest report of the armed ship (ex-Aden for New Britain). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZTIM18800526.2.11
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWlRJTTE4ODAwNTI2LjIuMTEmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD0yMzI=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nztim18800526.2.11/9054dfc994ab2f5a5f88857ce54505fe25ed180969f3632e928cbe140936d744.gif
+        checksum: 9054dfc994ab2f5a5f88857ce54505fe25ed180969f3632e928cbe140936d744
+        byteLength: 727
+        provenancePath: archive/papers-past/nztim18800526.2.11/9054dfc994ab2f5a5f88857ce54505fe25ed180969f3632e928cbe140936d744.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWlRJTTE4ODAwNTI2LjIuMTEmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD0zMjg=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nztim18800526.2.11/52ad64f08a0fd303ea78807ece24bdbccd58b895b42d91c08c5992da1c83be46.gif
+        checksum: 52ad64f08a0fd303ea78807ece24bdbccd58b895b42d91c08c5992da1c83be46
+        byteLength: 120059
+        provenancePath: archive/papers-past/nztim18800526.2.11/52ad64f08a0fd303ea78807ece24bdbccd58b895b42d91c08c5992da1c83be46.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZTIM18800526.2.11
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/nztim18800526.2.11/b3d5135473f8ddf35531bd067d43e006e6d00fd0bc38366ef3c1c871f233e9fe.txt
+        checksum: b3d5135473f8ddf35531bd067d43e006e6d00fd0bc38366ef3c1c871f233e9fe
+        byteLength: 3011
+        provenancePath: archive/papers-past/nztim18800526.2.11/b3d5135473f8ddf35531bd067d43e006e6d00fd0bc38366ef3c1c871f233e9fe.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-nztim18800526-2-11-2026-07-21T05-24-18-403Z.html
+      retrievedAt: 2026-07-21T05:24:24.602Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/NZTIM18800526.2.11
+      normalizationVersion: 1

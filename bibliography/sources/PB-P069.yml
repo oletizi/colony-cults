@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Bay of Plenty Times, 30 September 1880. the Chandernagore voyage (earliest founding-phase report). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/BOPT18800930.2.6
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1CT1BUMTg4MDA5MzAuMi42JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9Mzg0
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/bopt18800930.2.6/4a26f16c9e4f40b0608cc110941185f43a3dd6d4a39b8bbe8aa2a6d367547dcb.gif
+        checksum: 4a26f16c9e4f40b0608cc110941185f43a3dd6d4a39b8bbe8aa2a6d367547dcb
+        byteLength: 3082
+        provenancePath: archive/papers-past/bopt18800930.2.6/4a26f16c9e4f40b0608cc110941185f43a3dd6d4a39b8bbe8aa2a6d367547dcb.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1CT1BUMTg4MDA5MzAuMi42JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9NDUw
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/bopt18800930.2.6/b48abc390f23c83574677fa5ca577f218e7e09d0c4a72c4143b461382ed752f7.gif
+        checksum: b48abc390f23c83574677fa5ca577f218e7e09d0c4a72c4143b461382ed752f7
+        byteLength: 92833
+        provenancePath: archive/papers-past/bopt18800930.2.6/b48abc390f23c83574677fa5ca577f218e7e09d0c4a72c4143b461382ed752f7.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/BOPT18800930.2.6
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/bopt18800930.2.6/560d1bb179cf943bb2e9bc28a8f9fca29f6db56155b5fa554b3dc7fd887294d2.txt
+        checksum: 560d1bb179cf943bb2e9bc28a8f9fca29f6db56155b5fa554b3dc7fd887294d2
+        byteLength: 1443
+        provenancePath: archive/papers-past/bopt18800930.2.6/560d1bb179cf943bb2e9bc28a8f9fca29f6db56155b5fa554b3dc7fd887294d2.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-bopt18800930-2-6-2026-07-21T05-20-24-634Z.html
+      retrievedAt: 2026-07-21T05:20:29.945Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/BOPT18800930.2.6
+      normalizationVersion: 1

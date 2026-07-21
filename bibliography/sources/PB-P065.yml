@@ -7,12 +7,12 @@ evidenceClass: newspaper
 language: English
 creator: various
 titles:
-  - text: ARREST OF THE MARQUIS DE RAYS
+  - text: ARREST OF THE MARQUIS DE RAYS (Marlborough Express, 2 February 1883)
     role: canonical
 notes: "Newspaper: Marlborough Express, 2 February 1883. committed-for-trial cable. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/MEX18830202.2.11
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1NRVgxODgzMDIwMi4yLjExJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9MzAy
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/mex18830202.2.11/f490c31672cae6643bcfeba7c13f6b21db16f7e2e8fa02dedf2a68c2c3fdcd73.gif
+        checksum: f490c31672cae6643bcfeba7c13f6b21db16f7e2e8fa02dedf2a68c2c3fdcd73
+        byteLength: 3076
+        provenancePath: archive/papers-past/mex18830202.2.11/f490c31672cae6643bcfeba7c13f6b21db16f7e2e8fa02dedf2a68c2c3fdcd73.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1NRVgxODgzMDIwMi4yLjExJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9MzAw
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/mex18830202.2.11/b22c33b894eb6db195ac6bdd5f734bb8c27067b91a51d75d5913e718e8c32456.gif
+        checksum: b22c33b894eb6db195ac6bdd5f734bb8c27067b91a51d75d5913e718e8c32456
+        byteLength: 12026
+        provenancePath: archive/papers-past/mex18830202.2.11/b22c33b894eb6db195ac6bdd5f734bb8c27067b91a51d75d5913e718e8c32456.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/MEX18830202.2.11
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/mex18830202.2.11/734c5ae1215fff23ed04b38ab1c691b2bb156fc2c05777956f09e31e795c3f35.txt
+        checksum: 734c5ae1215fff23ed04b38ab1c691b2bb156fc2c05777956f09e31e795c3f35
+        byteLength: 224
+        provenancePath: archive/papers-past/mex18830202.2.11/734c5ae1215fff23ed04b38ab1c691b2bb156fc2c05777956f09e31e795c3f35.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-mex18830202-2-11-2026-07-21T05-33-35-641Z.html
+      retrievedAt: 2026-07-21T05:33:39.117Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/MEX18830202.2.11
+      normalizationVersion: 1

@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Evening Post, 13 September 1881. survivor-discovery tied to the de Rays expedition (Sydney Daily Telegraph). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/EP18810913.2.32
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1FUDE4ODEwOTEzLjIuMzImY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD0zNjg=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/ep18810913.2.32/1edf169ae3924b5aa3ed034c54253a88b47015215c8d353368ad3587823ac0e5.gif
+        checksum: 1edf169ae3924b5aa3ed034c54253a88b47015215c8d353368ad3587823ac0e5
+        byteLength: 2549
+        provenancePath: archive/papers-past/ep18810913.2.32/1edf169ae3924b5aa3ed034c54253a88b47015215c8d353368ad3587823ac0e5.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1FUDE4ODEwOTEzLjIuMzImY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD00MTU=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/ep18810913.2.32/a047bb05f279c97ec39beb7072d915d035501dee3b22bb0862dd214a2d63cf15.gif
+        checksum: a047bb05f279c97ec39beb7072d915d035501dee3b22bb0862dd214a2d63cf15
+        byteLength: 129625
+        provenancePath: archive/papers-past/ep18810913.2.32/a047bb05f279c97ec39beb7072d915d035501dee3b22bb0862dd214a2d63cf15.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/EP18810913.2.32
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/ep18810913.2.32/1ac7e95b0643daec63f80925e34d5ae28377db994beb4fb9dc1099af4d2d1308.txt
+        checksum: 1ac7e95b0643daec63f80925e34d5ae28377db994beb4fb9dc1099af4d2d1308
+        byteLength: 2240
+        provenancePath: archive/papers-past/ep18810913.2.32/1ac7e95b0643daec63f80925e34d5ae28377db994beb4fb9dc1099af4d2d1308.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-ep18810913-2-32-2026-07-21T05-25-18-564Z.html
+      retrievedAt: 2026-07-21T05:25:24.608Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/EP18810913.2.32
+      normalizationVersion: 1

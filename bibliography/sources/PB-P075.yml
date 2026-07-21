@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Lyttelton Times, 4 July 1882. colonists’ evacuation (Genil to Sydney; Nouvelle Bretagne seized at Manila). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/LT18820704.2.29
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1MVDE4ODIwNzA0LjIuMjkmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD0yOTE=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/lt18820704.2.29/aee79061bc6be2cdd57e1762dd9feb2815d702619fd636ac60542de9f0a20cdd.gif
+        checksum: aee79061bc6be2cdd57e1762dd9feb2815d702619fd636ac60542de9f0a20cdd
+        byteLength: 2549
+        provenancePath: archive/papers-past/lt18820704.2.29/aee79061bc6be2cdd57e1762dd9feb2815d702619fd636ac60542de9f0a20cdd.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1MVDE4ODIwNzA0LjIuMjkmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD0zOTQ=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/lt18820704.2.29/c170fd883b16bc25dc280eea56aa29c58c167744e0decd57cedb8150f51edc69.gif
+        checksum: c170fd883b16bc25dc280eea56aa29c58c167744e0decd57cedb8150f51edc69
+        byteLength: 49138
+        provenancePath: archive/papers-past/lt18820704.2.29/c170fd883b16bc25dc280eea56aa29c58c167744e0decd57cedb8150f51edc69.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/LT18820704.2.29
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/lt18820704.2.29/4bd97d0876dd8eb62995b3748cbbd9ca98aa13aae8256382b6729c41fee836cd.txt
+        checksum: 4bd97d0876dd8eb62995b3748cbbd9ca98aa13aae8256382b6729c41fee836cd
+        byteLength: 1960
+        provenancePath: archive/papers-past/lt18820704.2.29/4bd97d0876dd8eb62995b3748cbbd9ca98aa13aae8256382b6729c41fee836cd.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-lt18820704-2-29-2026-07-21T05-23-00-079Z.html
+      retrievedAt: 2026-07-21T05:23:05.878Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/LT18820704.2.29
+      normalizationVersion: 1

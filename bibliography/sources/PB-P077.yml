@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Oamaru Mail, 25 February 1884. long Paris letter via the Philadelphia Press (US-press perspective). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/OAM18840225.2.19
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1PQU0xODg0MDIyNS4yLjE5JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9MjM0
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/oam18840225.2.19/c51a4d1f02cac75358f7d941ba95a22b9e206bf5620646c2297835ca999f8af5.gif
+        checksum: c51a4d1f02cac75358f7d941ba95a22b9e206bf5620646c2297835ca999f8af5
+        byteLength: 1516
+        provenancePath: archive/papers-past/oam18840225.2.19/c51a4d1f02cac75358f7d941ba95a22b9e206bf5620646c2297835ca999f8af5.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1PQU0xODg0MDIyNS4yLjE5JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9MzUx
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/oam18840225.2.19/d6ba89cd9cdcfabd0a87e857c2ea333b6d21ae272476527180fce950b7de1d66.gif
+        checksum: d6ba89cd9cdcfabd0a87e857c2ea333b6d21ae272476527180fce950b7de1d66
+        byteLength: 159035
+        provenancePath: archive/papers-past/oam18840225.2.19/d6ba89cd9cdcfabd0a87e857c2ea333b6d21ae272476527180fce950b7de1d66.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/OAM18840225.2.19
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/oam18840225.2.19/70e0a499e7a025cc0e73d26faa928b491326e0b119f28332088c08fa4900f02b.txt
+        checksum: 70e0a499e7a025cc0e73d26faa928b491326e0b119f28332088c08fa4900f02b
+        byteLength: 7050
+        provenancePath: archive/papers-past/oam18840225.2.19/70e0a499e7a025cc0e73d26faa928b491326e0b119f28332088c08fa4900f02b.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-oam18840225-2-19-2026-07-21T05-23-33-464Z.html
+      retrievedAt: 2026-07-21T05:23:39.720Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/OAM18840225.2.19
+      normalizationVersion: 1

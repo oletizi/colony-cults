@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Samoa Times and South Sea Gazette, 16 October 1880. Pacific-regional account of the expedition. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/STSSG18801016.2.6
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1TVFNTRzE4ODAxMDE2LjIuNiZjb2xvdXJzPTMyJmV4dD1naWYmYXJlYT0xJndpZHRoPTMxNg==
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/stssg18801016.2.6/94b6880823a3245017c3685b8f22d29aa3cf30c8e22ad8c72bdf494824e53f05.gif
+        checksum: 94b6880823a3245017c3685b8f22d29aa3cf30c8e22ad8c72bdf494824e53f05
+        byteLength: 3847
+        provenancePath: archive/papers-past/stssg18801016.2.6/94b6880823a3245017c3685b8f22d29aa3cf30c8e22ad8c72bdf494824e53f05.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1TVFNTRzE4ODAxMDE2LjIuNiZjb2xvdXJzPTMyJmV4dD1naWYmYXJlYT0yJndpZHRoPTMxNA==
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/stssg18801016.2.6/48a37941ef2dce3ae59fdaa7fa9b8c47cdcf41b26857f2897d7fcb2cf1d070a4.gif
+        checksum: 48a37941ef2dce3ae59fdaa7fa9b8c47cdcf41b26857f2897d7fcb2cf1d070a4
+        byteLength: 56690
+        provenancePath: archive/papers-past/stssg18801016.2.6/48a37941ef2dce3ae59fdaa7fa9b8c47cdcf41b26857f2897d7fcb2cf1d070a4.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/STSSG18801016.2.6
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/stssg18801016.2.6/5690a11a35a6b8b82579f1a08279c540a1dd4364c724fa69eff732e6333c7940.txt
+        checksum: 5690a11a35a6b8b82579f1a08279c540a1dd4364c724fa69eff732e6333c7940
+        byteLength: 3007
+        provenancePath: archive/papers-past/stssg18801016.2.6/5690a11a35a6b8b82579f1a08279c540a1dd4364c724fa69eff732e6333c7940.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-stssg18801016-2-6-2026-07-21T05-24-33-264Z.html
+      retrievedAt: 2026-07-21T05:24:38.924Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/STSSG18801016.2.6
+      normalizationVersion: 1

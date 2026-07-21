@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Southland Times, 25 January 1884. long trial + de Rays biography feature. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/ST18840125.2.17
     identifiers:
       - type: papers-past
@@ -23,3 +23,42 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1TVDE4ODQwMTI1LjIuMTcmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD00NDM=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/st18840125.2.17/a2f16ab8629407aa3293e7538c593fac9c3d1f30e799fed154e7fd7dd42e5e2b.gif
+        checksum: a2f16ab8629407aa3293e7538c593fac9c3d1f30e799fed154e7fd7dd42e5e2b
+        byteLength: 2129
+        provenancePath: archive/papers-past/st18840125.2.17/a2f16ab8629407aa3293e7538c593fac9c3d1f30e799fed154e7fd7dd42e5e2b.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1TVDE4ODQwMTI1LjIuMTcmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD00NjE=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/st18840125.2.17/298999097a0f81204f2e2801d87b2e154c8122e10dfbab7e295a2e0e03e778ea.gif
+        checksum: 298999097a0f81204f2e2801d87b2e154c8122e10dfbab7e295a2e0e03e778ea
+        byteLength: 369145
+        provenancePath: archive/papers-past/st18840125.2.17/298999097a0f81204f2e2801d87b2e154c8122e10dfbab7e295a2e0e03e778ea.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1TVDE4ODQwMTI1LjIuMTcmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MyZ3aWR0aD00NTQ=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/st18840125.2.17/c3ca4acc45f666d5ca7ed49b8e982403fe1c324098fe602ef90ebb6317662f4b.gif
+        checksum: c3ca4acc45f666d5ca7ed49b8e982403fe1c324098fe602ef90ebb6317662f4b
+        byteLength: 230943
+        provenancePath: archive/papers-past/st18840125.2.17/c3ca4acc45f666d5ca7ed49b8e982403fe1c324098fe602ef90ebb6317662f4b.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/ST18840125.2.17
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/st18840125.2.17/6fc75fdb5eca88a447d080c13e3ccc5fde9f214a476e1cb992f7f5c16d4d083a.txt
+        checksum: 6fc75fdb5eca88a447d080c13e3ccc5fde9f214a476e1cb992f7f5c16d4d083a
+        byteLength: 8475
+        provenancePath: archive/papers-past/st18840125.2.17/6fc75fdb5eca88a447d080c13e3ccc5fde9f214a476e1cb992f7f5c16d4d083a.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-st18840125-2-17-2026-07-21T05-22-41-972Z.html
+      retrievedAt: 2026-07-21T05:22:50.638Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/ST18840125.2.17
+      normalizationVersion: 1

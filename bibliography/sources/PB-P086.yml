@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Press, 1 January 1898. comprehensive retrospective via the London Standard, under de Rays’ real name. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/CHP18980101.2.78
     identifiers:
       - type: papers-past
@@ -23,3 +23,74 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1DSFAxODk4MDEwMS4yLjc4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9NDEw
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/chp18980101.2.78/1f2aa78ce7d7155c13c87c9c74a67af954a7c8cf297e78ec360d89823bc14249.gif
+        checksum: 1f2aa78ce7d7155c13c87c9c74a67af954a7c8cf297e78ec360d89823bc14249
+        byteLength: 2522
+        provenancePath: archive/papers-past/chp18980101.2.78/1f2aa78ce7d7155c13c87c9c74a67af954a7c8cf297e78ec360d89823bc14249.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1DSFAxODk4MDEwMS4yLjc4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9MjYx
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/chp18980101.2.78/3023f65c829dc3e8e08b8355c6c766916a002548c9d9dabe17191ea7c781006f.gif
+        checksum: 3023f65c829dc3e8e08b8355c6c766916a002548c9d9dabe17191ea7c781006f
+        byteLength: 1410
+        provenancePath: archive/papers-past/chp18980101.2.78/3023f65c829dc3e8e08b8355c6c766916a002548c9d9dabe17191ea7c781006f.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1DSFAxODk4MDEwMS4yLjc4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTMmd2lkdGg9MTYy
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/chp18980101.2.78/81d532579ad0c18d52049860659f6fbeda3fc131474534ffc898ed43ab9b17c4.gif
+        checksum: 81d532579ad0c18d52049860659f6fbeda3fc131474534ffc898ed43ab9b17c4
+        byteLength: 1061
+        provenancePath: archive/papers-past/chp18980101.2.78/81d532579ad0c18d52049860659f6fbeda3fc131474534ffc898ed43ab9b17c4.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1DSFAxODk4MDEwMS4yLjc4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTQmd2lkdGg9NDQ3
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/chp18980101.2.78/fc28f0795800ee729f8b0797e15f946055b9eb7d1771fb3370617c423c3c616e.gif
+        checksum: fc28f0795800ee729f8b0797e15f946055b9eb7d1771fb3370617c423c3c616e
+        byteLength: 315500
+        provenancePath: archive/papers-past/chp18980101.2.78/fc28f0795800ee729f8b0797e15f946055b9eb7d1771fb3370617c423c3c616e.yml
+        role: page-master
+        sequence: 4
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1DSFAxODk4MDEwMS4yLjc4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTUmd2lkdGg9NDMy
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/chp18980101.2.78/7d6130c5772b602c60e477c6d9bbc47791abc3be2f3956f9730b80a43ba008e3.gif
+        checksum: 7d6130c5772b602c60e477c6d9bbc47791abc3be2f3956f9730b80a43ba008e3
+        byteLength: 16659
+        provenancePath: archive/papers-past/chp18980101.2.78/7d6130c5772b602c60e477c6d9bbc47791abc3be2f3956f9730b80a43ba008e3.yml
+        role: page-master
+        sequence: 5
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1DSFAxODk4MDEwMS4yLjc4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTYmd2lkdGg9NDM1
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/chp18980101.2.78/2845b6f5d1963e19bfc8e06ff02f92a618e06b347873cf6e559ca7b52a10dbe8.gif
+        checksum: 2845b6f5d1963e19bfc8e06ff02f92a618e06b347873cf6e559ca7b52a10dbe8
+        byteLength: 76096
+        provenancePath: archive/papers-past/chp18980101.2.78/2845b6f5d1963e19bfc8e06ff02f92a618e06b347873cf6e559ca7b52a10dbe8.yml
+        role: page-master
+        sequence: 6
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1DSFAxODk4MDEwMS4yLjc4JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTcmd2lkdGg9NDQ2
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/chp18980101.2.78/ad66034fb7b4e43c54a4a451f85516bf3af85457093691e2fb779c28b47c8426.gif
+        checksum: ad66034fb7b4e43c54a4a451f85516bf3af85457093691e2fb779c28b47c8426
+        byteLength: 327068
+        provenancePath: archive/papers-past/chp18980101.2.78/ad66034fb7b4e43c54a4a451f85516bf3af85457093691e2fb779c28b47c8426.yml
+        role: page-master
+        sequence: 7
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/CHP18980101.2.78
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/chp18980101.2.78/bb5eb1f29321a02bbd8cae6902d2e63e31b2925c37934f1c8b5c1766276ec2ec.txt
+        checksum: bb5eb1f29321a02bbd8cae6902d2e63e31b2925c37934f1c8b5c1766276ec2ec
+        byteLength: 15760
+        provenancePath: archive/papers-past/chp18980101.2.78/bb5eb1f29321a02bbd8cae6902d2e63e31b2925c37934f1c8b5c1766276ec2ec.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-chp18980101-2-78-2026-07-21T05-25-47-224Z.html
+      retrievedAt: 2026-07-21T05:25:57.525Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/CHP18980101.2.78
+      normalizationVersion: 1

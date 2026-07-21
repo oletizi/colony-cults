@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Lyttelton Times, 6 September 1880. SMH (14 Aug 1880) on the persistence after the first failure. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/LT18800906.2.37
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1MVDE4ODAwOTA2LjIuMzcmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MSZ3aWR0aD0zODQ=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/lt18800906.2.37/c1e53e62ca1f49dd96adc6534de1a3937bf0ac851046abce1d770bb1e9c6eb09.gif
+        checksum: c1e53e62ca1f49dd96adc6534de1a3937bf0ac851046abce1d770bb1e9c6eb09
+        byteLength: 2960
+        provenancePath: archive/papers-past/lt18800906.2.37/c1e53e62ca1f49dd96adc6534de1a3937bf0ac851046abce1d770bb1e9c6eb09.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1MVDE4ODAwOTA2LjIuMzcmY29sb3Vycz0zMiZleHQ9Z2lmJmFyZWE9MiZ3aWR0aD0zODY=
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/lt18800906.2.37/25a5808ac510325e50a94ca4f4ec2c3537fb79d714fedfdfe316c772c0be70ed.gif
+        checksum: 25a5808ac510325e50a94ca4f4ec2c3537fb79d714fedfdfe316c772c0be70ed
+        byteLength: 163170
+        provenancePath: archive/papers-past/lt18800906.2.37/25a5808ac510325e50a94ca4f4ec2c3537fb79d714fedfdfe316c772c0be70ed.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/LT18800906.2.37
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/lt18800906.2.37/e03a612c080f9ed9d3c0f00ee6ef0b296524f163c526ca7531fbe5b676b3c2bc.txt
+        checksum: e03a612c080f9ed9d3c0f00ee6ef0b296524f163c526ca7531fbe5b676b3c2bc
+        byteLength: 2949
+        provenancePath: archive/papers-past/lt18800906.2.37/e03a612c080f9ed9d3c0f00ee6ef0b296524f163c526ca7531fbe5b676b3c2bc.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-lt18800906-2-37-2026-07-21T05-27-06-579Z.html
+      retrievedAt: 2026-07-21T05:27:12.261Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/LT18800906.2.37
+      normalizationVersion: 1

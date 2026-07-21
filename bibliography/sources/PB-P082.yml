@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Otago Daily Times, 6 April 1880. long SMH survey of Pacific settlement attempts. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/ODT18800406.2.23
     identifiers:
       - type: papers-past
@@ -23,3 +23,42 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1PRFQxODgwMDQwNi4yLjIzJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9MzE4
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/odt18800406.2.23/7b51f44e944ad379195de2f443ab4fb6c92d6169a6e285300c95c7d3d3d8fd31.gif
+        checksum: 7b51f44e944ad379195de2f443ab4fb6c92d6169a6e285300c95c7d3d3d8fd31
+        byteLength: 2671
+        provenancePath: archive/papers-past/odt18800406.2.23/7b51f44e944ad379195de2f443ab4fb6c92d6169a6e285300c95c7d3d3d8fd31.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1PRFQxODgwMDQwNi4yLjIzJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9Mzg1
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/odt18800406.2.23/246a76d0fecb5807eb39f6cb8320354033400a86e123af1c88b11ce7d0dda4fe.gif
+        checksum: 246a76d0fecb5807eb39f6cb8320354033400a86e123af1c88b11ce7d0dda4fe
+        byteLength: 123652
+        provenancePath: archive/papers-past/odt18800406.2.23/246a76d0fecb5807eb39f6cb8320354033400a86e123af1c88b11ce7d0dda4fe.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1PRFQxODgwMDQwNi4yLjIzJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTMmd2lkdGg9Mzc4
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/odt18800406.2.23/bdef8522e81f65d000e3ddf307c0d7c623517806947badaa5bca88046382c02d.gif
+        checksum: bdef8522e81f65d000e3ddf307c0d7c623517806947badaa5bca88046382c02d
+        byteLength: 37582
+        provenancePath: archive/papers-past/odt18800406.2.23/bdef8522e81f65d000e3ddf307c0d7c623517806947badaa5bca88046382c02d.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/ODT18800406.2.23
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/odt18800406.2.23/f5b8c53865c8be680474ad552f5cd3c63ca2ffbb1f356853cf6102c5c9c6b9ce.txt
+        checksum: f5b8c53865c8be680474ad552f5cd3c63ca2ffbb1f356853cf6102c5c9c6b9ce
+        byteLength: 5813
+        provenancePath: archive/papers-past/odt18800406.2.23/f5b8c53865c8be680474ad552f5cd3c63ca2ffbb1f356853cf6102c5c9c6b9ce.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-odt18800406-2-23-2026-07-21T05-24-47-765Z.html
+      retrievedAt: 2026-07-21T05:24:54.703Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/ODT18800406.2.23
+      normalizationVersion: 1

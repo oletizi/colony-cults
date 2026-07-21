@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: New Zealand Herald, 25 August 1883. comprehensive narrative of the whole affair (richest single piece). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZH18830825.2.51
     identifiers:
       - type: papers-past
@@ -23,3 +23,74 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgzMDgyNS4yLjUxJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9MzM5
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18830825.2.51/68ac60b4b3e3b737410a17eac273510ed28bcd3f2cd41314c02e668c54ecf437.gif
+        checksum: 68ac60b4b3e3b737410a17eac273510ed28bcd3f2cd41314c02e668c54ecf437
+        byteLength: 1962
+        provenancePath: archive/papers-past/nzh18830825.2.51/68ac60b4b3e3b737410a17eac273510ed28bcd3f2cd41314c02e668c54ecf437.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgzMDgyNS4yLjUxJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9Mzgz
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18830825.2.51/43d82d1f8ed49cf187b5c769d8ce19d9048afa3410542c4a6f5dcbac0cc36fe1.gif
+        checksum: 43d82d1f8ed49cf187b5c769d8ce19d9048afa3410542c4a6f5dcbac0cc36fe1
+        byteLength: 92443
+        provenancePath: archive/papers-past/nzh18830825.2.51/43d82d1f8ed49cf187b5c769d8ce19d9048afa3410542c4a6f5dcbac0cc36fe1.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgzMDgyNS4yLjUxJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTMmd2lkdGg9MzU3
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18830825.2.51/071d6274aaf23ddc3169f6bc4167e900b0b5e49a0016238673ac4f1143ba82f9.gif
+        checksum: 071d6274aaf23ddc3169f6bc4167e900b0b5e49a0016238673ac4f1143ba82f9
+        byteLength: 60331
+        provenancePath: archive/papers-past/nzh18830825.2.51/071d6274aaf23ddc3169f6bc4167e900b0b5e49a0016238673ac4f1143ba82f9.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgzMDgyNS4yLjUxJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTQmd2lkdGg9MzYx
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18830825.2.51/57759de638bc0cb688c68798af294418d7c6e88531a7575c7bc1f303caf42f76.gif
+        checksum: 57759de638bc0cb688c68798af294418d7c6e88531a7575c7bc1f303caf42f76
+        byteLength: 112585
+        provenancePath: archive/papers-past/nzh18830825.2.51/57759de638bc0cb688c68798af294418d7c6e88531a7575c7bc1f303caf42f76.yml
+        role: page-master
+        sequence: 4
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgzMDgyNS4yLjUxJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTUmd2lkdGg9Mzgw
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18830825.2.51/923a4f8035c41552b25f8442673ae202122a28fd3d8df3d01fefdc1a3e57829a.gif
+        checksum: 923a4f8035c41552b25f8442673ae202122a28fd3d8df3d01fefdc1a3e57829a
+        byteLength: 71230
+        provenancePath: archive/papers-past/nzh18830825.2.51/923a4f8035c41552b25f8442673ae202122a28fd3d8df3d01fefdc1a3e57829a.yml
+        role: page-master
+        sequence: 5
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgzMDgyNS4yLjUxJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTYmd2lkdGg9Mzcy
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18830825.2.51/e1849288b416e87b340fb78d55dfb657f2146ab4ea4a11362b417d838e6927f8.gif
+        checksum: e1849288b416e87b340fb78d55dfb657f2146ab4ea4a11362b417d838e6927f8
+        byteLength: 65665
+        provenancePath: archive/papers-past/nzh18830825.2.51/e1849288b416e87b340fb78d55dfb657f2146ab4ea4a11362b417d838e6927f8.yml
+        role: page-master
+        sequence: 6
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1OWkgxODgzMDgyNS4yLjUxJmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTcmd2lkdGg9MzU0
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/nzh18830825.2.51/eb6d2eb8d0b290d496ff5b5b42a32107bfccffe7c9c3f0f097305df1e2dab974.gif
+        checksum: eb6d2eb8d0b290d496ff5b5b42a32107bfccffe7c9c3f0f097305df1e2dab974
+        byteLength: 38994
+        provenancePath: archive/papers-past/nzh18830825.2.51/eb6d2eb8d0b290d496ff5b5b42a32107bfccffe7c9c3f0f097305df1e2dab974.yml
+        role: page-master
+        sequence: 7
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/NZH18830825.2.51
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/nzh18830825.2.51/7c18f6c818f90ea768f8a8bd8f2ccce8c459a5044b1e340f7eda44bee3cc28b7.txt
+        checksum: 7c18f6c818f90ea768f8a8bd8f2ccce8c459a5044b1e340f7eda44bee3cc28b7
+        byteLength: 11116
+        provenancePath: archive/papers-past/nzh18830825.2.51/7c18f6c818f90ea768f8a8bd8f2ccce8c459a5044b1e340f7eda44bee3cc28b7.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-nzh18830825-2-51-2026-07-21T05-20-50-667Z.html
+      retrievedAt: 2026-07-21T05:21:02.278Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/NZH18830825.2.51
+      normalizationVersion: 1

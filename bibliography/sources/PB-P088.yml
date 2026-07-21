@@ -12,7 +12,7 @@ titles:
 notes: "Newspaper: Hawke’s Bay Herald, 28 October 1879. earliest material: first reports of the barque + the Geneva recruitment advertisements. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/HBH18791028.2.15
     identifiers:
       - type: papers-past
@@ -23,3 +23,34 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1IQkgxODc5MTAyOC4yLjE1JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9NDQz
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/hbh18791028.2.15/dfb6e68f2bd9b223515733a8b4f8c44e9167f8636593ea3681ceb988ebb0b267.gif
+        checksum: dfb6e68f2bd9b223515733a8b4f8c44e9167f8636593ea3681ceb988ebb0b267
+        byteLength: 3615
+        provenancePath: archive/papers-past/hbh18791028.2.15/dfb6e68f2bd9b223515733a8b4f8c44e9167f8636593ea3681ceb988ebb0b267.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1IQkgxODc5MTAyOC4yLjE1JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9NDUw
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/hbh18791028.2.15/c4e70f41a2d5c2c67e839ba279688a5a1cb00f42060c2c9f407b307bfe38364f.gif
+        checksum: c4e70f41a2d5c2c67e839ba279688a5a1cb00f42060c2c9f407b307bfe38364f
+        byteLength: 172063
+        provenancePath: archive/papers-past/hbh18791028.2.15/c4e70f41a2d5c2c67e839ba279688a5a1cb00f42060c2c9f407b307bfe38364f.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/HBH18791028.2.15
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/hbh18791028.2.15/c5ffc8d514b11bdf25b01a156c4f7d16c73e9d69643200c5737cf5d15be8b47e.txt
+        checksum: c5ffc8d514b11bdf25b01a156c4f7d16c73e9d69643200c5737cf5d15be8b47e
+        byteLength: 2540
+        provenancePath: archive/papers-past/hbh18791028.2.15/c5ffc8d514b11bdf25b01a156c4f7d16c73e9d69643200c5737cf5d15be8b47e.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-hbh18791028-2-15-2026-07-21T05-26-23-712Z.html
+      retrievedAt: 2026-07-21T05:26:29.377Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/HBH18791028.2.15
+      normalizationVersion: 1

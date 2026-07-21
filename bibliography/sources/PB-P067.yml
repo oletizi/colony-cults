@@ -7,12 +7,12 @@ evidenceClass: newspaper
 language: English
 creator: various
 titles:
-  - text: ARREST OF THE MARQUIS DE RAYS
+  - text: ARREST OF THE MARQUIS DE RAYS (Timaru Herald, 24 November 1882)
     role: canonical
 notes: "Newspaper: Timaru Herald, 24 November 1882. long “arch-impostor” feature (Paris correspondent). Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
 repositoryRecords:
   - sourceArchive: Papers Past
-    status: to-collect
+    status: archived
     sourceUrl: https://paperspast.natlib.govt.nz/newspapers/THD18821124.2.27
     identifiers:
       - type: papers-past
@@ -23,3 +23,42 @@ repositoryRecords:
       rightsJurisdiction: NZ
       assessedBy: operator
       assessedAt: 2026-07-21T05:30:00.000Z
+    assets:
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1USEQxODgyMTEyNC4yLjI3JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTEmd2lkdGg9MzQ0
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/thd18821124.2.27/0a60c5d15a36e9cfee2fcbaaf0a394731a5751497ba049860f162160a1253c1f.gif
+        checksum: 0a60c5d15a36e9cfee2fcbaaf0a394731a5751497ba049860f162160a1253c1f
+        byteLength: 1464
+        provenancePath: archive/papers-past/thd18821124.2.27/0a60c5d15a36e9cfee2fcbaaf0a394731a5751497ba049860f162160a1253c1f.yml
+        role: page-master
+        sequence: 1
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1USEQxODgyMTEyNC4yLjI3JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTImd2lkdGg9MzQ0
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/thd18821124.2.27/333c8452825198224de9bcfc2193d040d0f721d28d9afca75b6d8b63941ccb41.gif
+        checksum: 333c8452825198224de9bcfc2193d040d0f721d28d9afca75b6d8b63941ccb41
+        byteLength: 18332
+        provenancePath: archive/papers-past/thd18821124.2.27/333c8452825198224de9bcfc2193d040d0f721d28d9afca75b6d8b63941ccb41.yml
+        role: page-master
+        sequence: 2
+      - sourceUrl: https://paperspast.natlib.govt.nz/imageserver/newspapers/P29pZD1USEQxODgyMTEyNC4yLjI3JmNvbG91cnM9MzImZXh0PWdpZiZhcmVhPTMmd2lkdGg9MzM4
+        mediaType: image/gif
+        objectStoreKey: archive/papers-past/thd18821124.2.27/3f96f2a72956c080eeb98e62c475799fbc5c2ab0aa4b0a8a1291dfdf9326c661.gif
+        checksum: 3f96f2a72956c080eeb98e62c475799fbc5c2ab0aa4b0a8a1291dfdf9326c661
+        byteLength: 217071
+        provenancePath: archive/papers-past/thd18821124.2.27/3f96f2a72956c080eeb98e62c475799fbc5c2ab0aa4b0a8a1291dfdf9326c661.yml
+        role: page-master
+        sequence: 3
+      - sourceUrl: https://paperspast.natlib.govt.nz/newspapers/THD18821124.2.27
+        mediaType: text/plain; charset=utf-8
+        objectStoreKey: archive/papers-past/thd18821124.2.27/6b7b9a2b984edf4f7c4661da862dfb5e00dd47fa9dbfbd829e533b92b2787bfc.txt
+        checksum: 6b7b9a2b984edf4f7c4661da862dfb5e00dd47fa9dbfbd829e533b92b2787bfc
+        byteLength: 5191
+        provenancePath: archive/papers-past/thd18821124.2.27/6b7b9a2b984edf4f7c4661da862dfb5e00dd47fa9dbfbd829e533b92b2787bfc.yml
+        role: ocr-text
+        sequence: 0
+        sourceRepresentation: papers-past-text-tab
+    metadataSnapshot:
+      path: bibliography/repository-responses/papers-past-article/papers-past-article-thd18821124-2-27-2026-07-21T05-33-48-352Z.html
+      retrievedAt: 2026-07-21T05:33:52.190Z
+      endpoint: https://paperspast.natlib.govt.nz/newspapers/THD18821124.2.27
+      normalizationVersion: 1
