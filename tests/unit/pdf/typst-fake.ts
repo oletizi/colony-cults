@@ -49,7 +49,9 @@ export function makeFixtureFetch(imageBytes: Map<string, Uint8Array>): FetchFn {
       ok: true,
       status: 200,
       async arrayBuffer() {
-        return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+        const copy = new Uint8Array(bytes.byteLength);
+        copy.set(bytes);
+        return copy.buffer;
       },
     };
   };
