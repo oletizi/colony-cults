@@ -249,6 +249,41 @@ describe('PapersPastAdapter', () => {
     });
   });
 
+  describe('WAF-challenge diagnostics (TASK-44 stale-cookie hint)', () => {
+    const CHALLENGE_HTML =
+      '<html><head><meta name="ROBOTS" content="NOINDEX, NOFOLLOW">' +
+      '<script src="/_Incapsula_Resource?SWJIYLWA=x"></script></head>' +
+      '<body>Request unsuccessful. Incapsula incident ID: 42-99</body></html>';
+    const NON_ARTICLE_HTML = '<html><body><p>Some unrelated page, no canonical link.</p></body></html>';
+
+    function adapterFor(html: string): PapersPastAdapter {
+      const browser = new FakeBrowserSession({ html: new Map([[FIXTURE_URL, html]]) });
+      return new PapersPastAdapter({
+        browserSession: browser,
+        objectStore: new FakeObjectStore(),
+        now: () => FIXED_NOW,
+        captureBaseDir,
+      });
+    }
+
+    it('surfaces the stale-cookie hint when the fetched page is a WAF challenge, not an article', async () => {
+      const err = await adapterFor(CHALLENGE_HTML)
+        .acquire(recordWith(PUBLIC_DOMAIN), {})
+        .catch((e: unknown) => e);
+      expect(String(err)).toMatch(/WAF challenge/i);
+      expect(String(err)).toContain('TASK-44');
+      expect(String(err)).toContain('rm -rf');
+    });
+
+    it('preserves the plain "not an article page" error for a genuine non-article page (no fingerprint)', async () => {
+      const err = await adapterFor(NON_ARTICLE_HTML)
+        .acquire(recordWith(PUBLIC_DOMAIN), {})
+        .catch((e: unknown) => e);
+      expect(String(err)).toMatch(/not an article page/i);
+      expect(String(err)).not.toContain('TASK-44');
+    });
+  });
+
   describe('OCR asset (ocr-text, Task 3, atomic Principle XV)', () => {
     it('captures the source OCR as an ocr-text asset alongside the page-masters', async () => {
       const objectStore = new FakeObjectStore();

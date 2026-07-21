@@ -37,6 +37,7 @@ import { getSourceConfig } from '@/sourcequery/source-config';
 import { PolitenessPolicy } from '@/sourcequery/politeness-policy';
 import { classify } from '@/sourcequery/block-detection';
 import type { BlockClassification } from '@/sourcequery/block-detection';
+import { staleCookieHint } from '@/sourcequery/browser-profile';
 import { groundedResultFromCapture, derivedFactsResult } from '@/sourcequery/frugality';
 import { persistCapture, persistBlockEvidence } from '@/sourcequery/persistence';
 import { ExitNodePolicy } from '@/sourcequery/exit-node-policy';
@@ -91,6 +92,16 @@ export interface QueryOptions {
 }
 
 /** Orchestrates one governed query pass and returns a grounded QueryResult. */
+/**
+ * A trailing stale-cookie remediation hint for a WAF hard block. Only the WAF
+ * kinds (`challenge`, `status`) can be a stale-cookie re-challenge (TASK-44); a
+ * `drop` (navigation error) is not, so it gets no hint. Empty string otherwise
+ * so the block message is unchanged for non-WAF blocks.
+ */
+function wafRemediationSuffix(kind: string): string {
+  return kind === 'challenge' || kind === 'status' ? ` ${staleCookieHint()}` : '';
+}
+
 export class SourceQueryClient {
   private readonly browser: BrowserSession;
   private readonly clock: Clock;
@@ -251,7 +262,7 @@ export class SourceQueryClient {
               `detail="${classification.detail}") for source "${config.id}" query "${text}", ` +
               'but Tailscale is unavailable (no exit nodes available / Tailscale unavailable): ' +
               `${describeError(error)}. Reporting honestly and stopping — NO exit-node switch. ` +
-              `Block evidence persisted at ${blockEvidence.evidencePath}.`,
+              `Block evidence persisted at ${blockEvidence.evidencePath}.${wafRemediationSuffix(classification.kind)}`,
           );
         }
 
@@ -262,7 +273,7 @@ export class SourceQueryClient {
               `detail="${classification.detail}") for source "${config.id}" query "${text}", ` +
               'but there is no usable exit node (no online candidate). Reporting honestly and ' +
               'stopping — NO exit-node switch (fail-loud, Principle V). Block evidence persisted ' +
-              `at ${blockEvidence.evidencePath}.`,
+              `at ${blockEvidence.evidencePath}.${wafRemediationSuffix(classification.kind)}`,
           );
         }
 

@@ -38,6 +38,8 @@ import type { ObjectStore } from '@/archive/object-store';
 import type { BrowserSession } from '@/sourcequery/browser-session';
 import type { ParsedArticle } from '@/repository/papers-past/types';
 import { parseArticle } from '@/repository/papers-past/parse';
+import { looksLikeWafChallenge } from '@/sourcequery/block-detection';
+import { staleCookieHint } from '@/sourcequery/browser-profile';
 import { persistCapture, repoRelativeCapturePath } from '@/sourcequery/persistence';
 import { sha256OfBytes } from '@/archive/checksum';
 import {
@@ -204,7 +206,23 @@ export class PapersPastAdapter implements RepositoryAdapter {
       capturedAtUtc: this.now(),
       baseDir: this.captureBaseDir,
     });
-    const parsed = parseArticle(page.html, pageUrl);
+    let parsed: ParsedArticle;
+    try {
+      parsed = parseArticle(page.html, pageUrl);
+    } catch (parseError) {
+      // A parse failure on a page that carries a WAF/challenge fingerprint is
+      // almost certainly a challenge interstitial served in place of the article
+      // (a stale-cookie re-challenge, TASK-44), NOT a genuinely wrong URL. Surface
+      // the real cause + remediation instead of the misleading "not an article
+      // page" — the raw challenge page is already persisted above.
+      if (looksLikeWafChallenge(page.html)) {
+        throw new Error(
+          `PapersPastAdapter: fetched a WAF challenge page for "${pageUrl}", not an article ` +
+            `(kind=challenge) — the raw capture is at ${capture.htmlPath}. ${staleCookieHint()}`,
+        );
+      }
+      throw parseError;
+    }
     return { html: page.html, parsed, htmlPath: capture.htmlPath };
   }
 

@@ -53,6 +53,20 @@ const FINGERPRINTS: readonly Fingerprint[] = [
   },
 ];
 
+/**
+ * True when `html` carries a known WAF/challenge fingerprint (Incapsula, the
+ * automatic/redirect/challenge triad, Cloudflare, Anubis, …). Unlike
+ * {@link classify}, this needs no {@link SourceConfig} / result container — it is
+ * a pure content probe, so a caller OUTSIDE the query client (e.g. the acquire
+ * adapter, whose page failed to parse as an article) can tell a WAF challenge
+ * interstitial apart from a genuinely non-article page and surface the right
+ * remediation (the stale-cookie hint) instead of a misleading parse error.
+ */
+export function looksLikeWafChallenge(html: string): boolean {
+  const lowerHtml = html.toLowerCase();
+  return FINGERPRINTS.some((fp) => fp.test(lowerHtml));
+}
+
 /** True when the source's result container is present in the HTML. */
 function hasResultContainer(html: string, config: SourceConfig): boolean {
   // Defensive parse: on a parser throw, let it propagate (fail-loud, no fallback).

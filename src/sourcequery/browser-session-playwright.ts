@@ -38,9 +38,8 @@
  *     already Chromium/Chrome's "new" headless architecture in this
  *     Playwright version (the old headless mode was removed upstream).
  */
-import os from 'node:os';
-import path from 'node:path';
 import { chromium } from 'playwright';
+import { defaultBrowserProfileDir } from '@/sourcequery/browser-profile';
 import type { BrowserSession } from '@/sourcequery/browser-session';
 import type { PageResult } from '@/sourcequery/types';
 
@@ -96,10 +95,10 @@ function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-/** Default persistent-profile dir: stable across runs, under the OS tmp dir. */
-function defaultUserDataDir(): string {
-  return path.join(os.tmpdir(), 'corpus-gap-closure', 'browser-profile');
-}
+// The default persistent-profile dir (stable across runs, under the OS tmp dir)
+// is defined once in `@/sourcequery/browser-profile` so diagnostics elsewhere
+// (the query client, the acquire adapter) can name the same path without
+// importing Playwright. See `defaultBrowserProfileDir`.
 
 /**
  * Default `launch`: the real `chromium.launchPersistentContext`. Maps the DI
@@ -129,7 +128,7 @@ export class PlaywrightBrowserSession implements BrowserSession {
   private page: InjectedPage | undefined;
 
   constructor(options: PlaywrightBrowserSessionOptions = {}) {
-    this.userDataDir = options.userDataDir ?? defaultUserDataDir();
+    this.userDataDir = options.userDataDir ?? defaultBrowserProfileDir();
     this.forcedHeadless = options.headless;
     this.launch = options.launch ?? realLaunch;
   }

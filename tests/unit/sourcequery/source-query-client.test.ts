@@ -280,7 +280,12 @@ describe('sourcequery/SourceQueryClient', () => {
     };
     const client = makeClient(config, browser, runner);
 
-    await expect(client.query('fixture', 'blocked')).rejects.toThrow(/tailscale/i);
+    const err = await client.query('fixture', 'blocked').catch((e: unknown) => e);
+    expect(String(err)).toMatch(/tailscale/i);
+    // A status/challenge WAF block carries the stale-cookie remediation hint
+    // (TASK-44) so the agent knows to clear the persistent browser profile.
+    expect(String(err)).toContain('TASK-44');
+    expect(String(err)).toContain('rm -rf');
     expect(runner.setCalls).toEqual([]);
     expect(browser.isOpen).toBe(false);
     // The raw page was persisted BEFORE classify (persist-before-analysis, FR-010):
