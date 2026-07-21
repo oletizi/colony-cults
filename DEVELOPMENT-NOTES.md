@@ -1,3 +1,38 @@
+## 2026-07-21: Merge main into edition-publishing + stand up companion archive; scope source-group PDF (spec 017) to runnable through the front door
+
+**Goal:** Get the latest from main into this repo and a companion archive clone, then build PDFs from the new Papers Past items. The build turned out blocked, so (operator's call) scope the fix as a proper feature through the stack-control front door instead.
+
+**Accomplished:**
+- **Merged `origin/main` into `feature/edition-publishing` in two waves** (PR #52 English sources; PR #53 corpus-gap-closure w/ PB-P060/P061). Resolved 8 conflicts — the only real source conflict (`src/archive/provenance.ts`) was additive on both sides (kept both `blank_recto` + `source_representation` keys); journals/roadmap unioned; `RawSource.language` fixups; `npm install` for new deps (node-html-parser, playwright). 1922 tests pass. Pushed.
+- **Stood up the companion archive**: dedicated `../edition-publishing-archive` clone at latest archive main (`cf9c787c`), wired via a gitignored `.env` (`COLONY_ARCHIVE_ROOT` + `CORPUS_ARCHIVE_PATH` + B2 vars). Verified — the previously env-gated browser test suites now pass.
+- **Diagnosed why the new Papers Past items can't build** (trial build, end-to-end): (A) `buildSource`/`buildAll` never register source-group member archive layouts (`ensureMemberLayoutRegistered` exists, unwired); (B) members are flat page-image folios (`ocr_status:none`) with OCR in a detached `ocr-text` asset — incompatible with the reader's `issue.txt` / issue-dir expectation. Contrast: PB-P057 (builds) has inline `issue.txt`; PB-P061 does not.
+- **Reconciled roadmap debt the merge surfaced**: advanced two merged-but-`planned` corpus-gap-closure items (`source-query-client`, `papers-past-acquisition`) to `shipped`, unblocking the compass.
+- **Scoped `impl:feature/source-group-pdf` through the full front door to runnable**: added the roadmap item; `/stack-control:design` → brainstorming (3 operator decisions: both outputs / materialize issue.txt / stack segments) → approved design record (gate 7/7); `/stack-control:define` → the whole Spec Kit chain — `specify` (spec.md: 4 stories, 15 FRs), `plan` (plan.md + research/data-model/contracts/quickstart, Constitution Check all-pass), `tasks` (18 tier-tagged test-first tasks), `analyze` (100% coverage, 0 CRITICAL/0 HIGH). Node advanced to the `implementing` phase.
+
+**Didn't Work:**
+- **The new Papers Past PDFs are still not built** — they can't be until spec 017 is implemented. The original "create the PDFs" ask is deferred to a build session; what shipped this session is the scoped, runnable spec.
+- **The design compass hard-refused (off-rail, exit 4)** as soon as I tried to open design, because the merge imported another workstream's un-reconciled forward-lifecycle status. Had to reconcile two unrelated features before any new design could start.
+
+**Course Corrections:**
+- When the PDFs turned out blocked, surfaced the two capability gaps honestly and offered options rather than hacking a fragile path; operator chose "scope the feature," so switched from build-mode to the governed design→define chain.
+- Authored spec 017 directly on the shared `feature/edition-publishing` branch (one-long-lived-branch model), intentionally not running the mandatory `before_specify` git.feature per-spec-branch hook — matching how specs 014–016 were authored.
+
+**Insights:**
+- **Merging main can import governance debt that blocks the merging session's own next move.** The compass is a hard gate; a merge that pulls in another feature's un-reconciled `planned`/`in-flight` status stops unrelated forward motion until you graduate that other work. Worth reconciling roadmap status at ship time, not leaving it for whoever merges next.
+- **The reuse thesis held again**: the fix is 2 small new modules (issue.txt materializer, group assembler) + wiring the existing member-layout bridge + a Typst-layout verso stack — no new rendering machinery, the reader is untouched (materialization makes members look like the working PB-P057 monograph).
+- **Auto-derived commit count undercounts a merge-heavy session**: the boundary (merge-base) put the two main-merges + reconciliation commits before the boundary, so the quantitative below shows only the design/spec tail — the session was larger.
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 6 (design/spec tail only; the session also included the two `origin/main` merges + the reconciliation/roadmap commits, which fall before the auto-derived merge-base boundary)
+  - spec(source-group-pdf): record analyze-clean (specify phase complete)
+  - tasks(source-group-pdf): dependency-ordered tasks.md (runnable)
+  - plan(source-group-pdf): implementation plan + Phase 0/1 artifacts
+  - spec(source-group-pdf): author specs/017-source-group-pdf via /stack-control:define
+  - design(source-group-pdf): operator records design-approved marker
+  - design(source-group-pdf): design record for Papers Past facsimile editions
+- Files changed: 12
+- Backlog touched: (none)
+
 ## 2026-07-20: English-source facsimile PDF (spec 015) executed → governed → shipped; all four English targets rendered
 
 **Goal:** Run spec 015 (English-source facsimile PDF) through the stack-control front door to shipped, and produce the real English PDFs (PB-P056 + the PB-P057–P059 press leaves).
