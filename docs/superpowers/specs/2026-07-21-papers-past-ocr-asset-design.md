@@ -2,7 +2,10 @@
 
 Date: 2026-07-21
 Branch: `feature/papers-past-ocr-asset`
-Status: approved-in-conversation, pending written-spec review
+Status: approved-in-conversation + third-party design review (approved); two
+non-blocking review refinements incorporated (§3): record the OCR source
+representation (`papers-past-text-tab`) and the character encoding
+(`charset=utf-8`).
 
 ## Problem
 
@@ -53,18 +56,39 @@ flow (STEP 4 PHASE A verify / PHASE B commit) the page-masters use:
 - `checksum` = sha256(bytes); `byteLength` = bytes.length
 - `objectStoreKey` = `archive/papers-past/<id>/<sha256>.txt` (checksum-addressed
   → idempotent head-then-put; a re-run PUTs 0 duplicates)
-- `mediaType` = `text/plain`
-- `role` = `ocr-text`
+- `mediaType` = `text/plain; charset=utf-8` — the Content-Type is where the text
+  encoding belongs, so the character encoding is recorded explicitly and
+  idiomatically (no separate `characterEncoding` field invented)
+- `role` = `ocr-text` (corpus semantics — the role expresses *what the asset is*,
+  independent of `mediaType`, which only expresses serialization)
 - `sequence` = `0` (ahead of the page-master images, which are `1..N`)
 - provenance sidecar written the same way as the page-masters
-  (`archive/papers-past/<id>/<sha256>.yml`)
+  (`archive/papers-past/<id>/<sha256>.yml`), plus the two provenance refinements
+  below
 
 Because the OCR text is already parsed, its PHASE A is just the checksum (no
 byte-fetch); PHASE B is the idempotent head-then-put. It joins the all-or-nothing
 commit, so a mid-sequence failure still leaves **zero orphaned objects**, and the
 SSOT `assets[]` entry welds in the same operation (Principle XV).
 
-### 3. Fidelity & edge cases
+### 3. Provenance refinements (third-party review)
+
+The `ocr-text` asset's provenance sidecar records, beyond the shared fields:
+
+- **Source representation** — `source_representation: papers-past-text-tab` (an
+  additive provenance key), identifying *which* repository representation
+  produced this OCR asset: the article page's `#text-tab` correctable-text panel.
+  This future-proofs the model: if Papers Past later exposes ALTO XML, a
+  downloadable text file, or corrected editions, the provenance distinguishes
+  which representation each `ocr-text` asset came from, without changing the role.
+- **Character encoding** — recorded via `mediaType: text/plain; charset=utf-8`
+  (the standard Content-Type location), so downstream tooling knows the original
+  byte encoding explicitly. No bespoke `characterEncoding` field is added.
+
+Both are additive/optional and MUST NOT perturb byte-identical re-serialization
+of existing (non-OCR) provenance records.
+
+### 4. Fidelity & edge cases
 
 - **Fidelity:** store the `#text-tab` text **faithfully** as `extractOcrText`
   returns it. Do NOT whitespace-collapse (that was display-only formatting in the
@@ -81,7 +105,7 @@ SSOT `assets[]` entry welds in the same operation (Principle XV).
 - **Dry-run:** unchanged — returns empty `assets` (no OCR put, no record
   mutation), same as today.
 
-### 4. Tests (extend the hermetic spec-015 suite — injected fakes, 0 network)
+### 5. Tests (extend the hermetic spec-015 suite — injected fakes, 0 network)
 
 - Scenario 1 (public-domain acquire) gains an assertion: acquire puts **N
   page-master GIFs + 1 `ocr-text` .txt** whose bytes are the parsed OCR at the
@@ -95,8 +119,11 @@ SSOT `assets[]` entry welds in the same operation (Principle XV).
 - Loader round-trip: an `ocr-text` asset serialized into a source record loads
   back through `@/bibliography/load-fields` (the new role is accepted, not
   rejected as unknown).
+- Provenance: the `ocr-text` asset's sidecar records `source_representation:
+  papers-past-text-tab` and a `charset=utf-8` media type; a non-OCR record still
+  re-serializes byte-identically (the additive keys don't perturb it).
 
-### 5. Governance
+### 6. Governance
 
 A focused, hermetically-testable adapter + model change → **direct TDD on
 `feature/papers-past-ocr-asset`** (not a full Spec Kit spec). This design doc is
@@ -112,6 +139,20 @@ the corrected NLNZ OCR instead of throwing it away.
   acceptable; this is the newspaper case.
 - The live acquisition itself, which separately requires the operator's
   `COLONY_ARCHIVE_ROOT` (per-session archive clone) + B2 credentials.
+
+## Future considerations (NOT this feature)
+
+- If **generated** OCR (our own re-OCR) or other derived text later becomes a
+  first-class corpus artifact, it will be worth splitting the single `ocr-text`
+  role into e.g. `repository-ocr` vs `generated-ocr` so repository-supplied text
+  is distinguishable from software-derived text. Today there is exactly one OCR
+  asset per article (the repository's), so a single `ocr-text` role is
+  sufficient; do NOT complicate the model prematurely. The `source_representation`
+  provenance key added above already carries the distinguishing information in
+  the interim.
+- OCR must stay **non-mandatory** — the repository determines which
+  representations exist; the archive preserves what exists and must not invent a
+  stronger invariant than the repository itself.
 
 ## Acceptance
 
