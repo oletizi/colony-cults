@@ -83,8 +83,8 @@ describe('writeRecordCompanions: ocr-text companion', () => {
     });
 
     const yamlPath = written.find((p) => p.endsWith(`${sha}.yml`));
-    expect(yamlPath).toBeDefined();
-    const yml = readFileSync(yamlPath as string, 'utf-8');
+    if (!yamlPath) throw new Error('expected a written companion .yml path');
+    const yml = readFileSync(yamlPath, 'utf-8');
     expect(yml).toContain('type: "ocr-text"');
     expect(yml).toContain('format: "text/plain; charset=utf-8"');
     expect(yml).toContain('source_representation: "papers-past-text-tab"');
@@ -128,8 +128,8 @@ describe('writeRecordCompanions: ocr-text companion', () => {
     });
 
     const yamlPath = written.find((p) => p.endsWith(`${pdfSha}.yml`));
-    expect(yamlPath).toBeDefined();
-    const yml = readFileSync(yamlPath as string, 'utf-8');
+    if (!yamlPath) throw new Error('expected a written companion .yml path');
+    const yml = readFileSync(yamlPath, 'utf-8');
     expect(yml).toContain('type: "source-document"');
     expect(yml).not.toContain('source_representation');
   });
