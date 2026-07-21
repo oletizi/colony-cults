@@ -1035,3 +1035,4 @@ workflow(graduate): impl:feature/archive-direct-pdf merging -> validating
 workflow(graduate): impl:feature/english-source-pdf merging -> validating
 workflow(graduate): impl:feature/acquire-metadata-completion merging -> validating
 workflow(graduate): impl:feature/source-query-client merging -> validating
+workflow(graduate): impl:feature/papers-past-acquisition merging -> validating

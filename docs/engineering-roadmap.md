@@ -188,7 +188,7 @@ Render English-language sources as facsimile-edition PDFs. English documents (PB
 - spec: specs/014-source-query-client
 
 ## impl:feature/papers-past-acquisition
-- status: planned
+- status: shipped
 - analyze-clean: yes
 - spec: specs/015-papers-past-acquisition
 
