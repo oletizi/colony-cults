@@ -375,3 +375,17 @@
     - "Acquire the 18-item PD shortlist (spec 015) after confirming rights; the 1929/1936/1949 retrospectives are rights-blocked/pending and must NOT be acquired without a rights determination (the 1949 signed feature is very likely still in copyright)."
     - "Reset the NZ exit node (tailscale set --exit-node=) when NZ-routed corpus work is done."
   notes: "Consecutive-zero depletion test. Result: not depleted -- the tail is lumpy with real distinct clusters deep in (tranche 7's 1880 'invasion' framing). Governed client only; hybrid triage (content-read the non-generic minority). Census + shortlist only. Captures: page-7 + page-8 enumerations + 4 article reads."
+
+- id: SRCH-0027
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "Tranches 9-14 (results 81-140, --page 9..14) of the 'Marquis de Rays' census, run under the operator directive to keep paginating until TWO CONSECUTIVE zero-distinct tranches, then pivot to a new vein. Hybrid triage each tranche; content-read only the non-generic candidates."
+  coverage: "CRITERION NOT MET after 14 tranches. Full distinct-yield curve: 5,5,3,1,0,1,3,1,0,3,1,0,1,1 -- every zero (T5,T9,T12) is ISOLATED, immediately followed by a non-zero tranche. New distinct pieces found in this stretch: T10 the Noumea 'collapse / 300 starving souls' SMH account (NZMAIL18810416), 'Deluded Frenchmen' US-press letter (OAM18840225), SMH 'New Colony difficulties' (LT18810131); T11 Dr Baudoin's expedition-doctor testimony ('The French Mode of Annexing', SCANT18840227); T13 'A Suspicious Cruiser' (NZTIM18800526, the armed ship ex-Aden for New Britain, May 1880 -- earliest report); T14 Samoa Times 'Colonizing Expedition' (STSSG18801016, a Pacific-regional view). The vein is exceptionally rich -- distinct material scattered densely across NZ + Pacific press 1880-1949. The tail IS noisier by T12-14 (off-topic 1866/1871 items, Statue of Liberty, a fiction serial), so consecutive zeros should eventually come, but not within 14 tranches. 140/695 assessed; 24 distinct PD ACQUIRE candidates + 3 rights-blocked (1929/1936/1949). Record: bibliography/census/papers-past-de-rays-marquis.md."
+  remainingQuestions:
+    - "OPERATOR DECISION surfaced: strict two-consecutive-zeros would take many more tranches (the vein is not converging). Options: keep grinding to strict depletion (~high query cost); relax the criterion (e.g. pivot once a tranche yields <=1 distinct AND the tail is majority off-topic/reprint, which holds now); or pivot NOW to a narrower handle (Port Breton / New Ireland / Chandernagore / Nouvelle Bretagne) given the vein is demonstrably rich (24 distinct already)."
+    - "Acquire the 24-item PD shortlist (spec 015) after rights confirmation; the 1929/1936/1949 retrospectives are rights-blocked/pending."
+    - "Reset the NZ exit node when NZ-routed work is done."
+  notes: "Six-tranche depletion push (T9-14). The two-consecutive-zeros rule proved impractical for this unusually dense vein; surfacing to the operator with the full curve rather than grinding all ~70 tranches unattended. Governed client only; hybrid triage. Captures: page-9..14 enumerations + the per-tranche article reads."

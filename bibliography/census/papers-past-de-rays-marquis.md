@@ -26,6 +26,10 @@ Each row is scored on: **topical** (is the affair the subject, vs a bundled one-
 | 8 (71–80) | 10 | 1 | 1 (the colonists' evacuation: *Genil* to Sydney, *Nouvelle Bretagne* seized at Manila) | 9 | floor |
 | 9 (81–90) | 10 | 0 | 0 (a reprint + the already-known 1936 retrospective family + coincidental ad columns) | 10 | zero |
 | 10 (91–100) | 10 | 3 | 3 (the *collapse* at Noumea "300 starving souls"; "Deluded Frenchmen" US-press letter; SMH "New Colony" difficulties) | 7 | **SPIKE** |
+| 11 (101–110) | 10 | 1 | 1 (Dr Baudoin's expedition testimony, "The French Mode of Annexing") | 9 | floor |
+| 12 (111–120) | 10 | 0 | 0 (a reprint + off-topic: 1866 "Festivities in Paris", the Statue of Liberty) | 10 | zero |
+| 13 (121–130) | 10 | 1 | 1 ("A Suspicious Cruiser": the armed ship reported ex-Aden for New Britain, 1880) | 9 | floor |
+| 14 (131–140) | 10 | 1 | 1 (Samoa Times "Colonizing Expedition", a Pacific-regional view, 1880) | 9 | floor |
 
 Trend: distinct yield **5 → 5 → 3 → 1 → 0 → 1 → 3 → 1**; bundled fraction 0 → ~4 → 7 → 9 → 10 → 9 → 7 → 9.
 
@@ -56,6 +60,9 @@ Trend: distinct yield **5 → 5 → 3 → 1 → 0 → 1 → 3 → 1**; bundled f
 19. `NZMAIL18810416.2.23` — "Collapse of the Marquis de Ray's Expedition": SMH Noumea correspondent, disabled steamer / 300 starving souls (1881) — T10 — **vivid collapse account, high value**
 20. `OAM18840225.2.19` — "Deluded Frenchmen": long Paris letter via the *Philadelphia Press* (US-press perspective, Feb 1884) — T10
 21. `LT18810131.2.32` — "The Marquis de Rays' New Colony": SMH on the scheme's mounting difficulties (Jan 1881) — T10
+22. `SCANT18840227.2.17` — "The French Mode of Annexing": Dr Baudoin's testimony as an expedition doctor on New Ireland (Feb 1884) — T11
+23. `NZTIM18800526.2.11` — "A Suspicious Cruiser": earliest report of the armed ship (ex-Aden for New Britain, "filibustering expedition"), May 1880 — T13
+24. `STSSG18801016.2.6` — "The Marquis de Ray's Colonizing Expedition": Samoa Times / South Sea Gazette Pacific-regional account (Oct 1880) — T14
 
 **Rights-EXCLUDED (distinct but not acquirable as PD):** `ODT19490908.2.20` — "King Charles of the Bismarcks", a 9778-char signed retrospective by Lawrence Constable (1949) — almost certainly still in copyright. Plus the rights-pending 1929/1936 items above.
 
@@ -145,11 +152,11 @@ Run to test the two-consecutive-zeros depletion criterion. The floor is confirme
 - **Tranche 7 (61–70): 3 new distinct.** ESD18800401 "Threatened Invasion of Western Australia" (1880, 5000ch, PD — the armed-expedition/prospectus framing; canonical of a 3-reprint cluster with KUMAT18800419 + NEM18800426); ST18840125 "A Speedy and Certain Fortune" (Jan 1884, 8457ch, PD — long trial + biography feature); ODT19490908 "King Charles of the Bismarcks" (1949, 9778ch — distinct signed history, but **rights-excluded**: almost certainly still in copyright). Rest: generic cable columns.
 - **Tranche 8 (71–80): 1 new distinct** — LT18820704 "The Marquis de Ray's Expedition" (Jul 1882, 1955ch, PD — the colonists' evacuation: *Genil* landing 88 at Sydney, *Nouvelle Bretagne* seized at Manila). Rest: generic columns + a Ned-Kelly-Gang column.
 
-## Running shortlist status (8 tranches, 80 of 695 assessed)
+## Running shortlist status (14 tranches, 140 of 695 assessed)
 
-**18 distinct PD ACQUIRE candidates** (list above) spanning the full arc: founding (1880 voyage + colony) → the 1880 "invasion"/prospectus framing → arrest (1882) → colonists' evacuation (Jul 1882) → committal (Feb 1883) → "Story of the Expedition" + trial features (Aug/Dec 1883, Jan 1884) → conviction (Jan 1884) → the eyewitness Port-Breton visit. Plus **rights-blocked/pending distinct pieces** (1929, 1936, 1949 retrospectives).
+**24 distinct PD ACQUIRE candidates** (list above) spanning the full arc: the armed "suspicious cruiser" departure (1880) → founding voyage + colony (1880–81) → the "invasion"/prospectus framing → the collapse at Noumea (1881) → arrest (1882) → colonists' evacuation (1882) → committal (Feb 1883) → trial/"Story"/"Deluded Frenchmen" features (1883–84) → conviction (Jan 1884), across NZ mainland AND Pacific-regional (Samoa Times) and US-relayed (Philadelphia Press) sources. Plus **rights-blocked/pending distinct pieces** (1929, 1936, 1949 retrospectives).
 
-**Coverage / depletion status:** 80/695 assessed across 8 tranches. Distinct-yield curve **5,5,3,1,0,1,3,1** — a predictable decline to a *lumpy, non-depleted* floor (no two consecutive zeros; a tranche-7 spike to 3). The tail is NOT exhausted: distinct material keeps surfacing in bursts. Options: continue paginating (accepting ~70% noise for periodic distinct bursts), or switch to narrower query handles to harvest the residual distinct tail more efficiently. The remaining ~615 hits are uncovered.
+**Depletion status — the two-consecutive-zeros criterion is NOT met after 14 tranches.** Distinct-yield curve: **5,5,3,1,0,1,3,1,0,3,1,0,1,1.** Every zero (T5, T9, T12) is *isolated* — immediately followed by a non-zero tranche. The vein is exceptionally rich: the affair was covered so densely across NZ + Pacific press over 1880–1949 that distinct material is scattered throughout the relevance-ranked results, oscillating around a lumpy floor of ~1/tranche with periodic spikes to 3. The tail IS getting noisier (off-topic 1866/1871 items, Statue of Liberty, fiction serials now appearing), so consecutive zeros should eventually arrive — but not within 14 tranches. 140/695 assessed; ~555 hits uncovered. Continuing to strict depletion would take many more tranches; the residual distinct pieces are alternatively (and more cheaply) reachable via narrower query handles.
 
 ## Provenance
 
