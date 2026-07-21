@@ -184,5 +184,7 @@ Spun out of 009's research loop (backlog TASK-32). SRCH-0013 verified that the d
 - ref: Constitution Principle XV (v1.4.0); backlog TASK-46; supersedes-history TASK-20/21
 
 ## impl:feature/asset-summaries
-- status: planned
+- status: in-flight
+- design-approved: yes
+- design: docs/superpowers/specs/2026-07-21-asset-summaries-design.md
 - depends-on: impl:feature/corpus-browser
