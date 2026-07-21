@@ -17,12 +17,25 @@ type Handler = (args: ParsedArgs) => Promise<void>;
 // `translate-source`, which belong to the separate `translate` bin
 // (src/translate-index.ts). This bin does not wire them and reports a
 // helpful pointer instead.
+//
+// `summarize` / `summarize-source` have minimal stubs that throw a descriptive
+// "not yet implemented" error; handlers are wired in Phase 3 (spec 017).
 const HANDLERS: Partial<Record<Command, Handler>> = {
   census: (args) => runCensus(args),
   'fetch-issue': (args) => runFetchIssue(args),
   'fetch-source': (args) => runFetchSource(args),
   ocr: (args) => runOcr(args),
   'restore-images': (args) => runRestoreImages(args),
+  summarize: () => {
+    throw new Error(
+      'summarize: not yet implemented (spec 017 Phase 3 — see specs/017-asset-summaries/)',
+    );
+  },
+  'summarize-source': () => {
+    throw new Error(
+      'summarize-source: not yet implemented (spec 017 Phase 3 — see specs/017-asset-summaries/)',
+    );
+  },
 };
 
 /**
@@ -84,6 +97,10 @@ Gallica mirroring:
   fetch-source <periodicalArk>  Fetch a Gallica source's census (or --pages range)
   ocr <issueArk>                OCR already-fetched images for an issue
   restore-images <issueArk>     Pull page images from the public B2 cache
+
+Summarization (two-depth LLM):
+  summarize <sourceId> [issueArk]      Generate thorough + concise summary (or all issues)
+  summarize-source <sourceId>          Per-source rollup summary
 
 Options:
   --help, -h             Show this help message

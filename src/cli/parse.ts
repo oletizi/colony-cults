@@ -7,6 +7,8 @@ export type Command =
   | 'fetch-source'
   | 'ocr'
   | 'restore-images'
+  | 'summarize'
+  | 'summarize-source'
   | 'translate'
   | 'translate-source';
 
@@ -16,6 +18,8 @@ const COMMANDS: readonly Command[] = [
   'fetch-source',
   'ocr',
   'restore-images',
+  'summarize',
+  'summarize-source',
   'translate',
   'translate-source',
 ];
@@ -56,6 +60,8 @@ const REQUIRED_POSITIONAL_NAME: Record<Command, string> = {
   'fetch-source': 'periodicalArk',
   ocr: 'issueArk',
   'restore-images': 'issueArk',
+  summarize: 'sourceId',
+  'summarize-source': 'sourceId',
   translate: 'issueArk',
   'translate-source': 'sourceId',
 };

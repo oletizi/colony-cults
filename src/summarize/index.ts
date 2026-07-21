@@ -1,0 +1,15 @@
+/**
+ * summarize module: LLM-powered two-depth summaries (thorough + concise)
+ * for issues and sources.
+ *
+ * Mirrors the shipped OCR and translation pipelines: reads best-available
+ * acquired text (English OCR; French OCR + translation), calls the
+ * SummarizationRunner (shelled `claude` CLI adapter), writes both artifacts
+ * + provenance sidecars via storeAsset (Constitution XV weld), supports
+ * idempotency keyed to input-layer hashes, and generates per-source rollups.
+ *
+ * Phase 1 implementation adds module skeleton + CLI registration.
+ * Phase 2+ adds engine seam, provenance extension, and per-story logic.
+ */
+
+// Placeholder: re-exports and types added as modules land (Phase 2+).
