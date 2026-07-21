@@ -305,3 +305,17 @@
     - "TASK-43 (production TailscaleRunner) still unwired: the NZ exit-node switch was done manually at the OS level (operator-approved), not via the client's own escalation flow. The client would still need TASK-43 to automate this."
     - "Full 695 census, syndication de-dup beyond the top 10, and the US/Italian axes remain out of scope."
   notes: "Census task (papers-past-de-rays-marquis) COMPLETE through the analysis stage. All queries went through the governed bib query-source client (persist-first, grounded); the only non-client actions were the operator-approved OS-level NZ exit-node switch and clearing the client's own stale browser profile -- neither is a source side channel. Recorded per always-record-the-find. The NZ exit node remained set during the run and should be reset when corpus work through NZ is done."
+
+- id: SRCH-0022
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "Tranche 2 of the tranche-by-tranche 'Marquis de Rays' census (results 11-20). Fetched via the newly-added multi-page support in the governed client (bib query-source papers-past --query 'Marquis de Rays' --page 2), then content-read all 10 rows (papers-past-article). Purpose: continue into the long tail and reassess relevancy after the tranche (operator directive: keep going in tranches of 10)."
+  coverage: "CONTINUE-worthy but DILUTING. All 10 public-domain (No known copyright NZ) except ODT19360718 (1936; rights unconfirmed, thin 19-char capture -- recheck). ~5 NEW distinct on-topic pieces, headlined by BH18821020.2.22.3 -- a UNIQUE eyewitness account of visiting Port Breton (Rev. I. Rooney aboard the Beagle), not a syndicated cable. Other distinct: GRA18830813.2.16 ('A Nobleman's Swindling Scheme', trial postponed Aug 1883); THD18821124.2.27 (long 'arch-impostor' feature); NEM18840126.2.19 (fuller post-conviction retrospective); ODT19360718 (1936 retrospective, recheck). Reprints/SKIP: EP18821104.2.27 + IT18821122.2.7 (verbatim reprints of the NZH arrest long-form); SCANT18840103.2.11.3 + WH18820814.2.13 (conviction/arrest cables inside generic news columns); EP18830615.2.22 (telegraph column, de Rays one bundled item). Relevancy trend: T1 10/10 dedicated (5 distinct) -> T2 ~6 dedicated (~5 distinct, 4-5 reprints/bundled). The tail is diluting but still yielding distinct value (the eyewitness account), so the census continues. Running assessment: bibliography/census/papers-past-de-rays-marquis.md."
+  remainingQuestions:
+    - "Continue with tranche 3 (results 21-30, --page 3); stop when a tranche yields ~no new distinct on-topic material."
+    - "ODT19360718 (1936) needs a re-read: the content-read captured only the 19-char heading, and the 'No known copyright (NZ)' statement was not found -- confirm rights + full OCR before it can be an ACQUIRE."
+    - "Running ACQUIRE shortlist now ~10 distinct stories (5 from T1 + ~5 from T2); acquisition remains a separate operator step (spec 015 path)."
+  notes: "Second tranche of the ongoing census. Enabled by the new --page/--pages pagination in the governed client (the prior 'pages > 1' throw was removed this session). Governed client only; NZ exit node + warm (cleared) browser profile carried over from SRCH-0021. Captures persisted: page-2 enumeration + 10 article reads (2026-07-21T00-1*/00-3*/00-4*)."
