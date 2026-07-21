@@ -81,6 +81,7 @@ function placement(
 
 /** Asset `type` label for the companion (drives how the pipeline treats it). */
 function companionType(asset: AcquiredAsset): string {
+  if (asset.role === 'ocr-text') return 'ocr-text';
   if (asset.mediaType === 'application/pdf') return 'source-document';
   return 'page-image';
 }
@@ -133,6 +134,7 @@ export async function writeRecordCompanions(params: {
       ocr_status: 'none',
       size: asset.byteLength,
       object_store: store,
+      source_representation: asset.sourceRepresentation,
       rights_raw: rightsRaw,
       notes: null,
     };
