@@ -12,4 +12,9 @@
  * Phase 2+ adds engine seam, provenance extension, and per-story logic.
  */
 
-// Placeholder: re-exports and types added as modules land (Phase 2+).
+export type {
+  StructuredSummaryFields,
+  SummaryResult,
+  SummarizationRunner,
+  SummarizerName,
+} from './types';
