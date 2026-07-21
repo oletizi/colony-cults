@@ -183,7 +183,7 @@ Make `pdf:build` render editions by reading EXCLUSIVELY from our own normalized 
 Render English-language sources as facsimile-edition PDFs. English documents (PB-P056 Richmond/New Italy sketch 52pp, PB-P057-P059 Hong Kong/China press leaves) have English OCR but NO translation — they are already English — so the archive-direct reader (spec 014), built for the French model (verso facsimile | recto FR-OCR + EN-translation) and requiring a per-page EN translation, fails on them. Add English-language-source rendering where the English OCR text IS the reading recto (no FR|EN split, no translation requirement), building on the shipped archive-direct reader + edition model + Typst template. The corpus is bilingual by design; the pipeline must render either language's sources. Unblocks the English documents just acquired + OCR'd.
 
 ## impl:feature/source-query-client
-- status: planned
+- status: shipped
 - analyze-clean: yes
 - spec: specs/014-source-query-client
 
