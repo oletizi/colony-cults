@@ -187,6 +187,7 @@ Spun out of 009's research loop (backlog TASK-32). SRCH-0013 verified that the d
 
 ## impl:feature/asset-summaries
 - status: in-flight
+- analyze-clean: yes
 - spec: specs/017-asset-summaries
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-21-asset-summaries-design.md
