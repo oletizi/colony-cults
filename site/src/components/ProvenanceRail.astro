@@ -27,6 +27,12 @@ const { provenance, label = 'Provenance' } = Astro.props;
 const { sourceId, ark, date, rights, page, sha256 } = provenance;
 const shaHead = sha256.slice(0, 12);
 const shaTail = sha256.slice(12);
+
+// The archival identifier field is labelled honestly for either archive: an
+// `ark:/…` from Gallica keeps the "ARK" label; a non-Gallica identifier (an
+// Internet Archive catalog URL) is labelled "Catalog". Images come from our own
+// archive via the CDN regardless, so this field is provenance, not a handle.
+const idLabel = ark.startsWith('ark:') ? 'ARK' : 'Catalog';
 ---
 
 <dl class="prov" aria-label={label}>
@@ -35,7 +41,7 @@ const shaTail = sha256.slice(12);
     <dd class="prov__val">{sourceId}</dd>
   </div>
   <div class="prov__field prov__field--ark">
-    <dt class="prov__key">ARK</dt>
+    <dt class="prov__key">{idLabel}</dt>
     <dd class="prov__val">{ark}</dd>
   </div>
   <div class="prov__field">

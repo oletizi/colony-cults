@@ -65,6 +65,96 @@ function* walkYmlFiles(dir: string): Generator<string> {
 }
 
 /**
+ * Fail-loud gate (Constitution III): EVERY `type: ocr-text` artifact MUST carry
+ * a computed `ocr_quality` block. The OCR pipeline always writes it, but this
+ * catches any that slip in without it (a hand-authored sidecar, a legacy
+ * artifact, a future code path) -- so a lapse in recording OCR fidelity cannot
+ * silently land. Returns one `ocr-quality-missing` finding per offender; empty
+ * when the archive tree is absent.
+ */
+export function validateOcrTextQuality(archiveRoot: string): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
+  const archiveDir = join(archiveRoot, 'archive');
+  if (!existsSync(archiveDir)) {
+    return findings;
+  }
+  for (const file of walkYmlFiles(archiveDir)) {
+    const text = readFileSync(file, 'utf-8');
+    if (!/(^|\n)type: "ocr-text"/.test(text)) {
+      continue;
+    }
+    if (!/(^|\n)ocr_quality:/.test(text)) {
+      findings.push({
+        kind: 'ocr-quality-missing',
+        detail:
+          `OCR-text artifact is missing the mandatory ocr_quality block ` +
+          `(Constitution III): ${file}`,
+        path: file,
+      });
+    }
+  }
+  return findings;
+}
+
+/** Provenance `type` values that identify a per-page translation artifact. */
+const TRANSLATION_TYPES = [
+  '"corrected-french-text"',
+  '"english-translation"',
+];
+
+/**
+ * Fail-loud gate: a translation artifact's `translation` label MUST agree with
+ * its content -- an EMPTY artifact MUST be `untranslatable` (an intentional
+ * blank/scan-artifact/plate page), a NON-EMPTY one MUST be `machine-assisted`.
+ * This is what lets a downstream consumer tell an intentional empty from a
+ * missing/corrupt translation. Flags either mismatch:
+ *   - empty text + `machine-assisted`  (looks like corruption)
+ *   - non-empty text + `untranslatable` (a contradiction)
+ * Reads the sibling `.txt` (the `.yml` path minus `.yml`). Empty when the
+ * archive tree is absent.
+ */
+export function validateTranslationLabels(
+  archiveRoot: string,
+): ValidationFinding[] {
+  const findings: ValidationFinding[] = [];
+  const archiveDir = join(archiveRoot, 'archive');
+  if (!existsSync(archiveDir)) {
+    return findings;
+  }
+  for (const file of walkYmlFiles(archiveDir)) {
+    const text = readFileSync(file, 'utf-8');
+    const typeMatch = text.match(/^type: (".*")$/m);
+    if (typeMatch === null || !TRANSLATION_TYPES.includes(typeMatch[1])) {
+      continue;
+    }
+    const labelMatch = text.match(/^translation: "([^"]*)"/m);
+    const label = labelMatch === null ? '(absent)' : labelMatch[1];
+    const textPath = file.replace(/\.yml$/, '');
+    if (!existsSync(textPath)) {
+      findings.push({
+        kind: 'translation-label-inconsistent',
+        detail: `translation artifact has provenance but no text file: ${textPath}`,
+        path: file,
+      });
+      continue;
+    }
+    const isEmpty = readFileSync(textPath, 'utf-8').trim().length === 0;
+    const expected = isEmpty ? 'untranslatable' : 'machine-assisted';
+    if (label !== expected) {
+      findings.push({
+        kind: 'translation-label-inconsistent',
+        detail:
+          `${isEmpty ? 'EMPTY' : 'non-empty'} translation labeled ` +
+          `"${label}" (expected "${expected}") -- an empty artifact must be ` +
+          `untranslatable and a non-empty one machine-assisted: ${textPath}`,
+        path: file,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
  * Index every committed companion in the archive repo by its `object_store.key`.
  * Files without an `object_store:` block (non-companion sidecars -- translation
  * text, etc.) are skipped; a companion WITH the block is parsed strictly, so a

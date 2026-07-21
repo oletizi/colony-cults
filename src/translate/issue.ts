@@ -11,11 +11,13 @@ import {
   issueArtifactPath,
   pageArtifactPath,
   type TranslationKind,
+  type TranslationLabel,
 } from '@/translate/artifacts';
 import { cleanupPage } from '@/translate/cleanup';
 import { assemble, splitPages } from '@/translate/pages';
 import { firstPageProvenanceYaml, readIssueRights } from '@/translate/rights';
 import { translatePage } from '@/translate/translate-page';
+import { translatableLength } from '@/translate/transform';
 
 /** Per-issue outcome (data-model.md TranslateRunReport). */
 export type IssueOutcome =
@@ -110,25 +112,32 @@ async function firstPageProvenance(issueDir: string): Promise<ProvenanceFields> 
 }
 
 /**
- * Minimum "real" (letter/digit) character count for a page to be treated as
- * having translatable content. A genuine newspaper page has hundreds; an
- * unscannable/blank page whose OCR is only a scan-condition marker plus a
- * shelfmark (e.g. "Contraste insuffisant\nNF Z 43-120-14") falls far below
- * this. Such pages have nothing to translate, so they are recorded as blank
- * rather than sent to the engine (whose empty result would otherwise fail the
- * whole issue).
+ * Minimum "real word" character count for a page to be treated as having
+ * translatable content -- measured as {@link translatableLength} (the summed
+ * length of >=3-letter runs), NOT raw alphanumeric count.
+ *
+ * A genuine text page has hundreds. Two kinds of page fall far below and MUST
+ * be recorded as blank rather than sent to the engine:
+ *  - truly blank / scan-condition pages (e.g. "Contraste insuffisant\nNF Z
+ *    43-120-14");
+ *  - illustration/map/plate pages whose OCR is dense NON-WORD noise (rotated
+ *    engraving text mangled into fragments like "31 3HAVH  ZOPuŒŒ  % ANV").
+ *    These clear a raw-alnum threshold (dozens of stray letters) yet contain no
+ *    translatable words; the engine correctly returns an EMPTY result for them,
+ *    which -- with no fallback -- would otherwise fail the whole document.
+ * Using word-content (not raw alnum) as the measure catches BOTH.
  */
-const BLANK_PAGE_MIN_ALNUM = 40;
+const BLANK_PAGE_MIN_WORD_CHARS = 40;
 
 /**
- * True when a source page has no translatable content -- empty, whitespace, or
- * only scan artifacts (condition markers, shelfmarks). Measured by alphanumeric
- * (Unicode letter/digit) character count so punctuation and layout noise do not
- * mask a blank page.
+ * True when a source page has no translatable WORD content -- empty,
+ * whitespace, scan-condition artifacts, OR an illustration/plate page whose OCR
+ * is dense non-word noise. Measured by {@link translatableLength} (>=3-letter
+ * runs) so scattered single/double-character OCR garbage does not masquerade as
+ * content and reach the engine (see {@link BLANK_PAGE_MIN_WORD_CHARS}).
  */
 function isBlankPage(rawPage: string): boolean {
-  const alnum = rawPage.replace(/[^\p{L}\p{N}]/gu, '');
-  return alnum.length < BLANK_PAGE_MIN_ALNUM;
+  return translatableLength(rawPage) < BLANK_PAGE_MIN_WORD_CHARS;
 }
 
 /**
@@ -144,12 +153,20 @@ async function persist(
   model: string,
   ctx: TranslateIssueCtx,
 ): Promise<void> {
+  // DERIVE the label from the content, so the empty<=>untranslatable invariant
+  // holds by construction at the only producer: an empty artifact is an
+  // intentional untranslatable page (blank/scan-artifact/plate), a non-empty
+  // one is a machine translation. No path can emit an ambiguous empty
+  // machine-assisted artifact.
+  const label: TranslationLabel =
+    text.trim().length === 0 ? 'untranslatable' : 'machine-assisted';
   const provenance = buildTranslationProvenance(
     base,
     kind,
     ctx.engine.name,
     model,
     ctx.clock().toISOString(),
+    label,
   );
   await storeAsset(encode(text), targetPath, provenance, ctx.archiveRoot, {
     force: ctx.force,
@@ -363,7 +380,7 @@ export async function translateIssue(
       await persist('', enPath, base, 'english', model, ctx);
       workDone = true;
       pagesDone += 1;
-      ctx.log(`  blank page ${i}/${pagesTotal} (no translatable content)`);
+      ctx.log(`  untranslatable page ${i}/${pagesTotal} (no translatable content -- recorded empty + labeled)`);
       await firePageStored(i, false);
       continue;
     }

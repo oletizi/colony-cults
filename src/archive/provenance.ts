@@ -18,6 +18,27 @@ export interface ObjectStoreLocation {
   endpoint: string;
 }
 
+/** Coarse OCR fidelity tier (see `@/ocr/quality`). */
+export type OcrQualityTier = 'low' | 'medium' | 'high';
+
+/**
+ * Computed OCR fidelity, MANDATORY on every `type: ocr-text` artifact
+ * (Constitution III -- "record ... known quality issues"). The OCR pipeline
+ * computes it before storing the text, and `bib validate` rejects any ocr-text
+ * artifact missing it, so a lapse in recording it is mechanically impossible.
+ * Emitted as a fixed-order nested block (`method`, `language`, `ratio`, `tier`).
+ */
+export interface OcrQuality {
+  /** How the score was computed, versioned (e.g. `aspell-realword-ratio-v1`). */
+  method: string;
+  /** aspell dictionary language scored against (e.g. `fr`, `en`). */
+  language: string;
+  /** Real-word ratio 0..1 (bare number). */
+  ratio: number;
+  /** Coarse tier derived from `ratio`. */
+  tier: OcrQualityTier;
+}
+
 /**
  * The fields of a per-asset companion YAML file, conforming to the archive
  * repo's existing convention (see its `PB-P001.yml`) extended with the
@@ -73,6 +94,13 @@ export interface ProvenanceFields {
   size: number;
   /** Object-store master location (T009), or `null` when not yet uploaded. */
   object_store: ObjectStoreLocation | null;
+  /**
+   * Computed OCR fidelity -- REQUIRED on `type: ocr-text` artifacts, absent on
+   * every other asset type. Additive OPTIONAL key at the type level (so
+   * non-OCR records re-serialize byte-identically); its presence on ocr-text is
+   * enforced by the OCR producer and by `bib validate`.
+   */
+  ocr_quality?: OcrQuality;
   /** Full raw OAIRecord XML (FR-005) -- emitted as a YAML block scalar. */
   rights_raw: string;
   /** Free-text notes (nullable). */
@@ -105,6 +133,7 @@ const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'translation',
   'source_representation',
   'object_store',
+  'ocr_quality',
   'notes',
   'rights_raw',
 ];
@@ -176,6 +205,25 @@ function emitObjectStore(location: ObjectStoreLocation | null): string {
   return ['object_store:', ...sub].join('\n');
 }
 
+/**
+ * Emit the optional `ocr_quality` block: omitted entirely when absent (so
+ * non-OCR records re-serialize byte-identically), else a nested block with the
+ * fixed sub-key order -- `method`/`language`/`tier` as quoted scalars, `ratio`
+ * as a bare number.
+ */
+function emitOcrQuality(quality: OcrQuality | undefined): string | undefined {
+  if (quality === undefined) {
+    return undefined;
+  }
+  return [
+    'ocr_quality:',
+    `  method: ${quotedScalar(quality.method)}`,
+    `  language: ${quotedScalar(quality.language)}`,
+    `  ratio: ${quality.ratio}`,
+    `  tier: ${quotedScalar(quality.tier)}`,
+  ].join('\n');
+}
+
 /** Emit one provenance line/block, dispatching the two non-string fields. */
 function emitEntry(
   key: keyof ProvenanceFields,
@@ -186,6 +234,8 @@ function emitEntry(
       return emitInteger(fields.size);
     case 'object_store':
       return emitObjectStore(fields.object_store);
+    case 'ocr_quality':
+      return emitOcrQuality(fields.ocr_quality);
     case 'engine':
     case 'model':
     case 'translation':
@@ -251,6 +301,8 @@ interface ParsedRaw {
   objectStore: ObjectStoreLocation | null;
   /** Whether an `object_store:` line was present at all. */
   objectStoreSeen: boolean;
+  /** The parsed `ocr_quality` block, or `undefined` when the key is absent. */
+  ocrQuality?: OcrQuality;
 }
 
 /** Read one required field out of the raw parsed map, failing loud if absent. */
@@ -317,6 +369,53 @@ function parseObjectStoreBlock(
 }
 
 /**
+ * Parse the two-space-indented `method/language/ratio/tier` sub-lines of an
+ * `ocr_quality:` block starting at `start`. `ratio` is a bare number; `tier` is
+ * validated against the closed set. Returns the quality and the index of the
+ * first line after the block.
+ */
+function parseOcrQualityBlock(
+  lines: string[],
+  start: number,
+): { quality: OcrQuality; next: number } {
+  const values = new Map<string, string>();
+  let i = start;
+  while (i < lines.length) {
+    const sub = lines[i].match(/^ {2}([a-zA-Z0-9_]+):\s?(.*)$/);
+    if (!sub) {
+      break;
+    }
+    const [, subKey, rest] = sub;
+    if (rest.startsWith('"') && rest.endsWith('"') && rest.length >= 2) {
+      values.set(subKey, unquoteScalar(rest.slice(1, -1)));
+    } else {
+      values.set(subKey, rest);
+    }
+    i += 1;
+  }
+  const ratioRaw = requireSub(values, 'ratio');
+  const ratio = Number(ratioRaw);
+  if (!Number.isFinite(ratio)) {
+    throw new Error(
+      `parseProvenance: ocr_quality.ratio is not a number: "${ratioRaw}"`,
+    );
+  }
+  const tier = requireSub(values, 'tier');
+  if (tier !== 'low' && tier !== 'medium' && tier !== 'high') {
+    throw new Error(
+      `parseProvenance: ocr_quality.tier must be low|medium|high, got "${tier}"`,
+    );
+  }
+  const quality: OcrQuality = {
+    method: requireSub(values, 'method'),
+    language: requireSub(values, 'language'),
+    ratio,
+    tier,
+  };
+  return { quality, next: i };
+}
+
+/**
  * Parse the fixed-format companion YAML this module writes back into raw
  * `key -> value` pairs plus the nested `object_store`. This is a round-trip
  * reader for OUR OWN deterministic serialization (see
@@ -330,6 +429,7 @@ function parseRawFields(text: string): ParsedRaw {
   const raw = new Map<string, string | null>();
   let objectStore: ObjectStoreLocation | null = null;
   let objectStoreSeen = false;
+  let ocrQuality: OcrQuality | undefined;
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
@@ -357,6 +457,15 @@ function parseRawFields(text: string): ParsedRaw {
           `parseProvenance: malformed object_store line: "${line}"`,
         );
       }
+    } else if (key === 'ocr_quality') {
+      if (rest !== '') {
+        throw new Error(
+          `parseProvenance: malformed ocr_quality line: "${line}"`,
+        );
+      }
+      const block = parseOcrQualityBlock(lines, i + 1);
+      ocrQuality = block.quality;
+      i = block.next;
     } else if (rest === 'null') {
       raw.set(key, null);
       i += 1;
@@ -391,7 +500,7 @@ function parseRawFields(text: string): ParsedRaw {
       i += 1;
     }
   }
-  return { scalars: raw, objectStore, objectStoreSeen };
+  return { scalars: raw, objectStore, objectStoreSeen, ocrQuality };
 }
 
 /**
@@ -401,7 +510,8 @@ function parseRawFields(text: string): ParsedRaw {
  * when building the derived PDF/A and text asset provenance (T030).
  */
 export function parseProvenance(text: string): ProvenanceFields {
-  const { scalars, objectStore, objectStoreSeen } = parseRawFields(text);
+  const { scalars, objectStore, objectStoreSeen, ocrQuality } =
+    parseRawFields(text);
   if (!objectStoreSeen) {
     throw new Error('parseProvenance: missing required field "object_store"');
   }
@@ -428,6 +538,7 @@ export function parseProvenance(text: string): ProvenanceFields {
     translation: scalars.get('translation') ?? undefined,
     source_representation: scalars.get('source_representation') ?? undefined,
     object_store: objectStore,
+    ocr_quality: ocrQuality,
     notes: scalars.get('notes') ?? null,
     rights_raw: requireField(scalars, 'rights_raw'),
   };

@@ -92,6 +92,10 @@ Options:
   --force                Re-fetch/regenerate assets that already exist
   --verify               Re-hash existing assets against recorded checksums
   --ocr                  Opt into OCR during a fetch
+  --ocr-lang <codes>     Tesseract language(s) for the ocr command, e.g. eng,
+                         fra, or eng+fra (default: fra)
+  --enhance-contrast     Grayscale + normalize page images before OCR (for
+                         faded/low-contrast scans; ocr command)
   --archive-root <path>  Override the private-archive root (else COLONY_ARCHIVE_ROOT)
   --object-store         Opt into the object-store (B2) backend for masters
 `;

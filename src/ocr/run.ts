@@ -13,13 +13,21 @@ import {
   readProvenance,
   writeProvenance,
   type ProvenanceFields,
+  type OcrQuality,
 } from '@/archive/provenance';
 import { execCommand } from '@/ocr/exec';
+import { assessOcrQuality } from '@/ocr/quality';
 import type { OcrCommandRunner } from '@/ocr/types';
+
+/** Default Tesseract recognition language when the caller pins none. */
+export const DEFAULT_OCR_LANGUAGE = 'fra';
 
 /** Injectable dependencies of {@link ocrIssue} (T030). */
 export interface OcrContext {
-  /** Runs `img2pdf`/`ocrmypdf`/`pdftotext` (real by default, faked in tests). */
+  /**
+   * Runs `img2pdf`/`ocrmypdf`/`pdftotext` -- and, when {@link enhanceContrast}
+   * is set, `magick` (ImageMagick) -- real by default, faked in tests.
+   */
   runner: OcrCommandRunner;
   /** Absolute private-archive root (`../colony-cults-archive`). */
   archiveRoot: string;
@@ -29,6 +37,18 @@ export interface OcrContext {
   force?: boolean;
   /** Optional line-oriented progress sink. */
   log?: (message: string) => void;
+  /**
+   * Tesseract language code(s) passed to `ocrmypdf --language`, e.g. `fra`,
+   * `eng`, or `eng+fra`. Omitted -> {@link DEFAULT_OCR_LANGUAGE} (`fra`), so an
+   * English-language source is not OCR'd with the French recognition model.
+   */
+  language?: string;
+  /**
+   * Grayscale + histogram-normalize each page image (via ImageMagick `magick`)
+   * BEFORE `img2pdf`, to recover OCR accuracy on faded/low-contrast scans.
+   * Omitted/false -> the original images are OCR'd unchanged.
+   */
+  enhanceContrast?: boolean;
 }
 
 /** Outcome of one {@link ocrIssue} call. */
@@ -41,7 +61,7 @@ export interface OcrResult {
 
 /** The real (shell-out) command runner, used by CLI wiring in production. */
 export function defaultOcrCommandRunner(): OcrCommandRunner {
-  return { run: (command, args) => execCommand(command, args) };
+  return { run: (command, args, stdin) => execCommand(command, args, stdin) };
 }
 
 /** Zero-padded page-image filenames (`f001.jpg`), in page order. */
@@ -86,12 +106,18 @@ async function markPageOcrStatus(
   }
 }
 
-/** Build the pdf-a/ocr-text provenance record, reusing a page's shared fields. */
+/**
+ * Build the pdf-a/ocr-text provenance record, reusing a page's shared fields.
+ * `ocrQuality` is REQUIRED (not defaulted), so no OCR-text provenance can be
+ * constructed without a computed fidelity score -- the type system forbids the
+ * lapse at its only producer.
+ */
 function derivedProvenance(
   base: ProvenanceFields,
   type: 'pdf-a' | 'ocr-text',
   format: string,
   retrieved: string,
+  ocrQuality: OcrQuality,
 ): ProvenanceFields {
   return {
     ...base,
@@ -104,6 +130,12 @@ function derivedProvenance(
     // (Re)derived inside storeAsset from the actual bytes and target path.
     local_path: '',
     sha256: '',
+    // A derived, git-stored OCR asset has NO object-store master of its own.
+    // Overriding the base page's `object_store` (copied by the spread) is what
+    // keeps the text sidecar from falsely claiming the IMAGE's object key --
+    // which otherwise mismatches the SSOT's image sha256 (a `checksum-drift`).
+    object_store: null,
+    ocr_quality: ocrQuality,
     notes: null,
   };
 }
@@ -155,12 +187,39 @@ export async function ocrIssue(
     const searchablePdf = path.join(workDir, 'issue.pdf');
     const textFile = path.join(workDir, 'issue.txt');
 
-    await runStep(ctx.runner, 'img2pdf', [...pageFiles, '-o', rawPdf]);
+    // Optional contrast-enhancement preprocessing (faded/low-contrast scans):
+    // grayscale + histogram normalize each page into the temp workdir, and feed
+    // the enhanced copies to img2pdf. Safe on high-contrast scans (normalize is
+    // a no-op there). Off by default -> the originals are OCR'd unchanged.
+    let ocrInputs = pageFiles;
+    if (ctx.enhanceContrast === true) {
+      ocrInputs = [];
+      for (let i = 0; i < pageFiles.length; i += 1) {
+        const enhanced = path.join(
+          workDir,
+          `enh-${String(i + 1).padStart(3, '0')}.png`,
+        );
+        await runStep(ctx.runner, 'magick', [
+          pageFiles[i],
+          '-colorspace',
+          'Gray',
+          '-normalize',
+          enhanced,
+        ]);
+        ocrInputs.push(enhanced);
+      }
+      ctx.log?.(
+        `  enhance-contrast: normalized ${pageFiles.length} page image(s) before OCR`,
+      );
+    }
+
+    const language = ctx.language ?? DEFAULT_OCR_LANGUAGE;
+    await runStep(ctx.runner, 'img2pdf', [...ocrInputs, '-o', rawPdf]);
     await runStep(ctx.runner, 'ocrmypdf', [
       '--deskew',
       '--rotate-pages',
       '--language',
-      'fra',
+      language,
       '--output-type',
       'pdfa',
       rawPdf,
@@ -175,10 +234,19 @@ export async function ocrIssue(
     const basePage = await readProvenance(companionYamlPath(pageFiles[0]));
     const retrieved = ctx.clock().toISOString();
 
+    // Compute the OCR fidelity from the text just produced, and REQUIRE it in
+    // the stored provenance -- so an OCR-text artifact can never be written
+    // without its quality recorded (Constitution III).
+    const quality = await assessOcrQuality(
+      textBytes.toString('utf-8'),
+      language,
+      ctx.runner,
+    );
+
     const textResult = await storeAsset(
       textBytes,
       textTarget,
-      derivedProvenance(basePage, 'ocr-text', 'text/plain', retrieved),
+      derivedProvenance(basePage, 'ocr-text', 'text/plain', retrieved, quality),
       ctx.archiveRoot,
       { force: ctx.force },
     );
@@ -186,7 +254,8 @@ export async function ocrIssue(
     await markPageOcrStatus(pageFiles, 'searchable');
     ctx.log?.(
       `  ocr   issue.txt written for ${path.basename(issueDir)} ` +
-        `(searchable PDF derived transiently, not stored)`,
+        `(quality: ${quality.tier}, real-word ratio ${quality.ratio} [${quality.language}]; ` +
+        `searchable PDF derived transiently, not stored)`,
     );
 
     return { issueDir, text: textResult };

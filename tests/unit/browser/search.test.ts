@@ -38,6 +38,7 @@ function makeCorpus(): CorpusView {
         sourceId: 'PB-P001',
         title: 'Le Petit Bonapartiste',
         kind: 'periodical',
+        language: 'French',
         ark: 'ark:/12148/bpt6k56068358',
         rights: 'public-domain',
         issues: [

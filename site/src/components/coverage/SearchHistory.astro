@@ -3,7 +3,7 @@
  * T008 -- the search-history section of `/coverage`. The audit record of where
  * the archive has already looked: a monospace repository x scope matrix in
  * the "Prospectus / Dossier" hand, one row per search, followed by a quiet
- * by-repository rollup line.
+ * scope-closure ledger -- one collapsed open/closed verdict per research front.
  *
  * The signature mark: each open question is a leading oxide `›` tick -- the
  * archive's critical hand on a question still unanswered. Everything held or
@@ -22,7 +22,7 @@ interface Props {
 }
 
 const { history } = Astro.props;
-const { matrix, byRepository } = history;
+const { matrix, byScope } = history;
 
 const countLabel = `${matrix.length} ${matrix.length === 1 ? 'search' : 'searches'}`;
 ---
@@ -63,15 +63,25 @@ const countLabel = `${matrix.length} ${matrix.length === 1 ? 'search' : 'searche
           </tbody>
         </table>
       </div>
-      {byRepository.length > 0 ? (
-        <p class="rollup">
-          By repository
-          {byRepository.map((repo) => (
-            <>
-              <span class="rollup__sep">·</span>{repo.repository} last {repo.lastSearched}
-            </>
-          ))}
-        </p>
+      {byScope.length > 0 ? (
+        <>
+          <p class="hist__closure-label">Scope closure</p>
+          <div class="closure">
+            {byScope.map((s) => (
+              <div class="closure__row">
+                <span class="closure__scope">{s.scope}</span>
+                <span
+                  class:list={[
+                    'closure__verdict',
+                    s.measuredClosure === 'open'
+                      ? 'closure__verdict--open'
+                      : 'closure__verdict--closed',
+                  ]}
+                >{s.measuredClosure}</span>
+              </div>
+            ))}
+          </div>
+        </>
       ) : null}
     </>
   )}
@@ -162,16 +172,52 @@ const countLabel = `${matrix.length} ${matrix.length === 1 ? 'search' : 'searche
     color: var(--faint);
   }
 
-  .rollup {
+  /* The scope-closure ledger: one collapsed verdict per research front,
+     mirroring the EvidenceDistribution two-column dotted grid. An `open` scope
+     is a gap -> the archive's oxide small-caps stamp (kin to `unknown`); a
+     `closed` scope is settled and stays quiet in --faint. */
+  .hist__closure-label {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     color: var(--faint);
-    margin: 16px 0 0;
+    margin: 26px 0 10px;
+  }
+
+  .closure {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    max-width: 520px;
+  }
+
+  .closure__row {
+    display: contents;
+  }
+
+  .closure__scope {
+    padding: 7px 0;
+    border-bottom: 1px dotted var(--rule);
+    color: var(--slate);
     overflow-wrap: anywhere;
   }
 
-  .rollup__sep {
-    color: var(--rule);
-    margin: 0 7px;
+  .closure__verdict {
+    padding: 7px 0;
+    border-bottom: 1px dotted var(--rule);
+    text-align: right;
+  }
+
+  .closure__verdict--open {
+    color: var(--oxide);
+    font-variant: small-caps;
+    letter-spacing: 0.06em;
+  }
+
+  .closure__verdict--closed {
+    color: var(--faint);
   }
 </style>

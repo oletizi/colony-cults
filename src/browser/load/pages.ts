@@ -16,9 +16,10 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
-import type { RawPage } from '@/browser/model';
+import type { ProvenanceRecord, RawPage, SourceLanguage } from '@/browser/model';
 import { splitIssueOcr } from '@/browser/load/ocr-pages';
 import { loadPageTranslation } from '@/browser/load/translation';
+import { parseSourceIdentifier } from '@/browser/load/source-identifier';
 import type { IssueDir } from '@/browser/load/issues';
 
 /**
@@ -47,10 +48,15 @@ const EN_TRANSLATION_PATTERN = /^p(\d+)\.en\.txt$/;
  * English missing, an image/OCR skew) is NOT detected here -- that is a
  * collected-but-corrupt defect that {@link buildIssuePages} throws on.
  *
+ * For an ENGLISH source, a missing `translation/` layer is EXPECTED (an English
+ * clipping has no French to translate -- its OCR IS the reading text), so the
+ * absent-translation condition is NOT checked; `issue.txt` and image-sidecar
+ * absence still flag a skip for either language.
+ *
  * @returns a reason string naming the absent layer(s), or `null` when every
  *   required layer is present (the issue is complete enough to load).
  */
-export function detectNotCollected(issueDir: string): string | null {
+export function detectNotCollected(issueDir: string, language: SourceLanguage): string | null {
   const missing: string[] = [];
 
   if (!existsSync(path.join(issueDir, 'issue.txt'))) {
@@ -59,7 +65,9 @@ export function detectNotCollected(issueDir: string): string | null {
   if (listFolios(issueDir).length === 0) {
     missing.push('image sidecars (fNNN.yml)');
   }
-  if (countEnglishTranslations(issueDir) === 0) {
+  // The translation layer is only required for a French source; an English
+  // source has no French to translate, so its absence is not a skip condition.
+  if (language === 'French' && countEnglishTranslations(issueDir) === 0) {
     missing.push('translation/ English layer (pNNN.en.txt)');
   }
 
@@ -67,6 +75,31 @@ export function detectNotCollected(issueDir: string): string | null {
     return null;
   }
   return `not collected -- absent layer(s): ${missing.join(', ')}`;
+}
+
+/**
+ * Resolves a source's language from its FIRST folio sidecar (`fNNN.yml`) in
+ * `issueDir`: the sidecar's `language` field. Only an exact `"English"` yields
+ * `'English'`; anything else (absent, blank, `"French"`, or unexpected) yields
+ * `'French'` -- the original parallel-text shape is the robust default.
+ */
+export function resolveSourceLanguage(issueDir: string): SourceLanguage {
+  const folios = listFolios(issueDir);
+  if (folios.length === 0) {
+    return 'French';
+  }
+
+  const sidecarPath = path.join(issueDir, `${folios[0].folioId}.yml`);
+  if (!existsSync(sidecarPath)) {
+    return 'French';
+  }
+
+  const parsed: unknown = parseYaml(readFileSync(sidecarPath, 'utf-8'));
+  if (!isRecord(parsed)) {
+    return 'French';
+  }
+
+  return parsed.language === 'English' ? 'English' : 'French';
 }
 
 /**
@@ -81,7 +114,8 @@ export function detectNotCollected(issueDir: string): string | null {
  */
 export function buildRawIssuePages(
   sourceId: string,
-  issue: IssueDir
+  issue: IssueDir,
+  language: SourceLanguage
 ): RawPage[] {
   const folios = listFolios(issue.dir);
   const sidecarCount = folios.length;
@@ -100,6 +134,15 @@ export function buildRawIssuePages(
       `loadCorpus(${sourceId} / ${issue.issueId}): page-count mismatch (corpus-loader G-1) -- ` +
         `${sidecarCount} image sidecar(s) vs ${ocrCount} OCR segment(s). ` +
         'The image-sidecar count and OCR form-feed segment count must be equal.'
+    );
+  }
+
+  // ENGLISH source: the OCR segment IS the English reading text; there is no
+  // French source layer and no translation layer, so the translation-count
+  // check does not apply. Provenance comes from the FOLIO sidecar (fNNN.yml).
+  if (language === 'English') {
+    return folios.map((folio, index) =>
+      buildRawEnglishPage(sourceId, issue, folio, ocrSegments[index])
     );
   }
 
@@ -190,6 +233,120 @@ function buildRawPage(
     ocrCondition: ocr.ocrCondition,
     provenance: translation.provenance,
   };
+}
+
+/**
+ * Builds a single {@link RawPage} for an ENGLISH source's `folio`: the OCR
+ * segment is the English reading text; there is no French source layer
+ * (`ocrFrench` = `''`, `correctedFrench` = `null`), and the provenance is read
+ * from the FOLIO sidecar (`fNNN.yml`) rather than a translation sidecar
+ * (there is no `translation/` layer). Image handles come from the same folio
+ * sidecar via {@link readFolioImageMeta}.
+ */
+function buildRawEnglishPage(
+  sourceId: string,
+  issue: IssueDir,
+  folio: Folio,
+  ocr: { ocrFrench: string; ocrCondition: string | null }
+): RawPage {
+  const pageId = `p${String(folio.num).padStart(3, '0')}`;
+
+  const provenanceFields = readFolioProvenance(issue.dir, folio.folioId, sourceId, issue.issueId, pageId);
+  const { objectStoreKey, imageSha256 } = readFolioImageMeta(issue.dir, folio.folioId);
+
+  const ark = parseSourceIdentifier(provenanceFields.catalogUrl);
+
+  // The page's provenance ark is the ISSUE ark; assert the folio sidecar agrees
+  // so a cross-wired sidecar cannot slip a mismatched handle into the rail.
+  if (ark !== issue.ark) {
+    throw new Error(
+      `loadCorpus(${sourceId} / ${issue.issueId} / ${pageId}): folio-sidecar ark ` +
+        `${JSON.stringify(ark)} does not match the issue ark ${JSON.stringify(issue.ark)}.`
+    );
+  }
+
+  const provenance: ProvenanceRecord = {
+    sourceId: provenanceFields.sourceId,
+    ark,
+    date: issue.date,
+    rights: provenanceFields.rightsStatus,
+    page: pageId,
+    sha256: provenanceFields.sha256,
+  };
+
+  return {
+    pageId,
+    folioId: folio.folioId,
+    ark: issue.ark,
+    objectStoreKey,
+    imageSha256,
+    // No French source layer for an English source.
+    ocrFrench: '',
+    correctedFrench: null,
+    // The OCR segment IS the English reading text for an English source.
+    english: ocr.ocrFrench,
+    ocrCondition: ocr.ocrCondition,
+    provenance,
+  };
+}
+
+/** The provenance fields read from a page's `fNNN.yml` folio sidecar (English source). */
+interface FolioProvenanceFields {
+  /** The folio sidecar `id` (the source id). */
+  sourceId: string;
+  /** The `catalog_url` the provenance ark is parsed from. */
+  catalogUrl: string;
+  /** The `rights_status` determination. */
+  rightsStatus: string;
+  /** The top-level `sha256` (the page-image master checksum). */
+  sha256: string;
+}
+
+/**
+ * Reads the provenance fields (`id` / `catalog_url` / `rights_status` /
+ * `sha256`) from an English page's `fNNN.yml` folio sidecar. Fail-loud: a
+ * missing sidecar, a non-mapping sidecar, or any missing required field throws
+ * naming the page (matching the loader's fail-loud posture -- no fallback).
+ */
+function readFolioProvenance(
+  issueDir: string,
+  folioId: string,
+  sourceId: string,
+  issueId: string,
+  pageId: string
+): FolioProvenanceFields {
+  const sidecarPath = path.join(issueDir, `${folioId}.yml`);
+  const where = `loadCorpus(${sourceId} / ${issueId} / ${pageId})`;
+
+  if (!existsSync(sidecarPath)) {
+    throw new Error(`${where}: missing folio sidecar ${sidecarPath} (required for provenance).`);
+  }
+
+  const parsed: unknown = parseYaml(readFileSync(sidecarPath, 'utf-8'));
+  if (!isRecord(parsed)) {
+    throw new Error(`${where}: folio sidecar ${sidecarPath} did not parse to a YAML mapping.`);
+  }
+
+  return {
+    sourceId: requireFolioField(parsed, 'id', sidecarPath, where),
+    catalogUrl: requireFolioField(parsed, 'catalog_url', sidecarPath, where),
+    rightsStatus: requireFolioField(parsed, 'rights_status', sidecarPath, where),
+    sha256: requireFolioField(parsed, 'sha256', sidecarPath, where),
+  };
+}
+
+/** A non-empty string folio-sidecar field, or throw naming the page + field. */
+function requireFolioField(
+  record: Record<string, unknown>,
+  field: string,
+  sidecarPath: string,
+  where: string
+): string {
+  const value = record[field];
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`${where}: folio sidecar ${sidecarPath} is missing required field "${field}".`);
+  }
+  return value;
 }
 
 /** The image handles read from a page's `fNNN.yml` folio sidecar. */

@@ -20,6 +20,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
 import type { MachineAssistLabel, ProvenanceRecord } from '@/browser/model';
+import { parseSourceIdentifier } from '@/browser/load/source-identifier';
 
 /** One page's translation text + provenance, as loaded from `translation/`. */
 export interface PageTranslation {
@@ -115,7 +116,7 @@ function loadProvenance(sidecarPath: string, pageId: string, sourceDate: string)
   const catalogUrl = requireStringField(parsed, 'catalog_url', sidecarPath);
   const rights = requireStringField(parsed, 'rights_status', sidecarPath);
   const sha256 = requireStringField(parsed, 'sha256', sidecarPath);
-  const ark = parseArkFromCatalogUrl(catalogUrl, sidecarPath);
+  const ark = parseSourceIdentifier(catalogUrl);
 
   return {
     sourceId,
@@ -178,19 +179,4 @@ function requireStringField(
     );
   }
   return value;
-}
-
-/**
- * `catalog_url` looks like `https://gallica.bnf.fr/ark:/12148/bpt6k56068358`;
- * the ark is everything from `ark:/` onward.
- */
-function parseArkFromCatalogUrl(catalogUrl: string, sidecarPath: string): string {
-  const match = catalogUrl.match(/ark:\/\S+/);
-  if (!match) {
-    throw new Error(
-      `loadPageTranslation: sidecar ${sidecarPath} field "catalog_url" ` +
-        `(${JSON.stringify(catalogUrl)}) does not contain a parseable ark`
-    );
-  }
-  return match[0];
 }
