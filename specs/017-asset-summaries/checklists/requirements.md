@@ -31,16 +31,17 @@
 
 ## Notes
 
-- The 7 open questions from the approved design doc are captured as **FR-C1..FR-C7**
-  (deferred-requirements block) with provisional defaults documented in Assumptions. They are
-  NOT `[NEEDS CLARIFICATION]` markers — they are explicit, operator-owned choices to be
-  resolved in `/speckit-clarify` (capture-over-YAGNI; no scope cut). The spec is complete and
-  testable with the provisional defaults; clarify will confirm/override them.
+- `/speckit-clarify` (Session 2026-07-21) resolved 6 of the 7 open design questions —
+  thorough shape (structured + prose, FR-001a), lengths (FR-001b), rollup partial-coverage
+  (FR-009), noisy-OCR (FR-016), model default (FR-011), discovery link (FR-017). Only
+  **FR-C3** (exact companion/provenance file-naming + sidecar encoding + bibliography-reference
+  form) remains, deliberately **deferred to `/speckit-plan`** as a storage-contract
+  implementation detail (the *what* is fixed; the *exact encoding* is a plan concern). No scope
+  was cut (Constitution XIV).
 - Some named artifacts (`SummarizationRunner`, `issue.summary.long.en.md`) appear as concrete
   anchors from the approved design; they are illustrative of the contract (what/where), not
   prescriptions of internal code structure.
 
 ## Validation Result
 
-All checklist items pass. Spec is ready for `/speckit-clarify` (recommended, to resolve
-FR-C1..FR-C7) then `/speckit-plan`.
+All checklist items pass. Clarify complete. Spec is ready for `/speckit-plan`.

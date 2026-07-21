@@ -29,6 +29,17 @@ stored separately from the authoritative scans/OCR, and **never** asserted as fa
 evidence (Constitution Principles I & III). The authoritative record remains the scans +
 OCR; a summary is a finding-aid over them.
 
+## Clarifications
+
+### Session 2026-07-21
+
+- Q: Thorough-summary shape — freeform prose vs. a structured account? → A: **Structured account** (topics, people, places, dates, notable claims) **plus** a narrative prose body.
+- Q: Per-source rollup when some of the source's issues are not yet summarized? → A: **Cover what exists** — synthesize from the available issue summaries and record which issues were included/missing in the rollup's provenance.
+- Q: Noisy / low-confidence OCR handling at summarization time? → A: **Always summarize, and stamp a low-confidence quality note in provenance** when OCR quality is below threshold (never block; the vision-from-images option remains a future enhancement).
+- Q: `SummarizationRunner` model default? → A: **Configurable, default Claude Sonnet 5**, overridable per run.
+- Q: How far should this feature go toward feeding `corpus-gap-closure` / the coverage audit from the structured fields? → A: **Produce only** — emit the structured fields in a stable, documented shape; `corpus-gap-closure` / the audit consume them in separate, later work.
+- Q: Concise length target (settled by reasonable default, not asked)? → A: Concise is **~1–3 sentences (~60–80 words)**; the thorough summary is **exhaustive** (structured fields + narrative, no hard length cap).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Generate a per-issue two-depth summary from acquired text (Priority: P1)
@@ -143,9 +154,8 @@ and that they reflect the constituent issue summaries.
    a source-level concise summary and a source-level thorough summary are written with
    provenance sidecars.
 2. **Given** a source with only some issues summarized, **When** the rollup runs, **Then**
-   the behavior is well-defined (see Edge Cases) — it either fails loud naming the missing
-   issue summaries or records which issues it covered in provenance (operator-decided in
-   clarify).
+   it synthesizes from the available issue summaries (**cover what exists**) and records
+   which issues were included and which were missing in the rollup's provenance.
 
 ---
 
@@ -176,11 +186,12 @@ only that issue is regenerated.
 ### Edge Cases
 
 - **No usable text layer**: fail loud, write nothing (US1 AC-3). Never fabricate.
-- **Noisy / low-confidence OCR**: the input text is poor quality. Provenance SHOULD carry a
-  quality/low-confidence note; whether a quality threshold defers the issue (to the future
-  vision option) is an open question for clarify.
+- **Noisy / low-confidence OCR**: the input text is poor quality. The issue is still
+  summarized, and provenance carries a low-confidence quality note when OCR quality is below
+  threshold (never blocked); the future vision-from-images option is a non-blocking
+  enhancement for such assets.
 - **Partial source coverage at rollup time**: some issues in a source are not yet summarized
-  (US4 AC-2) — resolve in clarify (fail loud vs. cover-what-exists-and-record).
+  (US4 AC-2) — the rollup covers what exists and records included/missing issues in provenance.
 - **Input layer changes after summary exists**: triggers regeneration (US5 AC-2); the summary
   must not silently go stale.
 - **Non-public-domain / cataloged-but-not-mirrored source**: a summary is interpretation, not
@@ -199,6 +210,12 @@ only that issue is regenerated.
 - **FR-001**: The system MUST generate, per issue/document, a **thorough** summary and a
   **concise** summary in a single generation flow, where the concise is **distilled from**
   the thorough (one full-text pass, two depths).
+- **FR-001a**: The thorough summary MUST be a **structured account** — machine-readable
+  fields for topics, people, places, dates, and notable claims — **plus** a narrative prose
+  body. (Clarified 2026-07-21.)
+- **FR-001b**: The concise summary MUST be **~1–3 sentences (~60–80 words)**; the thorough
+  summary is **exhaustive** (structured fields + narrative, no hard length cap). (Clarified
+  2026-07-21; adjustable.)
 - **FR-002**: The system MUST use the **best available acquired text** as input — English OCR
   for English-language sources; French OCR **plus** the English translation where it exists for
   French sources — and MUST produce **English** output.
@@ -220,13 +237,17 @@ only that issue is regenerated.
   abstract is user-facing UI and MUST be built through `/frontend-design:frontend-design`
   (Constitution XI).
 - **FR-009**: The system MUST produce a **per-source rollup** (concise + thorough) synthesized
-  from the issue/document summaries, each provenance-stamped.
+  from the issue/document summaries, each provenance-stamped. When some issues in the source
+  are not yet summarized, the rollup MUST **cover what exists** and record the included/missing
+  issues in its provenance (rather than failing loud). (Clarified 2026-07-21.)
 - **FR-010**: Summarization MUST be **resumable and idempotent**, keyed to the input layers:
   skip an already-summarized issue whose inputs are unchanged; regenerate when its OCR or
   translation changes.
 - **FR-011**: The summarization engine MUST be an **injected `SummarizationRunner`** behind an
   interface, composed via constructor dependency injection (mirroring the OCR/translation
-  runners), and MUST be swappable/configurable (Constitution VI).
+  runners), and MUST be swappable/configurable (Constitution VI). The model MUST be
+  **configurable with a default of Claude Sonnet 5**, overridable per run. (Clarified
+  2026-07-21.)
 - **FR-012**: Summarization MUST use its **own dedicated runner** and MUST NOT route through the
   spec-014 governed source-query client — it reads **local** text and calls an LLM API, and is
   NOT an external *source* query (the source-query governance covers fetches *from* sources).
@@ -238,30 +259,30 @@ only that issue is regenerated.
   posture is confirmed in clarify.
 - **FR-015**: The implementation MUST be **type-safe** — `@/` imports, no `any`/`as`/`@ts-ignore`,
   source files within 300–500 lines (Constitution VII).
+- **FR-016**: The system MUST still summarize an issue whose OCR is **noisy / low-confidence**,
+  and MUST stamp a **low-confidence quality note** in the summary's provenance when OCR quality
+  is below threshold; it MUST NOT block on OCR quality. (Clarified 2026-07-21.)
+- **FR-017**: The system MUST emit the thorough summary's **structured fields in a stable,
+  documented shape** so that `corpus-gap-closure` / the coverage audit can consume them, but
+  this feature **produces only** — it MUST NOT itself drive evidence-class assignment or
+  thematic discovery (that is separate, later work). (Clarified 2026-07-21.)
 
-*Requirements deferred to `/speckit-clarify` (open questions, none are blockers):*
+*Requirements deferred to `/speckit-plan` (implementation-detail, non-blocking):*
 
-- **FR-C1**: Thorough-summary **shape** — freeform prose vs. a structured account (topics,
-  people, places, dates, notable claims) that could feed evidence-class assignment / thematic
-  discovery (`corpus-gap-closure`) and the coverage audit.
-- **FR-C2**: **Length targets** — concise length (e.g. a sentence/word budget) and the thorough's
-  expected extent.
 - **FR-C3**: Exact **companion + provenance schema** — file naming (e.g. `issue.summary.long.en.md`
-  / `issue.summary.short.en.md`), sidecar fields, and the exact form of the bibliography
-  reference to the thorough summary.
-- **FR-C4**: **Rollup generation** — synthesized from issue summaries vs. a separate pass; when it
-  runs; partial-coverage behavior.
-- **FR-C5**: **LLM / model choice** and the cost/rate envelope for the `SummarizationRunner`.
-- **FR-C6**: **Noisy-OCR handling** — a quality threshold / low-confidence note in provenance, and
-  when to defer to the future vision option.
-- **FR-C7**: **Structured-summary → discovery** interaction — whether structured summaries feed
-  `corpus-gap-closure` evidence-class assignment / thematic discovery.
+  / `issue.summary.short.en.md`), the concrete sidecar fields (including the structured-field
+  encoding from FR-001a and the low-confidence note from FR-016), and the exact form of the
+  bibliography reference (FR-007) to the thorough summary. These are storage-contract details
+  best fixed during planning; the spec fixes the *what* (structured + prose, provenance content),
+  plan fixes the *exact encoding*.
 
 ### Key Entities *(include if feature involves data)*
 
 - **Issue/Document Summary**: the per-unit finding-aid. Has two depths (thorough, concise);
-  concise distilled from thorough. Machine-generated interpretation. Relates to exactly one
-  issue/document and its input text layers.
+  concise distilled from thorough. The thorough carries **structured fields** (topics, people,
+  places, dates, notable claims) **plus** a narrative body; the concise is ~1–3 sentences.
+  Machine-generated interpretation. Relates to exactly one issue/document and its input text
+  layers.
 - **Summary Provenance Sidecar**: metadata for a summary artifact — engine, model, generation
   date, input layers used, interpretation-not-evidence label, optional input-quality note. One
   per summary artifact.
@@ -298,15 +319,14 @@ only that issue is regenerated.
 
 ## Assumptions
 
-- **Provisional defaults pending `/speckit-clarify`** (the FR-C* items above). Where the design
-  left a choice open, this spec assumes a reasonable default and flags it for the operator to
-  confirm/override in clarify — no scope is cut (Constitution XIV; capture-over-YAGNI):
-  - Thorough shape (FR-C1): assume **freeform prose** for v1, with structured-account as the
-    operator's likely upgrade; confirm in clarify.
-  - Naming/schema (FR-C3): assume `*.summary.long.en.md` / `*.summary.short.en.md` companions with
-    a sidecar per artifact; confirm exact fields in clarify.
-  - Rollup (FR-C4): assume **synthesized from issue summaries** in a pass that runs after the issues
-    are summarized; confirm partial-coverage behavior in clarify.
+- **Clarified 2026-07-21** (see the Clarifications section). Thorough shape = **structured +
+  prose** (FR-001a); concise = ~1–3 sentences, thorough exhaustive (FR-001b); rollup =
+  **cover-what-exists + record coverage** (FR-009); noisy OCR = **summarize + low-confidence
+  note** (FR-016); model = **configurable, default Sonnet 5** (FR-011); discovery link =
+  **produce structured fields only, consume later** (FR-017).
+- **Deferred to `/speckit-plan`** (FR-C3): exact companion file naming (assume
+  `*.summary.long.en.md` / `*.summary.short.en.md` as the starting point), sidecar field
+  encoding, and the bibliography-reference form — storage-contract details fixed at planning.
 - The archive/object-store, OCR, and translation layers already exist and are consumed as-is
   (shipped: `source-group-acquisition` / `gallica-fetcher` / `archive-object-store`,
   `source-translation`, `canonical-source-metadata`, `corpus-coverage-audit`, `corpus-browser`).
