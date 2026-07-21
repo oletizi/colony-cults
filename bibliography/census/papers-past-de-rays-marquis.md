@@ -19,9 +19,15 @@ Each row is scored on: **topical** (is the affair the subject, vs a bundled one-
 | 1 (1–10) | 10 | 10 | 5 | 5 | rich — continue |
 | 2 (11–20) | 10 | ~6 | 4–5 (incl. a unique eyewitness account) | 5 | diluting but still yielding distinct value — continue |
 | 3 (21–30) | 10 | 3 | 3 (early founding-phase 1880/1881 + a 1929 survivor interview) | 7 | bundled mentions now dominate; still new dimensions — continue |
-| 4 (31–40) | 10 | 1 | 1 (a comprehensive 11k-char "Story of the Expedition" feature) | 9 | floor reached — **STOP the walk** |
+| 4 (31–40) | 10 | 1 | 1 (a comprehensive 11k-char "Story of the Expedition" feature) | 9 | floor — near stop |
+| 5 (41–50) | 10 | 0 | 0 (dedicated-title hits were all reprints of T2 canonicals + 1 off-topic) | 10 | floor |
+| 6 (51–60) | 10 | 1 | 1 (a distinct London-correspondent trial letter) | 9 | floor (lumpy) |
 
-Trend: distinct yield **5 → 5 → 3 → 1**; bundled fraction 0 → ~4 → 7 → 9. **Stopping decision (after tranche 4):** the `Marquis de Rays` handle has hit diminishing returns — the tail is now ~80% generic cable-column mentions, and distinct on-topic material arrives roughly one item per tranche. Paginating the remaining ~65 tranches would be mostly noise. The remaining distinct gems are better reached with **narrower query handles** (`Port Breton`, `New Ireland`, `Chandernagore`, `La Nouvelle-France`) — never run against Papers Past yet (SRCH-0018) — which target the affair without the cable-column noise. NOTE: post-1920s retrospectives (1929, 1936) do NOT carry the "No known copyright (NZ)" statement — rights must be reconfirmed before any of them can be acquired.
+Trend: distinct yield **5 → 5 → 3 → 1 → 0 → 1**; bundled fraction 0 → ~4 → 7 → 9 → 10 → 9.
+
+**Decay-shape finding (tranches 5–6 were run to test this):** the decline is a *predictable trend* to a low floor, but the floor is **lumpy, not a clean monotonic zero** — distinct pieces keep trickling in sporadically at ~0–1 per tranche (T5=0, T6=1). The reason the floor stays low: by ~tranche 4 the distinct set is largely **saturated**, and deeper "dedicated-title" hits are predominantly *reprints of already-canonical distinct pieces* (e.g. T5 NOT18821127 = a reprint of T2's THD "arch-impostor" feature; T5 ODT18840122 = a reprint of T2's NEM post-conviction summary) interleaved with generic cable-column noise.
+
+**Stopping decision:** stop the exhaustive pagination of the `Marquis de Rays` handle. A full harvest of every remaining distinct piece would mean paginating ~64 more tranches for ~0–1 new items each — poor ROI. The remaining sparse distinct material is better reached with **narrower query handles** (`Port Breton`, `New Ireland`, `Chandernagore`, `La Nouvelle-France`) — never run against Papers Past yet (SRCH-0018) — which target the affair without the cable-column noise. NOTE: post-1920s retrospectives (1929, 1936) do NOT carry the "No known copyright (NZ)" statement — rights must be reconfirmed before any of them can be acquired.
 
 ## Running ACQUIRE shortlist (distinct stories, across tranches)
 
@@ -39,6 +45,7 @@ Trend: distinct yield **5 → 5 → 3 → 1**; bundled fraction 0 → ~4 → 7 �
 12. `KUMAT18810202.2.8` — "The Marquis de Ray's New Colony": colony "successfully founded" (1881) — T3 — early founding-phase
 13. `ODT19290524.2.100` — 1929 survivor interview (Mr J.O. Mouton, "oldest Papuan planter") — T3 — **rights CHECK (1929)**
 14. `NZH18830825.2.51` — "The Story of the Marquis de Rays' Expedition": comprehensive 11k-char narrative (Aug 1883) — T4 — **richest single piece; high value**
+15. `NZH18840116.2.52` — "Trial of the Marquis de Rays": distinct London-correspondent trial letter (Dec 1883) — T6
 
 ## Tranche 1 — results 1–10 (SRCH-0021)
 
@@ -112,11 +119,18 @@ Floor reached: 8/10 generic cable columns, 1 comprehensive distinct feature, 1 m
 | 39 | WAIST18820815.2.14 | Wairarapa Standard | 1882-08-15 | "News by Cable" column | skip (bundled) |
 | 40 | AS18830615.2.31 | Auckland Star | 1883-06-15 | "Latest Cablegrams" column | skip (bundled) |
 
-## Final shortlist (4 tranches, 40 of 695 assessed)
+## Tranches 5–6 — results 41–60 (SRCH-0025) — decay verification
 
-**14 distinct ACQUIRE candidates** spanning the full arc: founding (1880 *Chandernagore* voyage; 1881 colony founded) → arrest (Aug–Nov 1882) → committal (Feb 1883) → the "Story of the Expedition" feature (Aug 1883) → conviction (Jan 1884) → the eyewitness Port-Breton visit → retrospectives (1929 survivor interview, 1936). Two (1929, 1936) are **rights-pending** (no "No known copyright (NZ)" statement). See the running shortlist above.
+Run specifically to test whether the tail decay is predictable or lumpy. Only the non-generic candidates were content-read; the generic cable columns were classified from metadata.
 
-**Coverage note:** 40/695 keyword hits assessed across 4 tranches; the walk stopped because distinct-yield fell to ~1/tranche (curve 5,5,3,1) against ~80% generic cable-column noise. The remaining ~655 hits are NOT covered — mining them efficiently needs narrower query handles, not further pagination of this one.
+- **Tranche 5 (41–50): 0 new distinct.** Six generic columns (Intercolonial / War in Egypt / Latest Intelligence / Australian / Australia / Sydney); PATM18820526 "A White Man Among the South Sea Islanders" is off-topic (a Solomon Islands adventure); TS18830202 is a bundled cable column under a de-Rays title; NOT18821127 = reprint of T2's THD "arch-impostor" feature; ODT18840122 = reprint of T2's NEM post-conviction summary.
+- **Tranche 6 (51–60): 1 new distinct** — `NZH18840116.2.52` "Trial of the Marquis de Rays" (a distinct London-correspondent trial letter, Dec 1883). The rest are generic columns, an off-topic 1923 item ("Seeing Through Metal"), and a New-Guinea-annexation column with a bundled de-Rays subsection (TH18840104).
+
+## Final shortlist (6 tranches, 60 of 695 assessed)
+
+**15 distinct ACQUIRE candidates** spanning the full arc: founding (1880 *Chandernagore* voyage; 1881 colony founded) → arrest (Aug–Nov 1882) → committal (Feb 1883) → the "Story of the Expedition" feature + the correspondent's trial letter (Aug 1883 / Dec 1883) → conviction (Jan 1884) → the eyewitness Port-Breton visit → retrospectives (1929 survivor interview, 1936). Two (1929, 1936) are **rights-pending** (no "No known copyright (NZ)" statement). See the running shortlist above.
+
+**Coverage note:** 60/695 keyword hits assessed across 6 tranches. The distinct-yield decay (5,5,3,1,0,1) is a predictable trend to a **lumpy floor** of ~0–1 new distinct per tranche — so the tail is not exhausted, just sparse and reprint-saturated. The remaining ~635 hits are NOT covered; harvesting the residual distinct pieces efficiently needs narrower query handles, not exhaustive pagination of this one.
 
 ## Provenance
 

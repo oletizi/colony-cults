@@ -347,3 +347,17 @@
     - "Acquire the 14-item shortlist (spec 015 member-acquire), after a rights recheck on the two post-1920s retrospectives (1929/1936)."
     - "Operator housekeeping: the NZ (Auckland) Tailscale exit node is still set from SRCH-0021 -- reset it (tailscale set --exit-node=) when NZ-routed corpus work is done."
   notes: "Final tranche of the 'Marquis de Rays' census. The tranche-by-tranche walk was enabled by this session's new --page pagination in the governed client. All queries governed (persist-first); hybrid triage (metadata-classify the bundled majority, content-read the distinct minority). Census + shortlist only -- no acquisition/B2 write. Captures: page-4 enumeration + 2 article reads."
+
+- id: SRCH-0025
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "Tranches 5 and 6 (results 41-60, --page 5 and --page 6) of the 'Marquis de Rays' census, run specifically to VERIFY whether the tail-decay is predictable or lumpy (operator request). Metadata-triaged all 20; content-read the 6 non-generic candidates."
+  coverage: "DECAY VERIFIED -- predictable trend, LUMPY floor. Tranche 5 = 0 new distinct: its dedicated-title hits were all reprints of already-canonical distinct pieces (NOT18821127 = a reprint of THD 'arch-impostor' feature from T2; ODT18840122 = a reprint of NEM post-conviction summary from T2; TS18830202 = a bundled cable column) plus one off-topic hit (PATM18820526 'A White Man Among the South Sea Islanders', a Solomon Islands adventure). Tranche 6 = 1 new distinct: NZH18840116.2.52 'Trial of the Marquis de Rays', a distinct London-correspondent trial letter (Dec 1883); the rest generic columns, an off-topic 1923 science item, and a New-Guinea-annexation column with a bundled de-Rays subsection. Full distinct-yield curve now 5, 5, 3, 1, 0, 1 -- a clear decline to a NOISY floor of ~0-1 per tranche, NOT a clean monotonic zero. Mechanism of the floor: the distinct set is largely saturated by ~tranche 4, and the deep tail is dominated by reprints of canonicals interleaved with cable-column noise. 60/695 assessed; 15 distinct ACQUIRE candidates. Record: bibliography/census/papers-past-de-rays-marquis.md."
+  remainingQuestions:
+    - "CONFIRMED conclusion: exhaustive pagination is poor ROI (~0-1 new distinct/tranche across ~64 remaining tranches). Harvest the residual distinct tail via narrower handles (Port Breton / New Ireland / Chandernagore / La Nouvelle-France) instead."
+    - "The tail is sparse+reprint-saturated, NOT exhausted -- occasional distinct pieces (e.g. the T6 trial letter) still surface, so a narrower-handle sweep is the way to catch them without the noise."
+    - "Acquire the 15-item shortlist (spec 015) after a rights recheck on the 1929/1936 retrospectives; reset the NZ exit node when NZ-routed work is done."
+  notes: "Decay-verification tranches (operator wanted >=2 more to confirm the curve was not lumpy). Finding: it IS mildly lumpy at the floor (0 then 1). Governed client only; hybrid triage. Captures: page-5 + page-6 enumerations + 6 article reads."
