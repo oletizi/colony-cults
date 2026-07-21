@@ -24,6 +24,8 @@ Each row is scored on: **topical** (is the affair the subject, vs a bundled one-
 | 6 (51–60) | 10 | 1 | 1 (a distinct London-correspondent trial letter) | 9 | floor (lumpy) |
 | 7 (61–70) | 10 | 3 | 3 (an 1880 "invasion" framing + its cluster; a long trial+bio feature; a 1949 signed history) | 7 | **SPIKE** |
 | 8 (71–80) | 10 | 1 | 1 (the colonists' evacuation: *Genil* to Sydney, *Nouvelle Bretagne* seized at Manila) | 9 | floor |
+| 9 (81–90) | 10 | 0 | 0 (a reprint + the already-known 1936 retrospective family + coincidental ad columns) | 10 | zero |
+| 10 (91–100) | 10 | 3 | 3 (the *collapse* at Noumea "300 starving souls"; "Deluded Frenchmen" US-press letter; SMH "New Colony" difficulties) | 7 | **SPIKE** |
 
 Trend: distinct yield **5 → 5 → 3 → 1 → 0 → 1 → 3 → 1**; bundled fraction 0 → ~4 → 7 → 9 → 10 → 9 → 7 → 9.
 
@@ -51,6 +53,9 @@ Trend: distinct yield **5 → 5 → 3 → 1 → 0 → 1 → 3 → 1**; bundled f
 16. `ESD18800401.2.28` — "Threatened Invasion of Western Australia": 1880 armed-expedition/prospectus framing (5000ch) — T7 — canonical of a 3-reprint cluster
 17. `ST18840125.2.17` — "A Speedy and Certain Fortune": long trial + de Rays biography feature (8457ch, Jan 1884) — T7
 18. `LT18820704.2.29` — "The Marquis de Ray's Expedition": colonists' evacuation (*Genil* to Sydney, *Nouvelle Bretagne* seized at Manila), Jul 1882 — T8
+19. `NZMAIL18810416.2.23` — "Collapse of the Marquis de Ray's Expedition": SMH Noumea correspondent, disabled steamer / 300 starving souls (1881) — T10 — **vivid collapse account, high value**
+20. `OAM18840225.2.19` — "Deluded Frenchmen": long Paris letter via the *Philadelphia Press* (US-press perspective, Feb 1884) — T10
+21. `LT18810131.2.32` — "The Marquis de Rays' New Colony": SMH on the scheme's mounting difficulties (Jan 1881) — T10
 
 **Rights-EXCLUDED (distinct but not acquirable as PD):** `ODT19490908.2.20` — "King Charles of the Bismarcks", a 9778-char signed retrospective by Lawrence Constable (1949) — almost certainly still in copyright. Plus the rights-pending 1929/1936 items above.
 
