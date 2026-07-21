@@ -202,6 +202,7 @@ Render English-language sources as facsimile-edition PDFs. English documents (PB
 
 ## impl:feature/source-group-pdf
 - status: planned
+- spec: specs/017-source-group-pdf
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-21-source-group-pdf-design.md
 - depends-on: impl:feature/english-source-pdf
