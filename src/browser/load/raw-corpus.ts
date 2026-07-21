@@ -37,6 +37,7 @@ import {
   detectNotCollected,
   resolveSourceLanguage,
 } from '@/browser/load/pages';
+import { isPapersPastSource, loadPapersPastSource } from '@/browser/load/papers-past';
 
 /** The holding-archive label whose record carries the source-level Gallica ark. */
 const GALLICA_ARCHIVE_LABEL = 'Gallica / BnF';
@@ -93,6 +94,15 @@ function loadSource(
   const { source } = loaded;
 
   const title = canonicalTitle(loaded);
+
+  // Papers Past CLIPPING path (BEFORE the periodical/monograph branch and the
+  // not-collected checks): a flat single-unit newspaper article of image
+  // strips whose OCR is the reading text. It does NOT use the Gallica issues
+  // loader, and its "no issue.txt / no translation/" shape is EXPECTED, not
+  // not-collected -- so it must be routed here rather than skipped.
+  if (isPapersPastSource(loaded)) {
+    return { source: loadPapersPastSource(archivePath, loaded, title), skipped: [] };
+  }
 
   // Resolve the source -> unit-dirs step by SSOT kind. A periodical resolves
   // to its many issue directories (via the census-derived newspapers dir); a
