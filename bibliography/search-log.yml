@@ -403,3 +403,17 @@
     - "Acquire the 28-item PD shortlist (spec 015) after rights confirmation; the 1929/1936/1949 retrospectives are rights-blocked/pending and excluded from the PD list."
     - "Reset the NZ exit node when NZ-routed work is done."
   notes: "'Marquis de Rays' vein COMPLETE (depleted at two consecutive zeros, T18-19). Governed client only; hybrid triage throughout. Census + shortlist only -- no acquisition. Pivoting to the 'Port Breton' handle next per the standing order. Captures: page-15..19 enumerations + per-tranche article reads."
+
+- id: SRCH-0029
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "PIVOT to a new vein after depleting 'Marquis de Rays' (operator standing order). Tested candidate handles for handle quality, then ran the full census on the winner. Handles tested (tranche-1 each): 'Port Breton' (count 9593), 'Chandernagore' (649), 'Rabardy' (14). Then the complete 'Rabardy' census (2 tranches, all 14 hits)."
+  coverage: "HANDLE-SELECTION FINDING: the affair's place/ship names are homonym-polluted and NOISIER than the person's name. 'Port Breton' (9593) is dominated by 'Cape Breton' (Nova Scotia) + generic port/Breton token matches -- only ~4/10 top hits on-topic, 3 already in the Marquis-de-Rays census; REJECTED. 'Chandernagore' (649) is entirely the INDIAN city Chandernagore (French enclave near Calcutta, its 1949-50 merger with India), not the de Rays ship; REJECTED. 'Rabardy' (14 -- Commodore Rabardy who governed the colony and died at Port Breton) is rare + non-homonymous, so every hit is colony-internal on-topic; SELECTED. Rabardy census (curve 2,0 -- fully covered) added 2 NEW distinct PD pieces the person-name search missed: CHP18980101.2.78 'The South Sea Bubble of Charles du Breil' (1898, 15689ch, a comprehensive London-Standard retrospective under de Rays' REAL name) and NZH18821216.2.76 'The French Colonisation Swindle -- Trial of the Marquis de Rays' (Dec 1882, 8687ch, SMH). The rest were Baudoin-account reprints, bundled multi-topic editorials/columns, and 1904 fiction. LESSON: the useful complements to 'Marquis de Rays' are other distinctive associated proper nouns (Rabardy; next 'du Breil'/'Charles du Breil'), not place/ship names. Combined de Rays PD shortlist now 30. Record: bibliography/census/papers-past-de-rays-rabardy.md."
+  remainingQuestions:
+    - "Next promising handle: 'du Breil' / 'Charles du Breil' (de Rays' real name) -- should surface real-name-framed coverage (like the 1898 'South Sea Bubble') the title search deprioritized. Also 'United Brotherhood' (the colonists' self-name). Same tranche process if the operator wants to keep pivoting."
+    - "Acquire the combined 30-item PD shortlist (spec 015) after rights confirmation; the 1929/1936/1949 retrospectives remain rights-blocked/pending."
+    - "Reset the NZ exit node when NZ-routed work is done."
+  notes: "Pivot vein after the Marquis-de-Rays depletion. Two candidate handles rejected as homonym-polluted (a genuine reconnaissance finding); Rabardy selected and fully censused (only 14 hits). Governed client only; hybrid triage. Census + shortlist only. Captures: 3 handle-test enumerations + Rabardy page-1/2 + the article reads."
