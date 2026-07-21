@@ -30,6 +30,9 @@ Each row is scored on: **topical** (is the affair the subject, vs a bundled one-
 | 12 (111–120) | 10 | 0 | 0 (a reprint + off-topic: 1866 "Festivities in Paris", the Statue of Liberty) | 10 | zero |
 | 13 (121–130) | 10 | 1 | 1 ("A Suspicious Cruiser": the armed ship reported ex-Aden for New Britain, 1880) | 9 | floor |
 | 14 (131–140) | 10 | 1 | 1 (Samoa Times "Colonizing Expedition", a Pacific-regional view, 1880) | 9 | floor |
+| 15 (141–150) | 10 | 1 | 1 (ODT "New Colony at New Ireland", SMH survey, Apr 1880) | 9 | floor |
+| 16 (151–160) | 10 | 2 | 2 (Chandernagore arrives Port Jackson; "A White Man Among Savages" survivor-discovery) | 8 | floor |
+| 17 (161–170) | 10 | 1 | 1 (the *Genil* en route with the second division + gendarmerie, Jun 1880) | 9 | floor |
 
 Trend: distinct yield **5 → 5 → 3 → 1 → 0 → 1 → 3 → 1**; bundled fraction 0 → ~4 → 7 → 9 → 10 → 9 → 7 → 9.
 
@@ -63,6 +66,10 @@ Trend: distinct yield **5 → 5 → 3 → 1 → 0 → 1 → 3 → 1**; bundled f
 22. `SCANT18840227.2.17` — "The French Mode of Annexing": Dr Baudoin's testimony as an expedition doctor on New Ireland (Feb 1884) — T11
 23. `NZTIM18800526.2.11` — "A Suspicious Cruiser": earliest report of the armed ship (ex-Aden for New Britain, "filibustering expedition"), May 1880 — T13
 24. `STSSG18801016.2.6` — "The Marquis de Ray's Colonizing Expedition": Samoa Times / South Sea Gazette Pacific-regional account (Oct 1880) — T14
+25. `ODT18800406.2.23` — "The New Colony at New Ireland": long SMH survey of Pacific settlement attempts (Apr 1880) — T15
+26. `NZH18800410.2.61` — "The Colony of New Ireland": the *Chandernagore* (682 tons) arrives Port Jackson (Apr 1880) — T16
+27. `EP18810913.2.32` — "A White Man Among Savages": survivor-discovery tied to the de Rays expedition, via Sydney Daily Telegraph (Sep 1881) — T16
+28. `NZH18800614.2.16` — the *Genil* en route to New Ireland with the second division + a corps of gendarmerie (Jun 1880) — T17
 
 **Rights-EXCLUDED (distinct but not acquirable as PD):** `ODT19490908.2.20` — "King Charles of the Bismarcks", a 9778-char signed retrospective by Lawrence Constable (1949) — almost certainly still in copyright. Plus the rights-pending 1929/1936 items above.
 
