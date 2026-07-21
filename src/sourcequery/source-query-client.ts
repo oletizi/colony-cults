@@ -43,12 +43,14 @@ import { ExitNodePolicy } from '@/sourcequery/exit-node-policy';
 import { describeError } from '@/bibliography/load-primitives';
 import type {
   BlockEvidence,
+  Candidate,
   ExitNode,
   HostExitState,
   OperatorPermissionRequest,
   PageResult,
   PersistedCapture,
   QueryResult,
+  QuerySummary,
 } from '@/sourcequery/types';
 
 /** Constructor-injected dependencies (interface-first; no class inheritance). */
@@ -64,7 +66,20 @@ export interface SourceQueryClientDeps {
 
 /** Per-query options. */
 export interface QueryOptions {
-  /** Number of result pages to walk. Only `1` is supported in the MVP. */
+  /**
+   * 1-indexed result page to START at (default 1). Combined with {@link pages},
+   * this selects a specific slice of the result set — e.g. `page: 3, pages: 1`
+   * fetches only the third page (a "tranche"), letting a caller walk the long
+   * tail one bounded page at a time and reassess between fetches.
+   */
+  page?: number;
+  /**
+   * Number of consecutive result pages to walk starting at {@link page}
+   * (default 1). `pages > 1` fetches each page in turn (persist-first, paced by
+   * the same politeness policy), unions the candidates (de-duplicated by `ref`),
+   * and grounds the total count from the first fetched page. A hard block on any
+   * page stops the walk and surfaces that page's escalation/stop.
+   */
   pages?: number;
   /**
    * The operator-approved exit node (ip or hostname) relayed back in-session
@@ -112,23 +127,34 @@ export class SourceQueryClient {
   ): Promise<QueryResult | OperatorPermissionRequest> {
     const config = this.resolveConfig(sourceId);
 
+    const page = opts?.page ?? 1;
     const pages = opts?.pages ?? 1;
-    if (pages > 1) {
+    if (!Number.isInteger(page) || page < 1) {
       throw new Error(
-        `SourceQueryClient: pages=${pages} requested, but multi-page walking is a later ` +
-          'enhancement not wired in the MVP. Refusing to silently return only page 1 ' +
+        `SourceQueryClient: page must be a positive integer (1-indexed), got ${page} ` +
+          '(fail-loud, Principle V).',
+      );
+    }
+    if (!Number.isInteger(pages) || pages < 1) {
+      throw new Error(
+        `SourceQueryClient: pages must be a positive integer, got ${pages} ` +
           '(fail-loud, Principle V).',
       );
     }
 
-    const url = config.buildQueryUrl(text, 1);
+    // The slice of the result set to fetch: `pages` consecutive pages starting
+    // at `page` (1-indexed). One page is the common case (a single tranche).
+    const urls = Array.from({ length: pages }, (_, i) => config.buildQueryUrl(text, page + i));
 
     // Operator-approved escalation path (FR-012): run the switch → settle →
     // minimal set → restore pass instead of the normal navigate/classify pass.
     if (opts?.approveExitNode !== undefined) {
-      return await this.runApprovedPass(config, text, url, opts.approveExitNode);
+      return await this.runApprovedPass(config, text, urls, opts.approveExitNode);
     }
 
+    // ONE politeness policy across the whole walk so inter-page navigations are
+    // paced by the source's minIntervalMs (never a burst), and ONE browser
+    // session opened once and closed once for the whole tranche.
     const politeness = new PolitenessPolicy({
       minIntervalMs: config.minIntervalMs,
       now: this.clock,
@@ -137,6 +163,38 @@ export class SourceQueryClient {
 
     await this.browser.open();
     try {
+      const results: QueryResult[] = [];
+      for (const url of urls) {
+        const outcome = await this.queryOnePage(config, text, url, politeness);
+        // A hard block on ANY page stops the walk and surfaces that page's
+        // escalation/stop — never a silent partial union past a block.
+        if ('proposedNode' in outcome) {
+          return outcome;
+        }
+        results.push(outcome);
+      }
+      return this.mergeResults(results);
+    } finally {
+      await this.browser.close();
+    }
+  }
+
+  /**
+   * Fetch, persist, classify and ground ONE result page within an already-open
+   * browser session (the caller owns open/close and the shared politeness policy
+   * so a multi-page walk reuses one session and paces between pages). Returns a
+   * grounded {@link QueryResult} for a result/legitimate-empty page, or an
+   * {@link OperatorPermissionRequest} on a hard block where a usable exit node
+   * exists (after persisting block evidence). Throws (fail-loud) on a hard block
+   * where Tailscale is unavailable or no usable node exists.
+   */
+  private async queryOnePage(
+    config: SourceConfig,
+    text: string,
+    url: string,
+    politeness: PolitenessPolicy,
+  ): Promise<QueryResult | OperatorPermissionRequest> {
+    {
       const pageResult = await politeness.run(() => this.browser.navigate(url));
 
       // The composition layer forms the timestamp from the injected clock so the
@@ -224,9 +282,59 @@ export class SourceQueryClient {
       // approved-switch pass (ground positive counts from the already-persisted
       // capture; retention-aware empty handling).
       return await this.resultOrEmpty(classification, pageResult, config, text, capture);
-    } finally {
-      await this.browser.close();
     }
+  }
+
+  /**
+   * Merge the per-page {@link QueryResult}s of a walk into one: union the
+   * candidates (de-duplicated by `ref`, preserving first-seen order), ground the
+   * total count from the FIRST fetched page (the total is the same on every
+   * page), and concatenate every page's captures (persist) or derived facts.
+   * A single-page walk returns its one result unchanged.
+   */
+  private mergeResults(results: QueryResult[]): QueryResult {
+    const first = results[0];
+    if (first === undefined) {
+      throw new Error(
+        'SourceQueryClient.mergeResults: no results to merge (empty walk) — ' +
+          'a walk always fetches at least one page (fail-loud, Principle V).',
+      );
+    }
+    if (results.length === 1) {
+      return first;
+    }
+
+    const seen = new Set<string>();
+    const candidates: Candidate[] = [];
+    for (const r of results) {
+      for (const c of r.summary.candidates) {
+        if (!seen.has(c.ref)) {
+          seen.add(c.ref);
+          candidates.push(c);
+        }
+      }
+    }
+    const summary: QuerySummary = { count: first.summary.count, candidates };
+
+    if (first.retention === 'persist') {
+      return {
+        summary,
+        captures: results.flatMap((r) => (r.retention === 'persist' ? r.captures : [])),
+        source: first.source,
+        query: first.query,
+        retention: 'persist',
+      };
+    }
+    return {
+      summary,
+      derivedFacts: results.flatMap((r) =>
+        r.retention === 'derived-facts-only' ? r.derivedFacts : [],
+      ),
+      attribution: first.attribution,
+      source: first.source,
+      query: first.query,
+      retention: 'derived-facts-only',
+    };
   }
 
   /**
@@ -361,7 +469,7 @@ export class SourceQueryClient {
   private async runApprovedPass(
     config: SourceConfig,
     text: string,
-    url: string,
+    urls: string[],
     approvedNodeId: string,
   ): Promise<QueryResult> {
     await this.browser.open();
@@ -385,7 +493,7 @@ export class SourceQueryClient {
       const { results } = await this.exitNodePolicy.runApprovedSwitch({
         node,
         priorState,
-        plan: [url],
+        plan: urls,
         grace: config.grace,
         runOne: (u) => this.runOneUnderGrace(u, config, text),
       });
@@ -401,10 +509,11 @@ export class SourceQueryClient {
         );
       }
 
-      // Single-url MVP plan: `ranAll` is true on success. Partial-coverage
-      // reporting for multi-url plans (surfacing `!ranAll`) lands with multi-page
-      // support.
-      return results[0];
+      // Merge whatever pages ran under the grace window (one for a single-page
+      // tranche, N for a walk) into one grounded result. A grace window that ran
+      // fewer than the requested pages yields the pages that did run — never a
+      // fabricated page.
+      return this.mergeResults(results);
     } finally {
       await this.browser.close();
     }

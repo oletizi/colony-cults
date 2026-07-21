@@ -355,13 +355,69 @@ describe('sourcequery/SourceQueryClient', () => {
     expect(browser.isOpen).toBe(false);
   });
 
-  it('pages > 1: rejects fail-loud (multi-page walking not wired in the MVP)', async () => {
-    const config = makeConfig(() => ({ count: 1, candidates: [] }));
+  // A parseSummary that reads a page's own HTML so distinct pages yield distinct
+  // candidates (count is embedded as "total <n>" so it grounds against the bytes).
+  function pageHtml(count: number, refs: string[]): string {
+    return `<html><body><ul class="results" data-refs="${refs.join(',')}"><li>total ${count}</li></ul></body></html>`;
+  }
+  function parseFromHtml(html: string): QuerySummary {
+    const count = Number(html.match(/total (\d+)/)?.[1] ?? '0');
+    const raw = html.match(/data-refs="([^"]*)"/)?.[1] ?? '';
+    const refs = raw.length > 0 ? raw.split(',') : [];
+    return { count, candidates: refs.map((ref) => ({ title: ref, ref })) };
+  }
+
+  it('page: N fetches exactly that result page (1-indexed), not page 1', async () => {
+    const config = makeConfig(parseFromHtml);
+    const url2 = config.buildQueryUrl('long tail', 2);
+    const page: PageResult = {
+      status: 200,
+      html: pageHtml(695, ['p2a', 'p2b']),
+      snapshotMarkdown: '# p2',
+      errored: false,
+    };
+    const browser = new FakeBrowserSession({ responses: { [url2]: page } });
+    const client = makeClient(config, browser);
+
+    const result = asQueryResult(await client.query('fixture', 'long tail', { page: 2 }));
+
+    expect(browser.navigateCalls).toEqual([url2]);
+    expect(result.summary.count).toBe(695);
+    expect(result.summary.candidates.map((c) => c.ref)).toEqual(['p2a', 'p2b']);
+  });
+
+  it('pages > 1: walks the pages in order, unions candidates (dedup by ref), grounds count from the first page', async () => {
+    const config = makeConfig(parseFromHtml);
+    const url1 = config.buildQueryUrl('walk', 1);
+    const url2 = config.buildQueryUrl('walk', 2);
+    const browser = new FakeBrowserSession({
+      responses: {
+        [url1]: { status: 200, html: pageHtml(695, ['a', 'b']), snapshotMarkdown: '# 1', errored: false },
+        // 'b' repeats across pages — the union must de-duplicate it by ref.
+        [url2]: { status: 200, html: pageHtml(695, ['b', 'c']), snapshotMarkdown: '# 2', errored: false },
+      },
+    });
+    const client = makeClient(config, browser);
+
+    const result = asQueryResult(await client.query('fixture', 'walk', { pages: 2 }));
+
+    expect(browser.navigateCalls).toEqual([url1, url2]);
+    expect(result.summary.count).toBe(695);
+    expect(result.summary.candidates.map((c) => c.ref)).toEqual(['a', 'b', 'c']);
+    // Persist source: every walked page leaves a capture.
+    if (result.retention !== 'persist') {
+      throw new Error('expected a persist-retention result');
+    }
+    expect(result.captures).toHaveLength(2);
+  });
+
+  it('rejects a non-positive page or pages (fail-loud) before opening the session', async () => {
+    const config = makeConfig(parseFromHtml);
     const browser = new FakeBrowserSession({});
     const client = makeClient(config, browser);
 
-    await expect(client.query('fixture', 'anything', { pages: 2 })).rejects.toThrow(/multi-page|pages/i);
-    // No navigation should have happened (fail before opening the session).
+    await expect(client.query('fixture', 'x', { page: 0 })).rejects.toThrow(/page must be a positive integer/i);
+    await expect(client.query('fixture', 'x', { pages: 0 })).rejects.toThrow(/pages must be a positive integer/i);
     expect(browser.navigateCalls).toEqual([]);
   });
 

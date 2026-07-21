@@ -90,3 +90,27 @@ describe('bib query-source CLI (--approve-exit-node parsing)', () => {
     expect(args.approveExitNode).toBe('nz-akl-01');
   });
 });
+
+describe('bib query-source CLI (--page parsing)', () => {
+  it('defaults page to 1 when --page is absent', () => {
+    const args = parseQuerySourceArgs(['papers-past', '--query', 'x']);
+    expect(args.page).toBe(1);
+  });
+
+  it('flows --page <n> into QuerySourceArgs.page', () => {
+    const args = parseQuerySourceArgs(['papers-past', '--query', 'x', '--page', '3']);
+    expect(args.page).toBe(3);
+  });
+
+  it('throws on a non-integer --page', () => {
+    expect(() => parseQuerySourceArgs(['papers-past', '--query', 'x', '--page', 'abc'])).toThrow(
+      /--page must be a positive integer/,
+    );
+  });
+
+  it('throws on a non-positive --page', () => {
+    expect(() => parseQuerySourceArgs(['papers-past', '--query', 'x', '--page', '0'])).toThrow(
+      /--page must be a positive integer/,
+    );
+  });
+});

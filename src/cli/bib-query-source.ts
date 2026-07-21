@@ -11,6 +11,9 @@ import type { OperatorPermissionRequest, QueryResult } from '@/sourcequery/types
 export interface QuerySourceArgs {
   sourceId: string;
   query: string;
+  /** 1-indexed result page to START at (default 1). */
+  page: number;
+  /** Number of consecutive pages to walk from `page` (default 1). */
   pages: number;
   /** Operator-approved exit node (ip or hostname) for the escalation re-invocation (FR-012). */
   approveExitNode?: string;
@@ -60,6 +63,7 @@ export function parseQuerySourceArgs(rest: string[]): QuerySourceArgs {
     args: rest,
     options: {
       query: { type: 'string' },
+      page: { type: 'string', default: '1' },
       pages: { type: 'string', default: '1' },
       'approve-exit-node': { type: 'string' },
     },
@@ -76,6 +80,12 @@ export function parseQuerySourceArgs(rest: string[]): QuerySourceArgs {
     throw new Error('missing required flag --query');
   }
 
+  const pageRaw = values.page ?? '1';
+  const page = Number.parseInt(pageRaw, 10);
+  if (!Number.isInteger(page) || String(page) !== pageRaw.trim() || page < 1) {
+    throw new Error(`--page must be a positive integer, got "${pageRaw}"`);
+  }
+
   const pagesRaw = values.pages ?? '1';
   const pages = Number.parseInt(pagesRaw, 10);
   if (!Number.isInteger(pages) || String(pages) !== pagesRaw.trim() || pages < 1) {
@@ -85,6 +95,7 @@ export function parseQuerySourceArgs(rest: string[]): QuerySourceArgs {
   return {
     sourceId,
     query: values.query,
+    page,
     pages,
     approveExitNode: values['approve-exit-node'],
   };
@@ -134,6 +145,7 @@ export async function runQuerySourceCli(rest: string[]): Promise<number> {
 
   try {
     const result = await client.query(args.sourceId, args.query, {
+      page: args.page,
       pages: args.pages,
       approveExitNode: args.approveExitNode,
     });
