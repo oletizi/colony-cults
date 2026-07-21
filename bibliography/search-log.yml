@@ -319,3 +319,17 @@
     - "ODT19360718 (1936) needs a re-read: the content-read captured only the 19-char heading, and the 'No known copyright (NZ)' statement was not found -- confirm rights + full OCR before it can be an ACQUIRE."
     - "Running ACQUIRE shortlist now ~10 distinct stories (5 from T1 + ~5 from T2); acquisition remains a separate operator step (spec 015 path)."
   notes: "Second tranche of the ongoing census. Enabled by the new --page/--pages pagination in the governed client (the prior 'pages > 1' throw was removed this session). Governed client only; NZ exit node + warm (cleared) browser profile carried over from SRCH-0021. Captures persisted: page-2 enumeration + 10 article reads (2026-07-21T00-1*/00-3*/00-4*)."
+
+- id: SRCH-0023
+  date: 2026-07-21
+  repository: Papers Past / National Library of New Zealand
+  scope:
+    kind: case
+    id: port-breton
+  query: "Tranche 3 of the 'Marquis de Rays' census (results 21-30) via bib query-source papers-past --page 3. Metadata-triaged all 10; content-read the 3 distinct candidates (the 7 generic news-column bundled-mentions were classified from metadata + the established pattern, not read). Continue-and-reassess per the operator directive."
+  coverage: "DILUTING HARD -- 7 of 10 are bundled de-Rays mentions inside generic news columns (Cablegrams / Latest / Australian / Riots at Beyrout / News of the World). But the 3 distinct pieces open a NEW phase: BOPT18800930.2.6 ('Settlement in New Ireland', 1880 -- the Chandernagore voyage, refused emigrants at Havre/Antwerp, sailed from Holland; earliest material yet, PD) and KUMAT18810202.2.8 ('The Marquis de Ray's New Colony', 1881 -- colony 'successfully founded'; PD) are FOUNDING-PHASE reports predating the collapse; ODT19290524.2.100 is a 1929 survivor interview (Mr J.O. Mouton, oldest Papuan planter) -- valuable but rights CHECK (1929, no 'No known copyright (NZ)' statement, same as the 1936 item). Relevancy trend: distinct yield 5 -> 5 -> 3, bundled fraction 0 -> ~4 -> 7. Running assessment: bibliography/census/papers-past-de-rays-marquis.md."
+  remainingQuestions:
+    - "Continue with tranche 4 (--page 4); the distinct-yield curve (5,5,3) is trending toward the stop point (a tranche with ~0 new distinct on-topic)."
+    - "Rights recheck needed on the two post-1920s retrospectives (ODT 1929, ODT 1936) before either can be acquired -- neither carries NLNZ's 'No known copyright (NZ)' statement in the captured page."
+    - "Running ACQUIRE shortlist now ~13 distinct stories (5 T1 + 5 T2 + 3 T3), two of them rights-pending (1929/1936)."
+  notes: "Third tranche. Hybrid triage applied more aggressively as the tail dilutes: only the distinct candidates were content-read; the bundled news-column mentions were classified from metadata (title + the recurring 'de Rays is one line among other cables' pattern) and marked SKIP. Governed client only. Captures: page-3 enumeration + 3 article reads."

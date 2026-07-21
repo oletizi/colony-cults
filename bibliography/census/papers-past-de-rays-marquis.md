@@ -18,8 +18,9 @@ Each row is scored on: **topical** (is the affair the subject, vs a bundled one-
 |---|---|---|---|---|---|
 | 1 (1–10) | 10 | 10 | 5 | 5 | rich — continue |
 | 2 (11–20) | 10 | ~6 | 4–5 (incl. a unique eyewitness account) | 5 | diluting but still yielding distinct value — continue |
+| 3 (21–30) | 10 | 3 | 3 (early founding-phase 1880/1881 + a 1929 survivor interview) | 7 | bundled mentions now dominate; still new dimensions — continue |
 
-Stop when a tranche yields ~no new distinct on-topic material (mostly reprints / bundled mentions / off-topic).
+Trend: distinct yield 5 → 5 → 3; bundled fraction 0 → ~4 → 7. Stop when a tranche yields ~no new distinct on-topic material (mostly reprints / bundled news-column mentions / off-topic). NOTE: post-1920s retrospectives (1929, 1936) do NOT carry the "No known copyright (NZ)" statement — rights must be reconfirmed before any of them can be acquired.
 
 ## Running ACQUIRE shortlist (distinct stories, across tranches)
 
@@ -33,6 +34,9 @@ Stop when a tranche yields ~no new distinct on-topic material (mostly reprints /
 8. `THD18821124.2.27` — Long distinct feature ("arch-impostor", Paris correspondent) — T2
 9. `NEM18840126.2.19` — Fuller post-conviction retrospective (Jan 1884) — T2
 10. `ODT19360718.2.13.7.1` — 1936 retrospective (distinct era) — T2 — **recheck: thin capture (19 ch), rights unconfirmed for 1936**
+11. `BOPT18800930.2.6` — "Settlement in New Ireland": the *Chandernagore* voyage (1880) — T3 — earliest founding-phase report
+12. `KUMAT18810202.2.8` — "The Marquis de Ray's New Colony": colony "successfully founded" (1881) — T3 — early founding-phase
+13. `ODT19290524.2.100` — 1929 survivor interview (Mr J.O. Mouton, "oldest Papuan planter") — T3 — **rights CHECK (1929)**
 
 ## Tranche 1 — results 1–10 (SRCH-0021)
 
@@ -71,6 +75,23 @@ Relevancy diluting: reprints of the T1 arrest/conviction clusters now recur, and
 | 20 | IT18821122.2.7 | Inangahua Times | 1882-11-22 | 2729ch | Verbatim reprint of the NZH arrest long-form | skip (dup) |
 
 All 10 carry "No known copyright (NZ)" except #11 (1936; unconfirmed — recheck before any acquisition).
+
+## Tranche 3 — results 21–30 (SRCH-0023)
+
+Bundled news-column mentions now dominate (7/10 are generic "Cablegrams" / "Latest" / "Australia" / "News of the World" / "Riots at Beyrout" columns where de Rays is one line). The 3 distinct pieces are the payoff — the first *founding-phase* material (1880–1881) plus a 1929 survivor interview. Only the distinct candidates were content-read (the 7 bundled were classified from metadata + the known pattern).
+
+| # | Code | Masthead | Date | Assessment | Verdict |
+|---|---|---|---|---|---|
+| 21 | HNS18831201.2.25 | Hawera & Normanby Star | 1883-12-01 | Reuter's cable header; de Rays embedded | skip (bundled) |
+| 22 | AG18810411.2.7.2 | Ashburton Guardian | 1881-04-11 | "Australian" news column | skip (bundled) |
+| 23 | BOPT18800930.2.6 | Bay of Plenty Times | 1880-09-30 | "Settlement in New Ireland": *Chandernagore* voyage, 1442ch, PD | **ACQUIRE (distinct, earliest)** |
+| 24 | KUMAT18810202.2.8 | Kumara Times | 1881-02-02 | "The Marquis de Ray's New Colony" founded, 2746ch, PD | **ACQUIRE (distinct, founding)** |
+| 25 | AS18830622.2.12 | Auckland Star | 1883-06-22 | "Latest Cablegrams" column | skip (bundled) |
+| 26 | GRA18820818.2.6.1 | Grey River Argus | 1882-08-18 | "Riots at Beyrout" column; de Rays bundled | skip (bundled) |
+| 27 | WDT18840103.2.6 | Wairarapa Daily Times | 1884-01-03 | "Cablegrams" column; conviction cable embedded | skip (dup/bundled) |
+| 28 | ODT19290524.2.100 | Otago Daily Times | 1929-05-24 | 1929 survivor interview (Mouton), 2138ch, rights CHECK | ACQUIRE? (rights recheck) |
+| 29 | TH18831201.2.16 | Taranaki Herald | 1883-12-01 | "News of the World" column | skip (bundled) |
+| 30 | SCANT18810412.2.13.2 | South Canterbury Times | 1881-04-12 | "Australia" news column | skip (bundled) |
 
 ## Provenance
 
