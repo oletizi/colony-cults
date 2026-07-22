@@ -241,7 +241,7 @@ describe('TypstVerso.segments (spec 017 T006, additive/backward-compatible)', ()
     };
 
     const json = serializeTypstInput(withSegments);
-    const parsed = JSON.parse(json) as TypstInput;
+    const parsed: TypstInput = JSON.parse(json);
 
     expect(parsed.pages[0].verso.segments).toEqual([
       { imagePath: 'f001-seg1.jpg', sha256: 'sha-seg1' },
