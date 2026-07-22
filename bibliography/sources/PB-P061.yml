@@ -10,6 +10,7 @@ titles:
   - text: CONVICTION OF MARQUIS DE RAYS
     role: canonical
 notes: "Newspaper: Hawera & Normanby Star, Volume V, Issue 689, 3 January 1884, Page 3 (heading grounded from the persisted article capture). A Paris-datelined (2 Jan 1884) cable reporting the Marquis de Rays convicted of fraud/deception over the New Ireland expedition and sentenced to four years; associates also convicted. Discovered via SRCH-0018 (695-hit 'Marquis de Rays' Papers Past vein) and validated via SRCH-0019 (full content-read: OCR text present under the #text-tab correctable-text panel, three page-image scans, NLNZ rights statement 'No known copyright (New Zealand)'), both using the shipped bib query-source governed client (spec 014). Raw capture: bibliography/repository-responses/papers-past-article/papers-past-article-hns18840103-2-19-3-2026-07-18T23-53-24-461Z.{html,md}. The repositoryRecord below is authored at to-collect: content and rights are validated, but no Papers Past acquisition adapter exists yet (SRCH-0019 remainingQuestions) -- no B2 mirror/assets recorded this session."
+summaryRef: archive/cases/port-breton/newspapers/conviction-of-marquis-de-rays/source.summary.long.en.md
 repositoryRecords:
   - sourceArchive: Papers Past
     status: archived

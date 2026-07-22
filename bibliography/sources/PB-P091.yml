@@ -10,6 +10,7 @@ titles:
   - text: THE NEW IRELAND EXPEDITION
     role: canonical
 notes: "Newspaper: Lyttelton Times, 6 September 1880. SMH (14 Aug 1880) on the persistence after the first failure. Discovered + content-read via the shipped bib query-source governed client (spec 014) during the de Rays / Port-Breton Papers Past census (SRCH-0018..0031); rights confirmed from the persisted article capture (NLNZ 'No known copyright (New Zealand)'). Authored as a PB-P060 source-group member; assets are mirrored by bib acquire (page-image facsimile + source OCR)."
+summaryRef: archive/cases/port-breton/newspapers/the-new-ireland-expedition/source.summary.long.en.md
 repositoryRecords:
   - sourceArchive: Papers Past
     status: archived
