@@ -138,4 +138,68 @@ describe('selectSummaryInput', () => {
       expect(path.isAbsolute(layer.path)).toBe(false);
     }
   });
+
+  describe('empty/whitespace-only text layers (AUDIT-20260722-06)', () => {
+    // Channel: issue.txt exists but is truly empty (0 bytes), no translation.
+    it('fails loud when issue.txt is present but truly empty (0 bytes), no translation', async () => {
+      writeFileSync(path.join(issueDir, 'issue.txt'), '', 'utf-8');
+
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/issue\.txt/);
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/empty|whitespace/);
+    });
+
+    // Channel: issue.txt exists but is whitespace-only (spaces/newlines/tabs), no translation.
+    it('fails loud when issue.txt is present but whitespace-only, no translation', async () => {
+      writeFileSync(path.join(issueDir, 'issue.txt'), '   \n\t\n  ', 'utf-8');
+
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/issue\.txt/);
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/empty|whitespace/);
+    });
+
+    // Channel: issue.en.txt exists but is truly empty (0 bytes), issue.txt is good.
+    it('fails loud when issue.en.txt is present but truly empty (0 bytes), even with a good issue.txt', async () => {
+      writeFileSync(
+        path.join(issueDir, 'issue.txt'),
+        'Le journal rapporte une reunion publique.',
+        'utf-8',
+      );
+      writeFileSync(path.join(issueDir, 'issue.en.txt'), '', 'utf-8');
+
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/issue\.en\.txt/);
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/empty|whitespace/);
+    });
+
+    // Channel: issue.en.txt exists but is whitespace-only, issue.txt is good.
+    it('fails loud when issue.en.txt is present but whitespace-only, even with a good issue.txt', async () => {
+      writeFileSync(
+        path.join(issueDir, 'issue.txt'),
+        'Le journal rapporte une reunion publique.',
+        'utf-8',
+      );
+      writeFileSync(path.join(issueDir, 'issue.en.txt'), '  \n  \n', 'utf-8');
+
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/issue\.en\.txt/);
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/empty|whitespace/);
+    });
+
+    // Channel: both issue.txt and issue.en.txt are truly empty (0 bytes).
+    it('fails loud when both issue.txt and issue.en.txt are truly empty (0 bytes)', async () => {
+      writeFileSync(path.join(issueDir, 'issue.txt'), '', 'utf-8');
+      writeFileSync(path.join(issueDir, 'issue.en.txt'), '', 'utf-8');
+
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/issue\.txt/);
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/issue\.en\.txt/);
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/empty|whitespace/);
+    });
+
+    // Channel: both issue.txt and issue.en.txt are whitespace-only.
+    it('fails loud when both issue.txt and issue.en.txt are whitespace-only', async () => {
+      writeFileSync(path.join(issueDir, 'issue.txt'), '\n\n', 'utf-8');
+      writeFileSync(path.join(issueDir, 'issue.en.txt'), '   ', 'utf-8');
+
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/issue\.txt/);
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/issue\.en\.txt/);
+      await expect(selectSummaryInput(issueDir)).rejects.toThrow(/empty|whitespace/);
+    });
+  });
 });

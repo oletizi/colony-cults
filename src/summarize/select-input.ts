@@ -74,6 +74,16 @@ async function readWithSha(
 }
 
 /**
+ * True when `text` has no non-whitespace content -- covers both a
+ * truly-empty (0-byte) file and a whitespace-only one (spaces, tabs,
+ * newlines left behind by a failed/truncated OCR or translation run).
+ * A file in either state is an unusable text layer even though it exists.
+ */
+function isBlank(text: string): boolean {
+  return text.trim().length === 0;
+}
+
+/**
  * Best-effort read of the French-OCR companion's low-confidence quality note
  * (FR-016): returns `undefined` whenever there is nothing to surface --
  * `issue.txt` has no companion YAML yet, the companion is unreadable, it has
@@ -138,6 +148,29 @@ export async function selectSummaryInput(issueDir: string): Promise<SelectedSumm
       readWithSha(frenchOcrPath),
       readWithSha(translationPath),
     ]);
+    const frenchBlank = isBlank(french.text);
+    const englishBlank = isBlank(english.text);
+    if (frenchBlank || englishBlank) {
+      // Both layers are selected together here (FR-002 Decision 6): a blank
+      // half is a broken acquisition, not a usable one-sided fallback -- fail
+      // loud rather than silently summarizing from a half-empty combined
+      // text (or from an empty text plus the delimiters/instructions alone).
+      const reasons: string[] = [];
+      if (frenchBlank) {
+        reasons.push(`${FRENCH_OCR_FILENAME} (OCR) is present but empty/whitespace-only`);
+      }
+      if (englishBlank) {
+        reasons.push(
+          `${ENGLISH_TRANSLATION_FILENAME} (English translation) is present but empty/whitespace-only`,
+        );
+      }
+      throw new Error(
+        `selectSummaryInput: no usable text layer found in ${issueDir} -- ${reasons.join(
+          ' and ',
+        )}; a blank layer indicates failed/truncated OCR or translation -- re-run OCR ` +
+          `(and/or translation) for this issue before summarizing (FR-003, fail loud)`,
+      );
+    }
     const inputQuality = await readInputQuality(frenchOcrPath);
     return {
       layers: [
@@ -151,6 +184,15 @@ export async function selectSummaryInput(issueDir: string): Promise<SelectedSumm
 
   if (hasFrenchOcr) {
     const ocr = await readWithSha(frenchOcrPath);
+    if (isBlank(ocr.text)) {
+      throw new Error(
+        `selectSummaryInput: no usable text layer found in ${issueDir} -- ` +
+          `${FRENCH_OCR_FILENAME} (OCR) is present but empty/whitespace-only, and ` +
+          `${ENGLISH_TRANSLATION_FILENAME} (English translation) is missing; a blank OCR layer ` +
+          `indicates failed/truncated OCR -- re-run OCR for this issue before summarizing ` +
+          `(FR-003, fail loud)`,
+      );
+    }
     const inputQuality = await readInputQuality(frenchOcrPath);
     return {
       layers: [{ path: FRENCH_OCR_FILENAME, sha256: ocr.sha256 }],
