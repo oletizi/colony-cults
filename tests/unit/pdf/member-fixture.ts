@@ -239,7 +239,14 @@ export async function writeMemberFixture(
         catalog_url: catalogUrl,
         original_url: `${catalogUrl}/f${folioNum}`,
         rights_status: 'public-domain',
-        retrieved: new Date().toISOString(),
+        // Derived from `opts.articleDate` (NOT wall-clock "now"): a group
+        // fixture's members must resolve to their INTENDED, distinct dates
+        // (`resolveMemberDate` reads this `retrieved` field's YYYY-MM-DD
+        // prefix as the member's article date -- `@/pdf/render/member-edition`),
+        // so `buildGroupEdition`'s chronological ordering has real, per-member
+        // dates to sort by rather than every member collapsing onto the
+        // current test-run day.
+        retrieved: new Date(`${opts.articleDate}T00:00:00.000Z`).toISOString(),
         local_path: localPath,
         sha256: imageSha256,
         format: 'image/gif',
