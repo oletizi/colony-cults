@@ -16,3 +16,4 @@
 {"id":"T011b","tierLabel":"balanced","model":"sonnet","commitRange":"a2a1f53..3bc0c59","reviewClean":true,"note":"discovered fix: article date from papers-past identifier not retrieved (FR-009); member-fixture.ts now 509 lines -> T017 split"}
 {"id":"T014","tierLabel":"fast","model":"haiku","commitRange":"3bc0c59..8424695","reviewClean":true,"note":"US3 regression: monograph untouched, french fail-loud, standalone segments-absent"}
 {"id":"T015","tierLabel":"fast","model":"haiku","commitRange":"8424695..3c0fd41","reviewClean":true,"note":"US4 batch discovery+attributable failure; healthy-member-in-batch full build deferred to T009/T018"}
+{"id":"T016","tierLabel":"fast","model":"haiku","commitRange":"3c0fd41..7f0de8b","reviewClean":true,"note":"fail-loud sweep FR-012: missing ocr-text, unresolvable segment, empty group; no PDF"}
