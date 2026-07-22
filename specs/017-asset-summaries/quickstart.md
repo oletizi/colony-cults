@@ -80,3 +80,28 @@ built and validated through `/frontend-design:frontend-design` (Constitution XI)
 Confirm there is no code path that writes a summary artifact WITHOUT `storeAsset` (which welds the
 sidecar + manifest). Grep the new `src/summarize/` for direct `fs.writeFile` of a `.md` summary —
 there MUST be none; all writes go through `storeAsset`.
+
+## Validation record (T035, 2026-07-21)
+
+Scenarios are exercised by the automated integration/unit suite:
+
+- Scenario 1 (generate two-depth) → `tests/integration/summarize.test.ts` ✓
+- Scenario 2 (fail loud on no text) → `tests/integration/summarize-fail-loud.test.ts` ✓
+- Scenario 3 (best-available-text selection) → `tests/unit/summarize/select-input.test.ts` +
+  `summarize.test.ts` both-layers case ✓
+- Scenario 4 (idempotent skip + input-change regen + `--force`) →
+  `tests/integration/summarize-idempotent.test.ts` ✓ (found + fixed a real `storeAsset`
+  byte-dedup bug that could leave stale `input_layers`)
+- Scenario 5 (noisy-OCR `input_quality` flag) → `tests/unit/summarize/select-input.test.ts` +
+  `artifacts.test.ts` ✓
+- Scenario 6 (rollup cover-what-exists + `summaryRef` in one op, no inlined prose) →
+  `tests/integration/summarize-source.test.ts` + `tests/integration/summary-reference.test.ts` ✓
+- Scenario 7 (website reads concise, honest absence) → `tests/unit/browser/summary.test.ts` ✓;
+  UI verified via `astro build` (2202 pages) + Playwright desktop/mobile.
+
+Full suite: 1898 passed / 8 skipped; the only failures are 3 pre-existing
+`CORPUS_ARCHIVE_PATH`-gated browser fixture tests, unrelated to this feature.
+
+XV weld check: `grep -rE 'writeFile' src/summarize/` finds only doc-comments stating the code
+does NOT bypass `storeAsset`. Type/size sweep: all `src/summarize/*` ≤ 278 lines, no
+`any`/`as`/`@ts-ignore`.
