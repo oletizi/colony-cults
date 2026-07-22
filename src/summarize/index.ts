@@ -18,3 +18,12 @@ export type {
   SummarizationRunner,
   SummarizerName,
 } from './types';
+export type { SummarizerBundle } from './factory';
+export { createSummarizer } from './factory';
+export type { SummaryConfig } from './config';
+export {
+  DEFAULT_SUMMARY_MODEL,
+  resolveSummaryModel,
+  resolveSummarizerName,
+} from './config';
+export { createClaudeSummarizer } from './runner-claude';
