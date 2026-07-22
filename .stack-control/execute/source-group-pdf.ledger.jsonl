@@ -11,3 +11,4 @@
 {"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"26ad2d4..f3c89c6","reviewClean":true,"note":"test-first RED half; verified when T011 greens"}
 {"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"26ad2d4..f3c89c6","reviewClean":true}
 {"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"f3c89c6..abf2436","reviewClean":true,"note":"shared composeMemberPage extracted (DRY); namespaced images; one edition-level colophon; fixed writeGroupFixture multi-member bugs"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"abf2436..ccae30c","reviewClean":true,"note":"CLI source-group routing; resolveSelectorRoute pure helper; no routing test (self-exec CLI) — T013 covers"}
