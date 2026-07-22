@@ -23,10 +23,13 @@ export function fakeTypstRunner(): { runner: TypstRunner; calls: CompileRequest[
 
 /**
  * A fake HTTP GET serving folio image bytes at the b2 CDN URL.
- * Matches the trailing `f<NNN>.jpg` (where NNN is a zero-padded folio number)
- * and serves the corresponding bytes from the provided map. Used by integration
- * tests to avoid network calls while serving bytes whose sha256 matches the
- * archive folio sidecar's recorded image-master hash.
+ * Matches the trailing `f<NNN>.jpg` OR `f<NNN>.gif` (where NNN is a
+ * zero-padded folio number) and serves the corresponding bytes from the
+ * provided map. Used by integration tests to avoid network calls while
+ * serving bytes whose sha256 matches the archive folio sidecar's recorded
+ * image-master hash. The `.gif` alternative (spec 017 T008) serves a
+ * source-group member's page-master segment images (Papers-Past-sourced
+ * GIFs) without disturbing the existing `.jpg` monograph/periodical fixtures.
  *
  * @param imageBytes Map from folio number (zero-padded 3-digit string, e.g. "001")
  *                   to image byte array. Typically from writeFixtureArchive result.
@@ -34,7 +37,7 @@ export function fakeTypstRunner(): { runner: TypstRunner; calls: CompileRequest[
  */
 export function makeFixtureFetch(imageBytes: Map<string, Uint8Array>): FetchFn {
   return async (url: string): Promise<FetchResponse> => {
-    const match = /f(\d{3})\.jpg$/.exec(url);
+    const match = /f(\d{3})\.(?:jpg|gif)$/.exec(url);
     const bytes = match ? imageBytes.get(match[1]) : undefined;
     if (!bytes) {
       return {

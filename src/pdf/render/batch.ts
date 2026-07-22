@@ -30,7 +30,8 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { resolveRepoRoot } from '@/browser/load/repo-root';
-import { loadAllSources } from '@/bibliography/load';
+import { loadAllSources, loadSourceFile } from '@/bibliography/load';
+import { authoredToRepositoryRecord } from '@/bibliography/authored-record';
 import {
   isSourceLayoutRegistered,
   monographDir,
@@ -38,7 +39,12 @@ import {
   sourceLayout,
 } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
+import { resolveObjectStoreConfig } from '@/archive/b2-config';
+import { S3ObjectStore } from '@/archive/s3-object-store';
+import type { ObjectStore } from '@/archive/object-store';
 import { buildItem, type BuildItemOptions } from '@/pdf/render/build';
+import { buildMemberItem } from '@/pdf/render/member-build';
+import type { MemberWithRecords } from '@/pdf/render/member-edition';
 import { resolveArchiveSource, type ArchiveSourceResolution } from '@/pdf/load/archive-source';
 
 /** One item's successful build. */
@@ -62,6 +68,81 @@ export interface BuildSourceResult {
   sourceId: string;
   built: BatchBuiltItem[];
   failed: BatchFailedItem[];
+}
+
+/**
+ * `BuildItemOptions` plus an optional injected `ObjectStore` -- threaded
+ * through to `buildMemberItem` (spec 017 T008) when `sourceId` resolves to a
+ * source-group member. Tests inject a fake store; production (no injection)
+ * gets a real `S3ObjectStore` constructed on demand (see
+ * {@link resolveMemberObjectStore}), so the non-member path never pays for
+ * (or requires) B2 credentials it does not need.
+ */
+export interface BatchBuildOptions extends BuildItemOptions {
+  objectStore?: ObjectStore;
+}
+
+/**
+ * Load `sourceId`'s bibliography SSOT entry and, if it is a spec-017
+ * source-group MEMBER, return it widened to `MemberWithRecords` (its
+ * `AuthoredRepositoryRecord[]` promoted to full `RepositoryRecord[]` via
+ * `authoredToRepositoryRecord`). Returns `undefined` for a non-member source,
+ * one with no SSOT file at all (an unregistered id the normal
+ * `resolveArchiveSource` path will reject with its own clearer error), or a
+ * source that merely carries a bibliographic `partOf` edge WITHOUT the
+ * spec-017 acquisition shape.
+ *
+ * `partOf !== undefined` alone is NOT sufficient: `partOf` is also authored
+ * on sources that predate spec 017 and are fetched/built through the
+ * ordinary archive-direct path regardless (e.g. `PB-P054`, a `partOf:
+ * PB-P004` excerpt fetched via the Gallica page-range pipeline, statically
+ * registered in `SOURCE_LAYOUTS`, with real folios + inline `issue.txt` on
+ * disk -- routing it here would wrongly swallow its batch-level "no folio
+ * sidecars" throw into a caught per-item failure). A spec-017 member is
+ * additionally, and uniquely, identified by carrying at least one
+ * `page-master`-role asset (the N segment images `bib acquire`/`bib
+ * inventory` recorded) -- see `@/pdf/render/member-edition`'s
+ * `collectPageMasterSegments`, which requires the same shape.
+ *
+ * A single-file read (`loadSourceFile`), not a whole-directory scan
+ * (`loadAllSources`) -- `buildSource` is called once per source in a
+ * `buildAll` batch over potentially every bibliography entry, so this stays
+ * O(1) per call rather than O(N) per call (O(N^2) over the whole batch).
+ */
+function loadMemberCandidate(
+  sourceId: string,
+  bibliographyDir: string,
+): MemberWithRecords | undefined {
+  const filePath = path.join(bibliographyDir, `${sourceId}.yml`);
+  if (!existsSync(filePath)) {
+    return undefined;
+  }
+  const { source, records } = loadSourceFile(filePath);
+  if (source.partOf === undefined) {
+    return undefined;
+  }
+  const repositoryRecords = records.map((record) => authoredToRepositoryRecord(sourceId, record));
+  const hasPageMasterAssets = repositoryRecords.some((record) =>
+    (record.assets ?? []).some((asset) => asset.role === 'page-master'),
+  );
+  if (!hasPageMasterAssets) {
+    return undefined;
+  }
+  return { ...source, repositoryRecords };
+}
+
+/**
+ * Resolve the `ObjectStore` a member build fetches its `ocr-text` asset
+ * through: the injected one (tests), else a real B2-backed `S3ObjectStore`
+ * constructed from env/credentials (`resolveObjectStoreConfig`) -- fails
+ * loud (naming the missing env var/credentials file) if neither is
+ * available, exactly like every other `--object-store` consumer in this repo.
+ */
+function resolveMemberObjectStore(injected: ObjectStore | undefined): ObjectStore {
+  if (injected !== undefined) {
+    return injected;
+  }
+  return new S3ObjectStore(resolveObjectStoreConfig());
 }
 
 /**
@@ -145,17 +226,41 @@ function discoverBuildableSourceIds(repoRoot: string, archiveRoot: string): stri
  */
 export async function buildSource(
   sourceId: string,
-  opts: BuildItemOptions = {},
+  opts: BatchBuildOptions = {},
 ): Promise<BuildSourceResult> {
   const env = opts.env ?? process.env;
   const repoRoot = resolveRepoRoot();
   const archiveRoot = resolveArchiveRoot(repoRoot, opts.archiveRoot, env);
+  const bibliographyDir = path.join(repoRoot, 'bibliography', 'sources');
 
   // Spec 017 T002: a source-group MEMBER (e.g. PB-P061) is never hand-added
   // to the static `SOURCE_LAYOUTS` registry -- derive+register its layout
   // BEFORE `resolveArchiveSource` needs it (a no-op for every other source,
   // see the bridge's own doc comment).
-  ensureMemberLayoutRegistered(sourceId, path.join(repoRoot, 'bibliography', 'sources'));
+  ensureMemberLayoutRegistered(sourceId, bibliographyDir);
+
+  // Spec 017 T008: a source-group MEMBER collapses its N page-master
+  // segments into ONE PDF page via `buildMemberItem`, an entirely different
+  // (non-`resolveArchiveSource`) path -- record-and-continue (G-4) applies
+  // here exactly as it does to the per-item loop below, so a member's own
+  // failure (e.g. no `ObjectStore` configured) never throws out of
+  // `buildSource`, it lands in `failed` under the member's own id.
+  const member = loadMemberCandidate(sourceId, bibliographyDir);
+  if (member !== undefined) {
+    const built: BatchBuiltItem[] = [];
+    const failed: BatchFailedItem[] = [];
+    try {
+      const objectStore = resolveMemberObjectStore(opts.objectStore);
+      const { outPath } = await buildMemberItem(member, { ...opts, archiveRoot, objectStore });
+      built.push({ itemId: sourceId, outPath });
+    } catch (error) {
+      failed.push({
+        itemId: sourceId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    return { sourceId, built, failed };
+  }
 
   const resolution = await resolveArchiveSource({ sourceId, archiveRoot });
   const itemIds = enumerateArchiveItemIds(resolution);
@@ -195,7 +300,7 @@ export async function buildSource(
  *   root (a fail-loud empty-run guard -- distinct from a per-source failure,
  *   since there is nothing at all to attribute).
  */
-export async function buildAll(opts: BuildItemOptions = {}): Promise<BuildSourceResult[]> {
+export async function buildAll(opts: BatchBuildOptions = {}): Promise<BuildSourceResult[]> {
   const env = opts.env ?? process.env;
   const repoRoot = resolveRepoRoot();
   const archiveRoot = resolveArchiveRoot(repoRoot, opts.archiveRoot, env);

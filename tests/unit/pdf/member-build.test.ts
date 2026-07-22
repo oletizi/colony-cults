@@ -73,7 +73,7 @@ describe('buildMemberItem', () => {
 
       // Assertion 4: The page's english recto text equals the fixture's OCR text
       // (the whole article OCR, materialized as issue.txt).
-      expect(page.recto.english).toBe(fixture.ocrTextBytes.toString('utf-8'));
+      expect(page.recto.english).toBe(Buffer.from(fixture.ocrTextBytes).toString('utf-8'));
 
       // Assertion 5: The colophon reflects an honest OCR-transcription
       // (no machine-translation claim). For English-source editions,
@@ -88,7 +88,7 @@ describe('buildMemberItem', () => {
       // (The ocr-text asset has sequence 0 and is excluded from the image stack.)
       expect(page.verso.segments!).toHaveLength(3);
       expect(page.verso.segments!.length).toBe(
-        fixture.repositoryRecord.assets.filter((a) => a.role === 'page-master').length
+        fixture.repositoryRecord.assets!.filter((a) => a.role === 'page-master').length
       );
     } finally {
       fixture.cleanup();

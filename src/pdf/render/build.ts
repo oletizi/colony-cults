@@ -43,9 +43,16 @@ import {
   type TypstRunner,
 } from '@/pdf/render/typst-runner';
 
-/** Path of the Typst template + vendored fonts, relative to the repo root. */
-const TEMPLATE_REL = path.join('pdf', 'template', 'edition.typ');
-const FONTS_REL = path.join('pdf', 'template', 'fonts');
+/**
+ * Path of the Typst template + vendored fonts, relative to the repo root.
+ * Exported so `@/pdf/render/member-build` (spec 017 T008) reuses the exact
+ * same template/fonts as the standalone-item build -- a source-group
+ * member's collapsed page renders through the SAME `edition.typ` (whose
+ * `facsimile-verso` already branches on `verso.segments`, T006), not a
+ * parallel template.
+ */
+export const TEMPLATE_REL = path.join('pdf', 'template', 'edition.typ');
+export const FONTS_REL = path.join('pdf', 'template', 'fonts');
 
 /** Options for {@link buildItem}. All are optional; production defaults to config + real I/O. */
 export interface BuildItemOptions {
@@ -93,8 +100,13 @@ export interface BuildItemResult {
   outPath: string;
 }
 
-/** Wrap a `FetchFn`, defaulting to a global-`fetch` adapter that yields a {@link FetchResponse}. */
-function resolveFetchFn(injected: FetchFn | undefined): FetchFn {
+/**
+ * Wrap a `FetchFn`, defaulting to a global-`fetch` adapter that yields a
+ * {@link FetchResponse}. Exported for reuse by `@/pdf/render/member-build`
+ * (spec 017 T008), which stages its segment images through the identical
+ * `ImageByteSource` machinery.
+ */
+export function resolveFetchFn(injected: FetchFn | undefined): FetchFn {
   if (injected !== undefined) {
     return injected;
   }
@@ -115,7 +127,7 @@ function resolveFetchFn(injected: FetchFn | undefined): FetchFn {
  * base fronting the public bucket (`CORPUS_CDN_BASE`); its absence is fail-loud
  * (no default url is invented -- Principle III).
  */
-function makeImageSource(
+export function makeImageSource(
   provider: PdfImageProviderKind,
   fetchFn: FetchFn,
   env: NodeJS.ProcessEnv,
@@ -135,11 +147,16 @@ function makeImageSource(
 
 /**
  * Detect the master's image extension from its magic bytes — masters are not all
- * JPEG (e.g. Internet-Archive-sourced pages are PNG). Typst infers the decoder
- * from the file extension, so a PNG staged as `.jpg` fails to decode. Fail loud
- * on an unrecognized format rather than mis-stage it.
+ * JPEG (e.g. Internet-Archive-sourced pages are PNG; a source-group member's
+ * page-master segments, spec 017 T008, are Papers-Past-sourced GIFs). Typst
+ * infers the decoder from the file extension, so a mis-detected format fails
+ * to decode. Fail loud on an unrecognized format rather than mis-stage it.
+ *
+ * Exported so `@/pdf/render/member-build` (spec 017 T008) stages its segment
+ * images through the exact same detection logic (one source of truth for
+ * "what format is this?"), rather than re-implementing magic-byte sniffing.
  */
-function detectImageExt(bytesPath: string, folioId: string): string {
+export function detectImageExt(bytesPath: string, folioId: string): string {
   const head = readFileSync(bytesPath).subarray(0, 8);
   if (head[0] === 0xff && head[1] === 0xd8) {
     return '.jpg';
@@ -152,14 +169,28 @@ function detectImageExt(bytesPath: string, folioId: string): string {
   ) {
     return '.png';
   }
+  if (
+    head[0] === 0x47 && // G
+    head[1] === 0x49 && // I
+    head[2] === 0x46 && // F
+    head[3] === 0x38 && // 8
+    (head[4] === 0x37 || head[4] === 0x39) && // 7 or 9
+    head[5] === 0x61 // a
+  ) {
+    return '.gif';
+  }
   throw new Error(
-    `stageImages: master for folio ${folioId} is neither JPEG nor PNG ` +
-      `(magic ${[...head.subarray(0, 4)].map((b) => b.toString(16)).join(' ')})`,
+    `stageImages: master for folio ${folioId} is neither JPEG, PNG, nor GIF ` +
+      `(magic ${[...head.subarray(0, 6)].map((b) => b.toString(16)).join(' ')})`,
   );
 }
 
-/** Stable verso filename for a folio + its detected extension (matches `versoImagePath`). */
-function versoName(folioId: string, ext: string): string {
+/**
+ * Stable verso filename for a folio + its detected extension (matches
+ * `versoImagePath`). Exported so `@/pdf/render/member-build` (spec 017 T008)
+ * derives its stacked-segment filenames the same way.
+ */
+export function versoName(folioId: string, ext: string): string {
   return `${folioId}${ext}`;
 }
 
@@ -169,7 +200,7 @@ function versoName(folioId: string, ext: string): string {
  * `absPath` must live under `repoRoot`; a path outside it fails loud rather than
  * emit a `..`-escaping value Typst would reject.
  */
-function toRootRelative(repoRoot: string, absPath: string): string {
+export function toRootRelative(repoRoot: string, absPath: string): string {
   const rel = path.relative(repoRoot, absPath);
   if (rel.startsWith('..') || path.isAbsolute(rel)) {
     throw new Error(
