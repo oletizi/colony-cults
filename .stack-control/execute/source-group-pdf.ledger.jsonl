@@ -5,3 +5,5 @@
 {"id":"T004","tierLabel":"fast","model":"haiku","commitRange":"42a502f..127836f","reviewClean":true,"note":"test-first RED half; verified when T005 greens"}
 {"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"a626516..c9ed801","reviewClean":true,"note":"real typst smoke-check passed; as-cast review-fix applied"}
 {"id":"T005","tierLabel":"balanced","model":"sonnet","commitRange":"127836f..7f85dc0","reviewClean":true,"note":"review-fix: sidecar-based FR-004/FR-005 (was registry-membership); test-file as-casts deferred to T017"}
+{"id":"T007","tierLabel":"fast","model":"haiku","commitRange":"7f85dc0..HEAD-test","reviewClean":true,"note":"test-first RED half; verified when T008 greens; flagged gif-vs-jpg fetch mismatch"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"5b23a18..3c7ab0f","reviewClean":true,"note":"crux: member collapse in member-build.ts+member-edition.ts; reuses shared colophon/ocr helpers; gif magic; buildSource member routing (partOf+page-master)"}
