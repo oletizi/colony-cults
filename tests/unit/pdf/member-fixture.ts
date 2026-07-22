@@ -61,9 +61,19 @@ export interface WriteMemberFixtureOptions {
 
   /**
    * OCR text for the entire member (the detached ocr-text asset).
-   * Defaults to a generated string.
+   * Defaults to a generated string. Ignored when {@link ocrTextBytes} is
+   * given.
    */
   ocrText?: string;
+
+  /**
+   * RAW bytes for the detached ocr-text asset, bypassing the utf-8 string
+   * encode `ocrText` goes through -- for exercising a non-UTF-8 (e.g.
+   * Latin-1) OCR text asset, the shape `materializeIssueText`'s VERBATIM-
+   * bytes write path (spec 017 code-review FIX 2) must round-trip correctly.
+   * Takes precedence over `ocrText` when provided.
+   */
+  ocrTextBytes?: Uint8Array;
 
   /**
    * Holding archive label. Defaults to `Gallica / BnF`.
@@ -281,13 +291,15 @@ export async function writeMemberFixture(
       });
     }
 
-    // Create the detached ocr-text asset.
+    // Create the detached ocr-text asset. `ocrTextBytes` (raw, non-utf8-safe)
+    // takes precedence over `ocrText` (utf-8-encoded) when given.
     const ocrText =
       opts.ocrText ??
       `OCR text for ${opts.sourceId} (${opts.articleDate}): Lorem ipsum dolor sit amet.`;
-    const ocrTextBytes = new Uint8Array(Buffer.from(ocrText, 'utf-8'));
+    const ocrTextBytes = opts.ocrTextBytes ?? new Uint8Array(Buffer.from(ocrText, 'utf-8'));
     const ocrTextSha256 = sha256OfBytes(ocrTextBytes);
     const ocrTextObjectStoreKey = `archive/cases/${opts.case}/newspapers/${opts.slug}/ocr.txt`;
+    const ocrTextProvenancePath = `archive/cases/${opts.case}/newspapers/${opts.slug}/ocr.txt.yml`;
 
     assets.push({
       sourceUrl: catalogUrl,
@@ -295,11 +307,51 @@ export async function writeMemberFixture(
       objectStoreKey: ocrTextObjectStoreKey,
       checksum: ocrTextSha256,
       byteLength: ocrTextBytes.byteLength,
-      provenancePath: `archive/cases/${opts.case}/newspapers/${opts.slug}/ocr.txt.yml`,
+      provenancePath: ocrTextProvenancePath,
       role: 'ocr-text',
       sequence: 0, // ocr-text always has sequence 0
       sourceRepresentation: 'papers-past-text-tab',
     });
+
+    // Write the ocr-text asset's OWN provenance sidecar, matching what
+    // `@/archive/write-record-companions`'s `writeRecordCompanions` writes
+    // for real at acquisition time -- `materializeIssueText` (spec 017
+    // code-review FIX 1) reads this as the source of truth for
+    // `issue.txt.yml`'s ProvenanceFields (id/title/case/language/
+    // source_archive/catalog_url/original_url/rights_status/retrieved/
+    // format/ocr_status/object_store/source_representation/rights_raw/
+    // notes), the same "read a sibling's already-written companion" idiom
+    // `@/ocr/run`'s `derivedProvenance` uses.
+    const ocrTextProv: ProvenanceFields = {
+      id: opts.sourceId,
+      title: opts.slug.replace(/-/g, ' '),
+      type: 'ocr-text',
+      case: opts.case,
+      language,
+      source_archive: sourceArchive,
+      catalog_url: catalogUrl,
+      original_url: catalogUrl,
+      rights_status: 'public-domain',
+      retrieved: FIXTURE_RETRIEVED_AT,
+      local_path: ocrTextObjectStoreKey,
+      sha256: ocrTextSha256,
+      format: 'text/plain',
+      ocr_status: 'none',
+      size: ocrTextBytes.byteLength,
+      object_store: {
+        provider: 'backblaze-b2',
+        bucket: 'colony-cults',
+        key: ocrTextObjectStoreKey,
+        endpoint: 's3.us-west-000.backblazeb2.com',
+      },
+      source_representation: 'papers-past-text-tab',
+      notes: null,
+      rights_raw: '<OAIRecord>dummy</OAIRecord>',
+    };
+    await writeFile(
+      path.join(archiveRoot, ocrTextProvenancePath),
+      serializeProvenance(ocrTextProv),
+    );
 
     // Build the member Source.
     const memberSource: Source = {

@@ -7,6 +7,7 @@ import type { Source } from '@/model/source';
 import type { RepositoryRecord } from '@/model/repository-record';
 import { writeMemberFixture } from './member-fixture';
 import { sha256OfBytes } from '@/archive/checksum';
+import { readProvenance } from '@/archive/provenance';
 import { materializeIssueText } from '@/archive/issue-text-materialize';
 
 /**
@@ -64,12 +65,86 @@ describe('materializeIssueText', () => {
       const sidecarData = parseYaml(sidecarContent) as Record<string, unknown>;
 
       // Verify provenance sidecar contains the required fields.
+      expect(sidecarData.type).toBe('ocr-text');
       expect(sidecarData.object_store).toBeDefined();
       expect((sidecarData.object_store as Record<string, unknown>).key).toBe(
         fixture.ocrTextObjectStoreKey,
       );
       expect(sidecarData.sha256).toBe(fixture.ocrTextSha256);
       expect(sidecarData.source_representation).toBe('papers-past-text-tab');
+
+      // FIX 1 schema-compatibility proof: issue.txt.yml must be a valid,
+      // full ProvenanceFields companion -- readProvenance (the same reader
+      // every other companion YAML in the archive goes through, including
+      // the sibling asset-summaries feature) must succeed against it, not
+      // just this test's own ad-hoc yaml.parse.
+      const provenance = await readProvenance(sidecarPath);
+      expect(provenance.type).toBe('ocr-text');
+      expect(provenance.sha256).toBe(fixture.ocrTextSha256);
+      expect(provenance.source_representation).toBe('papers-past-text-tab');
+      expect(provenance.local_path).toBe(
+        path.relative(fixture.archiveRoot, issueTxtPath),
+      );
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  // ---------------------------------------------------------------------------
+  // T1b: Non-UTF-8 idempotency — a Latin-1 (invalid-UTF-8) ocr-text asset's
+  // bytes are written VERBATIM (no utf-8 decode/re-encode), so a SECOND
+  // materializeIssueText call is a clean no-op rather than a spurious
+  // "has been altered" throw (code-review FIX 2).
+  // ---------------------------------------------------------------------------
+
+  it('is idempotent for a non-UTF-8 (Latin-1) ocr-text asset: verbatim bytes round-trip cleanly (FIX 2)', async () => {
+    // "Café" in Latin-1: 0x43 'C', 0x61 'a', 0x66 'f', 0xE9 'é' (Latin-1) --
+    // 0xE9 alone is NOT a valid UTF-8 continuation/lead byte sequence, so a
+    // utf-8 decode+re-encode round-trip would silently substitute a U+FFFD
+    // replacement character, changing the on-disk bytes.
+    const latin1Bytes = Uint8Array.from([0x43, 0x61, 0x66, 0xe9]);
+
+    const fixture = await writeMemberFixture({
+      groupId: 'PB-G901',
+      sourceId: 'PB-P910',
+      case: 'port-breton',
+      slug: 'la-nouvelle-france-1879-07-24-latin1',
+      pageCount: 1,
+      articleDate: '1879-07-24',
+      ocrTextBytes: latin1Bytes,
+    });
+
+    try {
+      const memberWithRecords: SourceWithRecords = {
+        ...fixture.memberSource,
+        repositoryRecords: [fixture.repositoryRecord],
+      };
+
+      // First call: fresh materialization.
+      const issueTxtPath = await materializeIssueText(
+        memberWithRecords,
+        fixture.archiveRoot,
+        fixture.objectStore,
+      );
+
+      // issue.txt on disk carries the RAW Latin-1 bytes verbatim, not a
+      // utf-8-mangled re-encode.
+      const onDiskBytes = await readFile(issueTxtPath);
+      expect(Buffer.from(onDiskBytes)).toEqual(Buffer.from(latin1Bytes));
+
+      // Second call: must be a clean NO-OP (does not throw). Before FIX 2,
+      // this would spuriously throw "has been altered" because the on-disk
+      // digest (of the utf-8-mangled re-encode) would no longer match the
+      // sidecar's recorded raw-byte sha256.
+      const secondPath = await materializeIssueText(
+        memberWithRecords,
+        fixture.archiveRoot,
+        fixture.objectStore,
+      );
+      expect(secondPath).toBe(issueTxtPath);
+
+      const finalBytes = await readFile(issueTxtPath);
+      expect(Buffer.from(finalBytes)).toEqual(Buffer.from(latin1Bytes));
     } finally {
       fixture.cleanup();
     }

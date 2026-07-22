@@ -149,8 +149,8 @@ function resolveMemberRights(
  *
  * @throws Error if the member carries no `papers-past` identifier across its
  *   `repositoryRecords`, or if that identifier's value carries no valid
- *   8-digit `YYYYMMDD` run -- NO fallback to `retrieved`, NO silent default
- *   (Principle V).
+ *   8-digit `YYYYMMDD` run immediately after its leading masthead-alpha
+ *   prefix -- NO fallback to `retrieved`, NO silent default (Principle V).
  */
 function resolveMemberArticleDate(member: MemberWithRecords, context: string): string {
   const identifiers = member.repositoryRecords.flatMap((record) => record.identifiers ?? []);
@@ -163,15 +163,21 @@ function resolveMemberArticleDate(member: MemberWithRecords, context: string): s
     );
   }
 
-  const match = /\d{8}/.exec(papersPast.value);
+  // Anchored to the Papers Past identifier structure -- a masthead alpha
+  // prefix immediately followed by the 8-digit date run (e.g. `HNS18840103`
+  // in `HNS18840103.2.19.3`) -- so a stray digit run elsewhere in the
+  // identifier (e.g. within a trailing `.2.19.3` locator suffix) can never be
+  // mistaken for the date. The RANGE validation below is unchanged.
+  const match = /^[A-Za-z]+(\d{8})/.exec(papersPast.value);
   if (match === null) {
     throw new Error(
       `${context}: papers-past identifier ${JSON.stringify(papersPast.value)} for source ` +
-        `"${member.sourceId}" carries no 8-digit YYYYMMDD date run.`,
+        `"${member.sourceId}" carries no 8-digit YYYYMMDD date run immediately after its ` +
+        `leading masthead-alpha prefix.`,
     );
   }
 
-  const digits = match[0];
+  const digits = match[1];
   const year = Number(digits.slice(0, 4));
   const month = Number(digits.slice(4, 6));
   const day = Number(digits.slice(6, 8));
