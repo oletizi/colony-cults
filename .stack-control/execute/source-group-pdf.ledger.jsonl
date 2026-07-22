@@ -1,3 +1,7 @@
 {"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"ed8f64115df4893f61d1f5bc89cee1e02a5b213e","reviewClean":true}
 {"id":"T003","tierLabel":"fast","model":"haiku","commitRange":"c63b852..d1ffe46","reviewClean":true}
 {"id":"T002","tierLabel":"balanced","model":"sonnet","commitRange":"d1ffe46..b9b4f6c","reviewClean":true}
+{"id":"T002b","tierLabel":"balanced","model":"sonnet","commitRange":"c4cfaa1..42a502f","reviewClean":true,"note":"discovered plan-gap fix"}
+{"id":"T004","tierLabel":"fast","model":"haiku","commitRange":"42a502f..127836f","reviewClean":true,"note":"test-first RED half; verified when T005 greens"}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"a626516..c9ed801","reviewClean":true,"note":"real typst smoke-check passed; as-cast review-fix applied"}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commitRange":"127836f..7f85dc0","reviewClean":true,"note":"review-fix: sidecar-based FR-004/FR-005 (was registry-membership); test-file as-casts deferred to T017"}
