@@ -101,7 +101,7 @@ describe('createClaudeSummarizer (T009/T010)', () => {
     expect(engine.name).toBe('claude-code-cli');
   });
 
-  it('invokes claude --print with the built prompt as the instruction argument', async () => {
+  it('invokes claude --print with the fixed instruction as the argument and the source text on stdin', async () => {
     const { summarizer, calls } = runnerFor(VALID_PAYLOAD);
 
     await summarizer.summarize('bonjour le monde');
@@ -109,7 +109,39 @@ describe('createClaudeSummarizer (T009/T010)', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].command).toBe('claude');
     expect(calls[0].args).toContain('--print');
-    expect(calls[0].args).toContain(buildSummaryPrompt('bonjour le monde'));
+    // The instruction argument is the FIXED build output -- it does NOT embed
+    // the source text (the source text rides stdin, see the ARG_MAX test).
+    expect(calls[0].args).toContain(buildSummaryPrompt());
+    expect(calls[0].stdin).toBe('bonjour le monde');
+    // The source text must not have leaked into the argument vector.
+    for (const arg of calls[0].args) {
+      expect(arg).not.toContain('bonjour le monde');
+    }
+  });
+
+  it('streams a LARGE source text on stdin and keeps the args bounded (ARG_MAX / E2BIG guard)', async () => {
+    const { summarizer, calls } = runnerFor(VALID_PAYLOAD);
+
+    // A few hundred KB of source text -- representative of a real whole-issue
+    // finding-aid (French OCR + English translation combined). Folded into a
+    // CLI argument this would exceed the OS ARG_MAX limit and fail exec with
+    // E2BIG; on stdin it flows unbounded.
+    const largeInput = 'A'.repeat(400_000);
+
+    await summarizer.summarize(largeInput);
+
+    expect(calls).toHaveLength(1);
+    // The large payload arrives on the stdin parameter, in full...
+    expect(calls[0].stdin).toBe(largeInput);
+    expect(calls[0].stdin?.length).toBe(400_000);
+    // ...and NOT in the args array. No single argument carries the payload,
+    // and the whole argument vector stays small and bounded regardless of how
+    // large the source document is.
+    for (const arg of calls[0].args) {
+      expect(arg).not.toContain(largeInput);
+    }
+    const totalArgsBytes = calls[0].args.reduce((sum, arg) => sum + arg.length, 0);
+    expect(totalArgsBytes).toBeLessThan(20_000);
   });
 
   it('isolates the engine: disables skills and agentic tools', async () => {

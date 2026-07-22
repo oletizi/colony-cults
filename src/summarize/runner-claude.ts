@@ -11,17 +11,25 @@ import { parseSummaryEnvelope } from '@/summarize/parse-envelope';
  * provenance label for artifact `.yml` metadata, matching `createClaudeCli`'s
  * label convention (`src/claude/client.ts`).
  *
- * `summarize` folds the instruction AND the input text into a single prompt
- * via {@link buildSummaryPrompt} (unlike the translation engine, which puts
- * the source text on stdin), then drives `claude --print` as an isolated
- * text-transformation engine -- no skills (`--disable-slash-commands`), no
- * agentic tools (`--tools ""`), with {@link SUMMARY_SYSTEM_PROMPT} appended
- * via `--append-system-prompt` to pin the fenced-JSON-only output. This
- * mirrors `createClaudeCli`'s arg construction exactly (research R1). The
- * model's reply is parsed by {@link parseSummaryEnvelope} into a
- * {@link SummaryResult}; a non-zero exit, empty output, or any envelope
- * violation throws a descriptive error (Constitution V -- no fallback, no
- * best-effort partial result).
+ * `summarize` mirrors the translation engine (`createClaudeCli`,
+ * `src/claude/client.ts`) exactly: the FIXED instruction from
+ * {@link buildSummaryPrompt} (the summary task plus the output-envelope
+ * contract) is the `claude --print <instruction>` argument, and the VARIABLE
+ * source document text (`inputText`) is streamed to the child on stdin via
+ * `runner.run(command, args, inputText)`. This separation is load-bearing: a
+ * real whole-issue finding-aid (French OCR plus its English translation) runs
+ * to hundreds of KB or more, which folded into the positional argument would
+ * exceed the OS `ARG_MAX` limit and fail the exec with `E2BIG` on exactly the
+ * large real inputs the pipeline exists to handle. Keeping the argument fixed
+ * and bounded while the payload rides stdin removes that competition entirely.
+ *
+ * It drives `claude --print` as an isolated text-transformation engine -- no
+ * skills (`--disable-slash-commands`), no agentic tools (`--tools ""`), with
+ * {@link SUMMARY_SYSTEM_PROMPT} appended via `--append-system-prompt` to pin
+ * the fenced-JSON-only output. The model's reply is parsed by
+ * {@link parseSummaryEnvelope} into a {@link SummaryResult}; a non-zero exit,
+ * empty output, or any envelope violation throws a descriptive error
+ * (Constitution V -- no fallback, no best-effort partial result).
  */
 export function createClaudeSummarizer(runner: ClaudeCommandRunner): SummarizationRunner {
   return {
@@ -29,7 +37,7 @@ export function createClaudeSummarizer(runner: ClaudeCommandRunner): Summarizati
     async summarize(inputText: string, model?: string): Promise<SummaryResult> {
       const args = [
         '--print',
-        buildSummaryPrompt(inputText),
+        buildSummaryPrompt(),
         '--disable-slash-commands',
         '--tools',
         '',
@@ -40,7 +48,9 @@ export function createClaudeSummarizer(runner: ClaudeCommandRunner): Summarizati
         args.push('--model', model);
       }
 
-      const result = await runner.run('claude', args);
+      // Source text on stdin (NOT the argument vector) so an arbitrarily large
+      // whole-issue finding-aid never competes with the OS ARG_MAX exec limit.
+      const result = await runner.run('claude', args, inputText);
 
       if (result.exitCode !== 0) {
         throw new Error(

@@ -11,13 +11,16 @@
  *   concise/thorough distillation invariant). That instruction is baked into
  *   the prompt below, not left to the adapter to police.
  *
- * This module only BUILDS the prompt string(s); it never calls an LLM. The
- * Claude CLI adapter (T009, `src/summarize/runner-claude.ts`) is the sole
- * caller: it drives `claude --print <prompt>` with `SUMMARY_SYSTEM_PROMPT`
- * appended via `--append-system-prompt` (mirroring `createClaudeCli` in
- * `src/claude/client.ts`) and parses the model's reply back into a
- * `SummaryResult` (`src/summarize/types.ts`) using the envelope contract
- * documented below.
+ * This module only BUILDS the fixed instruction string; it never calls an LLM
+ * and never embeds the source document text. The Claude CLI adapter (T009,
+ * `src/summarize/runner-claude.ts`) is the sole caller: it drives
+ * `claude --print <instruction>` with the source document text streamed on
+ * stdin and `SUMMARY_SYSTEM_PROMPT` appended via `--append-system-prompt`
+ * (mirroring `createClaudeCli` in `src/claude/client.ts`), then parses the
+ * model's reply back into a `SummaryResult` (`src/summarize/types.ts`) using
+ * the envelope contract documented below. The source text rides stdin (not the
+ * argument vector) so a whole-issue finding-aid of arbitrary length never
+ * competes with the OS `ARG_MAX` exec limit.
  *
  * ## Output envelope contract (binding on the Claude adapter's parser, T009)
  *
@@ -102,28 +105,33 @@ Absolute rules:
 - Begin your reply with \`\`\`json and end it with \`\`\` -- nothing before, nothing after.`;
 
 /**
- * Builds the complete instruction prompt for one summarization pass,
- * embedding `inputText` (the acquired OCR/translation text -- the best
- * available English-bearing layer per FR-002) in a clearly delimited section.
+ * Builds the FIXED instruction prompt for one summarization pass -- the
+ * summary task plus the output-envelope contract, and nothing else. The
+ * variable source document text is NOT folded in here: it is streamed to the
+ * `claude` child process on stdin by the adapter
+ * (`src/summarize/runner-claude.ts`), mirroring `TranslationEngine.run`
+ * (`src/claude/client.ts`), which puts its instruction on the CLI argument and
+ * the source text on stdin.
  *
- * Unlike `TranslationEngine.run`, which takes the instruction and the source
- * text as two separate arguments (prompt on the CLI argument, source text on
- * stdin), `SummarizationRunner.summarize(inputText, model?)`
- * (`src/summarize/types.ts`) exposes only `inputText` -- so this function
- * folds both the instruction and the input text into the single returned
- * prompt string, intended to be passed whole as the `claude --print <prompt>`
- * argument (with `SUMMARY_SYSTEM_PROMPT` appended via
- * `--append-system-prompt`). The delimiter markers below let the model (and
- * a human reading the prompt) unambiguously locate where the source text
- * starts and ends, regardless of what the source text itself contains.
+ * This separation is load-bearing, not cosmetic: a real whole-issue
+ * finding-aid (French OCR plus its English translation, concatenated) runs to
+ * hundreds of KB or more. Folding that text into the `claude --print <prompt>`
+ * positional argument would blow past the OS `ARG_MAX` limit and fail the
+ * exec with `E2BIG` on exactly the large, real inputs the pipeline exists to
+ * handle (small test fixtures would pass, masking the defect). Keeping the
+ * argument fixed and bounded while the payload rides stdin removes that
+ * competition with `ARG_MAX` entirely.
  *
- * @param inputText The acquired document text to summarize (English OCR, or
- *   French OCR plus its English translation already concatenated by the
- *   caller -- this function is agnostic to how the caller assembled it).
- * @returns The complete prompt string for one `claude --print` invocation.
+ * The returned instruction refers the model to "the source document text
+ * provided on stdin" rather than embedding it. `SUMMARY_SYSTEM_PROMPT` (also
+ * appended via `--append-system-prompt`) already tells the model it "receives
+ * a source document's text ... on stdin".
+ *
+ * @returns The fixed instruction string for one `claude --print` invocation;
+ *   bounded in size and independent of the source document length.
  */
-export function buildSummaryPrompt(inputText: string): string {
-  return `Read the source document text below and produce a two-depth summary of it, following every rule in this instruction exactly.
+export function buildSummaryPrompt(): string {
+  return `Read the source document text provided to you on stdin and produce a two-depth summary of it, following every rule in this instruction exactly.
 
 ## What to produce
 
@@ -142,12 +150,10 @@ export function buildSummaryPrompt(inputText: string): string {
 ## Other rules
 
 - Write the ENTIRE summary -- both depths and all structured fields -- in English, regardless of what language the source document text is written in.
-- Base every part of the summary strictly on the source document text below. Do not invent, assume, or add any person, place, date, topic, or claim that is not evidenced in the text. If the text is fragmentary or unclear on some point, summarize only what is actually there.
+- Base every part of the summary strictly on the source document text provided on stdin. Do not invent, assume, or add any person, place, date, topic, or claim that is not evidenced in the text. If the text is fragmentary or unclear on some point, summarize only what is actually there.
 - Follow the output format given in your system instructions exactly: one fenced \`\`\`json code block, nothing else.
 
 ## Source document text
 
---- BEGIN SOURCE DOCUMENT TEXT ---
-${inputText}
---- END SOURCE DOCUMENT TEXT ---`;
+The complete source document text to summarize is provided to you on stdin. Treat everything on stdin as the source document -- from its first character to its last -- and summarize all of it.`;
 }
