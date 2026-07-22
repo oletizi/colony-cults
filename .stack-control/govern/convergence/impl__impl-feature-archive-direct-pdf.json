@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/archive-direct-pdf",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-print-pdf",
+  "override": true,
+  "overrideReason": "audit-barrage killed by harness before convergence (known env limitation, cf edition-publishing/corpus-print-pdf); killed early with no fleet findings; controller whole-feature review captured 2 non-blocking findings to backlog (TASK-38 title-date, TASK-39 issue.txt-latent), neither affecting target-source correctness; live-validated: 132 pdf tests + full suite green, typecheck clean, all src/pdf/load/archive-* modules <=500, end-to-end integration proof (both variants + untranslatable + sha256)"
+}

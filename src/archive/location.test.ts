@@ -27,10 +27,29 @@ describe('deriveSourceLayout', () => {
     expect(layout.kind).toBe('monograph');
   });
 
-  it('derives type/kind "newspapers"/"periodical" for a periodical source', () => {
-    const layout = deriveSourceLayout(member({ kind: 'periodical', case: 'port-breton' }));
+  it('derives type "newspapers" and kind "periodical" for a STANDALONE periodical source (no partOf)', () => {
+    // No `partOf` override here: `member(...)` does not set `partOf` by
+    // default, so this is a standalone source -- the ONLY case that keeps
+    // `kind: 'periodical'` (it is the only shape a census actually enumerates
+    // into dated issue directories).
+    const layout = deriveSourceLayout(
+      member({ kind: 'periodical', case: 'port-breton', partOf: undefined }),
+    );
     expect(layout.type).toBe('newspapers');
     expect(layout.kind).toBe('periodical');
+  });
+
+  it('derives kind "monograph" (not "periodical") for a source-group MEMBER, even a periodical one', () => {
+    // A source-group member is filed FLAT on disk (f001.yml..fNNN.yml, no
+    // dated issue subdirectories) regardless of its bibliographic
+    // `Source.kind` -- so `partOf` being set must win over `kind: 'periodical'`
+    // for LAYOUT purposes. `type` still reflects the bibliographic kind
+    // (newspapers), only the resolution-strategy `kind` flips to monograph.
+    const layout = deriveSourceLayout(
+      member({ kind: 'periodical', case: 'port-breton', partOf: 'PB-P061' }),
+    );
+    expect(layout.type).toBe('newspapers');
+    expect(layout.kind).toBe('monograph');
   });
 
   it('uses the source\'s own case when present, ignoring the fallback', () => {

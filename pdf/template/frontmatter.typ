@@ -71,6 +71,13 @@
   v(16pt)
 
   // --- the pinned evidentiary data block ---
+  //
+  // The provenance-disclosure row branches on the DATA, not `show-french`
+  // (spec 015 FR-013, the sole FR-010 template exception, designed via
+  // `/frontend-design`): a French edition carries `col.translation` and
+  // renders the `machine assist` row exactly as before; an English edition
+  // carries `col.ocrTranscription` instead and renders a `transcription` row
+  // — an honest sibling row in the same evidentiary block, never both.
   set text(font: face-mono, size: 7pt, fill: apparatus-ink)
   grid(
     columns: (auto, 1fr),
@@ -78,12 +85,33 @@
     column-gutter: 12pt,
     text(fill: faint)[archive commit], [#col.archiveRef],
     text(fill: faint)[source], [#col.snapshotSourceId],
-    text(fill: faint)[machine assist],
-    {
-      col.translation.engine
-      if col.translation.model != none [ · #col.translation.model]
-      [ · #col.translation.retrieved]
-    },
+    ..(
+      if col.translation != none {
+        // FRENCH — unchanged, byte-for-byte.
+        (
+          text(fill: faint)[machine assist],
+          {
+            col.translation.engine
+            if col.translation.model != none [ · #col.translation.model]
+            [ · #col.translation.retrieved]
+          },
+        )
+      } else {
+        // ENGLISH — the OCR-transcription disclosure (design direction,
+        // 2026-07-18): `machine OCR · <engine/status>`, with a sub-high
+        // quality caveat appended in the colophon's oxblood accent.
+        (
+          text(fill: faint)[transcription],
+          {
+            [machine OCR · #col.ocrTranscription.engineStatus]
+            if col.ocrTranscription.caveat != none {
+              [ · ]
+              text(fill: oxblood)[#col.ocrTranscription.caveat]
+            }
+          },
+        )
+      }
+    ),
     // Which recto mode built this artifact — self-describing (DESIGN.md).
     text(fill: faint)[edition],
     [#if show-french { "parallel FR|EN" } else { "english-only" }],

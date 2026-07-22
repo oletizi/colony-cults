@@ -1,6 +1,18 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import {
+  blockScalar,
+  emitBoolean,
+  emitInteger,
+  parseOptionalBoolean,
+  quotedScalar,
+  requireField,
+  requireInteger,
+  requireSub,
+  unquoteScalar,
+} from '@/archive/provenance-scalars';
+
 /**
  * Where an asset master lives in the object store, once uploaded (T009). The
  * object key is the archive-relative path, so it mirrors `local_path`. All four
@@ -85,6 +97,16 @@ export interface ProvenanceFields {
   /** Translation provenance label, e.g. `machine-assisted` (FR-007). */
   translation?: string;
   /**
+   * Intentionally-blank-recto marker (spec 015 FR-014): `true` on a folio
+   * that is a plate/illustration/cover/blank leaf with no reading text -- the
+   * English-source path's sole opt-out from the empty-OCR fail-loud (the
+   * analog of the French path's `untranslatable` translation label, but
+   * carried on the folio sidecar since English sources have no translation
+   * sidecar). Additive OPTIONAL key: absent on every non-plate folio, which
+   * must re-serialize byte-identically.
+   */
+  blank_recto?: boolean;
+  /**
    * The repository representation that produced this asset, e.g.
    * `papers-past-text-tab`. Additive OPTIONAL key: omitted when unset so
    * records without it re-serialize byte-identically.
@@ -131,6 +153,7 @@ const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'engine',
   'model',
   'translation',
+  'blank_recto',
   'source_representation',
   'object_store',
   'ocr_quality',
@@ -146,29 +169,6 @@ const OBJECT_STORE_KEYS: readonly (keyof ObjectStoreLocation)[] = [
   'endpoint',
 ];
 
-/** A single-line, always-double-quoted YAML scalar (safe for `:`/`#`/quotes). */
-function quotedScalar(value: string): string {
-  const escaped = value
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\t/g, '\\t');
-  return `"${escaped}"`;
-}
-
-/**
- * A YAML literal block scalar with an explicit indentation indicator (`|2`),
- * so a first content line that itself begins with whitespace can never be
- * misread as the block's indentation. Every content line is indented by two
- * spaces; blank lines are emitted empty.
- */
-function blockScalar(key: string, text: string): string {
-  const lines = text.split('\n');
-  const body = lines
-    .map((line) => (line.length === 0 ? '' : `  ${line}`))
-    .join('\n');
-  return `${key}: |2\n${body}`;
-}
-
 /** Emit one `key: value` line (or block), choosing scalar vs block by shape. */
 function emitField(key: keyof ProvenanceFields, value: string | null): string {
   if (value === null) {
@@ -178,16 +178,6 @@ function emitField(key: keyof ProvenanceFields, value: string | null): string {
     return blockScalar(key, value);
   }
   return `${key}: ${quotedScalar(value)}`;
-}
-
-/** Emit `size: 123456` as a bare integer; a non-integer is a hard error. */
-function emitInteger(value: number): string {
-  if (!Number.isInteger(value)) {
-    throw new Error(
-      `serializeProvenance: size must be an integer byte count, got ${value}`,
-    );
-  }
-  return `size: ${value}`;
 }
 
 /**
@@ -231,7 +221,7 @@ function emitEntry(
 ): string | undefined {
   switch (key) {
     case 'size':
-      return emitInteger(fields.size);
+      return emitInteger('size', fields.size);
     case 'object_store':
       return emitObjectStore(fields.object_store);
     case 'ocr_quality':
@@ -244,6 +234,12 @@ function emitEntry(
       // records (without them) re-serialize byte-identically.
       const value = fields[key];
       return value === undefined ? undefined : emitField(key, value);
+    }
+    case 'blank_recto': {
+      // Additive OPTIONAL boolean key (FR-014): omit entirely when unset so
+      // non-plate folios re-serialize byte-identically.
+      const value = fields.blank_recto;
+      return value === undefined ? undefined : emitBoolean('blank_recto', value);
     }
     default:
       return emitField(key, fields[key]);
@@ -271,28 +267,6 @@ export async function writeProvenance(
   await writeFile(yamlPath, serializeProvenance(fields), 'utf-8');
 }
 
-/** Reverse of {@link quotedScalar}: unescape a double-quoted YAML scalar body. */
-function unquoteScalar(raw: string): string {
-  let result = '';
-  for (let i = 0; i < raw.length; i += 1) {
-    const ch = raw[i];
-    const next = raw[i + 1];
-    if (ch === '\\' && next === '\\') {
-      result += '\\';
-      i += 1;
-    } else if (ch === '\\' && next === '"') {
-      result += '"';
-      i += 1;
-    } else if (ch === '\\' && next === 't') {
-      result += '\t';
-      i += 1;
-    } else {
-      result += ch;
-    }
-  }
-  return result;
-}
-
 /** The raw shapes recovered from OUR OWN serialization, before typing. */
 interface ParsedRaw {
   /** Scalar/`null`/block-scalar fields keyed by name. */
@@ -303,36 +277,6 @@ interface ParsedRaw {
   objectStoreSeen: boolean;
   /** The parsed `ocr_quality` block, or `undefined` when the key is absent. */
   ocrQuality?: OcrQuality;
-}
-
-/** Read one required field out of the raw parsed map, failing loud if absent. */
-function requireField(raw: Map<string, string | null>, key: string): string {
-  const value = raw.get(key);
-  if (value === undefined || value === null) {
-    throw new Error(`parseProvenance: missing required field "${key}"`);
-  }
-  return value;
-}
-
-/** Read a required integer field (e.g. `size`), failing loud on absence/shape. */
-function requireInteger(raw: Map<string, string | null>, key: string): number {
-  const value = requireField(raw, key);
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed)) {
-    throw new Error(
-      `parseProvenance: field "${key}" is not an integer: "${value}"`,
-    );
-  }
-  return parsed;
-}
-
-/** Read one required sub-key out of an object_store block, failing loud. */
-function requireSub(values: Map<string, string>, key: string): string {
-  const value = values.get(key);
-  if (value === undefined) {
-    throw new Error(`parseProvenance: object_store block missing "${key}"`);
-  }
-  return value;
 }
 
 /**
@@ -536,6 +480,7 @@ export function parseProvenance(text: string): ProvenanceFields {
     engine: scalars.get('engine') ?? undefined,
     model: scalars.get('model') ?? undefined,
     translation: scalars.get('translation') ?? undefined,
+    blank_recto: parseOptionalBoolean(scalars, 'blank_recto'),
     source_representation: scalars.get('source_representation') ?? undefined,
     object_store: objectStore,
     ocr_quality: ocrQuality,
