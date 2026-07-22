@@ -29,7 +29,7 @@ import type { Source } from '@/model/source';
 import { buildGroupEdition } from '@/pdf/render/group-edition';
 import type { TypstInput, TypstPage } from '@/pdf/render/typst-input';
 
-import { writeGroupFixture } from '../../unit/pdf/member-fixture';
+import { writeGroupFixture } from '../../unit/pdf/group-fixture';
 import { fakeTypstRunner, makeFixtureFetch } from '../../unit/pdf/typst-fake';
 
 /**

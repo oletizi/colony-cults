@@ -13,7 +13,8 @@ import {
   type BuildGroupOptions,
 } from '@/pdf/render/group-edition';
 
-import { writeMemberFixture, writeGroupFixture } from './member-fixture';
+import { writeMemberFixture } from './member-fixture';
+import { writeGroupFixture } from './group-fixture';
 import { fakeTypstRunner, makeFixtureFetch } from './typst-fake';
 
 describe('group-edition', () => {
