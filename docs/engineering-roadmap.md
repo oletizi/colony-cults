@@ -183,12 +183,14 @@ Make `pdf:build` render editions by reading EXCLUSIVELY from our own normalized 
 Render English-language sources as facsimile-edition PDFs. English documents (PB-P056 Richmond/New Italy sketch 52pp, PB-P057-P059 Hong Kong/China press leaves) have English OCR but NO translation — they are already English — so the archive-direct reader (spec 014), built for the French model (verso facsimile | recto FR-OCR + EN-translation) and requiring a per-page EN translation, fails on them. Add English-language-source rendering where the English OCR text IS the reading recto (no FR|EN split, no translation requirement), building on the shipped archive-direct reader + edition model + Typst template. The corpus is bilingual by design; the pipeline must render either language's sources. Unblocks the English documents just acquired + OCR'd.
 
 ## impl:feature/source-query-client
-- status: shipped
+- status: closed
+- validated: yes
 - analyze-clean: yes
 - spec: specs/014-source-query-client
 
 ## impl:feature/papers-past-acquisition
-- status: shipped
+- status: closed
+- validated: yes
 - analyze-clean: yes
 - spec: specs/015-papers-past-acquisition
 
@@ -201,10 +203,16 @@ Render English-language sources as facsimile-edition PDFs. English documents (PB
 - ref: Constitution Principle XV (v1.4.0); backlog TASK-46; supersedes-history TASK-20/21
 
 ## impl:feature/source-group-pdf
-- status: planned
+- status: shipped
 - analyze-clean: yes
 - spec: specs/017-source-group-pdf
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-21-source-group-pdf-design.md
 - depends-on: impl:feature/english-source-pdf
-Render source-group members (Papers Past NZ press articles PB-P060/PB-P061-P092) as facsimile-edition PDFs. Blocked today: members have no registered archive layout in the PDF build (ensureMemberLayoutRegistered exists but is unwired into buildSource/buildAll), and their archive shape is incompatible with the archive-direct reader -- flat page-image folios (ocr_status:none) under newspapers/<slug>/ with OCR held in a separate ocr-text asset, versus the reader's expectation of monograph issue.txt OCR or periodical <date>_<ark> issue dirs. Needs: wire member-layout registration into the build + a build path that sources the English reading recto from the ocr-text asset for these flat-folio periodical clippings.
+Render source-group members (Papers Past NZ press articles PB-P060/PB-P061-P092) as facsimile-edition PDFs: per-member (stacked-segment verso | English OCR recto) and one combined date-ordered group edition. Implemented -- member-layout registration wired into buildSource/buildAll, a materializer sources the English recto from the detached ocr-text asset, members resolve flat (monograph-kind), and the group edition orders chronologically by article date.
+
+## impl:feature/asset-summaries
+- status: in-flight
+- design-approved: yes
+- design: docs/superpowers/specs/2026-07-21-asset-summaries-design.md
+- depends-on: impl:feature/corpus-browser

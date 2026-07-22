@@ -13,6 +13,7 @@
 
 import type {
   CorpusSnapshot,
+  ImageDescriptor,
   ImageProviderConfig,
   IssueView,
   LoadResult,
@@ -67,16 +68,41 @@ function resolveIssue(issue: RawIssue, provider: ImageSourceProvider): IssueView
 }
 
 function resolvePage(page: RawPage, provider: ImageSourceProvider): PageView {
-  const image = provider.resolve({
-    ark: page.ark,
-    folioId: page.folioId,
-    objectStoreKey: page.objectStoreKey,
-  });
+  // A CLIPPING carries multiple image strips: resolve EACH, expose the full set
+  // as `strips`, and use the FIRST as the primary/search `image`. A normal
+  // single-image page has no strips (`strips: null`) and resolves its one handle.
+  let image: ImageDescriptor;
+  let strips: ImageDescriptor[] | null;
+  if (page.strips !== undefined && page.strips !== null) {
+    const resolved = page.strips.map((strip) =>
+      provider.resolve({
+        ark: page.ark,
+        folioId: strip.folioId,
+        objectStoreKey: strip.objectStoreKey,
+      })
+    );
+    if (resolved.length === 0) {
+      throw new Error(
+        `resolveImages(${page.pageId}): page carries an empty "strips" array -- a clipping ` +
+          'must have at least one image strip.'
+      );
+    }
+    strips = resolved;
+    image = resolved[0];
+  } else {
+    image = provider.resolve({
+      ark: page.ark,
+      folioId: page.folioId,
+      objectStoreKey: page.objectStoreKey,
+    });
+    strips = null;
+  }
 
   return {
     pageId: page.pageId,
     folioId: page.folioId,
     image,
+    strips,
     ocrFrench: page.ocrFrench,
     correctedFrench: page.correctedFrench,
     english: page.english,
