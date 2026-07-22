@@ -18,3 +18,4 @@
 {"id":"T015","tierLabel":"fast","model":"haiku","commitRange":"8424695..3c0fd41","reviewClean":true,"note":"US4 batch discovery+attributable failure; healthy-member-in-batch full build deferred to T009/T018"}
 {"id":"T016","tierLabel":"fast","model":"haiku","commitRange":"3c0fd41..7f0de8b","reviewClean":true,"note":"fail-loud sweep FR-012: missing ocr-text, unresolvable segment, empty group; no PDF"}
 {"id":"T017","tierLabel":"fast","model":"haiku","commitRange":"7f0de8b..HEAD","reviewClean":true,"note":"split member-fixture.ts (365) + group-fixture.ts (150); src modules all <=500, escape-free; 189/189 serial green"}
+{"id":"govern-fix-1","tierLabel":"balanced","model":"sonnet","commitRange":"bf98f9b..bea2f85","reviewClean":true,"note":"applied 6 harvested barrage findings: HIGH member-english-only (member+group), HIGH crash-safe materialize (sidecar-first+atomic), attribution guards, portability, doc"}
