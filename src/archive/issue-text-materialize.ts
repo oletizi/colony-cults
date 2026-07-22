@@ -9,19 +9,30 @@
  * (`@/ocr/run`) writes for a standalone monograph, so downstream readers
  * (translation, PDF build) do not need to know which path produced it.
  *
+ * FR-004 (re-materialization is idempotent/conflict-detecting) vs FR-005 (a
+ * pre-existing, foreign `issue.txt` is left untouched) are discriminated by
+ * the PRESENCE OF OUR OWN PROVENANCE SIDECAR (`issue.txt.yml`), never by
+ * whether `member.sourceId` happens to be registered in `@/archive/location`'s
+ * layout registry -- registration is an unrelated, incidental fact (a
+ * same-shaped ID can collide with an existing static entry from an earlier
+ * spec) and using it as the discriminator would misclassify a genuine,
+ * unregistered conflict as an inline no-op. Only OUR sidecar's presence means
+ * "this module wrote this issue.txt before"; see {@link materializeIssueText}.
+ *
  * Fail-loud (Principle V): a missing/ambiguous `ocr-text` asset, a checksum
  * mismatch between the fetched bytes and the asset's recorded `checksum`, or
- * a pre-existing `issue.txt` whose content does not match the fetched text
- * all throw a descriptive Error naming the member's `sourceId` -- never a
- * silent fallback, never a clobber.
+ * a pre-existing, sidecar-owned `issue.txt` that no longer matches (either the
+ * file was altered on disk, or the `ocr-text` asset changed upstream) all
+ * throw a descriptive Error naming the member's `sourceId` -- never a silent
+ * fallback, never a clobber.
  */
 
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { stringify } from 'yaml';
+import { parse as parseYaml, stringify } from 'yaml';
 
-import { deriveSourceLayout, isSourceLayoutRegistered } from '@/archive/location';
+import { deriveSourceLayout } from '@/archive/location';
 import type { ObjectStore } from '@/archive/object-store';
 import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { RepositoryRecord } from '@/model/repository-record';
@@ -95,11 +106,32 @@ async function readIfExists(filePath: string): Promise<string | undefined> {
 /** True when `err` is a Node `ENOENT` (file-not-found) error. */
 function isEnoent(err: unknown): boolean {
   return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code: unknown }).code === 'ENOENT'
+    typeof err === 'object' && err !== null && 'code' in err && err.code === 'ENOENT'
   );
+}
+
+/** Narrowing guard: is `value` a plain object (safe to index by string key)? */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/**
+ * Parse `raw` (the contents of an `issue.txt.yml` sidecar) and extract its
+ * recorded `sha256` field. Throws (fail loud, id-naming) when the sidecar is
+ * not a mapping or its `sha256` field is missing/not a non-empty string --
+ * a sidecar this module cannot interpret must never be silently treated as
+ * "no sidecar" (that would misroute FR-004 traffic onto the FR-005 path).
+ */
+function parseSidecarSha256(raw: string, sidecarPath: string, sourceId: string): string {
+  const parsed: unknown = parseYaml(raw);
+  if (!isRecord(parsed) || typeof parsed.sha256 !== 'string' || parsed.sha256.length === 0) {
+    throw new Error(
+      `materializeIssueText: source "${sourceId}" sidecar "${sidecarPath}" is malformed ` +
+        `(missing or invalid "sha256" field) -- cannot determine whether the existing ` +
+        `issue.txt it accompanies is still current.`,
+    );
+  }
+  return parsed.sha256;
 }
 
 /**
@@ -130,21 +162,25 @@ async function writeSidecar(
  * Materialize `member`'s `issue.txt` from its detached `ocr-text` asset into
  * its archive directory (resolved via {@link memberArchiveDir}).
  *
- * Behavior:
- *  - No existing `issue.txt`: resolve the single `ocr-text` asset, fetch its
- *    bytes, verify sha256 against `asset.checksum` (throws on mismatch),
- *    decode as utf-8, write `issue.txt` + `issue.txt.yml` provenance.
- *  - An existing `issue.txt`, and `member.sourceId` has NEVER been registered
- *    in `@/archive/location`'s layout registry (static or runtime overlay --
- *    i.e. no upstream step, e.g. `bib-sourcegroup-acquire`, has established
- *    this session manages this member's location): the file is an inline
- *    issue.txt some out-of-band flow already wrote here (FR-005) -- left
- *    completely untouched, the ocr-text asset is never even fetched.
- *  - An existing `issue.txt`, and `member.sourceId` IS registered: this
- *    session/pipeline owns this member's location, so the existing file is
- *    compared against the freshly fetched (checksum-verified) text --
- *    identical content is a no-op (FR-004's idempotent half); different
- *    content throws (fail loud, never clobber).
+ * Behavior (discriminated by the PRESENCE OF OUR `issue.txt.yml` SIDECAR --
+ * see the module docstring for why this, and not layout registration, is the
+ * correct FR-004/FR-005 discriminator):
+ *  - No existing `issue.txt`: FRESH. Resolve the single `ocr-text` asset,
+ *    fetch its bytes, verify sha256 against `asset.checksum` (throws on
+ *    mismatch), decode as utf-8, write `issue.txt` + `issue.txt.yml`.
+ *  - An existing `issue.txt` WITH our `issue.txt.yml` sidecar: this module
+ *    materialized it before (FR-004). A FRUGAL check (Principle XII: no
+ *    wasted object-store fetch on the idempotent path) compares (a) the
+ *    on-disk `issue.txt`'s sha256 against the sidecar's recorded `sha256`
+ *    (did the file get altered since we wrote it?) and (b) the asset's
+ *    CURRENT `checksum` against that same recorded `sha256` (did the
+ *    upstream `ocr-text` asset change since we wrote it?) -- both matching
+ *    is a no-op; either mismatching throws (fail loud, never clobber),
+ *    without ever fetching the asset's bytes.
+ *  - An existing `issue.txt` with NO `issue.txt.yml` sidecar: a foreign/
+ *    inline file some other, out-of-band flow already wrote here (FR-005,
+ *    e.g. an acquired monograph's `issue.txt`) -- left completely untouched,
+ *    the `ocr-text` asset is never even resolved, let alone fetched.
  *
  * Returns the absolute path to `issue.txt` (existing or freshly written).
  */
@@ -155,19 +191,45 @@ export async function materializeIssueText(
 ): Promise<string> {
   const memberDir = memberArchiveDir(member, archiveRoot);
   const issueTxtPath = path.join(memberDir, ISSUE_TXT_FILENAME);
+  const sidecarPath = path.join(memberDir, ISSUE_TXT_SIDECAR_FILENAME);
 
   const existing = await readIfExists(issueTxtPath);
-  if (existing !== undefined && !isSourceLayoutRegistered(member.sourceId)) {
-    // An issue.txt already sits here, but this member's archive layout has
-    // never been registered (static OR runtime overlay) -- i.e. no upstream
-    // step in this session (`bib-sourcegroup-acquire`) established this as a
-    // location it manages. Treat the file as an inline issue.txt some other,
-    // out-of-band flow already wrote here (FR-005): leave it completely
-    // untouched, never even fetching the detached ocr-text asset.
+  const existingSidecarRaw = await readIfExists(sidecarPath);
+
+  if (existing !== undefined && existingSidecarRaw === undefined) {
+    // A foreign/inline issue.txt with no sidecar of ours: some other,
+    // out-of-band flow already wrote it here (FR-005). Leave it completely
+    // untouched -- never resolve or fetch the detached ocr-text asset.
     return issueTxtPath;
   }
 
   const asset = resolveOcrTextAsset(member);
+
+  if (existing !== undefined && existingSidecarRaw !== undefined) {
+    // We materialized this issue.txt before (FR-004). Frugal re-check: no
+    // object-store fetch, just local hashes vs the sidecar's recorded sha256.
+    const recordedSha256 = parseSidecarSha256(existingSidecarRaw, sidecarPath, member.sourceId);
+    const onDiskSha256 = createHash('sha256').update(Buffer.from(existing, 'utf-8')).digest('hex');
+
+    if (onDiskSha256 !== recordedSha256) {
+      throw new Error(
+        `materializeIssueText: source "${member.sourceId}" existing "${issueTxtPath}" has ` +
+          `been altered since it was materialized (its content no longer matches the ` +
+          `provenance sidecar "${sidecarPath}") -- refusing to clobber a conflicting file.`,
+      );
+    }
+    if (asset.checksum !== recordedSha256) {
+      throw new Error(
+        `materializeIssueText: source "${member.sourceId}" ocr-text asset has changed since ` +
+          `"${issueTxtPath}" was materialized (asset checksum "${asset.checksum}" differs ` +
+          `from the sidecar's recorded sha256 "${recordedSha256}") -- refusing to clobber a ` +
+          `conflicting file.`,
+      );
+    }
+    return issueTxtPath; // Identical on both sides: idempotent no-op (FR-004).
+  }
+
+  // existing === undefined: FRESH materialization.
   const bytes = await objectStoreReader.get(asset.objectStoreKey);
   const actualSha256 = createHash('sha256').update(bytes).digest('hex');
   if (actualSha256 !== asset.checksum) {
@@ -180,21 +242,8 @@ export async function materializeIssueText(
 
   const text = Buffer.from(bytes).toString('utf-8');
 
-  if (existing !== undefined) {
-    if (existing === text) {
-      return issueTxtPath; // Idempotent re-write: identical content, no-op (FR-004).
-    }
-    throw new Error(
-      `materializeIssueText: source "${member.sourceId}" already has a conflicting ` +
-        `"${issueTxtPath}" whose content differs from its fetched ocr-text asset -- ` +
-        `refusing to clobber an existing, different issue.txt.`,
-    );
-  }
-
   await mkdir(memberDir, { recursive: true });
   await writeFile(issueTxtPath, text, 'utf-8');
-
-  const sidecarPath = path.join(memberDir, ISSUE_TXT_SIDECAR_FILENAME);
   await writeSidecar(sidecarPath, member.sourceId, asset, actualSha256);
 
   return issueTxtPath;

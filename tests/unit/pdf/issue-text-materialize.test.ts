@@ -22,8 +22,8 @@ describe('materializeIssueText', () => {
 
   it('resolves ocr-text asset, fetches bytes, verifies checksum, writes issue.txt + issue.txt.yml', async () => {
     const fixture = await writeMemberFixture({
-      groupId: 'PB-G001',
-      sourceId: 'PB-P001',
+      groupId: 'PB-G901',
+      sourceId: 'PB-P901',
       case: 'port-breton',
       slug: 'la-nouvelle-france-1879-07-15',
       pageCount: 2,
@@ -75,8 +75,8 @@ describe('materializeIssueText', () => {
 
   it('is idempotent: identical re-write is a no-op (T2 / FR-004)', async () => {
     const fixture = await writeMemberFixture({
-      groupId: 'PB-G001',
-      sourceId: 'PB-P002',
+      groupId: 'PB-G901',
+      sourceId: 'PB-P902',
       case: 'port-breton',
       slug: 'la-nouvelle-france-1879-07-16',
       pageCount: 2,
@@ -124,14 +124,18 @@ describe('materializeIssueText', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // T3: Conflicting existing issue.txt — different content makes it THROW
-  // (fail loud, never clobber).
+  // T3: Conflicting PRIOR-MATERIALIZED issue.txt — this module wrote
+  // issue.txt + issue.txt.yml once already (so the sidecar IS present), then
+  // the member's ocr-text asset changes upstream (new bytes, new checksum).
+  // A re-materialize call must detect the asset-vs-sidecar mismatch and THROW
+  // (fail loud, never clobber) -- this is what actually distinguishes FR-004's
+  // conflict half from T6/FR-005 below: sidecar PRESENCE, not sourceId.
   // ---------------------------------------------------------------------------
 
   it('throws when a conflicting existing issue.txt has different content (T3 / FR-004)', async () => {
     const fixture = await writeMemberFixture({
-      groupId: 'PB-G001',
-      sourceId: 'PB-P003',
+      groupId: 'PB-G901',
+      sourceId: 'PB-P903',
       case: 'port-breton',
       slug: 'la-nouvelle-france-1879-07-17',
       pageCount: 2,
@@ -145,19 +149,69 @@ describe('materializeIssueText', () => {
         repositoryRecords: [fixture.repositoryRecord],
       };
 
-      // Write a conflicting (different) issue.txt.
-      const { writeFile } = await import('node:fs/promises');
-      const issueTxtPath = path.join(fixture.sourceDir, 'issue.txt');
-      await writeFile(issueTxtPath, 'Different text content.');
+      // First call: materialize for real, so issue.txt + issue.txt.yml (our
+      // sidecar) both exist on disk, recording the ORIGINAL asset's sha256.
+      const issueTxtPath = await materializeIssueText(
+        memberWithRecords,
+        fixture.archiveRoot,
+        fixture.objectStore,
+      );
+      expect(issueTxtPath).toBe(path.join(fixture.sourceDir, 'issue.txt'));
 
-      // Attempt to materialize should throw.
+      // Now simulate the upstream ocr-text asset changing (e.g. a re-OCR):
+      // different bytes, different checksum, served from a distinct
+      // object-store key. The member's repositoryRecords are updated to
+      // point at this new asset.
+      const changedOcrText = 'Different OCR text -- the asset changed upstream.';
+      const changedOcrTextBytes = new Uint8Array(Buffer.from(changedOcrText, 'utf-8'));
+      const changedOcrTextSha256 = sha256OfBytes(changedOcrTextBytes);
+      const changedObjectStoreKey = fixture.ocrTextObjectStoreKey.replace(
+        'ocr.txt',
+        'ocr-v2.txt',
+      );
+
+      const originalOcrAsset = (fixture.repositoryRecord.assets ?? []).find(
+        (a) => a.role === 'ocr-text',
+      )!;
+      const changedOcrAsset = {
+        ...originalOcrAsset,
+        objectStoreKey: changedObjectStoreKey,
+        checksum: changedOcrTextSha256,
+        byteLength: changedOcrTextBytes.byteLength,
+      };
+      const recordWithChangedOcr = {
+        ...fixture.repositoryRecord,
+        assets: [
+          ...(fixture.repositoryRecord.assets ?? []).filter((a) => a.role !== 'ocr-text'),
+          changedOcrAsset,
+        ],
+      };
+      const memberWithChangedAsset: SourceWithRecords = {
+        ...fixture.memberSource,
+        repositoryRecords: [recordWithChangedOcr],
+      };
+
+      // The frugal FR-004 conflict check must detect the asset-vs-sidecar
+      // mismatch WITHOUT ever reading the object store -- assert that too.
+      let getCallCount = 0;
+      const spiedObjectStore = {
+        ...fixture.objectStore,
+        async get(key: string) {
+          getCallCount += 1;
+          if (key === changedObjectStoreKey) {
+            return changedOcrTextBytes;
+          }
+          return fixture.objectStore.get(key);
+        },
+      };
+
+      // Attempt to re-materialize should throw (conflict: asset changed).
       await expect(
-        materializeIssueText(
-          memberWithRecords,
-          fixture.archiveRoot,
-          fixture.objectStore,
-        ),
-      ).rejects.toThrow(/conflicting|different|clobber|PB-P003/i);
+        materializeIssueText(memberWithChangedAsset, fixture.archiveRoot, spiedObjectStore),
+      ).rejects.toThrow(/conflicting|changed|clobber|PB-P903/i);
+
+      // The frugal check must never have fetched the (changed) asset's bytes.
+      expect(getCallCount).toBe(0);
     } finally {
       fixture.cleanup();
     }
@@ -170,8 +224,8 @@ describe('materializeIssueText', () => {
 
   it('throws when ocr-text asset is missing (none present)', async () => {
     const fixture = await writeMemberFixture({
-      groupId: 'PB-G001',
-      sourceId: 'PB-P004',
+      groupId: 'PB-G901',
+      sourceId: 'PB-P904',
       case: 'port-breton',
       slug: 'la-nouvelle-france-1879-07-18',
       pageCount: 2,
@@ -196,7 +250,7 @@ describe('materializeIssueText', () => {
           fixture.archiveRoot,
           fixture.objectStore,
         ),
-      ).rejects.toThrow(/missing|ocr-text|PB-P004/i);
+      ).rejects.toThrow(/missing|ocr-text|PB-P904/i);
     } finally {
       fixture.cleanup();
     }
@@ -204,8 +258,8 @@ describe('materializeIssueText', () => {
 
   it('throws when ocr-text asset is ambiguous (two present)', async () => {
     const fixture = await writeMemberFixture({
-      groupId: 'PB-G001',
-      sourceId: 'PB-P005',
+      groupId: 'PB-G901',
+      sourceId: 'PB-P905',
       case: 'port-breton',
       slug: 'la-nouvelle-france-1879-07-19',
       pageCount: 2,
@@ -235,7 +289,7 @@ describe('materializeIssueText', () => {
           fixture.archiveRoot,
           fixture.objectStore,
         ),
-      ).rejects.toThrow(/ambiguous|multiple|ocr-text|PB-P005/i);
+      ).rejects.toThrow(/ambiguous|multiple|ocr-text|PB-P905/i);
     } finally {
       fixture.cleanup();
     }
@@ -248,8 +302,8 @@ describe('materializeIssueText', () => {
 
   it('throws when checksum mismatch: fetched bytes sha256 ≠ asset checksum', async () => {
     const fixture = await writeMemberFixture({
-      groupId: 'PB-G001',
-      sourceId: 'PB-P006',
+      groupId: 'PB-G901',
+      sourceId: 'PB-P906',
       case: 'port-breton',
       slug: 'la-nouvelle-france-1879-07-20',
       pageCount: 2,
@@ -277,23 +331,25 @@ describe('materializeIssueText', () => {
           fixture.archiveRoot,
           fixture.objectStore,
         ),
-      ).rejects.toThrow(/checksum|mismatch|sha256|PB-P006/i);
+      ).rejects.toThrow(/checksum|mismatch|sha256|PB-P906/i);
     } finally {
       fixture.cleanup();
     }
   });
 
   // ---------------------------------------------------------------------------
-  // T6: NO-OP when an inline issue.txt already exists for a source that carries
-  // one from acquisition (FR-005: existing monographs untouched).
-  // Align this with T2's idempotency; the intent is "never overwrite/alter a
-  // pre-existing issue.txt".
+  // T6: NO-OP when a FOREIGN/inline issue.txt already exists with NO
+  // "issue.txt.yml" sidecar of ours (FR-005: e.g. an acquired monograph's
+  // issue.txt, written by an out-of-band flow this module never touched).
+  // This is what actually distinguishes T6 from T3 above: sidecar ABSENCE,
+  // not sourceId -- both tests otherwise pre-write a different-content
+  // issue.txt with structurally identical member data.
   // ---------------------------------------------------------------------------
 
   it('is NO-OP when an inline issue.txt already exists (FR-005)', async () => {
     const fixture = await writeMemberFixture({
-      groupId: 'PB-G001',
-      sourceId: 'PB-P007',
+      groupId: 'PB-G901',
+      sourceId: 'PB-P907',
       case: 'port-breton',
       slug: 'la-nouvelle-france-1879-07-21',
       pageCount: 2,
@@ -307,7 +363,8 @@ describe('materializeIssueText', () => {
         repositoryRecords: [fixture.repositoryRecord],
       };
 
-      // Pre-write an existing issue.txt (simulating an inline/pre-existing file).
+      // Pre-write an existing issue.txt with NO "issue.txt.yml" sidecar
+      // (simulating an inline/pre-existing file this module never wrote).
       const { writeFile } = await import('node:fs/promises');
       const issueTxtPath = path.join(fixture.sourceDir, 'issue.txt');
       const preexistingContent = 'Pre-existing inline issue text.';
@@ -316,11 +373,23 @@ describe('materializeIssueText', () => {
         m.stat(issueTxtPath),
       );
 
+      // Spy on the object store's `get` so a truly frugal NO-OP is provable:
+      // an inline issue.txt with no sidecar must never even resolve, let
+      // alone fetch, the detached ocr-text asset.
+      let getCallCount = 0;
+      const spiedObjectStore = {
+        ...fixture.objectStore,
+        async get(key: string) {
+          getCallCount += 1;
+          return fixture.objectStore.get(key);
+        },
+      };
+
       // Call materializeIssueText — it should be a no-op (not overwrite).
       const returnedPath = await materializeIssueText(
         memberWithRecords,
         fixture.archiveRoot,
-        fixture.objectStore,
+        spiedObjectStore,
       );
 
       // Content must remain unchanged (NO-OP, did not fetch/write from detached asset).
@@ -332,6 +401,13 @@ describe('materializeIssueText', () => {
         m.stat(returnedPath),
       );
       expect(postStat.mtime.getTime()).toBe(preStat.mtime.getTime());
+
+      // No "issue.txt.yml" sidecar was created (it stays a foreign file).
+      const sidecarPath = path.join(fixture.sourceDir, 'issue.txt.yml');
+      await expect(readFile(sidecarPath, 'utf-8')).rejects.toThrow(/ENOENT/);
+
+      // The object store must never have been read.
+      expect(getCallCount).toBe(0);
     } finally {
       fixture.cleanup();
     }
