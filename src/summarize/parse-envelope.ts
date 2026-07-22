@@ -53,11 +53,100 @@ function extractLoneJsonFence(reply: string): string {
   return matches[0][1];
 }
 
-/** Parse the fenced content as JSON, or throw naming the parse failure. */
+/**
+ * Escape a single control character (U+0000-U+001F) into its shortest valid
+ * JSON escape. The five characters with a dedicated escape use it; every other
+ * control char becomes a `\uXXXX` unit.
+ */
+function escapeControlChar(code: number): string {
+  switch (code) {
+    case 0x08:
+      return '\\b';
+    case 0x09:
+      return '\\t';
+    case 0x0a:
+      return '\\n';
+    case 0x0c:
+      return '\\f';
+    case 0x0d:
+      return '\\r';
+    default:
+      return '\\u' + code.toString(16).padStart(4, '0');
+  }
+}
+
+/**
+ * REPAIR pass for the ONE known Claude output quirk: LITERAL control characters
+ * (raw newline/tab/etc.) left unescaped INSIDE a JSON string literal, which the
+ * strict `JSON.parse` rejects ("Bad control character in string literal in
+ * JSON"). A single-pass state machine tracks whether the cursor is inside a
+ * string (toggled by unescaped `"`), honours existing backslash escapes (so a
+ * valid `\n` is copied verbatim, never doubled, and an escaped `\"` never ends
+ * the string), and escapes only the control chars that fall INSIDE a string.
+ * Control chars OUTSIDE strings are structural and left untouched -- genuinely
+ * broken output must still fail loud, so this rescues nothing it should not.
+ *
+ * Returns the (possibly identical) repaired text; the caller re-parses and only
+ * trusts the result if it now parses.
+ */
+function repairControlCharsInStrings(content: string): string {
+  let out = '';
+  let inString = false;
+  for (let i = 0; i < content.length; i++) {
+    const ch = content[i];
+    if (!inString) {
+      if (ch === '"') {
+        inString = true;
+      }
+      out += ch;
+      continue;
+    }
+    // Inside a string literal.
+    if (ch === '\\') {
+      // Backslash escape: copy the backslash and its escaped char verbatim so
+      // an already-valid escape is never doubled and an escaped quote never
+      // terminates the string. Guard the final-char edge case.
+      out += ch;
+      if (i + 1 < content.length) {
+        out += content[i + 1];
+        i++;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = false;
+      out += ch;
+      continue;
+    }
+    const code = content.charCodeAt(i);
+    if (code <= 0x1f) {
+      out += escapeControlChar(code);
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
+/**
+ * Parse the fenced content as JSON, or throw naming the parse failure. On a
+ * parse failure a single control-character REPAIR pass is attempted (the known
+ * LLM quirk of raw control chars inside string literals) and the repaired text
+ * re-parsed; if the repair changes nothing or the re-parse still fails, the
+ * original descriptive error is thrown (fail loud -- strictness preserved).
+ */
 function parseJson(fenceContent: string): unknown {
   try {
     return JSON.parse(fenceContent);
   } catch (cause) {
+    const repaired = repairControlCharsInStrings(fenceContent);
+    if (repaired !== fenceContent) {
+      try {
+        return JSON.parse(repaired);
+      } catch {
+        // Repair did not yield valid JSON -- fall through and fail loud below.
+      }
+    }
     const detail = cause instanceof Error ? cause.message : String(cause);
     throw new Error(
       'Malformed summary envelope: the json fence content was not parseable ' +

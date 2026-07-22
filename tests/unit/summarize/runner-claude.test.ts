@@ -66,6 +66,41 @@ function runnerFor(payload: unknown): {
   return { summarizer: createClaudeSummarizer(runner), calls };
 }
 
+/**
+ * A fake runner that returns a SEQUENCE of results, one per successive call
+ * (clamping to the last entry once exhausted). Used to exercise the bounded
+ * malformed-envelope retry loop: e.g. a bad envelope on attempt 1 followed by
+ * a good one on attempt 2.
+ */
+function sequenceRunner(results: ExecResult[]): {
+  runner: ClaudeCommandRunner;
+  calls: FakeCall[];
+} {
+  const calls: FakeCall[] = [];
+  const runner: ClaudeCommandRunner = {
+    run: async (command, args, stdin) => {
+      calls.push({ command, args, stdin });
+      const idx = Math.min(calls.length - 1, results.length - 1);
+      return results[idx];
+    },
+  };
+  return { runner, calls };
+}
+
+/** A malformed envelope (unparseable JSON inside the fence). */
+const MALFORMED_RESULT: ExecResult = {
+  stdout: '```json\n{ not valid json ,,, }\n```',
+  stderr: '',
+  exitCode: 0,
+};
+
+/** A well-formed, valid envelope. */
+const VALID_RESULT: ExecResult = {
+  stdout: fence(VALID_PAYLOAD),
+  stderr: '',
+  exitCode: 0,
+};
+
 describe('createClaudeSummarizer (T009/T010)', () => {
   it('parses a valid envelope into a SummaryResult with fields mapped 1:1', async () => {
     const { summarizer } = runnerFor(VALID_PAYLOAD);
@@ -350,5 +385,65 @@ describe('createClaudeSummarizer (T009/T010)', () => {
     const { summarizer } = runnerFor(payload);
 
     await expect(summarizer.summarize('source')).rejects.toThrow(/structured|object/i);
+  });
+});
+
+describe('createClaudeSummarizer malformed-envelope retry (spec 017)', () => {
+  it('retries once when attempt 1 is a malformed envelope and attempt 2 is valid', async () => {
+    // Stochastic LLM quirk (missing fence / truncation): a fresh generation
+    // usually succeeds. The runner is invoked again and the good result wins.
+    const { runner, calls } = sequenceRunner([MALFORMED_RESULT, VALID_RESULT]);
+    const summarizer = createClaudeSummarizer(runner);
+
+    const result: SummaryResult = await summarizer.summarize('source text');
+
+    expect(result.thoroughBody).toBe(VALID_PAYLOAD.thoroughBody);
+    expect(result.concise).toBe(VALID_PAYLOAD.concise);
+    // Exactly two claude invocations: the failed attempt plus the retry.
+    expect(calls).toHaveLength(2);
+  });
+
+  it('throws the last descriptive error after all attempts are malformed (called 3 times)', async () => {
+    const { runner, calls } = sequenceRunner([
+      MALFORMED_RESULT,
+      MALFORMED_RESULT,
+      MALFORMED_RESULT,
+    ]);
+    const summarizer = createClaudeSummarizer(runner);
+
+    await expect(summarizer.summarize('source text')).rejects.toThrow(
+      /malformed|parse|json/i,
+    );
+    // Bounded at MAX_ENVELOPE_ATTEMPTS (3) -- no unbounded retry.
+    expect(calls).toHaveLength(3);
+  });
+
+  it('does not retry when attempt 1 is already valid (called once)', async () => {
+    const { runner, calls } = sequenceRunner([VALID_RESULT]);
+    const summarizer = createClaudeSummarizer(runner);
+
+    const result = await summarizer.summarize('source text');
+
+    expect(result.thoroughBody).toBe(VALID_PAYLOAD.thoroughBody);
+    // No needless retry on the happy path.
+    expect(calls).toHaveLength(1);
+  });
+
+  it('fails loud immediately on a non-zero exit (non-envelope error, no retry)', async () => {
+    // A persistent claude/exec failure must surface at once -- it is NOT a
+    // stochastic envelope deviation, so the retry loop must not swallow it.
+    const failing: ExecResult = {
+      stdout: '',
+      stderr: 'authentication expired',
+      exitCode: 1,
+    };
+    const { runner, calls } = sequenceRunner([failing, VALID_RESULT]);
+    const summarizer = createClaudeSummarizer(runner);
+
+    await expect(summarizer.summarize('source text')).rejects.toThrow(
+      /authentication expired/,
+    );
+    // Failed hard on the first attempt -- did not retry into the valid result.
+    expect(calls).toHaveLength(1);
   });
 });
