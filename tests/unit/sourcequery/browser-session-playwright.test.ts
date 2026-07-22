@@ -10,6 +10,7 @@ import {
   type InjectedPage,
   type LaunchFn,
 } from '@/sourcequery/browser-session-playwright';
+import { createFakeClock } from '@/sourcequery/clock';
 
 /** A scripted fake page: goto/content/ariaSnapshot/evaluate are all overridable. */
 function fakePage(overrides: Partial<InjectedPage> = {}): InjectedPage {
@@ -231,5 +232,164 @@ describe('PlaywrightBrowserSession: forced headless option', () => {
     await session.open();
 
     expect(headlessValuesTried).toEqual(['new']);
+  });
+});
+
+describe('PlaywrightBrowserSession.navigate(): Cloudflare managed-challenge settle', () => {
+  const CF_INTERSTITIAL =
+    '<html><head><title>Just a moment...</title>' +
+    '<script src="/cdn-cgi/challenge-platform/x"></script></head>' +
+    '<body>Enable JavaScript and cookies to continue</body></html>';
+  const CLEARED_PAGE =
+    '<html><body><div class="results">CONVICTION OF MARQUIS DE RAYS</div></body></html>';
+
+  it('dwells until the challenge clears, then re-gotos for the real 200 page', async () => {
+    let gotoCalls = 0;
+    let contentCalls = 0;
+    const page = fakePage({
+      goto: async () => {
+        gotoCalls += 1;
+        // First navigation: the 403 interstitial. Re-goto: the real 200.
+        return gotoCalls === 1 ? { status: () => 403 } : { status: () => 200 };
+      },
+      content: async () => {
+        contentCalls += 1;
+        // Reads 1-2 still show the challenge; read 3+ shows cleared content.
+        return contentCalls >= 3 ? CLEARED_PAGE : CF_INTERSTITIAL;
+      },
+      ariaSnapshot: async () => '- text "results"',
+    });
+    const fake = createFakeClock();
+    const session = new PlaywrightBrowserSession({
+      launch: async () => fakeContext(page),
+      clock: fake.clock,
+      sleep: fake.sleep,
+    });
+    await session.open();
+
+    const result = await session.navigate('https://www.loc.gov/collections/chronicling-america/?q=x');
+
+    expect(result.status).toBe(200);          // honest re-goto status, not the 403
+    expect(result.html).toBe(CLEARED_PAGE);   // settled content
+    expect(result.errored).toBe(false);
+    expect(gotoCalls).toBe(2);                // one settle + one honest re-goto
+  });
+
+  it('returns the interstitial + original 403 when the challenge never clears (bounded)', async () => {
+    let gotoCalls = 0;
+    let contentCalls = 0;
+    const page = fakePage({
+      goto: async () => {
+        gotoCalls += 1;
+        return { status: () => 403 };
+      },
+      content: async () => {
+        contentCalls += 1;
+        return CF_INTERSTITIAL; // never clears
+      },
+      ariaSnapshot: async () => '- text "Just a moment"',
+    });
+    const fake = createFakeClock();
+    const session = new PlaywrightBrowserSession({
+      launch: async () => fakeContext(page),
+      clock: fake.clock,
+      sleep: fake.sleep,
+      maxSettleMs: 2000,
+      pollIntervalMs: 500,
+    });
+    await session.open();
+
+    const result = await session.navigate('https://www.loc.gov/x');
+
+    expect(result.status).toBe(403);      // original goto status preserved
+    expect(result.html).toBe(CF_INTERSTITIAL);
+    expect(gotoCalls).toBe(1);            // NO re-goto on timeout
+    // Bounded: initial content read + one read per poll until the deadline.
+    // 2000ms / 500ms = 4 polls, plus the initial read = 5 content() calls.
+    expect(contentCalls).toBe(5);
+  });
+
+  it('does NOT settle a non-Cloudflare page (normal 200) — one goto, no polls', async () => {
+    let gotoCalls = 0;
+    let contentCalls = 0;
+    const page = fakePage({
+      goto: async () => {
+        gotoCalls += 1;
+        return { status: () => 200 };
+      },
+      content: async () => {
+        contentCalls += 1;
+        return '<html><body><div class="results">rows</div></body></html>';
+      },
+    });
+    const fake = createFakeClock();
+    const session = new PlaywrightBrowserSession({
+      launch: async () => fakeContext(page),
+      clock: fake.clock,
+      sleep: fake.sleep,
+    });
+    await session.open();
+
+    const result = await session.navigate('https://example.test/');
+
+    expect(result.status).toBe(200);
+    expect(gotoCalls).toBe(1);
+    expect(contentCalls).toBe(1); // no settle loop entered
+  });
+
+  it('does NOT settle an Incapsula interstitial (Cloudflare-specific settle only)', async () => {
+    let gotoCalls = 0;
+    const incapsula =
+      '<html><head><script src="/_Incapsula_Resource?x"></script></head>' +
+      '<body>Request unsuccessful. Incapsula incident ID: 9</body></html>';
+    const page = fakePage({
+      goto: async () => {
+        gotoCalls += 1;
+        return { status: () => 403 };
+      },
+      content: async () => incapsula,
+    });
+    const fake = createFakeClock();
+    const session = new PlaywrightBrowserSession({
+      launch: async () => fakeContext(page),
+      clock: fake.clock,
+      sleep: fake.sleep,
+    });
+    await session.open();
+
+    const result = await session.navigate('https://incap.test/');
+
+    expect(result.status).toBe(403);
+    expect(result.html).toBe(incapsula);
+    expect(gotoCalls).toBe(1); // no Cloudflare settle, no re-goto — unchanged path
+  });
+
+  it('returns the re-goto challenge + 403 without re-settling when the reload is re-challenged', async () => {
+    let gotoCalls = 0;
+    let contentCalls = 0;
+    const page = fakePage({
+      goto: async () => {
+        gotoCalls += 1;
+        return { status: () => 403 };
+      },
+      content: async () => {
+        contentCalls += 1;
+        // Clears once (read 3) → triggers re-goto → reload is re-challenged again (read 4+).
+        return contentCalls === 3 ? CLEARED_PAGE : CF_INTERSTITIAL;
+      },
+    });
+    const fake = createFakeClock();
+    const session = new PlaywrightBrowserSession({
+      launch: async () => fakeContext(page),
+      clock: fake.clock,
+      sleep: fake.sleep,
+    });
+    await session.open();
+
+    const result = await session.navigate('https://www.loc.gov/x');
+
+    expect(gotoCalls).toBe(2);          // settle cleared → one re-goto
+    expect(result.status).toBe(403);    // re-goto's status; no second settle loop
+    expect(result.html).toBe(CF_INTERSTITIAL); // re-goto's content (re-challenged)
   });
 });
