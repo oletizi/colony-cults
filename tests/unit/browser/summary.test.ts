@@ -128,6 +128,22 @@ describe('loadIssueSummary', () => {
 
     expect(result?.label.model).toBeNull();
   });
+
+  it('throws naming the path when the concise artifact is present but 0 bytes (AUDIT-20260722-10)', () => {
+    const issueDir = makeUnitDir();
+    writeConcise(issueDir, 'issue.summary.short.en.md', '');
+    writeSidecar(issueDir, 'issue.summary.short.en.md.yml', COMPLETE_SIDECAR_FIELDS);
+
+    expect(() => loadIssueSummary(issueDir)).toThrow(/issue\.summary\.short\.en\.md/);
+  });
+
+  it('throws naming the path when the concise artifact is present but whitespace-only (AUDIT-20260722-10)', () => {
+    const issueDir = makeUnitDir();
+    writeConcise(issueDir, 'issue.summary.short.en.md', '   \n\t  \n');
+    writeSidecar(issueDir, 'issue.summary.short.en.md.yml', COMPLETE_SIDECAR_FIELDS);
+
+    expect(() => loadIssueSummary(issueDir)).toThrow(/issue\.summary\.short\.en\.md/);
+  });
 });
 
 describe('loadSourceSummary', () => {
@@ -154,5 +170,13 @@ describe('loadSourceSummary', () => {
     writeConcise(sourceDir, 'source.summary.short.en.md', 'A periodical covering the colony.');
 
     expect(() => loadSourceSummary(sourceDir)).toThrow();
+  });
+
+  it('throws naming the path when the source concise artifact is present but empty (AUDIT-20260722-10)', () => {
+    const sourceDir = makeUnitDir();
+    writeConcise(sourceDir, 'source.summary.short.en.md', '');
+    writeSidecar(sourceDir, 'source.summary.short.en.md.yml', COMPLETE_SIDECAR_FIELDS);
+
+    expect(() => loadSourceSummary(sourceDir)).toThrow(/source\.summary\.short\.en\.md/);
   });
 });

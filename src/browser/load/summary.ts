@@ -82,6 +82,21 @@ function loadSummaryArtifact(mdPath: string): LoadedSummary | null {
   }
 
   const concise = readFileSync(mdPath, 'utf-8').trim();
+  if (concise.length === 0) {
+    // A present-but-empty (or whitespace-only) concise artifact is corruption,
+    // not honest absence -- honest absence is the file not existing, which is
+    // already handled above by returning null. Fail loud here rather than let
+    // an empty string masquerade as a valid summary: this also keeps the
+    // loader symmetric with `parseLoadedSummary`'s `requireString(record,
+    // 'concise', where)` on the snapshot-parse side (AUDIT-06,
+    // snapshot-guards.ts), which REJECTS an empty string -- if this loader
+    // instead accepted one, the resulting snapshot would serialize
+    // `concise: ''` and crash on the very next load.
+    throw new Error(
+      `loadSummaryArtifact: concise summary ${mdPath} is present but empty (or whitespace-only) ` +
+        '-- fail loud rather than treat a corrupt artifact as a valid summary.'
+    );
+  }
   const label = loadRequiredLabel(mdPath);
   return { concise, label };
 }
