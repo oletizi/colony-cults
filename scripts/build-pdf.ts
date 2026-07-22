@@ -10,7 +10,11 @@
  * archive root (`--archive-root <dir>` or `COLONY_ARCHIVE_ROOT`).
  *
  *   npm run pdf:build -- <sourceId>/<issueId>   # one item (US1)
- *   npm run pdf:build -- <sourceId>             # every issue of a source (US2)
+ *   npm run pdf:build -- <sourceId>             # every issue of a source (US2);
+ *                                                # a source-group id (e.g. PB-P060)
+ *                                                # builds the ONE combined
+ *                                                # group-edition PDF instead
+ *                                                # (spec 017)
  *   npm run pdf:build -- --all                  # every source the archive has (US2)
  *
  * Flags:
@@ -37,15 +41,26 @@
  *    M > 0. A batch is never silently "OK" when something failed.
  *  - G-6 Typst prerequisite: a missing `typst` binary fails loud (before any
  *    image work) naming the missing dependency.
+ *
+ * Spec 017 T012: a slash-less selector whose bibliography SSOT entry carries
+ * `kind: 'source-group'` (e.g. `PB-P060`) routes to `buildGroupEdition`
+ * (`@/pdf/render/group-edition`) -- ONE combined PDF for the whole group --
+ * instead of `buildSource`. See {@link resolveSelectorRoute}.
  */
 
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 import { execCommand } from '@/ocr/exec';
 import { resolveRepoRoot } from '@/browser/load/repo-root';
 import { resolveArchiveRoot } from '@/archive/location';
+import { resolveObjectStoreConfig } from '@/archive/b2-config';
+import { S3ObjectStore } from '@/archive/s3-object-store';
+import { loadSourceFile } from '@/bibliography/load';
+import type { Source } from '@/model/source';
 import { buildItem } from '@/pdf/render/build';
 import { buildAll, buildSource, type BuildSourceResult } from '@/pdf/render/batch';
+import { buildGroupEdition } from '@/pdf/render/group-edition';
 import type { PdfImageProviderKind } from '@/pdf/config';
 
 /** Parsed CLI invocation. */
@@ -159,6 +174,37 @@ function assertArchiveRootResolvable(repoRoot: string, archiveRootArg: string | 
 }
 
 /**
+ * Pure routing decision (spec 017 T012): 'group' when `source.kind ===
+ * 'source-group'`, else 'source' -- the existing `buildSource` path, which
+ * already handles both a standalone source AND a single source-group member
+ * (`@/pdf/render/batch`'s own `loadMemberCandidate` routing). Kept separate
+ * from the bibliography lookup below so the decision itself is testable
+ * without touching the filesystem.
+ */
+export function resolveSelectorRoute(source: Source): 'group' | 'source' {
+  return source.kind === 'source-group' ? 'group' : 'source';
+}
+
+/**
+ * Resolve a slash-less selector's route by looking up `sourceId`'s
+ * bibliography SSOT entry (`bibliography/sources/<sourceId>.yml`). A
+ * sourceId with NO SSOT file on disk resolves to `'source'` too -- this is
+ * deliberately NOT a lookup-miss error here: the existing `buildSource` ->
+ * `resolveArchiveSource` -> `sourceLayout` chain is the one place a
+ * genuinely unknown id fails loud naming it (G-2), and this helper must
+ * never race ahead of that with its own "unknown source" throw.
+ */
+function resolveSourceSelectorRoute(sourceId: string, repoRoot: string): 'group' | 'source' {
+  const bibliographyDir = path.join(repoRoot, 'bibliography', 'sources');
+  const filePath = path.join(bibliographyDir, `${sourceId}.yml`);
+  if (!existsSync(filePath)) {
+    return 'source';
+  }
+  const { source } = loadSourceFile(filePath);
+  return resolveSelectorRoute(source);
+}
+
+/**
  * Prints the G-4 attributable batch summary ("built N, failed M" plus every
  * failure's item id + reason) and sets a non-zero exit code if ANY item (or
  * whole source, for --all) failed -- a batch is never silently "OK" when
@@ -232,7 +278,8 @@ async function main(): Promise<void> {
 
   if (args.selector === undefined) {
     throw new Error(
-      'pdf:build: no selector given. Pass "<sourceId>" (every issue of a source), ' +
+      'pdf:build: no selector given. Pass "<sourceId>" (every issue of a source, or -- for a ' +
+        'source-group id like PB-P060 -- the one combined group-edition PDF), ' +
         '"<sourceId>/<issueId>" (a single item), or --all (every archive source).',
     );
   }
@@ -240,6 +287,30 @@ async function main(): Promise<void> {
   const slashIndex = args.selector.indexOf('/');
   if (slashIndex === -1) {
     const sourceId = args.selector;
+    const route = resolveSourceSelectorRoute(sourceId, repoRoot);
+
+    if (route === 'group') {
+      process.stdout.write(
+        `pdf:build -- source-group ${sourceId} (combined edition)\n` +
+          `  provider: ${providerLabel}\n` +
+          `  edition:  ${editionLabel}\n` +
+          `  archive:  ${archiveRootLabel}\n` +
+          `  out root: ${outLabel}\n\n`,
+      );
+      const objectStore = new S3ObjectStore(resolveObjectStoreConfig());
+      const { outPath } = await buildGroupEdition(sourceId, {
+        provider: args.provider,
+        outDir: args.out,
+        archiveRoot: args.archiveRoot,
+        showFrench,
+        env: process.env,
+        objectStore,
+      });
+      const rel = path.relative(repoRoot, outPath);
+      process.stdout.write(`\nOK -- wrote ${rel.startsWith('..') ? outPath : rel}\n`);
+      return;
+    }
+
     process.stdout.write(
       `pdf:build -- source ${sourceId} (all issues)\n` +
         `  provider: ${providerLabel}\n` +
