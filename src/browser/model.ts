@@ -98,6 +98,13 @@ export interface SourceView {
   rights: string;
   /** Ordered by date. */
   issues: IssueView[];
+  /**
+   * The source-rollup concise abstract (landing-page summary), when
+   * `source.summary.short.en.md` exists for this source. OPTIONAL + additive:
+   * `undefined` for a source with no rollup summary yet -- renders unchanged
+   * (US2 AC-3).
+   */
+  conciseSummary?: LoadedSummary;
 }
 
 /**
@@ -118,6 +125,12 @@ export interface IssueView {
   pages: PageView[];
   /** MUST equal `pages.length` and the underlying OCR/image/translation counts. */
   pageCount: number;
+  /**
+   * The per-issue concise abstract, when `issue.summary.short.en.md` exists
+   * for this issue. OPTIONAL + additive: `undefined` for an issue with no
+   * summary yet -- renders unchanged (US2 AC-3).
+   */
+  conciseSummary?: LoadedSummary;
 }
 
 /**
@@ -220,6 +233,27 @@ export interface MachineAssistLabel {
 }
 
 /**
+ * A unit's (issue- or source-rollup-level) concise machine-generated summary,
+ * as loaded by `loadIssueSummary`/`loadSourceSummary`
+ * (`src/browser/load/summary.ts`) from the `issue.summary.short.en.md` /
+ * `source.summary.short.en.md` artifact + its provenance sidecar
+ * (specs/017-asset-summaries/contracts/browser-view.md).
+ *
+ * Honest-absence: the WHOLE record is `undefined` on {@link IssueView.conciseSummary}
+ * / {@link SourceView.conciseSummary} when no concise artifact exists for the
+ * unit -- never fabricated. Once the artifact exists, `label` is REQUIRED (not
+ * optional like {@link ProvenanceRecord.machineAssist}): a present artifact
+ * with a missing/incomplete sidecar is corrupt, not absent, so the loader
+ * throws rather than returning a label-less summary.
+ */
+export interface LoadedSummary {
+  /** The concise summary text (`issue.summary.short.en.md` / `source.summary.short.en.md`). */
+  readonly concise: string;
+  /** Which engine/model produced it and when (from the concise sidecar). */
+  readonly label: MachineAssistLabel;
+}
+
+/**
  * The identifying facts rendered in the monospace provenance rail (FR-014),
  * assembled from the page sidecar + SSOT.
  *
@@ -319,6 +353,13 @@ export interface RawIssue {
   sequence: number;
   /** Ordered by page number. */
   pages: RawPage[];
+  /**
+   * The per-issue concise abstract, carried through unresolved from
+   * `loadIssueSummary` (`src/browser/load/summary.ts`) so it survives the
+   * committed-snapshot round-trip. OPTIONAL + additive: key omitted (never
+   * `undefined`-valued) when the issue has no concise artifact.
+   */
+  conciseSummary?: LoadedSummary;
 }
 
 /** The image-unresolved form of {@link SourceView}. */
@@ -342,6 +383,13 @@ export interface RawSource {
   rights: string;
   /** Ordered by date. */
   issues: RawIssue[];
+  /**
+   * The source-rollup concise abstract, carried through unresolved from
+   * `loadSourceSummary` (`src/browser/load/summary.ts`) so it survives the
+   * committed-snapshot round-trip. OPTIONAL + additive: key omitted (never
+   * `undefined`-valued) when the source has no rollup summary.
+   */
+  conciseSummary?: LoadedSummary;
 }
 
 /**

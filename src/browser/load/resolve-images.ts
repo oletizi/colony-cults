@@ -45,7 +45,7 @@ export function resolveImages(
 }
 
 function resolveSource(source: RawSource, provider: ImageSourceProvider): SourceView {
-  return {
+  const view: SourceView = {
     sourceId: source.sourceId,
     title: source.title,
     kind: source.kind,
@@ -54,17 +54,26 @@ function resolveSource(source: RawSource, provider: ImageSourceProvider): Source
     rights: source.rights,
     issues: source.issues.map((issue) => resolveIssue(issue, provider)),
   };
+  // Additive/optional passthrough (US2, FR-006): only attach the key when the
+  // raw source actually carries a rollup summary, mirroring the omit-when-
+  // absent convention used throughout this file's raw->view mapping.
+  return source.conciseSummary === undefined
+    ? view
+    : { ...view, conciseSummary: source.conciseSummary };
 }
 
 function resolveIssue(issue: RawIssue, provider: ImageSourceProvider): IssueView {
   const pages = issue.pages.map((page) => resolvePage(page, provider));
-  return {
+  const view: IssueView = {
     issueId: issue.issueId,
     date: issue.date,
     sequence: issue.sequence,
     pages,
     pageCount: pages.length,
   };
+  return issue.conciseSummary === undefined
+    ? view
+    : { ...view, conciseSummary: issue.conciseSummary };
 }
 
 function resolvePage(page: RawPage, provider: ImageSourceProvider): PageView {
