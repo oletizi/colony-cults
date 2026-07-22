@@ -111,6 +111,13 @@ export interface WriteMemberFixtureResult {
   ocrTextObjectStoreKey: string;
 
   /**
+   * Lowercase-hex sha256 of `ocrTextBytes` -- the same value recorded as the
+   * ocr-text asset's `checksum`, exposed so tests can assert a materialized
+   * provenance sidecar's `sha256` against it without recomputing it.
+   */
+  ocrTextSha256: string;
+
+  /**
    * The member `Source` object with `kind: 'periodical'` and `partOf: groupId`.
    * Does not include repositoryRecords; use `repositoryRecord` instead.
    */
@@ -319,6 +326,7 @@ export async function writeMemberFixture(
       imageBytes,
       ocrTextBytes,
       ocrTextObjectStoreKey,
+      ocrTextSha256,
       memberSource,
       repositoryRecord,
       objectStore,

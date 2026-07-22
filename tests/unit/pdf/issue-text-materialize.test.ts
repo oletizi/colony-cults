@@ -182,7 +182,7 @@ describe('materializeIssueText', () => {
       // Remove the ocr-text asset from repositoryRecords.
       const recordWithoutOcr = {
         ...fixture.repositoryRecord,
-        assets: fixture.repositoryRecord.assets.filter((a) => a.role !== 'ocr-text'),
+        assets: (fixture.repositoryRecord.assets ?? []).filter((a) => a.role !== 'ocr-text'),
       };
       const memberWithRecords: SourceWithRecords = {
         ...fixture.memberSource,
@@ -216,12 +216,12 @@ describe('materializeIssueText', () => {
     try {
       // Add a second ocr-text asset to repositoryRecords.
       const secondOcrAsset = {
-        ...fixture.repositoryRecord.assets.find((a) => a.role === 'ocr-text')!,
+        ...(fixture.repositoryRecord.assets ?? []).find((a) => a.role === 'ocr-text')!,
         objectStoreKey: 'archive/cases/port-breton/la-nouvelle-france-1879-07-19/ocr2.txt',
       };
       const recordWithTwoOcr = {
         ...fixture.repositoryRecord,
-        assets: [...fixture.repositoryRecord.assets, secondOcrAsset],
+        assets: [...(fixture.repositoryRecord.assets ?? []), secondOcrAsset],
       };
       const memberWithRecords: SourceWithRecords = {
         ...fixture.memberSource,
@@ -261,7 +261,7 @@ describe('materializeIssueText', () => {
       // Corrupt the checksum in the asset to simulate a mismatch.
       const recordWithBadChecksum = {
         ...fixture.repositoryRecord,
-        assets: fixture.repositoryRecord.assets.map((a) =>
+        assets: (fixture.repositoryRecord.assets ?? []).map((a) =>
           a.role === 'ocr-text' ? { ...a, checksum: 'deadbeef00000000' } : a,
         ),
       };
