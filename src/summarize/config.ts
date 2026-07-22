@@ -73,20 +73,31 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * Read the parsed JSON body of `summarize.config.json` into a
- * {@link SummaryConfig}, defensively: unknown keys are ignored, `engine` is
- * validated via {@link validateSummarizerName} when present as a string, and
- * `model` is read only when it is a string. No type assertions are used --
- * every field access is gated by a `typeof`/`isRecord` check. Mirrors
- * `src/engine/config.ts`'s `readConfig`.
+ * {@link SummaryConfig}, defensively: unknown keys are ignored, and known
+ * keys (`model`, `engine`) must be correctly typed (string) or an error is
+ * thrown immediately. No type assertions are used -- every field access is
+ * gated by a `typeof`/`isRecord` check. Mirrors `src/engine/config.ts`'s
+ * `readConfig` (AUDIT-20260722-13: fail loud on malformed known keys
+ * instead of silently accepting them).
  */
 function readConfig(parsed: Record<string, unknown>): SummaryConfig {
   const cfg: SummaryConfig = {};
 
-  if (typeof parsed.model === 'string') {
+  if ('model' in parsed) {
+    if (typeof parsed.model !== 'string') {
+      throw new Error(
+        `summarize.config.json has invalid model field: expected string, got ${typeof parsed.model} (value: ${JSON.stringify(parsed.model)})`,
+      );
+    }
     cfg.model = parsed.model;
   }
 
-  if (typeof parsed.engine === 'string') {
+  if ('engine' in parsed) {
+    if (typeof parsed.engine !== 'string') {
+      throw new Error(
+        `summarize.config.json has invalid engine field: expected string, got ${typeof parsed.engine} (value: ${JSON.stringify(parsed.engine)})`,
+      );
+    }
     cfg.engine = validateSummarizerName(parsed.engine);
   }
 

@@ -8,26 +8,42 @@ import type { SelectedInputLayer } from '@/summarize/select-input';
  * The three-way classification of one issue's summary state against its
  * currently-selected input layers (US5, FR-010, research.md Decision 4):
  *
- * - `'fresh'`: NEITHER the thorough nor the concise summary artifact/sidecar
- *   exists yet for this issue -- this is a first generation, not a
+ * - `'fresh'`: NEITHER the thorough nor the concise summary sidecar exists
+ *   yet for this issue -- this is a first generation, not a
  *   change-triggered regeneration.
- * - `'stale'`: at least one of the two sidecars is missing, parses fine but
- *   lacks an `input_layers` block, or has an `input_layers` that no longer
- *   matches every currently-selected input layer's `{path, sha256}` (the OCR
- *   or translation changed since the summary was generated) -- INCLUDING the
- *   half-written-pair case (AUDIT-20260722-07): one artifact was written and
- *   the other was not, e.g. a run interrupted between the two `storeAsset`
- *   calls in `summarizeIssue`. A half-written pair must regenerate, not be
- *   treated as up-to-date, or the missing half is permanently lost until
- *   `--force`.
- * - `'up-to-date'`: BOTH the thorough AND the concise sidecar exist, AND
- *   BOTH record every selected input layer's `{path, sha256}`, in order --
- *   regenerating would be redundant.
+ * - `'stale'`: at least one of the two sidecars is missing, its markdown
+ *   artifact is missing while the sidecar survives (AUDIT-20260722-16), the
+ *   sidecar parses fine but lacks an `input_layers` block, or has an
+ *   `input_layers` that no longer matches every currently-selected input
+ *   layer's `{path, sha256}` (the OCR or translation changed since the
+ *   summary was generated) -- INCLUDING the half-written-pair case
+ *   (AUDIT-20260722-07): one artifact was written and the other was not,
+ *   e.g. a run interrupted between the two `storeAsset` calls in
+ *   `summarizeIssue`. A half-written pair, or a sidecar whose markdown
+ *   artifact was deleted out from under it, must regenerate, not be treated
+ *   as up-to-date, or the missing piece is permanently lost until `--force`.
+ * - `'up-to-date'`: BOTH the thorough AND the concise summary exist as BOTH
+ *   a markdown artifact AND a sidecar (AUDIT-20260722-16), AND both
+ *   sidecars record every selected input layer's `{path, sha256}`, in order
+ *   -- regenerating would be redundant.
  */
 export type SummaryFreshness = 'up-to-date' | 'stale' | 'fresh';
 
-/** Per-artifact freshness of one sidecar against the currently-selected input layers. */
+/**
+ * Per-artifact freshness of one summary markdown artifact + its sidecar,
+ * against the currently-selected input layers (AUDIT-20260722-16).
+ *
+ * BOTH the markdown artifact AND its sidecar must exist before an
+ * `input_layers` match can be trusted: a sidecar can outlive the markdown
+ * artifact it describes (the `.md` deleted by hand or by some external
+ * process while the `.yml` survives). Reading only the sidecar in that case
+ * would compare shas, find them matching, and report `'up-to-date'` --
+ * skipping the run forever and leaving the summary body PERMANENTLY missing.
+ * The artifact's absence makes any sidecar match moot: there is nothing for
+ * an "up-to-date" verdict to actually serve, so it always regenerates.
+ */
 async function checkArtifactFreshness(
+  markdownPath: string,
   yamlPath: string,
   layers: readonly SelectedInputLayer[],
 ): Promise<SummaryFreshness> {
@@ -39,6 +55,12 @@ async function checkArtifactFreshness(
   // state), rather than catching it here.
   const existing = await readProvenance(yamlPath);
   const recorded = existing.input_layers;
+
+  if (!existsSync(markdownPath)) {
+    // AUDIT-20260722-16: the sidecar survived but the artifact it describes
+    // did not -- never 'up-to-date' regardless of what input_layers records.
+    return 'stale';
+  }
 
   if (recorded === undefined || recorded.length !== layers.length) {
     return 'stale';
@@ -80,6 +102,16 @@ export interface SummaryIdempotencyCheck {
  * `'fresh'` is reserved for the case where NEITHER sidecar exists at all
  * (a genuine first generation, not an interrupted one).
  *
+ * ARTIFACT-EXISTENCE REQUIREMENT (AUDIT-20260722-16): a sidecar's presence
+ * and a matching `input_layers` are NOT enough on their own -- the markdown
+ * artifact the sidecar describes must also still exist. If the `.md` is
+ * deleted (by hand, or by anything outside this pipeline) while its `.yml`
+ * sidecar survives untouched, comparing shas alone would find a match and
+ * report `'up-to-date'`, skipping forever and leaving the summary body
+ * PERMANENTLY missing. `checkArtifactFreshness` therefore treats a
+ * present-sidecar-but-missing-artifact pairing as `'stale'`, never
+ * `'up-to-date'`, for both the thorough and the concise artifact.
+ *
  * FAILS LOUD only on genuinely corrupt state: a sidecar that EXISTS on disk
  * but cannot be parsed (`readProvenance` throws) is a real defect in
  * recorded state, not mere absence, so the error propagates rather than
@@ -93,12 +125,14 @@ export async function checkSummaryFreshness(
   issueDir: string,
   layers: readonly SelectedInputLayer[],
 ): Promise<SummaryIdempotencyCheck> {
-  const thoroughYamlPath = companionYamlPath(issueThoroughSummaryPath(issueDir));
-  const conciseYamlPath = companionYamlPath(issueConciseSummaryPath(issueDir));
+  const thoroughMarkdownPath = issueThoroughSummaryPath(issueDir);
+  const conciseMarkdownPath = issueConciseSummaryPath(issueDir);
+  const thoroughYamlPath = companionYamlPath(thoroughMarkdownPath);
+  const conciseYamlPath = companionYamlPath(conciseMarkdownPath);
 
   const [thorough, concise] = await Promise.all([
-    checkArtifactFreshness(thoroughYamlPath, layers),
-    checkArtifactFreshness(conciseYamlPath, layers),
+    checkArtifactFreshness(thoroughMarkdownPath, thoroughYamlPath, layers),
+    checkArtifactFreshness(conciseMarkdownPath, conciseYamlPath, layers),
   ]);
 
   if (thorough === 'up-to-date' && concise === 'up-to-date') {

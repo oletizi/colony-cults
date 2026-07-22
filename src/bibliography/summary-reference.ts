@@ -24,6 +24,7 @@
 import { existsSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 
+import { assertInsideArchive } from '@/archive/location';
 import type { Source } from '@/model/source';
 
 /**
@@ -59,27 +60,61 @@ export function writeSummaryRef(source: Source, ref: string): Source {
   return { ...source, summaryRef: trimmed };
 }
 
+/** Whether `ref` contains a literal `..` path segment (either separator). */
+function hasParentTraversal(ref: string): boolean {
+  return ref.split(/[/\\]/).includes('..');
+}
+
 /**
  * Light fail-loud validation that a source's `summaryRef` resolves to an
- * existing artifact under `archiveRoot` (spec 017 Decision 5 / SC-005 -- the
- * reference must be resolvable, no dangling pointers).
+ * existing artifact STRICTLY inside `archiveRoot` (spec 017 Decision 5 /
+ * SC-005 -- the reference must be resolvable, no dangling pointers, and it
+ * must not escape the archive root via `..` traversal or an absolute path
+ * (AUDIT-20260722-15/-12)).
  *
  * - No `summaryRef` authored -> `undefined` (nothing to resolve; that is a
  *   legitimate absence, not an error -- the field is optional).
- * - Present and the artifact exists on disk -> the resolved absolute path.
- * - Present but the artifact is missing -> throws, naming the dangling ref and
- *   where it was expected.
+ * - `summaryRef` is absolute or contains a `..` segment -> throws, naming the
+ *   offending ref, BEFORE any filesystem resolution is attempted. This check
+ *   is independent of `writeSummaryRef`'s own absolute-path rejection: a
+ *   `summaryRef` reaching this function may have been authored directly in
+ *   YAML (`@/bibliography/load`'s `optionalString` performs no path
+ *   validation), so this is the last line of defense, not a redundant one.
+ * - Present, in-root, and the artifact exists on disk -> the resolved
+ *   absolute path.
+ * - Present, in-root, but the artifact is missing -> throws, naming the
+ *   dangling ref and where it was expected.
  *
- * This is a plain path-existence check by design -- it does NOT reuse the
- * B2-key-prefix companion validator, so a git-resident markdown rollup
- * (`object_store: null`) never produces a companion-coverage false positive.
+ * The in-root check reuses `@/archive/location`'s `assertInsideArchive` --
+ * the same non-overridable write-guard the archive/summarize/OCR write paths
+ * already rely on (FR-006) -- rather than re-implementing path-escape
+ * detection here. Otherwise this stays a plain path-existence check by
+ * design: it does NOT reuse the B2-key-prefix companion validator, so a
+ * git-resident markdown rollup (`object_store: null`) never produces a
+ * companion-coverage false positive.
  */
 export function validateSummaryRef(source: Source, archiveRoot: string): string | undefined {
   const ref = readSummaryRef(source);
   if (ref === undefined) {
     return undefined;
   }
+  if (isAbsolute(ref) || hasParentTraversal(ref)) {
+    throw new Error(
+      `validateSummaryRef(${source.sourceId}): summaryRef "${ref}" must be an archive-relative ` +
+        `path with no ".." segments and must not be absolute -- refusing to resolve a reference ` +
+        `that could escape the archive root "${archiveRoot}"`,
+    );
+  }
   const resolved = join(archiveRoot, ref);
+  try {
+    assertInsideArchive(resolved, archiveRoot);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `validateSummaryRef(${source.sourceId}): summaryRef "${ref}" resolves outside the ` +
+        `archive root "${archiveRoot}" -- ${reason}`,
+    );
+  }
   if (!existsSync(resolved)) {
     throw new Error(
       `validateSummaryRef(${source.sourceId}): summaryRef "${ref}" does not resolve to an ` +

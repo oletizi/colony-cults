@@ -305,6 +305,53 @@ describe('summarizeIssue idempotency (T032, US5, FR-010)', () => {
     expect(existsSync(issueThoroughSummaryPath(built.issueDir))).toBe(true);
   });
 
+  it('AUDIT-20260722-16: deleting the thorough .md while its sidecar survives causes a regeneration on rerun, not a skip', async () => {
+    built = await buildIssueDir();
+
+    const first = fakeRunner();
+    const firstResult = await summarizeIssue(built.issueDir, buildCtx(built.archiveRoot, first.runner));
+    expect(firstResult.status).toBe('generated');
+
+    // Simulate the artifact being deleted out from under its sidecar -- e.g.
+    // by hand, or by anything outside this pipeline -- while the sidecar
+    // (with its perfectly matching input_layers) survives untouched.
+    rmSync(issueThoroughSummaryPath(built.issueDir));
+    expect(existsSync(issueThoroughSummaryPath(built.issueDir))).toBe(false);
+    expect(existsSync(companionYamlPath(issueThoroughSummaryPath(built.issueDir)))).toBe(true);
+
+    const second = fakeRunner();
+    const secondResult = await summarizeIssue(built.issueDir, buildCtx(built.archiveRoot, second.runner));
+
+    expect(secondResult.status).toBe('generated');
+    expect(second.calls).toHaveLength(1);
+    expect(existsSync(issueThoroughSummaryPath(built.issueDir))).toBe(true);
+
+    const thoroughText = await readFile(issueThoroughSummaryPath(built.issueDir), 'utf-8');
+    expect(thoroughText).toContain(CANNED_RESULT.thoroughBody);
+  });
+
+  it('AUDIT-20260722-16: deleting the concise .md while its sidecar survives causes a regeneration on rerun, not a skip', async () => {
+    built = await buildIssueDir();
+
+    const first = fakeRunner();
+    const firstResult = await summarizeIssue(built.issueDir, buildCtx(built.archiveRoot, first.runner));
+    expect(firstResult.status).toBe('generated');
+
+    rmSync(issueConciseSummaryPath(built.issueDir));
+    expect(existsSync(issueConciseSummaryPath(built.issueDir))).toBe(false);
+    expect(existsSync(companionYamlPath(issueConciseSummaryPath(built.issueDir)))).toBe(true);
+
+    const second = fakeRunner();
+    const secondResult = await summarizeIssue(built.issueDir, buildCtx(built.archiveRoot, second.runner));
+
+    expect(secondResult.status).toBe('generated');
+    expect(second.calls).toHaveLength(1);
+    expect(existsSync(issueConciseSummaryPath(built.issueDir))).toBe(true);
+
+    const conciseText = await readFile(issueConciseSummaryPath(built.issueDir), 'utf-8');
+    expect(conciseText).toContain(CANNED_RESULT.concise);
+  });
+
   it('AUDIT-20260722-04: ctx.preflight is called lazily -- never on a skip, only right before generation', async () => {
     built = await buildIssueDir();
 

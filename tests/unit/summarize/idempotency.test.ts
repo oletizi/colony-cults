@@ -70,11 +70,13 @@ describe('checkSummaryFreshness / summaryIsUpToDate (T031, US5, FR-010)', () => 
     expect(await summaryIsUpToDate(issueDir, LAYERS)).toBe(false);
   });
 
-  it('reports "up-to-date" when every selected layer path+sha256 matches the recorded input_layers, in order, on BOTH the thorough and concise sidecars', async () => {
+  it('reports "up-to-date" when every selected layer path+sha256 matches the recorded input_layers, in order, on BOTH the thorough and concise sidecars, AND both markdown artifacts exist', async () => {
+    writeFileSync(issueThoroughSummaryPath(issueDir), 'thorough body\n');
     await writeProvenance(
       companionYamlPath(issueThoroughSummaryPath(issueDir)),
       baseSummaryProvenance({ input_layers: LAYERS }),
     );
+    writeFileSync(issueConciseSummaryPath(issueDir), 'concise body\n');
     await writeProvenance(
       companionYamlPath(issueConciseSummaryPath(issueDir)),
       baseSummaryProvenance({ type: 'summary-concise', input_layers: LAYERS }),
@@ -86,6 +88,7 @@ describe('checkSummaryFreshness / summaryIsUpToDate (T031, US5, FR-010)', () => 
   });
 
   it('reports "stale" (AUDIT-20260722-07) when only the thorough sidecar exists and matches -- the concise is missing (interrupted between the two storeAsset writes)', async () => {
+    writeFileSync(issueThoroughSummaryPath(issueDir), 'thorough body\n');
     await writeProvenance(
       companionYamlPath(issueThoroughSummaryPath(issueDir)),
       baseSummaryProvenance({ input_layers: LAYERS }),
@@ -99,6 +102,7 @@ describe('checkSummaryFreshness / summaryIsUpToDate (T031, US5, FR-010)', () => 
   });
 
   it('reports "stale" (round-0 self-red-team edge) when only the concise sidecar exists and matches -- the thorough is missing', async () => {
+    writeFileSync(issueConciseSummaryPath(issueDir), 'concise body\n');
     await writeProvenance(
       companionYamlPath(issueConciseSummaryPath(issueDir)),
       baseSummaryProvenance({ type: 'summary-concise', input_layers: LAYERS }),
@@ -111,6 +115,7 @@ describe('checkSummaryFreshness / summaryIsUpToDate (T031, US5, FR-010)', () => 
   });
 
   it('reports "stale" when one layer\'s sha256 differs from the recorded value', async () => {
+    writeFileSync(issueThoroughSummaryPath(issueDir), 'thorough body\n');
     await writeProvenance(
       companionYamlPath(issueThoroughSummaryPath(issueDir)),
       baseSummaryProvenance({ input_layers: LAYERS }),
@@ -127,6 +132,7 @@ describe('checkSummaryFreshness / summaryIsUpToDate (T031, US5, FR-010)', () => 
   });
 
   it('reports "stale" when the selected layer set has a different length than recorded', async () => {
+    writeFileSync(issueThoroughSummaryPath(issueDir), 'thorough body\n');
     await writeProvenance(
       companionYamlPath(issueThoroughSummaryPath(issueDir)),
       baseSummaryProvenance({ input_layers: [LAYERS[0]] }),
@@ -137,6 +143,7 @@ describe('checkSummaryFreshness / summaryIsUpToDate (T031, US5, FR-010)', () => 
   });
 
   it('reports "stale" (never throws) when the recorded sidecar has no input_layers at all', async () => {
+    writeFileSync(issueThoroughSummaryPath(issueDir), 'thorough body\n');
     await writeProvenance(
       companionYamlPath(issueThoroughSummaryPath(issueDir)),
       baseSummaryProvenance({ input_layers: undefined }),
@@ -155,5 +162,47 @@ describe('checkSummaryFreshness / summaryIsUpToDate (T031, US5, FR-010)', () => 
     writeFileSync(yamlPath, 'id: "PB-P001"\n', 'utf-8');
 
     await expect(checkSummaryFreshness(issueDir, LAYERS)).rejects.toThrow();
+  });
+
+  it('reports "stale" (AUDIT-20260722-16) when the thorough sidecar exists and matches but the .md artifact itself was deleted', async () => {
+    writeFileSync(issueThoroughSummaryPath(issueDir), 'thorough body\n');
+    await writeProvenance(
+      companionYamlPath(issueThoroughSummaryPath(issueDir)),
+      baseSummaryProvenance({ input_layers: LAYERS }),
+    );
+    writeFileSync(issueConciseSummaryPath(issueDir), 'concise body\n');
+    await writeProvenance(
+      companionYamlPath(issueConciseSummaryPath(issueDir)),
+      baseSummaryProvenance({ type: 'summary-concise', input_layers: LAYERS }),
+    );
+
+    // Simulate the .md being deleted (by hand, or by anything outside this
+    // pipeline) while its sidecar survives untouched, still recording a
+    // perfectly matching input_layers -- a sha comparison alone would find
+    // that match and misreport 'up-to-date'.
+    rmSync(issueThoroughSummaryPath(issueDir));
+
+    const result = await checkSummaryFreshness(issueDir, LAYERS);
+    expect(result.freshness).toBe('stale');
+    expect(await summaryIsUpToDate(issueDir, LAYERS)).toBe(false);
+  });
+
+  it('reports "stale" (AUDIT-20260722-16, mirror image) when the concise sidecar exists and matches but the .md artifact itself was deleted', async () => {
+    writeFileSync(issueThoroughSummaryPath(issueDir), 'thorough body\n');
+    await writeProvenance(
+      companionYamlPath(issueThoroughSummaryPath(issueDir)),
+      baseSummaryProvenance({ input_layers: LAYERS }),
+    );
+    writeFileSync(issueConciseSummaryPath(issueDir), 'concise body\n');
+    await writeProvenance(
+      companionYamlPath(issueConciseSummaryPath(issueDir)),
+      baseSummaryProvenance({ type: 'summary-concise', input_layers: LAYERS }),
+    );
+
+    rmSync(issueConciseSummaryPath(issueDir));
+
+    const result = await checkSummaryFreshness(issueDir, LAYERS);
+    expect(result.freshness).toBe('stale');
+    expect(await summaryIsUpToDate(issueDir, LAYERS)).toBe(false);
   });
 });

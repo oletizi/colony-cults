@@ -105,4 +105,84 @@ describe('loadSummaryConfig', () => {
     );
     await expect(loadSummaryConfig(repoRoot)).resolves.toEqual({ model: 'claude-opus-4-8' });
   });
+
+  /**
+   * AUDIT-20260722-13: loadSummaryConfig must fail loud when a known key
+   * is present but malformed (wrong type), instead of silently accepting
+   * and falling back to defaults.
+   */
+  describe('malformed known keys (AUDIT-20260722-13)', () => {
+    it('throws when model is present but not a string (number)', async () => {
+      const repoRoot = await makeRepoRoot(JSON.stringify({ model: 123 }));
+      await expect(loadSummaryConfig(repoRoot)).rejects.toThrow(
+        /invalid model field.*expected string.*number/i,
+      );
+    });
+
+    it('throws when model is present but not a string (object)', async () => {
+      const repoRoot = await makeRepoRoot(JSON.stringify({ model: { nested: 'value' } }));
+      await expect(loadSummaryConfig(repoRoot)).rejects.toThrow(
+        /invalid model field.*expected string.*object/i,
+      );
+    });
+
+    it('throws when model is present but not a string (array)', async () => {
+      const repoRoot = await makeRepoRoot(JSON.stringify({ model: ['a', 'b'] }));
+      await expect(loadSummaryConfig(repoRoot)).rejects.toThrow(
+        /invalid model field.*expected string.*object/i,
+      );
+    });
+
+    it('throws when model is present but not a string (boolean)', async () => {
+      const repoRoot = await makeRepoRoot(JSON.stringify({ model: true }));
+      await expect(loadSummaryConfig(repoRoot)).rejects.toThrow(
+        /invalid model field.*expected string.*boolean/i,
+      );
+    });
+
+    it('throws when engine is present but not a string (number)', async () => {
+      const repoRoot = await makeRepoRoot(JSON.stringify({ engine: 456 }));
+      await expect(loadSummaryConfig(repoRoot)).rejects.toThrow(
+        /invalid engine field.*expected string.*number/i,
+      );
+    });
+
+    it('throws when engine is present but not a string (object)', async () => {
+      const repoRoot = await makeRepoRoot(JSON.stringify({ engine: { type: 'claude' } }));
+      await expect(loadSummaryConfig(repoRoot)).rejects.toThrow(
+        /invalid engine field.*expected string.*object/i,
+      );
+    });
+
+    it('throws when engine is present but not a string (array)', async () => {
+      const repoRoot = await makeRepoRoot(JSON.stringify({ engine: ['claude'] }));
+      await expect(loadSummaryConfig(repoRoot)).rejects.toThrow(
+        /invalid engine field.*expected string.*object/i,
+      );
+    });
+
+    it('throws when engine is present but not a string (boolean)', async () => {
+      const repoRoot = await makeRepoRoot(JSON.stringify({ engine: false }));
+      await expect(loadSummaryConfig(repoRoot)).rejects.toThrow(
+        /invalid engine field.*expected string.*boolean/i,
+      );
+    });
+
+    it('succeeds when both model and engine are absent (defaults ok)', async () => {
+      const repoRoot = await makeRepoRoot(JSON.stringify({}));
+      await expect(loadSummaryConfig(repoRoot)).resolves.toEqual({});
+    });
+
+    it('succeeds when unrelated keys are present with malformed types (unknown keys ignored)', async () => {
+      const repoRoot = await makeRepoRoot(
+        JSON.stringify({
+          model: 'claude-opus-4-8',
+          someNumber: 42,
+          someObject: { nested: true },
+          someArray: [1, 2, 3],
+        }),
+      );
+      await expect(loadSummaryConfig(repoRoot)).resolves.toEqual({ model: 'claude-opus-4-8' });
+    });
+  });
 });

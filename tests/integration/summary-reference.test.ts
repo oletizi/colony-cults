@@ -143,4 +143,131 @@ describe('summaryRef bibliography reference (T025-T027)', () => {
       /archive-relative|absolute/i,
     );
   });
+
+  // AUDIT-20260722-15/-12: validateSummaryRef must reject a summaryRef that
+  // escapes archiveRoot via ".." traversal or an absolute path, even though
+  // it reached this function having bypassed writeSummaryRef entirely (e.g.
+  // authored directly in YAML -- `loadSourceFile`'s `optionalString` performs
+  // no path validation).
+  it('(e) validation rejects a summaryRef containing ".." traversal segments (fail loud)', () => {
+    const archiveRoot = mkdtempSync(path.join(tmpdir(), 'summary-ref-archive-'));
+    try {
+      // Plant a real file just outside archiveRoot, so a naive join+existsSync
+      // check (no in-root guard) would otherwise succeed.
+      const outsidePath = path.join(archiveRoot, '..', 'escaped-secret.md');
+      writeFileSync(outsidePath, 'not part of the archive', 'utf-8');
+      try {
+        const source = writeSummaryRef(baseSource('PB-P909'), '../escaped-secret.md');
+        expect(() => validateSummaryRef(source, archiveRoot)).toThrow(
+          /\.\.|traversal|outside|absolute/i,
+        );
+      } finally {
+        rmSync(outsidePath, { force: true });
+      }
+    } finally {
+      rmSync(archiveRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('(f) validation rejects an absolute summaryRef even when it targets a real file (fail loud)', () => {
+    const archiveRoot = mkdtempSync(path.join(tmpdir(), 'summary-ref-archive-'));
+    const outsideDir = mkdtempSync(path.join(tmpdir(), 'summary-ref-outside-'));
+    try {
+      const absoluteTarget = path.join(outsideDir, 'abs-target.md');
+      writeFileSync(absoluteTarget, 'not part of the archive', 'utf-8');
+
+      // writeSummaryRef already refuses to author an absolute ref -- construct
+      // the Source directly to model a ref that reached validateSummaryRef by
+      // some other path (e.g. hand-authored YAML), the same defense-in-depth
+      // scenario the docstring calls out.
+      const source: Source = { ...baseSource('PB-P910'), summaryRef: absoluteTarget };
+      expect(() => validateSummaryRef(source, archiveRoot)).toThrow(/absolute|outside/i);
+    } finally {
+      rmSync(archiveRoot, { recursive: true, force: true });
+      rmSync(outsideDir, { recursive: true, force: true });
+    }
+  });
+
+  // AUDIT-20260722-14: validateSummaryRef must be reachable through the REAL
+  // load path (`loadSourceFile`'s validating mode), not just callable as a
+  // standalone helper -- this is the invocation `bib validate` actually uses
+  // (`@/cli/bibliography`'s `runValidate`).
+  describe('wired enforcement via loadSourceFile (AUDIT-20260722-14)', () => {
+    it('(g) loadSourceFile WITHOUT archiveRoot loads a dangling summaryRef silently (documents pre-fix, non-validating default)', () => {
+      const source = writeSummaryRef(baseSource('PB-P911'), ROLLUP_REF);
+      const serialized = serializeSource({ source, records: [] });
+      const filePath = path.join(dir, 'PB-P911.yml');
+      writeFileSync(filePath, serialized, 'utf-8');
+
+      // No archiveRoot supplied -- the default, non-validating mode every
+      // pre-existing caller (PDF rendering, acquisition, etc.) relies on.
+      const loaded = loadSourceFile(filePath).source;
+      expect(loaded.summaryRef).toBe(ROLLUP_REF);
+    });
+
+    it('(h) loadSourceFile WITH archiveRoot rejects a dangling summaryRef (fail loud, wired path)', () => {
+      const archiveRoot = mkdtempSync(path.join(tmpdir(), 'summary-ref-archive-'));
+      try {
+        const source = writeSummaryRef(baseSource('PB-P912'), ROLLUP_REF);
+        const serialized = serializeSource({ source, records: [] });
+        const filePath = path.join(dir, 'PB-P912.yml');
+        writeFileSync(filePath, serialized, 'utf-8');
+
+        // The artifact was never generated under archiveRoot -- the exact
+        // "renamed/moved/never generated" scenario AUDIT-20260722-14 names.
+        expect(() => loadSourceFile(filePath, archiveRoot)).toThrow(
+          /loadSourceFile.*dangling|does not resolve/i,
+        );
+      } finally {
+        rmSync(archiveRoot, { recursive: true, force: true });
+      }
+    });
+
+    it('(i) loadSourceFile WITH archiveRoot accepts a resolvable summaryRef (no regression)', () => {
+      const archiveRoot = mkdtempSync(path.join(tmpdir(), 'summary-ref-archive-'));
+      try {
+        const artifactPath = path.join(archiveRoot, ROLLUP_REF);
+        mkdirSync(path.dirname(artifactPath), { recursive: true });
+        writeFileSync(artifactPath, '---\ntopics: []\n---\nRollup prose.\n', 'utf-8');
+
+        const source = writeSummaryRef(baseSource('PB-P913'), ROLLUP_REF);
+        const serialized = serializeSource({ source, records: [] });
+        const filePath = path.join(dir, 'PB-P913.yml');
+        writeFileSync(filePath, serialized, 'utf-8');
+
+        const loaded = loadSourceFile(filePath, archiveRoot).source;
+        expect(loaded.summaryRef).toBe(ROLLUP_REF);
+      } finally {
+        rmSync(archiveRoot, { recursive: true, force: true });
+      }
+    });
+
+    it('(j) loadSourceFile WITH archiveRoot rejects a traversal summaryRef authored directly in YAML (fail loud, wired path)', () => {
+      const archiveRoot = mkdtempSync(path.join(tmpdir(), 'summary-ref-archive-'));
+      try {
+        // Author the SSOT file directly (bypassing writeSummaryRef's own
+        // absolute-path rejection) to model a hand-edited/maliciously-crafted
+        // summaryRef reaching the loader, per AUDIT-20260722-15/-12.
+        const filePath = path.join(dir, 'PB-P914.yml');
+        writeFileSync(
+          filePath,
+          [
+            'sourceId: PB-P914',
+            'kind: periodical',
+            'titles:',
+            '  - text: La Nouvelle France',
+            '    role: canonical',
+            'summaryRef: ../escaped-secret.md',
+          ].join('\n') + '\n',
+          'utf-8',
+        );
+
+        expect(() => loadSourceFile(filePath, archiveRoot)).toThrow(
+          /loadSourceFile.*(traversal|outside|absolute)/i,
+        );
+      } finally {
+        rmSync(archiveRoot, { recursive: true, force: true });
+      }
+    });
+  });
 });
