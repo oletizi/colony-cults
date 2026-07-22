@@ -37,3 +37,5 @@
 {"id":"T036","tierLabel":"fast","model":"haiku","commitRange":"polish","reviewClean":true,"note":"docs/asset-summaries.md + help"}
 {"id":"T037","tierLabel":"balanced","model":"sonnet","commitRange":"polish","reviewClean":true,"note":"type/size sweep clean; full suite green modulo pre-existing"}
 {"id":"AUDIT-fix-round-1","model":"opus+sonnet","commitRange":"29df6b8..9241360","reviewClean":true,"note":"8 high govern findings fixed (05 stdin, 06 empty, 01 papers-past, 07/08 both-artifact, 04 preflight, 03 config, 02 weld); 152 tests pass"}
+{"id":"AUDIT-live-01","model":"sonnet","commitRange":"a8efa34","reviewClean":true,"note":"monograph whole-source no-op fixed (found by live run); verified live PB-P002"}
+{"id":"AUDIT-fix-round-2","model":"opus+sonnet","commitRange":"7678925..0da1f42","reviewClean":true,"note":"09 rollup coverage->provenance, 10 empty-concise fail-loud"}
