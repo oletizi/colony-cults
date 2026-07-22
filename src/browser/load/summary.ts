@@ -17,7 +17,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { parse } from 'yaml';
-import type { LoadedSummary, MachineAssistLabel } from '@/browser/model';
+import type { LoadedSummary, MachineAssistLabel, RawIssue, RawSource } from '@/browser/model';
 import { companionYamlPath } from '@/archive/store';
 import { issueConciseSummaryPath, sourceConciseSummaryPath } from '@/summarize/artifacts';
 
@@ -44,6 +44,35 @@ export function loadIssueSummary(issueDir: string): LoadedSummary | null {
  */
 export function loadSourceSummary(sourceDir: string): LoadedSummary | null {
   return loadSummaryArtifact(sourceConciseSummaryPath(sourceDir));
+}
+
+/**
+ * Attaches `issue`'s per-issue concise summary (loaded from `issueDir`) when
+ * present, omitting the key entirely when absent -- the additive,
+ * omit-when-absent convention {@link RawIssue.conciseSummary} documents.
+ *
+ * This is the ONE enrichment site every {@link RawIssue} builder MUST route
+ * through (the standard Gallica periodical/monograph loader AND the Papers
+ * Past clipping loader), so a loader cannot silently diverge and build an
+ * issue that never gets a chance to carry its summary (AUDIT-20260722-01:
+ * the Papers Past loader built its `RawIssue` inline and skipped this call
+ * entirely, so even a present `issue.summary.short.en.md` rendered as
+ * "No summary yet").
+ */
+export function attachIssueSummary(issue: RawIssue, issueDir: string): RawIssue {
+  const conciseSummary = loadIssueSummary(issueDir);
+  return conciseSummary === null ? issue : { ...issue, conciseSummary };
+}
+
+/**
+ * Attaches `source`'s rollup concise summary (loaded from `sourceDir`) when
+ * present, omitting the key entirely when absent. The {@link RawSource}
+ * counterpart to {@link attachIssueSummary} -- see that doc comment for why
+ * every source builder MUST route through this shared site.
+ */
+export function attachSourceSummary(source: RawSource, sourceDir: string): RawSource {
+  const conciseSummary = loadSourceSummary(sourceDir);
+  return conciseSummary === null ? source : { ...source, conciseSummary };
 }
 
 /** Shared load: pairs the concise markdown at `mdPath` with its sidecar label. */

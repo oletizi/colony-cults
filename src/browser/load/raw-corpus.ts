@@ -38,7 +38,7 @@ import {
   resolveSourceLanguage,
 } from '@/browser/load/pages';
 import { isPapersPastSource, loadPapersPastSource } from '@/browser/load/papers-past';
-import { loadIssueSummary, loadSourceSummary } from '@/browser/load/summary';
+import { attachIssueSummary, attachSourceSummary } from '@/browser/load/summary';
 
 /** The holding-archive label whose record carries the source-level Gallica ark. */
 const GALLICA_ARCHIVE_LABEL = 'Gallica / BnF';
@@ -165,11 +165,6 @@ function loadSource(
 
   const rights = deriveRights(sourceId, issues);
 
-  // Additive optional field (US2, FR-006): only attach the key when a rollup
-  // concise artifact actually exists, so a source with no rollup yet
-  // round-trips unchanged (mirrors the machineAssist / imageSha256 convention
-  // -- never assign an explicit `undefined` value to an optional field).
-  const conciseSummary = loadSourceSummary(sourceDir);
   const rawSource: RawSource = {
     sourceId,
     title,
@@ -180,8 +175,13 @@ function loadSource(
     issues,
   };
 
+  // Additive optional field (US2, FR-006): attachSourceSummary only sets the
+  // key when a rollup concise artifact actually exists, so a source with no
+  // rollup yet round-trips unchanged (mirrors the machineAssist / imageSha256
+  // convention -- never assign an explicit `undefined` value to an optional
+  // field).
   return {
-    source: conciseSummary === null ? rawSource : { ...rawSource, conciseSummary },
+    source: attachSourceSummary(rawSource, sourceDir),
     skipped,
   };
 }
@@ -200,11 +200,10 @@ function buildRawIssue(
     pages,
   };
 
-  // Additive optional field (US2, FR-006): only attach the key when a concise
-  // artifact actually exists for this issue, so an unsummarized issue
-  // round-trips unchanged.
-  const conciseSummary = loadIssueSummary(issueDir.dir);
-  return conciseSummary === null ? rawIssue : { ...rawIssue, conciseSummary };
+  // Additive optional field (US2, FR-006): attachIssueSummary only sets the
+  // key when a concise artifact actually exists for this issue, so an
+  // unsummarized issue round-trips unchanged.
+  return attachIssueSummary(rawIssue, issueDir.dir);
 }
 
 /** The canonical title (SSOT `titles[role=canonical]`, else the first title). */
