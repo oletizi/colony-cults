@@ -70,6 +70,15 @@ export interface WriteMemberFixtureOptions {
    * Catalog URL for provenance. Defaults to a generated Gallica URL.
    */
   catalogUrl?: string;
+
+  /**
+   * Reuse an EXISTING archive root instead of minting a fresh `mkdtemp` one --
+   * used by `writeGroupFixture` so every member shares ONE root (matching
+   * production: one `COLONY_ARCHIVE_ROOT` for every source, never a
+   * per-member root). When provided, `cleanup()` is a no-op -- the caller
+   * that owns the shared root removes it.
+   */
+  archiveRoot?: string;
 }
 
 /**
@@ -164,7 +173,10 @@ export async function writeMemberFixture(
   const catalogUrl =
     opts.catalogUrl ?? `https://gallica.bnf.fr/ark:/12148/bpt6k${opts.sourceId}`;
 
-  const tempRoot = mkdtempSync(path.join('/tmp', 'fixture-member-'));
+  // Reuse a caller-supplied shared root (`writeGroupFixture`) when given;
+  // else mint a fresh standalone temp root (T005/T007/T009 callers).
+  const ownsTempRoot = opts.archiveRoot === undefined;
+  const tempRoot = opts.archiveRoot ?? mkdtempSync(path.join('/tmp', 'fixture-member-'));
   const archiveRoot = tempRoot;
   const sourceDir = path.join(
     archiveRoot,
@@ -176,6 +188,9 @@ export async function writeMemberFixture(
   );
 
   const cleanup = (): void => {
+    if (!ownsTempRoot) {
+      return; // Shared group root; the caller that minted it removes it.
+    }
     try {
       rmSync(tempRoot, { recursive: true, force: true });
     } catch {
@@ -341,14 +356,10 @@ export async function writeMemberFixture(
  * Options for building a source-group fixture.
  */
 export interface WriteGroupFixtureOptions {
-  /**
-   * Source-group ID, e.g., `PB-G001`.
-   */
+  /** Source-group ID, e.g., `PB-G001`. */
   groupId: string;
 
-  /**
-   * Case folder name (e.g., `port-breton`).
-   */
+  /** Case folder name (e.g., `port-breton`). */
   case: string;
 
   /**
@@ -405,6 +416,12 @@ export async function writeGroupFixture(
   const baseDate = new Date('2026-01-01');
   const members: WriteMemberFixtureResult[] = [];
 
+  // ONE shared archive root for every member -- matches production (one
+  // `COLONY_ARCHIVE_ROOT` for every source, never a per-member root); a group
+  // build given only one member's `archiveRoot` must find every sibling's
+  // folio provenance under it too.
+  const groupArchiveRoot = mkdtempSync(path.join('/tmp', 'fixture-group-'));
+
   try {
     // Create each member with a distinct date in ascending order.
     for (let i = 0; i < memberCount; i++) {
@@ -421,8 +438,14 @@ export async function writeGroupFixture(
         case: opts.case,
         slug,
         pageCount: 2, // 2 pages per member by default
+        // Non-overlapping folio ranges (001/002, 101/102, ...): production
+        // never collides on folio number (per-member object-store keys are
+        // globally unique), but `makeFixtureFetch` keys purely by trailing
+        // `fNNN`, so members must not repeat one here.
+        startFolio: i * 100 + 1,
         articleDate,
         ocrText: `OCR for ${sourceId} (${articleDate})`,
+        archiveRoot: groupArchiveRoot,
       });
 
       members.push(fixture);
@@ -442,10 +465,15 @@ export async function writeGroupFixture(
       ],
     };
 
-    // Combined cleanup for all members and the group.
+    // Each member's own cleanup is a no-op (shared root); remove it here.
     const cleanup = (): void => {
       for (const member of members) {
         member.cleanup();
+      }
+      try {
+        rmSync(groupArchiveRoot, { recursive: true, force: true });
+      } catch {
+        // Already cleaned or doesn't exist; ignore.
       }
     };
 
@@ -455,9 +483,14 @@ export async function writeGroupFixture(
       cleanup,
     };
   } catch (err) {
-    // Clean up any successfully created members on error.
+    // Clean up any created members + the shared root on error.
     for (const member of members) {
       member.cleanup();
+    }
+    try {
+      rmSync(groupArchiveRoot, { recursive: true, force: true });
+    } catch {
+      // Already cleaned or doesn't exist; ignore.
     }
     throw err;
   }

@@ -24,6 +24,13 @@
  *     segments (ascending order) and compiles it via the injected
  *     `TypstRunner` -- exactly one `typst compile` call, one PDF.
  *
+ * Steps 1-4 above (everything except the final one-page `TypstInput` wrap +
+ * compile) are extracted into {@link composeMemberPage} -- the reusable
+ * per-member page composer spec 017 T011's `buildGroupEdition`
+ * (`@/pdf/render/group-edition`) shares, so a group edition's N member
+ * sections are composed through the exact same code path as a standalone
+ * member PDF, never a cloned copy of it.
+ *
  * Typst root sandboxing (spec 007's `buildItem` convention): the template +
  * fonts live under the repo root, but a caller's `outDir` for a member build
  * is not guaranteed to be a descendant of the repo root (unlike `buildItem`,
@@ -45,7 +52,7 @@ import type { ObjectStore } from '@/archive/object-store';
 import { resolveRepoRoot } from '@/browser/load/repo-root';
 import { resolvePdfConfig } from '@/pdf/config';
 import type { ImageByteSource } from '@/pdf/images/fetch';
-import { makeArchivePinReader } from '@/pdf/load/edition';
+import { makeArchivePinReader, type ArchivePinReader } from '@/pdf/load/edition';
 import {
   detectImageExt,
   FONTS_REL,
@@ -59,10 +66,16 @@ import {
 } from '@/pdf/render/build';
 import {
   assembleMemberEdition,
+  type MemberEditionAssembly,
   type MemberPageMasterSegment,
   type MemberWithRecords,
 } from '@/pdf/render/member-edition';
-import { serializeTypstInput, type TypstInput, type TypstVersoSegment } from '@/pdf/render/typst-input';
+import {
+  serializeTypstInput,
+  type TypstInput,
+  type TypstPage,
+  type TypstVersoSegment,
+} from '@/pdf/render/typst-input';
 import { defaultExecRunner, makeTypstRunner } from '@/pdf/render/typst-runner';
 
 /** Options for {@link buildMemberItem}: everything `BuildItemOptions` offers, plus a required `ObjectStore`. */
@@ -77,8 +90,11 @@ export interface BuildMemberOptions extends BuildItemOptions {
  * and the member's staged build dir (which may or may not be). Degrades to
  * the filesystem root (`/`) when `a`/`b` share nothing else (e.g. a build dir
  * under a system temp dir, unrelated to the repo).
+ *
+ * Exported so `@/pdf/render/group-edition` (spec 017 T011) sandboxes its own
+ * multi-member compile under the identical widest-common-root convention.
  */
-function commonAncestor(a: string, b: string): string {
+export function commonAncestor(a: string, b: string): string {
   const segA = path.resolve(a).split(path.sep);
   const segB = path.resolve(b).split(path.sep);
   const common: string[] = [];
@@ -124,6 +140,99 @@ async function stageMemberSegments(
 }
 
 /**
+ * Everything {@link composeMemberPage} needs to compose one member's page,
+ * independent of where its output ultimately lands: a standalone member PDF
+ * (`buildMemberItem`, this module) or one section of a group edition
+ * (`@/pdf/render/group-edition`'s `buildGroupEdition`, spec 017 T011).
+ */
+export interface ComposeMemberPageContext {
+  /** The private archive root the member's folios/issue.txt live under. */
+  archiveRoot: string;
+  /** Fetches the member's detached `ocr-text` asset bytes (`materializeIssueText`, T005). */
+  objectStore: ObjectStore;
+  /** The resolved image-byte source (`makeImageSource`) segment bytes are fetched through. */
+  imageSource: ImageByteSource;
+  /** Reads the pinned archive ref for the colophon (`makeArchivePinReader`). */
+  pin: ArchivePinReader;
+  /**
+   * Absolute directory this member's staged segment images are written into.
+   * A standalone member build stages directly into its own `<sourceId>.images`
+   * dir; a group edition stages into a per-member-namespaced subdirectory of
+   * the group's shared image dir (so two members' both-`f001..` filenames
+   * never collide) -- see `buildGroupEdition`.
+   */
+  imageDir: string;
+  /**
+   * Relative path prefix prepended to every staged segment's `imagePath` in
+   * the returned `TypstPage` (NOT to where the bytes are physically written,
+   * which is always `imageDir` verbatim). Empty/absent when the Typst
+   * compile's own `imageDir` IS this member's `imageDir` (`buildMemberItem`);
+   * a group edition sets this to `"<memberId>/"` so each segment resolves
+   * under the group compile's single, shared `imageDir` (spec 017 T011).
+   */
+  imagePathPrefix?: string;
+}
+
+/**
+ * Compose ONE source-group member's collapsed `TypstPage` -- the whole
+ * per-member pipeline (materialize `issue.txt`, assemble front-matter/
+ * colophon/segments, fetch + sha256-verify + stage every segment's image
+ * bytes) EXCEPT the final one-page `TypstInput` wrap + Typst compile, which
+ * differ between a standalone member PDF (`buildMemberItem`, one page, one
+ * compile) and a group edition (`buildGroupEdition`, N pages, ONE compile).
+ * Both callers share this exact function -- neither clones its logic.
+ *
+ * @throws Error on any fail-loud violation: no `page-master` assets, a
+ *   missing/mismatched `ocr-text` asset (`materializeIssueText`), a failed
+ *   image fetch, a sha256 mismatch, or an unresolvable title/rights/date.
+ */
+export async function composeMemberPage(
+  member: MemberWithRecords,
+  ctx: ComposeMemberPageContext,
+): Promise<{ page: TypstPage; assembly: MemberEditionAssembly }> {
+  // 1. Materialize issue.txt from the detached ocr-text asset FIRST (T005) --
+  //    before anything else reads it. The whole-article OCR becomes the
+  //    single page's recto `english`.
+  const issueTxtPath = await materializeIssueText(member, ctx.archiveRoot, ctx.objectStore);
+  const englishText = await readFile(issueTxtPath, 'utf-8');
+
+  // 2. Assemble front-matter + colophon + ordered segments (pure data).
+  const assembly = await assembleMemberEdition(member, ctx.archiveRoot, ctx.pin);
+
+  // 3. Fetch + sha256-verify + stage every segment's image bytes.
+  const stagedSegments = await stageMemberSegments(ctx.imageSource, assembly.segments, ctx.imageDir);
+  const prefix = ctx.imagePathPrefix ?? '';
+  const versoSegments: TypstVersoSegment[] = stagedSegments.map((segment) => ({
+    imagePath: `${prefix}${segment.imagePath}`,
+    sha256: segment.sha256,
+  }));
+
+  // 4. Collapse into ONE TypstPage: verso.segments carries all N staged
+  //    segments (ascending); the required single imagePath/sha256 fields
+  //    (unused by the template once segments are present) name the first
+  //    segment as the page's primary image. recto.english is the whole
+  //    materialized OCR text; ocrFrench is always empty (no French OCR on a
+  //    member); machineAssist is always null (no translation is performed).
+  const page: TypstPage = {
+    pageId: 'p001',
+    folioId: assembly.segments[0].folioId,
+    verso: {
+      imagePath: versoSegments[0].imagePath,
+      sha256: versoSegments[0].sha256,
+      segments: versoSegments,
+    },
+    recto: {
+      ocrFrench: '',
+      english: englishText,
+      ocrCondition: assembly.colophon.ocrTranscription?.caveat ?? null,
+      machineAssist: null,
+    },
+  };
+
+  return { page, assembly };
+}
+
+/**
  * Build a source-group member's single collapsed PDF page and return its
  * output path.
  *
@@ -146,17 +255,7 @@ export async function buildMemberItem(
   const showFrench = opts.showFrench ?? config.showFrench;
   const archiveRoot = resolveArchiveRoot(repoRoot, opts.archiveRoot, env);
 
-  // 1. Materialize issue.txt from the detached ocr-text asset FIRST (T005) --
-  //    before anything else reads it. The whole-article OCR becomes the
-  //    single page's recto `english`.
-  const issueTxtPath = await materializeIssueText(member, archiveRoot, opts.objectStore);
-  const englishText = await readFile(issueTxtPath, 'utf-8');
-
-  // 2. Assemble front-matter + colophon + ordered segments (pure data).
-  const pin = makeArchivePinReader(config.pinFile);
-  const assembly = await assembleMemberEdition(member, archiveRoot, pin);
-
-  // 3. Stage the per-source build dir + image dir.
+  // Stage the per-source build dir + image dir.
   const outRoot = path.isAbsolute(opts.outDir ?? config.outDir)
     ? (opts.outDir ?? config.outDir)
     : path.join(repoRoot, opts.outDir ?? config.outDir);
@@ -167,35 +266,21 @@ export async function buildMemberItem(
 
   const fetchFn = resolveFetchFn(opts.fetchFn);
   const imageSource = makeImageSource(provider, fetchFn, env);
-  const stagedSegments = await stageMemberSegments(imageSource, assembly.segments, imageDir);
+  const pin = makeArchivePinReader(config.pinFile);
 
-  // 4. Collapse into ONE TypstPage: verso.segments carries all N staged
-  //    segments (ascending); the required single imagePath/sha256 fields
-  //    (unused by the template once segments are present) name the first
-  //    segment as the page's primary image. recto.english is the whole
-  //    materialized OCR text; ocrFrench is always empty (no French OCR on a
-  //    member); machineAssist is always null (no translation is performed).
+  const { page, assembly } = await composeMemberPage(member, {
+    archiveRoot,
+    objectStore: opts.objectStore,
+    imageSource,
+    pin,
+    imageDir,
+  });
+
   const typstInput: TypstInput = {
     itemId: member.sourceId,
     kind: 'monograph',
     titlePage: assembly.titlePage,
-    pages: [
-      {
-        pageId: 'p001',
-        folioId: assembly.segments[0].folioId,
-        verso: {
-          imagePath: stagedSegments[0].imagePath,
-          sha256: stagedSegments[0].sha256,
-          segments: stagedSegments,
-        },
-        recto: {
-          ocrFrench: '',
-          english: englishText,
-          ocrCondition: assembly.colophon.ocrTranscription?.caveat ?? null,
-          machineAssist: null,
-        },
-      },
-    ],
+    pages: [page],
     colophon: assembly.colophon,
     showFrench,
   };
