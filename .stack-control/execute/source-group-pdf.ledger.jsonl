@@ -12,3 +12,5 @@
 {"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"26ad2d4..f3c89c6","reviewClean":true}
 {"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"f3c89c6..abf2436","reviewClean":true,"note":"shared composeMemberPage extracted (DRY); namespaced images; one edition-level colophon; fixed writeGroupFixture multi-member bugs"}
 {"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"abf2436..ccae30c","reviewClean":true,"note":"CLI source-group routing; resolveSelectorRoute pure helper; no routing test (self-exec CLI) — T013 covers"}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"ccae30c..a2a1f53","reviewClean":true,"note":"group integration; found retrieved-vs-articledate bug -> T011b"}
+{"id":"T011b","tierLabel":"balanced","model":"sonnet","commitRange":"a2a1f53..3bc0c59","reviewClean":true,"note":"discovered fix: article date from papers-past identifier not retrieved (FR-009); member-fixture.ts now 509 lines -> T017 split"}
