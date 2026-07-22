@@ -38,6 +38,7 @@ import {
   resolveSourceLanguage,
 } from '@/browser/load/pages';
 import { isPapersPastSource, loadPapersPastSource } from '@/browser/load/papers-past';
+import { attachIssueSummary, attachSourceSummary } from '@/browser/load/summary';
 
 /** The holding-archive label whose record carries the source-level Gallica ark. */
 const GALLICA_ARCHIVE_LABEL = 'Gallica / BnF';
@@ -113,11 +114,16 @@ function loadSource(
   let kind: SourceKind;
   let ark: string;
   let issueDirs: IssueDir[];
+  // The directory a source-rollup concise summary (`source.summary.short.en.md`)
+  // would live in, per source kind: a periodical's issues share one newspapers/
+  // slug dir; a monograph IS its single unit dir.
+  let sourceDir: string;
   if (source.kind === 'periodical') {
     kind = 'periodical';
     ark = sourceArk(loaded);
     const newspapersDir = resolveNewspapersDir(archivePath, loaded);
     issueDirs = enumerateIssueDirs(newspapersDir, sourceId);
+    sourceDir = newspapersDir;
   } else if (source.kind === 'monograph') {
     kind = 'monograph';
     // The book's ark is the source ark (the minimal monograph SSOT carries no
@@ -125,6 +131,7 @@ function loadSource(
     const bookUnit = resolveMonographUnit(archivePath, loaded);
     ark = bookUnit.ark;
     issueDirs = [bookUnit];
+    sourceDir = bookUnit.dir;
   } else {
     throw new Error(
       `loadCorpus(${sourceId}): source kind "${source.kind}" is not a loadable corpus kind ` +
@@ -158,16 +165,23 @@ function loadSource(
 
   const rights = deriveRights(sourceId, issues);
 
+  const rawSource: RawSource = {
+    sourceId,
+    title,
+    kind,
+    language,
+    ark,
+    rights,
+    issues,
+  };
+
+  // Additive optional field (US2, FR-006): attachSourceSummary only sets the
+  // key when a rollup concise artifact actually exists, so a source with no
+  // rollup yet round-trips unchanged (mirrors the machineAssist / imageSha256
+  // convention -- never assign an explicit `undefined` value to an optional
+  // field).
   return {
-    source: {
-      sourceId,
-      title,
-      kind,
-      language,
-      ark,
-      rights,
-      issues,
-    },
+    source: attachSourceSummary(rawSource, sourceDir),
     skipped,
   };
 }
@@ -179,12 +193,17 @@ function buildRawIssue(
   language: SourceLanguage
 ): RawIssue {
   const pages = buildRawIssuePages(sourceId, issueDir, language);
-  return {
+  const rawIssue: RawIssue = {
     issueId: issueDir.issueId,
     date: issueDir.date,
     sequence: index + 1,
     pages,
   };
+
+  // Additive optional field (US2, FR-006): attachIssueSummary only sets the
+  // key when a concise artifact actually exists for this issue, so an
+  // unsummarized issue round-trips unchanged.
+  return attachIssueSummary(rawIssue, issueDir.dir);
 }
 
 /** The canonical title (SSOT `titles[role=canonical]`, else the first title). */

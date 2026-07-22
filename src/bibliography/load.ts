@@ -27,6 +27,7 @@ import {
   isSourceStructuralKind,
 } from '@/bibliography/vocab';
 import type { SourceCentrality, SourceLifecycleStatus } from '@/bibliography/vocab';
+import { validateSummaryRef } from '@/bibliography/summary-reference';
 import type { Publication } from '@/model/publication';
 import type { Reference, Source, SuspectedGap, WorkIdentifier } from '@/model/source';
 
@@ -62,6 +63,7 @@ const SOURCE_KEYS = new Set([
   'knownExtent',
   'suspected',
   'notes',
+  'summaryRef',
   'publications',
   'repositoryRecords',
   'threads',
@@ -102,9 +104,23 @@ function parseYamlOrFail(text: string, filePath: string): unknown {
  * Fails loud (throws, with a locating message) on any unreadable/malformed
  * input -- there is no fallback and nothing is silently dropped.
  *
+ * `archiveRoot` is the validating mode's opt-in (spec 017, SC-005, AUDIT-
+ * 20260722-14): when supplied, a present `summaryRef` is checked via
+ * `@/bibliography/summary-reference`'s `validateSummaryRef` -- which
+ * rejects a `..`/absolute escape as well as a dangling (nonexistent)
+ * artifact -- and a failure throws here, prefixed the same way every other
+ * structural violation in this file is (`loadSourceFile(filePath): ...`), so
+ * a source authored with a renamed/moved/never-generated rollup summary
+ * fails loud at check time instead of loading silently. Omitting
+ * `archiveRoot` (the default) preserves every existing caller's behavior
+ * unchanged -- most load sites (PDF rendering, acquisition, source-group
+ * ops) have no reason to touch the private archive just to parse SSOT YAML.
+ * `bib validate` is the real, wired invocation that supplies it (see
+ * `@/cli/bibliography`'s `runValidate`).
+ *
  * See specs/004-canonical-source-metadata/contracts/source-record.md rules 1-8.
  */
-export function loadSourceFile(filePath: string): LoadedSource {
+export function loadSourceFile(filePath: string, archiveRoot?: string): LoadedSource {
   const text = readFileText(filePath);
   const parsed: unknown = parseYamlOrFail(text, filePath);
   const obj = requireObject(parsed, filePath, 'document');
@@ -161,6 +177,10 @@ export function loadSourceFile(filePath: string): LoadedSource {
   const language = optionalString(obj.language, filePath, 'language');
   const sourceCase = optionalString(obj.case, filePath, 'case');
   const notes = optionalString(obj.notes, filePath, 'notes');
+  // By-path pointer to the source rollup thorough summary (spec 017, FR-007),
+  // the `census:`-style idiom. Absent stays undefined -- no default invented;
+  // the exhaustive prose is never inlined (SC-005), only this path string.
+  const summaryRef = optionalString(obj.summaryRef, filePath, 'summaryRef');
 
   // Corpus-centrality mark (optional): absent means a central corpus work; a
   // present value is narrowed against the closed `SourceCentrality` vocab, so an
@@ -301,9 +321,22 @@ export function loadSourceFile(filePath: string): LoadedSource {
     knownExtent,
     suspected,
     notes,
+    summaryRef,
     publications,
     threads,
   };
+
+  // Validating mode (AUDIT-20260722-14): a present summaryRef must resolve,
+  // in-root, to a real artifact. `validateSummaryRef` itself is a no-op
+  // (returns undefined) when summaryRef is absent, so this is safe to call
+  // unconditionally once an archiveRoot is supplied.
+  if (archiveRoot !== undefined) {
+    try {
+      validateSummaryRef(source, archiveRoot);
+    } catch (error) {
+      fail(filePath, describeError(error));
+    }
+  }
 
   return { source, records, identifierLeaks };
 }
@@ -318,13 +351,16 @@ function readSourceDir(dir: string): string[] {
 
 /**
  * Read every `bibliography/sources/PB-*.yml` SSOT file in `dir`, in
- * deterministic (sorted) filename order.
+ * deterministic (sorted) filename order. `archiveRoot` forwards to
+ * {@link loadSourceFile}'s validating mode (AUDIT-20260722-14) for every
+ * file; omit it (the default) to load without the summaryRef check, same as
+ * every existing caller today.
  */
-export function loadAllSources(dir: string): LoadedSource[] {
+export function loadAllSources(dir: string, archiveRoot?: string): LoadedSource[] {
   const names = readSourceDir(dir)
     .filter((name) => SOURCE_FILE_PATTERN.test(name))
     .sort();
-  return names.map((name) => loadSourceFile(path.join(dir, name)));
+  return names.map((name) => loadSourceFile(path.join(dir, name), archiveRoot));
 }
 
 /**

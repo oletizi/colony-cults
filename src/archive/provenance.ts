@@ -1,5 +1,19 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import {
+  emitInputLayers,
+  emitInputQuality,
+  emitIssueList,
+  emitObjectStore,
+  emitOcrQuality,
+  type InputLayerOrigin,
+  parseBlockScalar,
+  parseInputLayersBlock,
+  parseInputQualityBlock,
+  parseIssueList,
+  parseObjectStoreBlock,
+  parseOcrQualityBlock,
+} from '@/archive/provenance-blocks';
 
 import {
   blockScalar,
@@ -9,7 +23,6 @@ import {
   quotedScalar,
   requireField,
   requireInteger,
-  requireSub,
   unquoteScalar,
 } from '@/archive/provenance-scalars';
 
@@ -49,6 +62,32 @@ export interface OcrQuality {
   ratio: number;
   /** Coarse tier derived from `ratio`. */
   tier: OcrQualityTier;
+}
+
+/**
+ * One input text layer a summary was derived from (FR-005): archive-relative
+ * `path` + `sha256` at generation time (the idempotency key). `origin` /
+ * `source_representation` (FR-021) attribute the layer honestly --
+ * additive-optional, omitted when unset (byte-identity); fixed sub-key order
+ * `path`, `sha256`, `origin`, `source_representation`.
+ */
+export interface InputLayer {
+  path: string;
+  sha256: string;
+  origin?: InputLayerOrigin;
+  source_representation?: string;
+}
+
+/**
+ * Low-confidence provenance for a summary whose input OCR was weak (FR-016):
+ * the coarse `tier` inherited from the input and a free-text `note`. Emitted as
+ * a fixed-order nested block (`tier`, `note`).
+ */
+export interface InputQuality {
+  /** Coarse input-fidelity tier (same closed set as {@link OcrQualityTier}). */
+  tier: OcrQualityTier;
+  /** Human note recording the low-confidence caveat. */
+  note: string;
 }
 
 /**
@@ -112,6 +151,33 @@ export interface ProvenanceFields {
    * records without it re-serialize byte-identically.
    */
   source_representation?: string;
+  /**
+   * The "interpretation, not evidence" label on a machine-generated summary,
+   * e.g. the literal `machine-generated-summary` (FR-005/006). Additive
+   * OPTIONAL key: omitted when unset so non-summary records re-serialize
+   * byte-identically.
+   */
+  interpretation?: string;
+  /**
+   * The input text layers a summary was derived from (FR-005). Additive
+   * OPTIONAL key: omitted (not `[]`) when unset so non-summary records
+   * re-serialize byte-identically.
+   */
+  input_layers?: InputLayer[];
+  /**
+   * Low-confidence input-OCR provenance for a summary (FR-016). Additive
+   * OPTIONAL key: omitted when unset (present only when the input tier is low).
+   */
+  input_quality?: InputQuality;
+  /**
+   * SOURCE-ROLLUP coverage (FR-009): issue arks whose thorough summary was
+   * folded into the rollup. Additive OPTIONAL, rollup-only -- omitted on every
+   * non-rollup record (byte-identical re-serialize); present (maybe `[]`) only
+   * on rollup sidecars. Same omit-when-unset rule for {@link missing_issues}.
+   */
+  covered_issues?: string[];
+  /** SOURCE-ROLLUP coverage (FR-009): issue arks discovered but not yet summarized. */
+  missing_issues?: string[];
   /** Integer byte count of the asset (T008), emitted as a bare integer. */
   size: number;
   /** Object-store master location (T009), or `null` when not yet uploaded. */
@@ -155,18 +221,15 @@ const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'translation',
   'blank_recto',
   'source_representation',
+  'interpretation',
+  'input_layers',
+  'input_quality',
+  'covered_issues',
+  'missing_issues',
   'object_store',
   'ocr_quality',
   'notes',
   'rights_raw',
-];
-
-/** Fixed emission order of the nested `object_store` block's sub-keys. */
-const OBJECT_STORE_KEYS: readonly (keyof ObjectStoreLocation)[] = [
-  'provider',
-  'bucket',
-  'key',
-  'endpoint',
 ];
 
 /** Emit one `key: value` line (or block), choosing scalar vs block by shape. */
@@ -178,40 +241,6 @@ function emitField(key: keyof ProvenanceFields, value: string | null): string {
     return blockScalar(key, value);
   }
   return `${key}: ${quotedScalar(value)}`;
-}
-
-/**
- * Emit the `object_store` field: either `object_store: null` or a nested block
- * with the fixed sub-key order, each sub-value a quoted scalar indented two
- * spaces.
- */
-function emitObjectStore(location: ObjectStoreLocation | null): string {
-  if (location === null) {
-    return 'object_store: null';
-  }
-  const sub = OBJECT_STORE_KEYS.map(
-    (k) => `  ${k}: ${quotedScalar(location[k])}`,
-  );
-  return ['object_store:', ...sub].join('\n');
-}
-
-/**
- * Emit the optional `ocr_quality` block: omitted entirely when absent (so
- * non-OCR records re-serialize byte-identically), else a nested block with the
- * fixed sub-key order -- `method`/`language`/`tier` as quoted scalars, `ratio`
- * as a bare number.
- */
-function emitOcrQuality(quality: OcrQuality | undefined): string | undefined {
-  if (quality === undefined) {
-    return undefined;
-  }
-  return [
-    'ocr_quality:',
-    `  method: ${quotedScalar(quality.method)}`,
-    `  language: ${quotedScalar(quality.language)}`,
-    `  ratio: ${quality.ratio}`,
-    `  tier: ${quotedScalar(quality.tier)}`,
-  ].join('\n');
 }
 
 /** Emit one provenance line/block, dispatching the two non-string fields. */
@@ -226,10 +255,18 @@ function emitEntry(
       return emitObjectStore(fields.object_store);
     case 'ocr_quality':
       return emitOcrQuality(fields.ocr_quality);
+    case 'input_layers':
+      return emitInputLayers(fields.input_layers);
+    case 'input_quality':
+      return emitInputQuality(fields.input_quality);
+    case 'covered_issues':
+    case 'missing_issues':
+      return emitIssueList(key, fields[key]);
     case 'engine':
     case 'model':
     case 'translation':
-    case 'source_representation': {
+    case 'source_representation':
+    case 'interpretation': {
       // Additive OPTIONAL keys: omit entirely when unset so non-translation
       // records (without them) re-serialize byte-identically.
       const value = fields[key];
@@ -277,86 +314,14 @@ interface ParsedRaw {
   objectStoreSeen: boolean;
   /** The parsed `ocr_quality` block, or `undefined` when the key is absent. */
   ocrQuality?: OcrQuality;
-}
-
-/**
- * Parse the indented `provider/bucket/key/endpoint` sub-lines of an
- * `object_store:` block (each a two-space-indented quoted scalar), starting at
- * `start`. Returns the location and the index of the first line after the block.
- */
-function parseObjectStoreBlock(
-  lines: string[],
-  start: number,
-): { location: ObjectStoreLocation; next: number } {
-  const values = new Map<string, string>();
-  let i = start;
-  while (i < lines.length) {
-    const sub = lines[i].match(/^ {2}([a-zA-Z0-9_]+):\s?(.*)$/);
-    if (!sub) {
-      break;
-    }
-    const [, subKey, rest] = sub;
-    if (rest.startsWith('"') && rest.endsWith('"') && rest.length >= 2) {
-      values.set(subKey, unquoteScalar(rest.slice(1, -1)));
-    } else {
-      values.set(subKey, rest);
-    }
-    i += 1;
-  }
-  const location: ObjectStoreLocation = {
-    provider: requireSub(values, 'provider'),
-    bucket: requireSub(values, 'bucket'),
-    key: requireSub(values, 'key'),
-    endpoint: requireSub(values, 'endpoint'),
-  };
-  return { location, next: i };
-}
-
-/**
- * Parse the two-space-indented `method/language/ratio/tier` sub-lines of an
- * `ocr_quality:` block starting at `start`. `ratio` is a bare number; `tier` is
- * validated against the closed set. Returns the quality and the index of the
- * first line after the block.
- */
-function parseOcrQualityBlock(
-  lines: string[],
-  start: number,
-): { quality: OcrQuality; next: number } {
-  const values = new Map<string, string>();
-  let i = start;
-  while (i < lines.length) {
-    const sub = lines[i].match(/^ {2}([a-zA-Z0-9_]+):\s?(.*)$/);
-    if (!sub) {
-      break;
-    }
-    const [, subKey, rest] = sub;
-    if (rest.startsWith('"') && rest.endsWith('"') && rest.length >= 2) {
-      values.set(subKey, unquoteScalar(rest.slice(1, -1)));
-    } else {
-      values.set(subKey, rest);
-    }
-    i += 1;
-  }
-  const ratioRaw = requireSub(values, 'ratio');
-  const ratio = Number(ratioRaw);
-  if (!Number.isFinite(ratio)) {
-    throw new Error(
-      `parseProvenance: ocr_quality.ratio is not a number: "${ratioRaw}"`,
-    );
-  }
-  const tier = requireSub(values, 'tier');
-  if (tier !== 'low' && tier !== 'medium' && tier !== 'high') {
-    throw new Error(
-      `parseProvenance: ocr_quality.tier must be low|medium|high, got "${tier}"`,
-    );
-  }
-  const quality: OcrQuality = {
-    method: requireSub(values, 'method'),
-    language: requireSub(values, 'language'),
-    ratio,
-    tier,
-  };
-  return { quality, next: i };
+  /** The parsed `input_layers` sequence, or `undefined` when the key is absent. */
+  inputLayers?: InputLayer[];
+  /** The parsed `input_quality` block, or `undefined` when the key is absent. */
+  inputQuality?: InputQuality;
+  /** The parsed `covered_issues` list, or `undefined` when the key is absent. */
+  coveredIssues?: string[];
+  /** The parsed `missing_issues` list, or `undefined` when the key is absent. */
+  missingIssues?: string[];
 }
 
 /**
@@ -374,6 +339,10 @@ function parseRawFields(text: string): ParsedRaw {
   let objectStore: ObjectStoreLocation | null = null;
   let objectStoreSeen = false;
   let ocrQuality: OcrQuality | undefined;
+  let inputLayers: InputLayer[] | undefined;
+  let inputQuality: InputQuality | undefined;
+  let coveredIssues: string[] | undefined;
+  let missingIssues: string[] | undefined;
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
@@ -410,32 +379,39 @@ function parseRawFields(text: string): ParsedRaw {
       const block = parseOcrQualityBlock(lines, i + 1);
       ocrQuality = block.quality;
       i = block.next;
+    } else if (key === 'input_layers') {
+      if (rest !== '') {
+        throw new Error(
+          `parseProvenance: malformed input_layers line: "${line}"`,
+        );
+      }
+      const block = parseInputLayersBlock(lines, i + 1);
+      inputLayers = block.layers;
+      i = block.next;
+    } else if (key === 'input_quality') {
+      if (rest !== '') {
+        throw new Error(
+          `parseProvenance: malformed input_quality line: "${line}"`,
+        );
+      }
+      const block = parseInputQualityBlock(lines, i + 1);
+      inputQuality = block.quality;
+      i = block.next;
+    } else if (key === 'covered_issues' || key === 'missing_issues') {
+      const block = parseIssueList(lines, i, rest);
+      if (key === 'covered_issues') {
+        coveredIssues = block.items;
+      } else {
+        missingIssues = block.items;
+      }
+      i = block.next;
     } else if (rest === 'null') {
       raw.set(key, null);
       i += 1;
     } else if (rest === '|2') {
-      const blockLines: string[] = [];
-      i += 1;
-      while (i < lines.length) {
-        const blockLine = lines[i];
-        if (blockLine.length === 0) {
-          blockLines.push('');
-          i += 1;
-          continue;
-        }
-        if (blockLine.startsWith('  ')) {
-          blockLines.push(blockLine.slice(2));
-          i += 1;
-          continue;
-        }
-        break;
-      }
-      // The trailing newline of the file yields one spurious empty element
-      // at the very end of the block when it runs to EOF; drop it.
-      if (blockLines.length > 0 && blockLines[blockLines.length - 1] === '') {
-        blockLines.pop();
-      }
-      raw.set(key, blockLines.join('\n'));
+      const block = parseBlockScalar(lines, i + 1);
+      raw.set(key, block.text);
+      i = block.next;
     } else if (rest.startsWith('"') && rest.endsWith('"') && rest.length >= 2) {
       raw.set(key, unquoteScalar(rest.slice(1, -1)));
       i += 1;
@@ -444,7 +420,16 @@ function parseRawFields(text: string): ParsedRaw {
       i += 1;
     }
   }
-  return { scalars: raw, objectStore, objectStoreSeen, ocrQuality };
+  return {
+    scalars: raw,
+    objectStore,
+    objectStoreSeen,
+    ocrQuality,
+    inputLayers,
+    inputQuality,
+    coveredIssues,
+    missingIssues,
+  };
 }
 
 /**
@@ -454,8 +439,16 @@ function parseRawFields(text: string): ParsedRaw {
  * when building the derived PDF/A and text asset provenance (T030).
  */
 export function parseProvenance(text: string): ProvenanceFields {
-  const { scalars, objectStore, objectStoreSeen, ocrQuality } =
-    parseRawFields(text);
+  const {
+    scalars,
+    objectStore,
+    objectStoreSeen,
+    ocrQuality,
+    inputLayers,
+    inputQuality,
+    coveredIssues,
+    missingIssues,
+  } = parseRawFields(text);
   if (!objectStoreSeen) {
     throw new Error('parseProvenance: missing required field "object_store"');
   }
@@ -482,6 +475,11 @@ export function parseProvenance(text: string): ProvenanceFields {
     translation: scalars.get('translation') ?? undefined,
     blank_recto: parseOptionalBoolean(scalars, 'blank_recto'),
     source_representation: scalars.get('source_representation') ?? undefined,
+    interpretation: scalars.get('interpretation') ?? undefined,
+    input_layers: inputLayers,
+    input_quality: inputQuality,
+    covered_issues: coveredIssues,
+    missing_issues: missingIssues,
     object_store: objectStore,
     ocr_quality: ocrQuality,
     notes: scalars.get('notes') ?? null,

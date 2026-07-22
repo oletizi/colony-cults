@@ -33,6 +33,7 @@ import type {
   RawPage,
   RawSource,
 } from '@/browser/model';
+import { attachIssueSummary, attachSourceSummary } from '@/browser/load/summary';
 
 /** The holding-archive label identifying a Papers Past repository record. */
 const PAPERS_PAST_ARCHIVE = 'Papers Past';
@@ -138,14 +139,24 @@ export function loadPapersPastSource(
     provenance,
   };
 
-  const issue: RawIssue = {
-    issueId: unit.issueId,
-    date,
-    sequence: 1,
-    pages: [page],
-  };
+  // The clipping's single unit dir doubles as both the issue dir and the
+  // source(-rollup) dir -- there is no separate newspapers/<slug> parent to
+  // share across issues, unlike a periodical (mirrors the monograph case in
+  // raw-corpus.ts's loadSource). attachIssueSummary/attachSourceSummary are
+  // the SAME shared enrichment helpers the standard Gallica path routes
+  // through (src/browser/load/raw-corpus.ts), so this loader cannot silently
+  // diverge and drop a present concise-summary artifact (AUDIT-20260722-01).
+  const issue: RawIssue = attachIssueSummary(
+    {
+      issueId: unit.issueId,
+      date,
+      sequence: 1,
+      pages: [page],
+    },
+    unit.dir
+  );
 
-  return {
+  const rawSource: RawSource = {
     sourceId,
     title,
     kind: 'periodical',
@@ -154,6 +165,8 @@ export function loadPapersPastSource(
     rights: first.rightsStatus,
     issues: [issue],
   };
+
+  return attachSourceSummary(rawSource, unit.dir);
 }
 
 /** The Papers Past repository record, or throw naming the source. */

@@ -12,11 +12,12 @@
  * substitutes nothing. The full monospace provenance-rail signature and the
  * embedded display face are US4 -- this is the structural reading view.
  */
-import type { PageView, SourceKind, SourceLanguage } from '@/browser/model';
+import type { LoadedSummary, PageView, SourceKind, SourceLanguage } from '@/browser/model';
 import FacsimileViewer from './FacsimileViewer.astro';
 import ClippingFacsimile from './ClippingFacsimile.astro';
 import SourcePane from './SourcePane.astro';
 import TranslationPane from './TranslationPane.astro';
+import SummaryAbstract from './SummaryAbstract.astro';
 import PageNav from './PageNav.astro';
 import ProvenanceRail from './ProvenanceRail.astro';
 import Masthead from './Masthead.astro';
@@ -44,6 +45,14 @@ interface Props {
   sourceHref: string;
   /** Link to this issue's first page -- "jump to issue start"; null if unknown. */
   issueFirstPageHref: string | null;
+  /**
+   * The issue's concise machine-generated abstract, when one exists. OPTIONAL +
+   * additive: `undefined` renders the block's honest-absence line. Shown once,
+   * at the head of the issue's FIRST page (see `positionInIssue` gate below) --
+   * an issue-level abstract belongs at the issue's entry point, not repeated
+   * above every page's text.
+   */
+  conciseSummary?: LoadedSummary;
 }
 const {
   sourceId,
@@ -58,9 +67,14 @@ const {
   nextHref,
   sourceHref,
   issueFirstPageHref,
+  conciseSummary,
 } = Astro.props;
 
 const isBook = kind === 'monograph';
+// The issue abstract is an issue-level datum, so it heads the issue's FIRST page
+// only -- shown once at the reading entry point (the ledger links here) rather
+// than repeated above every page's text column, keeping the reading uncluttered.
+const showIssueSummary = positionInIssue === 1;
 // An English-language source has no French source layer: its own English text
 // reads beside the scan, with no folded French readings.
 const isEnglishSource = language === 'English';
@@ -139,6 +153,7 @@ const provenanceLabel = isBook
         data-pagefind-meta="title[data-title]"
         data-title={searchTitle}
       >
+        {showIssueSummary ? <SummaryAbstract summary={conciseSummary} scope="issue" /> : null}
         {isEnglishSource ? (
           <TranslationPane english={page.english} role="source" />
         ) : (

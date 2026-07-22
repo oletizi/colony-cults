@@ -12,7 +12,7 @@
 import type { GetStaticPaths } from 'astro';
 import { loadCorpus } from '@/browser/load/corpus';
 import { resolveConfig } from '@/browser/config';
-import type { PageView, SourceKind, SourceLanguage } from '@/browser/model';
+import type { LoadedSummary, PageView, SourceKind, SourceLanguage } from '@/browser/model';
 import BaseLayout from '@site/layouts/BaseLayout.astro';
 import ReadingView from '@site/components/ReadingView.astro';
 
@@ -57,6 +57,9 @@ export const getStaticPaths = (() => {
             nextHref: next ? pageHref(source.sourceId, issue.issueId, next.pageId) : null,
             sourceHref: sourceHref(source.sourceId),
             issueFirstPageHref,
+            // The issue's concise abstract (undefined when none) -- ReadingView
+            // shows it once, at the head of this issue's first page.
+            conciseSummary: issue.conciseSummary,
           },
         };
       });
@@ -78,6 +81,7 @@ interface Props {
   nextHref: string | null;
   sourceHref: string;
   issueFirstPageHref: string | null;
+  conciseSummary?: LoadedSummary;
 }
 
 const props = Astro.props;
@@ -108,5 +112,6 @@ const docDesc =
     nextHref={props.nextHref}
     sourceHref={props.sourceHref}
     issueFirstPageHref={props.issueFirstPageHref}
+    conciseSummary={props.conciseSummary}
   />
 </BaseLayout>

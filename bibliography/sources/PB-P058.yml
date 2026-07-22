@@ -13,6 +13,7 @@ titles:
   - text: The China Mail (Hong Kong), 8 March 1882 — "The Colony of Port Breton" (the Justice of the Peace's account via El Comercio)
     role: canonical
 notes: "A contemporary Asian-English-press account of conditions in the Port-Breton colony, from the colony's own Justice of the Peace (who left aboard the Nouvelle Bretagne): \"the greatest disorders had prevailed there from the beginning\", provisions \"insufficient\", only eight days' damaged flour and rice on Capt. Henry's arrival, \"very little cultivable soil\", \"It rains constantly\", \"absolutely nothing\" growing. Part of the third contemporary-press thread (Asian-English) identified in SRCH-0015 — distinct from PB-P005 (Australian / Trove) and PB-P004 (French legal). Verified genuine via OCR (SRCH-0015); located to a single self-contained page (page 3 of 4) via a page + jump analysis on the cleaned OCR (the article concludes and is followed by an unrelated Suez Canal item — no jump; see repository-responses/PB-P055/ia-press-clean-NPCM18820308-2026-07-17.txt). ACQUISITION: only the affair leaf (page 3) is mirrored as a page-master via the spec-013 IA adapter's --approved-range; the full issue is preserved as the source PDF. Captures under repository-responses/PB-P055 (ia-*-NPCM18820308-*)."
+summaryRef: archive/cases/port-breton/books/the-china-mail-hong-kong-8-march-1882-the-colony-of-port-breton-the-justice-of/source.summary.long.en.md
 repositoryRecords:
   - sourceArchive: Internet Archive
     status: archived

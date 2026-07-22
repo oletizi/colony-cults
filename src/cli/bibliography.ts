@@ -344,9 +344,14 @@ async function runValidate(rest: string[]): Promise<number> {
 
   let findings: ValidationFinding[];
   try {
-    const loaded = loadAllSources(sourcesDir);
-    const searchLog = loadSearchLogForValidate(repoRoot);
+    // archiveRoot is resolved BEFORE loadAllSources (unlike runShow/
+    // buildCanonicalModel) so it can be threaded into the validating mode of
+    // the load path (AUDIT-20260722-14): a summaryRef that is dangling or
+    // escapes the archive root (AUDIT-20260722-15/-12) fails loud here,
+    // naming the offending source, instead of loading silently.
     const archiveRoot = resolveArchiveRoot(repoRoot, args.archiveRoot);
+    const loaded = loadAllSources(sourcesDir, archiveRoot);
+    const searchLog = loadSearchLogForValidate(repoRoot);
     const provenanceBySource = await gatherProvenanceForAll(
       loaded.map((entry) => entry.source),
       archiveRoot,

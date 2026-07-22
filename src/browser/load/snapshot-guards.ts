@@ -8,6 +8,7 @@
 
 import type {
   CorpusSnapshot,
+  LoadedSummary,
   MachineAssistLabel,
   ProvenanceRecord,
   RawIssue,
@@ -101,6 +102,31 @@ function parseMachineAssist(value: unknown, where: string): MachineAssistLabel |
   };
 }
 
+/** A REQUIRED {@link MachineAssistLabel} (`engine`/`retrieved` strings, `model` string|null). */
+function requireMachineAssistLabel(value: unknown, where: string): MachineAssistLabel {
+  const record = requireRecord(value, where);
+  return {
+    engine: requireString(record, 'engine', where),
+    model: requireStringOrNull(record, 'model', where),
+    retrieved: requireString(record, 'retrieved', where),
+  };
+}
+
+/**
+ * Parses a unit's `conciseSummary` (US2, FR-006). Unlike {@link parseMachineAssist},
+ * `label` is REQUIRED once a `LoadedSummary` is present -- there is no honest
+ * partial state, so a present-but-incomplete `label` throws (mirrors
+ * `loadIssueSummary`'s fail-loud-on-corrupt posture). Absence is handled by
+ * the caller (the key is simply omitted for a snapshot predating this field).
+ */
+function parseLoadedSummary(value: unknown, where: string): LoadedSummary {
+  const record = requireRecord(value, where);
+  return {
+    concise: requireString(record, 'concise', where),
+    label: requireMachineAssistLabel(record.label, `${where}.label`),
+  };
+}
+
 function parseProvenance(value: unknown, where: string): ProvenanceRecord {
   const record = requireRecord(value, where);
   const base: ProvenanceRecord = {
@@ -173,11 +199,20 @@ function parseRawIssue(value: unknown, where: string): RawIssue {
   const pages = requireArray(record.pages, `${where}.pages`).map((page, i) =>
     parseRawPage(page, `${where}.pages[${i}]`)
   );
-  return {
+  const base: RawIssue = {
     issueId: requireString(record, 'issueId', where),
     date: requireString(record, 'date', where),
     sequence: requireNumber(record, 'sequence', where),
     pages,
+  };
+  // Additive optional field (US2): only attach when present, so snapshots
+  // predating the concise-summary extension round-trip unchanged.
+  if (record.conciseSummary === undefined) {
+    return base;
+  }
+  return {
+    ...base,
+    conciseSummary: parseLoadedSummary(record.conciseSummary, `${where}.conciseSummary`),
   };
 }
 
@@ -213,7 +248,7 @@ function parseRawSource(value: unknown, where: string): RawSource {
   const issues = requireArray(record.issues, `${where}.issues`).map((issue, i) =>
     parseRawIssue(issue, `${where}.issues[${i}]`)
   );
-  return {
+  const base: RawSource = {
     sourceId: requireString(record, 'sourceId', where),
     title: requireString(record, 'title', where),
     kind,
@@ -221,6 +256,15 @@ function parseRawSource(value: unknown, where: string): RawSource {
     ark: requireString(record, 'ark', where),
     rights: requireString(record, 'rights', where),
     issues,
+  };
+  // Additive optional field (US2): only attach when present, so snapshots
+  // predating the concise-summary extension round-trip unchanged.
+  if (record.conciseSummary === undefined) {
+    return base;
+  }
+  return {
+    ...base,
+    conciseSummary: parseLoadedSummary(record.conciseSummary, `${where}.conciseSummary`),
   };
 }
 

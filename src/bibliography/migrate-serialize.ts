@@ -385,6 +385,14 @@ export function serializeSource(migrated: MigratedSource): string {
   if (source.notes !== undefined) {
     out.notes = source.notes;
   }
+  // By-path pointer to the source rollup thorough summary (spec 017, FR-007) --
+  // the `census:`-style idiom. A single scalar path string (never inlined
+  // prose, SC-005); omitted when unset so existing records re-serialize
+  // byte-identically. Sits after `notes` (the last source-level descriptive
+  // field) and ahead of the derived/repository fields.
+  if (source.summaryRef !== undefined) {
+    out.summaryRef = source.summaryRef;
+  }
   const records = [...migrated.records].sort(byArchive);
   if (records.length > 0) {
     out.repositoryRecords = records.map(orderedRecord);

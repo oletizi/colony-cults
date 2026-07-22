@@ -8,6 +8,7 @@ import { runCensus } from '@/cli/census';
 import { runFetchIssue, runFetchSource } from '@/cli/fetch';
 import { runOcr } from '@/cli/ocr';
 import { runRestoreImages } from '@/cli/restore-images';
+import { runSummarize, runSummarizeSource } from '@/cli/summarize';
 import { describeError } from '@/bibliography/load-primitives';
 
 /** A command handler: given the parsed invocation, performs the command. */
@@ -17,12 +18,17 @@ type Handler = (args: ParsedArgs) => Promise<void>;
 // `translate-source`, which belong to the separate `translate` bin
 // (src/translate-index.ts). This bin does not wire them and reports a
 // helpful pointer instead.
+//
+// `summarize` (the per-issue generation flow, US1, T019) and `summarize-source`
+// (the per-source rollup, US4, T030) are both wired here.
 const HANDLERS: Partial<Record<Command, Handler>> = {
   census: (args) => runCensus(args),
   'fetch-issue': (args) => runFetchIssue(args),
   'fetch-source': (args) => runFetchSource(args),
   ocr: (args) => runOcr(args),
   'restore-images': (args) => runRestoreImages(args),
+  summarize: (args) => runSummarize(args),
+  'summarize-source': (args) => runSummarizeSource(args),
 };
 
 /**
@@ -84,6 +90,10 @@ Gallica mirroring:
   fetch-source <periodicalArk>  Fetch a Gallica source's census (or --pages range)
   ocr <issueArk>                OCR already-fetched images for an issue
   restore-images <issueArk>     Pull page images from the public B2 cache
+
+Summarization (two-depth LLM):
+  summarize <sourceId> [issueArk]      Generate thorough + concise summary (or all issues)
+  summarize-source <sourceId>          Per-source rollup summary
 
 Options:
   --help, -h             Show this help message

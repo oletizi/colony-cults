@@ -1,0 +1,134 @@
+---
+/**
+ * T024 -- the machine-generated CONCISE summary abstract. A quiet reading block
+ * that sits at the head of a reading column (issue) or under a source masthead
+ * (source), giving an English-speaking reader a one-glance abstract of the unit
+ * before they descend into the scans.
+ *
+ * Voice: the apparatus frames it (mono eyebrow + stamps, uppercase, cool grey),
+ * but the abstract itself is PROSE meant to be READ, so it is set in the warm
+ * serif reading face, ink on paper -- not the machine's slate ground. A hairline
+ * slate LEFT rule ties the block to the machine-apparatus language (the lighter
+ * analog of TranslationPane's full slate ground, since this heads a reading
+ * column rather than standing as its own pane).
+ *
+ * The ONE critical mark on the block is the oxide "Interpretation -- not
+ * evidence" stamp: the archive's epistemic determination that this machine text
+ * is a reading aid, never a source -- exactly what oxide marks. The machine
+ * provenance substamp (engine / model / date) stays in quiet apparatus grey.
+ * Both the eyebrow and the stamps carry `data-pagefind-ignore` so the machine
+ * labels never pollute search (matching TranslationPane); the abstract prose is
+ * left indexable.
+ *
+ * Honest-absence (US2 AC-3): when `summary` is `undefined` the block renders a
+ * single quiet mono line naming the absence -- no error, no broken layout.
+ */
+import type { LoadedSummary } from '@/browser/model';
+
+interface Props {
+  /** The concise summary + its machine-assist label, or `undefined` when none exists. */
+  summary?: LoadedSummary;
+  /** Which unit this abstracts -- drives the region label and the empty-state copy. */
+  scope: 'issue' | 'source';
+}
+const { summary, scope } = Astro.props;
+
+const ariaLabel = scope === 'issue' ? 'Issue summary' : 'Source summary';
+const emptyMessage =
+  scope === 'issue' ? 'No summary yet for this issue.' : 'No summary yet for this source.';
+
+// The machine provenance substamp: "Machine-generated · {engine} · {model} · {date}".
+// `model` may be null (honest absence -- drop it rather than print an empty part);
+// the retrieved timestamp is shown as its calendar date, the apparatus register.
+const substamp = summary
+  ? ['Machine-generated', summary.label.engine, summary.label.model, summary.label.retrieved.slice(0, 10)]
+      .filter((part): part is string => part !== null && part.length > 0)
+      .join(' · ')
+  : null;
+---
+
+<aside class="summary" aria-label={ariaLabel}>
+  {summary ? (
+    <>
+      <p class="summary__eyebrow" data-pagefind-ignore>Summary</p>
+      <div class="summary__prose">{summary.concise.trim()}</div>
+      <p class="summary__foot" data-pagefind-ignore>
+        <span class="summary__mark">Interpretation — not evidence</span>
+        <span class="summary__substamp">{substamp}</span>
+      </p>
+    </>
+  ) : (
+    <p class="summary__absent" data-pagefind-ignore>{emptyMessage}</p>
+  )}
+</aside>
+
+<style>
+  /* A hairline slate LEFT rule marks the block as machine apparatus -- the
+     lighter analog of the translation pane's full slate ground. */
+  .summary {
+    border-left: 2px solid var(--slate);
+    padding: 2px 0 4px 20px;
+    margin: 0 0 26px;
+  }
+
+  .summary__eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 12px;
+  }
+
+  /* The abstract is meant to be READ -- warm serif, ink on paper, generous
+     measure and leading. It is the one part of the block that is not apparatus. */
+  .summary__prose {
+    font-family: var(--serif);
+    font-size: clamp(15px, 2.2vw, 17px);
+    line-height: 1.62;
+    color: var(--ink);
+    max-width: 60ch;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .summary__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 14px;
+    margin: 16px 0 0;
+    font-family: var(--mono);
+  }
+
+  /* The block's ONE critical mark: the archive's epistemic determination that
+     this machine text is a reading aid, never a source. Oxide is reserved for
+     exactly this kind of critical stamp. */
+  .summary__mark {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--oxide);
+  }
+
+  .summary__substamp {
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    color: var(--faint);
+  }
+
+  /* Honest absence: a single quiet mono line, no error, no broken layout. */
+  .summary__absent {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--faint);
+    margin: 0;
+  }
+
+  @media (max-width: 640px) {
+    .summary {
+      padding-left: 15px;
+    }
+  }
+</style>

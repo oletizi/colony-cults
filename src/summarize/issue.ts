@@ -1,0 +1,234 @@
+import { assertInsideArchive } from '@/archive/location';
+import { storeAsset } from '@/archive/store';
+import { readProvenance, type InputLayer } from '@/archive/provenance';
+import type { ObjectStore } from '@/archive/object-store';
+import { firstPageProvenanceYaml } from '@/translate/rights';
+import { selectSummaryInput } from '@/summarize/select-input';
+import { summaryIsUpToDate } from '@/summarize/idempotency';
+import type { LoadedSource } from '@/bibliography/load';
+import {
+  buildSummaryProvenance,
+  issueConciseSummaryPath,
+  issueThoroughSummaryPath,
+  renderConciseMarkdown,
+  renderThoroughMarkdown,
+} from '@/summarize/artifacts';
+import type { SummarizationRunner } from '@/summarize/types';
+
+/**
+ * Injected dependencies for {@link summarizeIssue} (composition, not
+ * inheritance), mirroring `OcrContext` (`src/ocr/run.ts`) /
+ * `TranslateIssueCtx` (`src/translate/issue.ts`): a swappable engine, the
+ * archive write root, a clock for provenance timestamps, a log sink, and the
+ * `force`/`dryRun` run modifiers.
+ */
+export interface SummarizeIssueCtx {
+  /** Injected summarization engine (the `claude` CLI adapter, or a fake in tests). */
+  runner: SummarizationRunner;
+  /**
+   * The source's SSOT record (FR-018), threaded from the CLI so input
+   * resolution is SOURCE-AWARE: it routes by source family (Papers Past vs
+   * Gallica) and by language metadata, never by guessing from which files
+   * happen to be present. Loaded once by the CLI and reused across every issue.
+   */
+  source: LoadedSource;
+  /**
+   * Resolved model id/alias for this run (CLI flag > config > default; see
+   * `resolveSummaryModel`), the exact value sent to `runner.summarize` AND
+   * recorded in each artifact's provenance.
+   */
+  model: string;
+  /** Absolute private-archive root (all writes are guarded inside it). */
+  archiveRoot: string;
+  /**
+   * Reader `selectSummaryInput` -> `materializeIssueText` fetches a source-group
+   * MEMBER's detached `ocr-text` asset through (spec 017 convergence), so a
+   * Papers Past member's reading text is rehydrated into a standard `issue.txt`
+   * before selection. Injected (tests pass a fake); the CLI weld
+   * (`buildSummarizeCliDeps`) constructs a real, lazily-initialized B2 store.
+   * Absent for a Gallica source (on-disk `issue.txt`), which never needs it;
+   * required (fail loud) only when a member actually needs materialization.
+   */
+  objectStore?: ObjectStore;
+  /** Clock for the `retrieved` provenance timestamp (determinism/testability). */
+  clock: () => Date;
+  /** Line-oriented progress sink. */
+  log: (message: string) => void;
+  /** Regenerate even when the input layers are unchanged since the last run (FR-010). */
+  force?: boolean;
+  /**
+   * Resolve inputs and report the intended work instead of performing it
+   * (contracts/cli-summarize.md `--dry-run`): never calls `runner.summarize`,
+   * never writes anything. Defaults to `false` (the normal, executing path).
+   */
+  dryRun?: boolean;
+  /**
+   * Optional summarizer engine preflight (e.g. `assertClaudeAvailable`),
+   * AUDIT-20260722-04: called LAZILY, immediately before `runner.summarize`,
+   * ONLY on the path that actually generates -- never on `dryRun` (which
+   * returns before this point) and never on an idempotent skip (which also
+   * returns before this point). This lets a rerun that will skip do so
+   * without requiring the underlying engine (e.g. the `claude` CLI) to be
+   * installed at all. The CLI caller is responsible for constructing this
+   * thunk and passing it in; `summarizeIssue` never calls it eagerly itself.
+   * Optional so existing/test callers that omit it are unaffected.
+   */
+  preflight?: () => Promise<void>;
+}
+
+/** Terminal classification of one {@link summarizeIssue} call. */
+export type SummarizeIssueStatus = 'generated' | 'skipped' | 'dry-run';
+
+/** Outcome of one {@link summarizeIssue} call. */
+export interface SummarizeIssueResult {
+  /** The issue directory summarization ran against. */
+  issueDir: string;
+  /** Terminal classification: a real generation, an idempotent skip, or a dry-run report. */
+  status: SummarizeIssueStatus;
+  /** Absolute path of the thorough summary artifact (written only when `status === 'generated'`). */
+  thoroughPath: string;
+  /** Absolute path of the concise summary artifact (written only when `status === 'generated'`). */
+  concisePath: string;
+}
+
+/** UTF-8 text -> bytes, for {@link storeAsset} (which re-derives the checksum). */
+function encode(text: string): Uint8Array {
+  return new TextEncoder().encode(text);
+}
+
+/**
+ * Generate one issue's two-depth summary from its best-available acquired
+ * text (T018, US1, FR-001/002/003/004/005/010/016).
+ *
+ * FLOW:
+ *  1. Guard the target directory (defense in depth; `storeAsset` re-checks
+ *     the actual artifact targets below).
+ *  2. {@link selectSummaryInput} (FR-002) -- FAILS LOUD (throws, writes
+ *     nothing) when the issue has no usable text layer (FR-003, US1 AC-3).
+ *  3. DRY-RUN (contracts/cli-summarize.md `--dry-run`): report the intended
+ *     work and return -- never calls the runner, never writes.
+ *  4. Idempotency (FR-010, `@/summarize/idempotency`): when NOT forced and
+ *     {@link summaryIsUpToDate} reports BOTH the thorough AND the concise
+ *     artifact's sidecars already record these exact input layers, skip --
+ *     no engine call, no write. A half-written pair (e.g. a prior run
+ *     interrupted between the two `storeAsset` calls below,
+ *     AUDIT-20260722-07) is never `'up-to-date'`, so it always regenerates.
+ *  4a. `ctx.preflight?.()` fires LAZILY here, immediately before the engine
+ *     call below (AUDIT-20260722-04) -- reached only when neither dry-run
+ *     nor skip returned above, so a rerun that will skip never requires the
+ *     engine to be installed.
+ *  5. One `runner.summarize` call produces BOTH depths (FR-001, one
+ *     full-text pass, two depths, so the concise can never disagree with the
+ *     thorough it was distilled from).
+ *  6. Derive the base citation/rights provenance from the issue's first page
+ *     companion (same object-store-robust scan `translateIssue` uses --
+ *     `firstPageProvenanceYaml`, `src/translate/rights.ts` -- so a page whose
+ *     local image was migrated to the object store still resolves).
+ *  7. Write BOTH artifacts via `storeAsset` ONLY (Constitution XV weld) --
+ *     never a direct `fs.writeFile` of summary markdown.
+ */
+export async function summarizeIssue(
+  issueDir: string,
+  ctx: SummarizeIssueCtx,
+): Promise<SummarizeIssueResult> {
+  // Guard FIRST, before any filesystem interaction.
+  assertInsideArchive(issueDir, ctx.archiveRoot);
+
+  const thoroughPath = issueThoroughSummaryPath(issueDir);
+  const concisePath = issueConciseSummaryPath(issueDir);
+
+  // FR-003 / US1 AC-3: fail loud, write nothing, when no usable text exists.
+  // Source-aware (FR-018): the SSOT record + archiveRoot route input resolution
+  // by source family (Papers Past ocr-text asset vs Gallica issue.txt/en.txt)
+  // and language, never by guessing from present files (fixes AUDIT-17).
+  const selected = await selectSummaryInput({
+    issueDir,
+    source: ctx.source,
+    archiveRoot: ctx.archiveRoot,
+    objectStore: ctx.objectStore,
+  });
+
+  if (ctx.dryRun === true) {
+    const layerNames = selected.layers.map((layer) => layer.path).join(', ');
+    ctx.log(
+      `summarize (dry-run): ${issueDir} -- would generate from [${layerNames}]`,
+    );
+    return { issueDir, status: 'dry-run', thoroughPath, concisePath };
+  }
+
+  if (ctx.force !== true && (await summaryIsUpToDate(issueDir, selected.layers))) {
+    ctx.log(`  skip  ${issueDir} (input layers unchanged)`);
+    return { issueDir, status: 'skipped', thoroughPath, concisePath };
+  }
+
+  // AUDIT-20260722-04: preflight fires lazily, right at the generation
+  // boundary -- only reached when NOT dry-run and NOT skipped -- so a rerun
+  // that will skip never requires the engine to be installed.
+  await ctx.preflight?.();
+
+  const generated = await ctx.runner.summarize(selected.text, ctx.model);
+
+  const base = await readProvenance(await firstPageProvenanceYaml(issueDir));
+  const retrieved = ctx.clock().toISOString();
+  const inputLayers: InputLayer[] = selected.layers.map((layer) => ({
+    path: layer.path,
+    sha256: layer.sha256,
+    // FR-021 honest attribution: carry each layer's origin (project OCR /
+    // project translation / source-downloaded Papers Past OCR) + the source
+    // representation into provenance. Omitted-when-unset keeps byte-identity.
+    origin: layer.origin,
+    ...(layer.sourceRepresentation !== undefined
+      ? { source_representation: layer.sourceRepresentation }
+      : {}),
+  }));
+
+  const thoroughProvenance = buildSummaryProvenance(
+    base,
+    'thorough',
+    ctx.runner.name,
+    ctx.model,
+    retrieved,
+    inputLayers,
+    selected.inputQuality,
+  );
+  const conciseProvenance = buildSummaryProvenance(
+    base,
+    'concise',
+    ctx.runner.name,
+    ctx.model,
+    retrieved,
+    inputLayers,
+    selected.inputQuality,
+  );
+
+  // Constitution XV weld: BOTH artifacts go through storeAsset, which writes
+  // the bytes + companion sidecar + MANIFEST.sha256 entry as one operation.
+  //
+  // `force: true` here (NOT `ctx.force`) is deliberate: the regenerate-vs-skip
+  // decision already happened above via `summaryIsUpToDate`, so reaching this
+  // line always means "write". `storeAsset`'s OWN legacy byte-level dedup
+  // (skip when the target's on-disk bytes already hash to what its companion
+  // records) exists for a different case -- resuming an interrupted fetch --
+  // and must NOT be allowed to veto this write: a regeneration triggered by a
+  // changed input layer (FR-010 US5 AC-2) must always land its updated
+  // `input_layers` provenance, even on the rare occasion the newly generated
+  // markdown bytes happen to coincide with what is already on disk.
+  await storeAsset(
+    encode(renderThoroughMarkdown(generated)),
+    thoroughPath,
+    thoroughProvenance,
+    ctx.archiveRoot,
+    { force: true },
+  );
+  await storeAsset(
+    encode(renderConciseMarkdown(generated)),
+    concisePath,
+    conciseProvenance,
+    ctx.archiveRoot,
+    { force: true },
+  );
+
+  ctx.log(`  summarize  ${issueDir} -> generated (thorough + concise)`);
+
+  return { issueDir, status: 'generated', thoroughPath, concisePath };
+}
