@@ -2,9 +2,8 @@ import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { resolveArchiveRoot, resolveFetchedDir, sourceLayout } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
-import { resolveObjectStoreConfig } from '@/archive/b2-config';
-import { S3ObjectStore } from '@/archive/s3-object-store';
-import type { ObjectStore, ObjectHead, PutOptions } from '@/archive/object-store';
+import { createCdnObjectStore } from '@/archive/cdn-object-store';
+import type { ObjectStore } from '@/archive/object-store';
 import { discoverIssueArks, CONSECUTIVE_FAILURE_ABORT } from '@/translate/source';
 import { loadSummaryConfig, resolveSummarizerName, resolveSummaryModel } from '@/summarize/config';
 import { createSummarizer } from '@/summarize/factory';
@@ -25,31 +24,36 @@ import { validateSummaryRef, writeSummaryRef } from '@/bibliography/summary-refe
 export const PACE_MS = 250;
 
 /**
- * Construct the `ObjectStore` the summarizer materializes a source-group
- * MEMBER's detached `ocr-text` asset through (spec 017 convergence: the
- * summarizer now reuses `materializeIssueText` instead of the interim CDN
- * pre-fetch). Mirrors `@/pdf/render/batch`'s `resolveMemberObjectStore` -- same
- * `resolveObjectStoreConfig` + `S3ObjectStore` primitives -- but LAZILY: the
- * real store (and its B2-credential requirement) is constructed only on the
- * FIRST actual `get`/`head`/`put`/metadata call, i.e. only when a member truly
- * needs materialization. A Gallica `bib summarize` run (on-disk `issue.txt`,
- * never a member) therefore never constructs it and never requires B2
- * credentials -- preserving the pre-convergence behavior -- while a member run
- * fails loud (naming the missing env var/credentials file, via
- * `resolveObjectStoreConfig`) exactly when it needs the store and the config is
- * absent (no silent skip).
+ * Default public CDN base fronting the B2 bucket. Mirrors
+ * `scripts/build-snapshot.ts`'s own `DEFAULT_CDN_BASE` -- kept as a separate
+ * declaration (rather than an import) because `build-snapshot.ts` is a
+ * standalone script, not a module other code depends on.
  */
-export function makeLazyObjectStore(): ObjectStore {
-  let real: ObjectStore | undefined;
-  const store = (): ObjectStore => (real ??= new S3ObjectStore(resolveObjectStoreConfig()));
-  return {
-    head: (key: string): Promise<ObjectHead> => store().head(key),
-    put: (key: string, bytes: Uint8Array, options: PutOptions): Promise<void> =>
-      store().put(key, bytes, options),
-    get: (key: string): Promise<Uint8Array> => store().get(key),
-    attachSha256Metadata: (key: string, sha256: string, contentType?: string): Promise<void> =>
-      store().attachSha256Metadata(key, sha256, contentType),
-  };
+const DEFAULT_CDN_BASE = 'https://colony-cults-cdn.oletizi.workers.dev';
+
+/**
+ * Resolve the CDN base URL the summarizer reads through:
+ * `CORPUS_CDN_BASE` when set (trimmed, non-empty), else {@link DEFAULT_CDN_BASE}.
+ */
+function resolveCdnBase(): string {
+  const fromEnv = process.env.CORPUS_CDN_BASE?.trim();
+  return fromEnv && fromEnv.length > 0 ? fromEnv : DEFAULT_CDN_BASE;
+}
+
+/**
+ * Construct the `ObjectStore` the summarizer materializes a source-group
+ * MEMBER's detached `ocr-text` asset through (spec 017: read via the public
+ * CDN fronting B2, NOT the B2 bucket directly -- operator directive).
+ *
+ * Unlike the B2-backed `S3ObjectStore` this replaced, the CDN store is an
+ * unauthenticated public GET -- there is no credential-fetch to defer, so it
+ * is constructed eagerly (no laziness needed) and is READ-ONLY
+ * ({@link createCdnObjectStore}'s `head`/`put`/`attachSha256Metadata` all
+ * throw). `bib summarize`/`bib summarize-source` therefore never require
+ * `COLONY_S3_*`/`COLONY_B2_CREDENTIALS` at all.
+ */
+function makeCdnObjectStore(): ObjectStore {
+  return createCdnObjectStore(resolveCdnBase());
 }
 
 /** Injectable side effects for the `summarize` command (real preflight + disk by default). */
@@ -76,10 +80,10 @@ export interface SummarizeCliDeps {
   delay: () => Promise<void>;
   /**
    * Store `materializeIssueText` fetches a source-group MEMBER's detached
-   * `ocr-text` asset through (spec 017 convergence). The default build supplies
-   * a LAZY B2 store ({@link makeLazyObjectStore}) so a Gallica run never
-   * requires B2 credentials; tests inject a fake. Optional so a Gallica-only
-   * test that never exercises a member need not supply one.
+   * `ocr-text` asset through (spec 017: read via the CDN, not the B2 bucket
+   * directly). The default build supplies a read-only CDN store
+   * ({@link makeCdnObjectStore}); tests inject a fake. Optional so a
+   * Gallica-only test that never exercises a member need not supply one.
    */
   objectStore?: ObjectStore;
 }
@@ -110,7 +114,7 @@ export async function buildSummarizeCliDeps(args: ParsedArgs): Promise<Summarize
     runner,
     model,
     delay: () => new Promise((resolve) => setTimeout(resolve, PACE_MS)),
-    objectStore: makeLazyObjectStore(),
+    objectStore: makeCdnObjectStore(),
   };
 }
 
@@ -252,8 +256,8 @@ export interface SummarizeSourceCliDeps {
   /**
    * Store threaded through to {@link SummarizeSourceCtx} for symmetry with the
    * per-issue deps (a rollup synthesizes already-generated summaries and does
-   * not itself materialize a member's `ocr-text`). Default: a LAZY B2 store.
-   * Optional -- a rollup never consults it.
+   * not itself materialize a member's `ocr-text`). Default: a read-only CDN
+   * store. Optional -- a rollup never consults it.
    */
   objectStore?: ObjectStore;
 }
@@ -283,7 +287,7 @@ export async function buildSummarizeSourceCliDeps(
     preflight,
     runner,
     model,
-    objectStore: makeLazyObjectStore(),
+    objectStore: makeCdnObjectStore(),
   };
 }
 
