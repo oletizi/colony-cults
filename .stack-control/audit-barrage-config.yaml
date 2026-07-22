@@ -1,30 +1,15 @@
-# Audit-barrage model battery — PROJECT OVERRIDE for corpus-gap-closure.
+# Audit-barrage model battery — project override for corpus-print-pdf.
 #
-# Overrides the plugin default at:
-#   plugins/stack-control/templates/audit-barrage-config.yaml
+# Overrides the plugin default (templates/audit-barrage-config.yaml), which ships a
+# 3-lane fleet (claude/opus, codex/gpt-5.5, sonnet/claude-sonnet-4-6).
 #
-# Sonnet lane REMOVED permanently (operator directive, 2026-07-18). The sonnet
-# lane (binary: claude, model: claude-sonnet-4-6) timed out on EVERY chunk of
-# the whole-feature 014 barrage in this environment, degrading every round to
-# 2-of-3 and adding ~7 min/chunk of dead wait that pushed the run past the
-# background-process runtime limit (killed at ~50 min). The same env limitation
-# is recorded across prior convergence overrides (gallica-fetcher, source-groups,
-# edition-publishing).
-#
-# The remaining fleet is the two FRONTIER, cross-FAMILY lanes that reliably
-# complete here:
-#   claude / opus     (Anthropic family — frontier, large context)
-#   codex  / gpt-5.5  (OpenAI family — frontier)
-# 2-of-2 AGREEMENT ACROSS families is the strong HIGH-confidence signal; sonnet
-# was a same-family-as-claude (Anthropic) redundant lane, so dropping it does not
-# reduce cross-family genetic diversity. This mirrors the plugin's own monorepo
-# override philosophy (one frontier lane per family).
-#
-# The lane definitions below are copied verbatim from the shipped template
-# (config grammar v2; contract: specs/014-audit-barrage-reliability/contracts/
-# barrage-config-schema.md). fleet-knowledge.yaml is kept in exact lane-name
-# lockstep with this file (govern refuses on a mismatch).
-
+# Operator decision (2026-07-18): the `sonnet` lane (claude --model claude-sonnet-4-6)
+# is NOT fit for purpose — it timed out on every whole-feature govern round for spec
+# 015, degrading the fleet and blocking convergence. Dropped here. The remaining two
+# lanes are both frontier, large-context, and cross-family (Anthropic opus + OpenAI
+# gpt-5.5): 2-of-2 agreement ACROSS families is the strong HIGH-confidence signal, and
+# meets the default --require-models 2 floor. This mirrors the plugin's own frontier-
+# only 2-lane self-hosting config. fleet-knowledge.yaml is kept in exact sync.
 models:
   - name: claude
     binary: claude

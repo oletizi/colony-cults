@@ -145,8 +145,9 @@ describe('integration: real PB-P001 issue -> Edition -> TypstInput', () => {
       edition.pages.map((p) => p.folioId),
     );
 
-    expect(edition.colophon.translation.engine.trim().length).toBeGreaterThan(0);
-    expect(edition.colophon.translation.retrieved.trim().length).toBeGreaterThan(0);
+    expect(edition.colophon.translation).not.toBeNull();
+    expect(edition.colophon.translation?.engine.trim().length).toBeGreaterThan(0);
+    expect(edition.colophon.translation?.retrieved.trim().length).toBeGreaterThan(0);
   });
 
   describe('toTypstInput + serializeTypstInput over the real Edition', () => {

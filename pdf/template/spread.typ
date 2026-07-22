@@ -4,24 +4,75 @@
 
 #import "theme.typ": *
 
+// The verso cell's height budget, shared by the single-image path and the
+// stacked-segment path (T006 design direction, research.md).
+#let verso-plate-height = 6.2in
+
+// Renders a source-group member's N ascending-`sequence` segment images as
+// ONE reconstructed clipping (T006 design direction, research.md): every
+// segment is scaled to one common content width and centre-aligned, so the
+// strips share a single column width the way strips of one physical clipping
+// do; they are then butted vertically with a near-zero seam (NO rule between
+// segments -- a rule would assert them as separate plates, contradicting the
+// reconstruction). If the summed stacked height would exceed
+// `verso-plate-height`, the WHOLE stack is scaled down by one uniform factor
+// so it fits -- never cropped, never stretched, every segment's aspect ratio
+// and the reconstruction's proportions preserved. The single outer 0.5pt
+// `rule-col` keyline is the only frame (one plate, not N).
+#let stacked-facsimile(segments, images-dir) = layout(avail => {
+  // "Dominates within a modest margin" (the header comment above): 80% of the
+  // available width, matching how the single-image path's shrink-wrapped box
+  // never spans the full verso cell either.
+  let plate-width = avail.width * 0.8
+  let seam = 0.75pt
+  let strips = stack(
+    spacing: seam,
+    ..segments.map(seg => image(images-dir + "/" + seg.imagePath, width: plate-width)),
+  )
+  let natural-height = measure(strips).height
+  let scale-factor = calc.min(1, verso-plate-height / natural-height)
+  box(stroke: 0.5pt + rule-col, inset: 5pt)[
+    #scale(x: scale-factor * 100%, y: scale-factor * 100%, origin: top + center, reflow: true, strips)
+  ]
+})
+
 // ---- VERSO (left) = facsimile ---------------------------------------------
 //
 // The scan is the hero: it dominates within a modest margin, wrapped in a
 // 0.5pt `rule` keyline that asserts it as the plate. A faint Plex Sans caption
 // sits beneath; a Plex Mono folio marker sits in the outer corner. The verso
 // is otherwise silent.
+//
+// When `pg.verso.segments` carries a non-empty ordered list (a source-group
+// member's N page-master segments, T006), the plate is the reconstructed
+// stack (`stacked-facsimile`) instead of the single scan, and the caption
+// states the reconstruction. Absent/empty `segments` renders EXACTLY as
+// before -- the existing monograph/periodical single-image path is untouched
+// (backward-compatible, FR-005/SC-003).
 #let facsimile-verso(pg, source-short, images-dir) = {
   // Folio marker — outer corner. On a verso (left page) the outer edge is left.
   place(top + left, text(font: face-mono, size: 7pt, fill: faint, pg.folioId))
 
+  let segments = if "segments" in pg.verso { pg.verso.segments } else { () }
+
   align(center + horizon)[
-    #box(stroke: 0.5pt + rule-col, inset: 5pt)[
-      #image(images-dir + "/" + pg.verso.imagePath, fit: "contain", height: 6.2in)
-    ]
+    #if segments.len() > 0 {
+      stacked-facsimile(segments, images-dir)
+    } else {
+      box(stroke: 0.5pt + rule-col, inset: 5pt)[
+        #image(images-dir + "/" + pg.verso.imagePath, fit: "contain", height: verso-plate-height)
+      ]
+    }
     #v(11pt)
-    #text(font: face-en, size: 6.5pt, fill: faint, tracking: 0.3pt)[
-      Facsimile · #source-short · #pg.folioId · scan is authoritative
-    ]
+    #if segments.len() > 0 {
+      text(font: face-en, size: 6.5pt, fill: faint, tracking: 0.3pt)[
+        Facsimile · #source-short · reconstructed from #segments.len() segments · scan is authoritative
+      ]
+    } else {
+      text(font: face-en, size: 6.5pt, fill: faint, tracking: 0.3pt)[
+        Facsimile · #source-short · #pg.folioId · scan is authoritative
+      ]
+    }
   ]
 }
 

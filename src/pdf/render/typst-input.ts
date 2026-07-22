@@ -73,6 +73,40 @@ export interface TypstVerso {
   imagePath: string;
   /** Content checksum of the image bytes (reproducibility cross-check). */
   sha256: string;
+  /**
+   * OPTIONAL ordered list of a source-group member's page-master segment
+   * images -- N vertical column-strips cut from one physical clipping (spec
+   * 017 T006, `research.md` "T006 design direction (stacked-segment
+   * verso)"). When absent or empty, `facsimile-verso` renders the single
+   * `imagePath` image exactly as before -- this field is strictly additive
+   * so existing monograph/periodical editions serialize byte-identically
+   * (FR-005/SC-003).
+   *
+   * Order is by ARRAY POSITION, not a `sequence` field -- this type ({@link
+   * TypstVersoSegment}) carries none. The producer
+   * (`@/pdf/render/member-edition`'s `collectPageMasterSegments`) sorts every
+   * `page-master` asset by its OWN `sequence` field before this array is ever
+   * built, so ascending array position already IS ascending cut order by the
+   * time it reaches here.
+   *
+   * `toTypstInput` (this module's mapping, above) deliberately NEVER
+   * populates this field -- it exists solely to keep existing monograph/
+   * periodical `Edition`s serializing byte-identically to before spec 017
+   * (FR-005/SC-003). A source-group member's page IS populated with
+   * `segments`, but through an entirely different path that never calls
+   * `toTypstInput`: `@/pdf/render/member-build`'s `composeMemberPage` builds
+   * the member's one collapsed `TypstPage` (including `verso.segments`)
+   * directly from its staged segment images.
+   */
+  segments?: ReadonlyArray<TypstVersoSegment>;
+}
+
+/** One segment image reference within a stacked-segment verso (see {@link TypstVerso.segments}). */
+export interface TypstVersoSegment {
+  /** Filename under `CompileRequest.imageDir`, e.g. `f001-seg2.jpg`. */
+  imagePath: string;
+  /** Content checksum of the segment image bytes. */
+  sha256: string;
 }
 
 /**
@@ -89,8 +123,14 @@ export interface TypstRecto {
   english: string;
   /** Surfaced OCR-condition apparatus note, or `null`. */
   ocrCondition: string | null;
-  /** The machine-assisted-translation label (engine + date), carried per page. */
-  machineAssist: MachineAssistLabel;
+  /**
+   * The machine-assisted-translation label (engine + date), carried per page,
+   * or `null` for an English-source edition (no translation was performed --
+   * spec 015 FR-013). Mirrors `Edition.colophon.translation`; unused by any
+   * template today (see `Edition.colophon` / `frontmatter.typ` for the
+   * rendered disclosure).
+   */
+  machineAssist: MachineAssistLabel | null;
 }
 
 /**

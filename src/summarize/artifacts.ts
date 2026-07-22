@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { InputLayer, InputQuality, ProvenanceFields } from '@/archive/provenance';
-import { quotedScalar } from '@/archive/provenance-blocks';
+import { quotedScalar } from '@/archive/provenance-scalars';
 import type { StructuredSummaryFields, SummaryResult } from '@/summarize/types';
 
 /** Which depth a summary artifact/provenance record is for (data-model.md). */

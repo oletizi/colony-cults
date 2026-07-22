@@ -4,6 +4,11 @@ import type {
   ObjectStoreLocation,
   OcrQuality,
 } from '@/archive/provenance';
+import {
+  quotedScalar,
+  requireSub,
+  unquoteScalar,
+} from '@/archive/provenance-scalars';
 
 /**
  * Provenance origin of one summary input layer (FR-021): the project's own OCR
@@ -26,20 +31,6 @@ const OBJECT_STORE_KEYS: readonly (keyof ObjectStoreLocation)[] = [
   'key',
   'endpoint',
 ];
-
-/**
- * A YAML literal block scalar with an explicit indentation indicator (`|2`),
- * so a first content line that itself begins with whitespace can never be
- * misread as the block's indentation. Every content line is indented by two
- * spaces; blank lines are emitted empty.
- */
-export function blockScalar(key: string, text: string): string {
-  const lines = text.split('\n');
-  const body = lines
-    .map((line) => (line.length === 0 ? '' : `  ${line}`))
-    .join('\n');
-  return `${key}: |2\n${body}`;
-}
 
 /**
  * Parse the two-space-indented body of a `key: |2` literal block scalar,
@@ -71,37 +62,6 @@ export function parseBlockScalar(
     body.pop();
   }
   return { text: body.join('\n'), next: i };
-}
-
-/** A single-line, always-double-quoted YAML scalar (safe for `:`/`#`/quotes). */
-export function quotedScalar(value: string): string {
-  const escaped = value
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\t/g, '\\t');
-  return `"${escaped}"`;
-}
-
-/** Reverse of {@link quotedScalar}: unescape a double-quoted YAML scalar body. */
-export function unquoteScalar(raw: string): string {
-  let result = '';
-  for (let i = 0; i < raw.length; i += 1) {
-    const ch = raw[i];
-    const next = raw[i + 1];
-    if (ch === '\\' && next === '\\') {
-      result += '\\';
-      i += 1;
-    } else if (ch === '\\' && next === '"') {
-      result += '"';
-      i += 1;
-    } else if (ch === '\\' && next === 't') {
-      result += '\t';
-      i += 1;
-    } else {
-      result += ch;
-    }
-  }
-  return result;
 }
 
 /** Strip surrounding double quotes from a sub-value, unescaping when quoted. */
@@ -246,15 +206,6 @@ export function parseIssueList(
     i += 1;
   }
   return { items, next: i };
-}
-
-/** Read one required sub-key out of an object_store block, failing loud. */
-function requireSub(values: Map<string, string>, key: string): string {
-  const value = values.get(key);
-  if (value === undefined) {
-    throw new Error(`parseProvenance: object_store block missing "${key}"`);
-  }
-  return value;
 }
 
 /**

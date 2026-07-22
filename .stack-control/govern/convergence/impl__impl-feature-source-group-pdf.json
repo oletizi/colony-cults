@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/source-group-pdf",
+  "governedShaBase": "override-short-circuit",
+  "headSha": "override-short-circuit",
+  "chunkIds": [],
+  "rounds": 0,
+  "liftedFindings": [],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [],
+    "findings": [],
+    "suppressedCompatible": 0
+  },
+  "splitClusterRefs": [],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-print-pdf",
+  "override": true,
+  "overrideReason": "audit-barrage killed by harness before full convergence (known env limitation, cf archive-direct-pdf/english-source-pdf). This run got further: 7 chunks completed with a healthy 2-model fleet (claude+codex both producing findings) before the kill. Harvested ALL feature findings from the partial barrage and fixed them in bea2f85: HIGH member render forced english-only in buildMemberItem+buildGroupEdition (was inheriting the parallel-FR/EN config default, rendering a blank French column, FR-007); HIGH crash-safe materializeIssueText (sidecar-first + atomic issue.txt rename, closing the partial-write window that misclassified truncated OCR as a foreign file with no re-verification); MEDIUM composeMemberPage empty-segment guard + stageMemberSegments member/folio attribution; LOW tmp-path portability + stale doc. Controller review across the run also caught 2 plan-gap bugs pre-barrage: T002b flat-member layout routing, T011b article-date-from-identifier (aligns with pre-existing TASK-38). Remaining barrage clone findings are pre-existing repo clones (bibliography/gallica/archive), not feature code. Pre-existing issues captured to backlog: TASK-50 (buildAll test-timeout flake), TASK-51 (bib-sourcegroup.test pre-existing failure). Live-validated: 193/193 pdf tests green serial, tsc clean, all feature src modules <=500 lines, no any/as/ts-ignore. Fleet coverage: partial/killed run, not a clean quiet round, recorded explicitly."
+}

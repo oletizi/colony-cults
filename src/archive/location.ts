@@ -59,6 +59,44 @@ const SOURCE_LAYOUTS: Readonly<Record<string, SourceLayout>> = {
     slug: 'nouvelle-france-colonie-libre-de-port-breton-oceanie-uvre-de-colonisation',
     kind: 'monograph',
   },
+  // The Cour de cassation extract (an excerpt within a larger serial fascicule,
+  // acquired page-range-only via spec 012's `fetch-source --pages`). Registered
+  // so `sourceLayout` resolves it for the translator/OCR; slug verified against
+  // the archive clone's on-disk directory (folio sidecar `id: "PB-P054"`).
+  'PB-P054': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'cour-de-cassation-chambre-criminelle-arret-de-rejet-du-pourvoi-de-charles',
+    kind: 'monograph',
+  },
+  // English-language sources (spec 015): the recto reading text IS the English OCR
+  // (no translation). Registered so `sourceLayout` resolves them for the archive-
+  // direct PDF build; slugs verified against the archive clone's on-disk directory
+  // (folio sidecar `id:` fields, cases/port-breton/books/<slug>).
+  'PB-P056': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'richmond-river-district-of-new-south-wales-new-italy-a-brief-sketch-of-a-new',
+    kind: 'monograph',
+  },
+  'PB-P057': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'the-china-mail-hong-kong-16-october-1880-report-on-the-wreck-of-the-marquis-de',
+    kind: 'monograph',
+  },
+  'PB-P058': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'the-china-mail-hong-kong-8-march-1882-the-colony-of-port-breton-the-justice-of',
+    kind: 'monograph',
+  },
+  'PB-P059': {
+    case: 'port-breton',
+    type: 'books',
+    slug: 'the-hong-kong-daily-press-16-july-1883-trial-of-the-marquis-de-rays-paris-12',
+    kind: 'monograph',
+  },
 };
 
 /**
@@ -188,8 +226,19 @@ function deriveSlug(source: Source): string {
  * - `slug`: derived from the source's canonical (or first) title, lowercased
  *   with non-alphanumeric runs collapsed to `-`; falls back to the lowercased
  *   `sourceId` when the source has no usable title (see {@link deriveSlug}).
- * - `kind`: `periodical` for a periodical source, `monograph` otherwise
- *   (archival items are laid out like monographs).
+ * - `kind`: `periodical` for a STANDALONE periodical source (no `partOf`),
+ *   `monograph` otherwise. `kind` here is a RESOLUTION STRATEGY (which
+ *   directory shape the reader/OCR walk -- {@link issueDir}'s dated
+ *   subdirectories vs {@link monographDir}'s flat directory), not a copy of
+ *   the source's bibliographic `Source.kind`. A source-group MEMBER
+ *   (`source.partOf` set) is filed FLAT on disk regardless of its
+ *   bibliographic kind -- a periodical member's folios sit directly in its
+ *   slug directory (`f001.yml..fNNN.yml`), with no per-issue census (the
+ *   group itself is the organizing structure, not dated issues) -- so a
+ *   member always derives `kind: 'monograph'` to route it at
+ *   {@link monographDir}/flat resolution. Only a standalone periodical (no
+ *   `partOf`) keeps `kind: 'periodical'`, since ONLY that shape is actually
+ *   enumerated by a census into dated issue directories.
  */
 export function deriveSourceLayout(source: Source, fallbackCase?: string): SourceLayout {
   const resolvedCase = source.case ?? fallbackCase;
@@ -200,11 +249,12 @@ export function deriveSourceLayout(source: Source, fallbackCase?: string): Sourc
     );
   }
   const isPeriodical = source.kind === 'periodical';
+  const isMember = source.partOf !== undefined;
   return {
     case: resolvedCase,
     type: isPeriodical ? 'newspapers' : 'books',
     slug: deriveSlug(source),
-    kind: isPeriodical ? 'periodical' : 'monograph',
+    kind: isPeriodical && !isMember ? 'periodical' : 'monograph',
   };
 }
 

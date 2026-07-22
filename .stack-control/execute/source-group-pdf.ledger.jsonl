@@ -1,0 +1,22 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"ed8f64115df4893f61d1f5bc89cee1e02a5b213e","reviewClean":true}
+{"id":"T003","tierLabel":"fast","model":"haiku","commitRange":"c63b852..d1ffe46","reviewClean":true}
+{"id":"T002","tierLabel":"balanced","model":"sonnet","commitRange":"d1ffe46..b9b4f6c","reviewClean":true}
+{"id":"T002b","tierLabel":"balanced","model":"sonnet","commitRange":"c4cfaa1..42a502f","reviewClean":true,"note":"discovered plan-gap fix"}
+{"id":"T004","tierLabel":"fast","model":"haiku","commitRange":"42a502f..127836f","reviewClean":true,"note":"test-first RED half; verified when T005 greens"}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"a626516..c9ed801","reviewClean":true,"note":"real typst smoke-check passed; as-cast review-fix applied"}
+{"id":"T005","tierLabel":"balanced","model":"sonnet","commitRange":"127836f..7f85dc0","reviewClean":true,"note":"review-fix: sidecar-based FR-004/FR-005 (was registry-membership); test-file as-casts deferred to T017"}
+{"id":"T007","tierLabel":"fast","model":"haiku","commitRange":"7f85dc0..HEAD-test","reviewClean":true,"note":"test-first RED half; verified when T008 greens; flagged gif-vs-jpg fetch mismatch"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"5b23a18..3c7ab0f","reviewClean":true,"note":"crux: member collapse in member-build.ts+member-edition.ts; reuses shared colophon/ocr helpers; gif magic; buildSource member routing (partOf+page-master)"}
+{"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"3c7ab0f..c487cfa","reviewClean":true,"note":"US1 complete: member end-to-end (one PDF, materialized issue.txt+provenance, stacked verso)"}
+{"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"26ad2d4..f3c89c6","reviewClean":true,"note":"test-first RED half; verified when T011 greens"}
+{"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"26ad2d4..f3c89c6","reviewClean":true}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"f3c89c6..abf2436","reviewClean":true,"note":"shared composeMemberPage extracted (DRY); namespaced images; one edition-level colophon; fixed writeGroupFixture multi-member bugs"}
+{"id":"T012","tierLabel":"balanced","model":"sonnet","commitRange":"abf2436..ccae30c","reviewClean":true,"note":"CLI source-group routing; resolveSelectorRoute pure helper; no routing test (self-exec CLI) — T013 covers"}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"ccae30c..a2a1f53","reviewClean":true,"note":"group integration; found retrieved-vs-articledate bug -> T011b"}
+{"id":"T011b","tierLabel":"balanced","model":"sonnet","commitRange":"a2a1f53..3bc0c59","reviewClean":true,"note":"discovered fix: article date from papers-past identifier not retrieved (FR-009); member-fixture.ts now 509 lines -> T017 split"}
+{"id":"T014","tierLabel":"fast","model":"haiku","commitRange":"3bc0c59..8424695","reviewClean":true,"note":"US3 regression: monograph untouched, french fail-loud, standalone segments-absent"}
+{"id":"T015","tierLabel":"fast","model":"haiku","commitRange":"8424695..3c0fd41","reviewClean":true,"note":"US4 batch discovery+attributable failure; healthy-member-in-batch full build deferred to T009/T018"}
+{"id":"T016","tierLabel":"fast","model":"haiku","commitRange":"3c0fd41..7f0de8b","reviewClean":true,"note":"fail-loud sweep FR-012: missing ocr-text, unresolvable segment, empty group; no PDF"}
+{"id":"T017","tierLabel":"fast","model":"haiku","commitRange":"7f0de8b..HEAD","reviewClean":true,"note":"split member-fixture.ts (365) + group-fixture.ts (150); src modules all <=500, escape-free; 189/189 serial green"}
+{"id":"govern-fix-1","tierLabel":"balanced","model":"sonnet","commitRange":"bf98f9b..bea2f85","reviewClean":true,"note":"applied 6 harvested barrage findings: HIGH member-english-only (member+group), HIGH crash-safe materialize (sidecar-first+atomic), attribution guards, portability, doc"}
+{"id":"pr-review-fix-1","tierLabel":"balanced","model":"sonnet","commitRange":"bea2f85..bcd069a","reviewClean":true,"note":"operator PR review: F1 issue.txt.yml as inherited ProvenanceFields companion + type-field discriminator; F2 verbatim-bytes idempotency (non-UTF-8 test); F3 assertInsideArchive guard; F5 anchored date regex. FF4 (case-fallback threading) deferred."}

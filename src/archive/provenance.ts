@@ -1,7 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
-  blockScalar,
   emitInputLayers,
   emitInputQuality,
   emitIssueList,
@@ -14,9 +13,18 @@ import {
   parseIssueList,
   parseObjectStoreBlock,
   parseOcrQualityBlock,
-  quotedScalar,
-  unquoteScalar,
 } from '@/archive/provenance-blocks';
+
+import {
+  blockScalar,
+  emitBoolean,
+  emitInteger,
+  parseOptionalBoolean,
+  quotedScalar,
+  requireField,
+  requireInteger,
+  unquoteScalar,
+} from '@/archive/provenance-scalars';
 
 /**
  * Where an asset master lives in the object store, once uploaded (T009). The
@@ -128,6 +136,16 @@ export interface ProvenanceFields {
   /** Translation provenance label, e.g. `machine-assisted` (FR-007). */
   translation?: string;
   /**
+   * Intentionally-blank-recto marker (spec 015 FR-014): `true` on a folio
+   * that is a plate/illustration/cover/blank leaf with no reading text -- the
+   * English-source path's sole opt-out from the empty-OCR fail-loud (the
+   * analog of the French path's `untranslatable` translation label, but
+   * carried on the folio sidecar since English sources have no translation
+   * sidecar). Additive OPTIONAL key: absent on every non-plate folio, which
+   * must re-serialize byte-identically.
+   */
+  blank_recto?: boolean;
+  /**
    * The repository representation that produced this asset, e.g.
    * `papers-past-text-tab`. Additive OPTIONAL key: omitted when unset so
    * records without it re-serialize byte-identically.
@@ -201,6 +219,7 @@ const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'engine',
   'model',
   'translation',
+  'blank_recto',
   'source_representation',
   'interpretation',
   'input_layers',
@@ -224,16 +243,6 @@ function emitField(key: keyof ProvenanceFields, value: string | null): string {
   return `${key}: ${quotedScalar(value)}`;
 }
 
-/** Emit `size: 123456` as a bare integer; a non-integer is a hard error. */
-function emitInteger(value: number): string {
-  if (!Number.isInteger(value)) {
-    throw new Error(
-      `serializeProvenance: size must be an integer byte count, got ${value}`,
-    );
-  }
-  return `size: ${value}`;
-}
-
 /** Emit one provenance line/block, dispatching the two non-string fields. */
 function emitEntry(
   key: keyof ProvenanceFields,
@@ -241,7 +250,7 @@ function emitEntry(
 ): string | undefined {
   switch (key) {
     case 'size':
-      return emitInteger(fields.size);
+      return emitInteger('size', fields.size);
     case 'object_store':
       return emitObjectStore(fields.object_store);
     case 'ocr_quality':
@@ -262,6 +271,12 @@ function emitEntry(
       // records (without them) re-serialize byte-identically.
       const value = fields[key];
       return value === undefined ? undefined : emitField(key, value);
+    }
+    case 'blank_recto': {
+      // Additive OPTIONAL boolean key (FR-014): omit entirely when unset so
+      // non-plate folios re-serialize byte-identically.
+      const value = fields.blank_recto;
+      return value === undefined ? undefined : emitBoolean('blank_recto', value);
     }
     default:
       return emitField(key, fields[key]);
@@ -307,27 +322,6 @@ interface ParsedRaw {
   coveredIssues?: string[];
   /** The parsed `missing_issues` list, or `undefined` when the key is absent. */
   missingIssues?: string[];
-}
-
-/** Read one required field out of the raw parsed map, failing loud if absent. */
-function requireField(raw: Map<string, string | null>, key: string): string {
-  const value = raw.get(key);
-  if (value === undefined || value === null) {
-    throw new Error(`parseProvenance: missing required field "${key}"`);
-  }
-  return value;
-}
-
-/** Read a required integer field (e.g. `size`), failing loud on absence/shape. */
-function requireInteger(raw: Map<string, string | null>, key: string): number {
-  const value = requireField(raw, key);
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed)) {
-    throw new Error(
-      `parseProvenance: field "${key}" is not an integer: "${value}"`,
-    );
-  }
-  return parsed;
 }
 
 /**
@@ -479,6 +473,7 @@ export function parseProvenance(text: string): ProvenanceFields {
     engine: scalars.get('engine') ?? undefined,
     model: scalars.get('model') ?? undefined,
     translation: scalars.get('translation') ?? undefined,
+    blank_recto: parseOptionalBoolean(scalars, 'blank_recto'),
     source_representation: scalars.get('source_representation') ?? undefined,
     interpretation: scalars.get('interpretation') ?? undefined,
     input_layers: inputLayers,

@@ -1,0 +1,106 @@
+# Phase 1 Data Model: English-Source Facsimile PDF
+
+The feature adds **no new persisted artifact** — it reads the existing archive
+shape and routes on a field already present. This documents the entities the
+routing touches and the one in-memory field that must be surfaced.
+
+## ReadingLanguage (in-memory, derived)
+
+The per-source signal that selects the edition path. Derived from the folio
+provenance `language` field (already written by every acquisition adapter).
+
+| Value | Meaning | Path |
+|-------|---------|------|
+| `french` | FR-OCR │ EN-translation edition | existing French path — **unchanged** |
+| `english` | English OCR is the reading recto; no translation | new English-source path |
+| *(other)* | unsupported | **fail loud** — only FR + EN editions in scope |
+
+**Derivation rules**:
+
+- Read from folio provenance `language`, matched **case-insensitively** (V1:
+  verify full-word "English"/"French" vs. a code against real sidecars; normalize
+  at the seam if a code is used).
+- A source's reading language is resolved **once** and MUST be consistent across
+  its folios; a mixed-language source (some folios English, some French) **fails
+  loud** (it is not a valid edition — surfaces an archive-data error).
+- An unrecognized (non-FR/EN) language **fails loud** naming the source and the
+  offending value.
+
+**Surface**: exposed on the source resolution (`archive-source.ts`) or resolved
+at edition-build entry (`archive-edition.ts`) and passed into per-page assembly,
+so `loadArchivePage` can branch without re-deriving. (Exact placement is an
+implementation detail; the folio provenance is already read in `loadArchivePage`
+for `deriveOcrCondition`, and in `enumerateFolios` for object_store/sha256.)
+
+## ArchivePageContent (existing — English-path semantics)
+
+The intermediate `loadArchivePage` produces (`archive-page.ts`). On the English
+path its fields carry English-source meaning:
+
+| Field | French path (existing) | English path (this feature) |
+|-------|------------------------|-----------------------------|
+| `ocrFrench` | French OCR (recto left col / parallel source) | **`""`** — no French OCR on this path; the english-only variant does not render this field |
+| `english` | EN translation (recto reading col) | **the English OCR reading text** — the english-only variant (`showFrench = false`) renders `english` as the single reading column, so the English OCR is carried here |
+| `untranslatable` | `true` only for a marked blank page | not applicable (no translation dimension) — `false` |
+| `machineAssist` | translation engine/model/date, or null | **null** (no translation performed) |
+| `ocrCondition` | OCR apparatus note or null | **carried through unchanged** (low-fidelity caveat surfaces here) |
+
+> **Field placement (resolved, not deferred):** the English OCR is carried in the
+> `english` field, because the existing english-only Typst variant renders
+> `TypstRecto.english` as the reading column and drops `ocrFrench` (verified in
+> `@/pdf/render/typst-input`). `ocrFrench` is set to `""`. No template change. The
+> invariant: **the rendered recto reading text is the English OCR; no translation
+> artifact is read.**
+
+## Edition / Colophon (CHANGED — English-source semantics, FR-013)
+
+Spec-014's `assembleColophon` **mandated** a machine-assist translation label
+(it throws if no page carries one), and `ColophonMeta.translation` is a
+non-nullable `MachineAssistLabel`; the colophon template (`frontmatter.typ`)
+renders `col.translation.engine/model/retrieved` unconditionally. An English
+source carries **no** translation label, so this feature must relax the mandate
+(FR-013). Changes:
+
+- `ColophonMeta.translation` becomes **nullable** (`MachineAssistLabel | null`).
+  It is `null` for English sources; it remains **required** (assembler fails
+  loud) for French sources — the spec-014 guarantee is preserved by keying the
+  requirement on the reading language, not by dropping it.
+- `ColophonMeta` gains an **OCR-transcription disclosure** field (recto is a
+  machine OCR transcription of the English original; OCR engine/status +
+  low-fidelity caveat when present). Null for French sources.
+- `assembleColophon` takes the reading language (or an equivalent
+  transcription-input) so it can require-a-label for French and
+  require-a-transcription-disclosure for English.
+- The colophon template (`frontmatter.typ`) branches: English → the
+  OCR-transcription line; French → the machine-assist line; never both. **This
+  template change is designed through `/frontend-design:frontend-design`
+  (Constitution XI)** — the sole FR-010 exception.
+- The pinned-archive reference (`archiveRef`) is **unchanged** (reproducibility).
+
+## Blank / plate page marker (English path, FR-014)
+
+An English folio MAY carry a folio-provenance `blank_recto` marker (an additive
+OPTIONAL boolean field on `ProvenanceFields`, alongside `ocr_status`/`translation`)
+declaring the page an intentionally-blank recto — a plate, illustration, cover, or
+blank leaf with no reading text. This is the English analog of the French path's
+`untranslatable` translation label (which lives on the translation sidecar English
+sources do not have, so the marker lives on the folio sidecar the English path
+already reads).
+
+- When `blank_recto` is true, the English path TOLERATES an empty OCR result and
+  produces a blank reading recto — it sets the SAME blank-recto flag the French
+  `untranslatable` path sets (`untranslatable = true`, `english = ''`), so spec
+  014's existing blank-recto rendering draws the verso facsimile with an empty
+  reading column. No template change.
+- When `blank_recto` is absent/false, FR-007's empty-OCR fail-loud is unchanged.
+- A `blank_recto`-marked page with NON-empty OCR is an inconsistency → fail loud
+  (a page is either a blank plate or a text page, not both).
+
+## Fail-loud conditions (English path)
+
+1. Missing English OCR for an **unmarked** page (neither corrected `pNNN.fr.txt`
+   nor a positional `issue.txt` segment, and NOT `blank_recto`-marked) → fail loud
+   naming the page. A `blank_recto`-marked page tolerates empty OCR (FR-014).
+2. Unsupported reading language (non-FR/EN) → fail loud naming source + value.
+3. Mixed reading language across a source's folios → fail loud.
+4. Missing image master (unchanged from spec 014) → fail loud.

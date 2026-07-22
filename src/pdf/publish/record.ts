@@ -9,8 +9,10 @@
  * The four steps mirror the data-model's write path:
  *   1. {@link buildManifest}      upload results -> a validated PublicationManifest
  *   2. {@link writeManifestFile}  deterministic manifest YAML under bibliography/publications/
- *   3. {@link buildPublication}   the lean Publication entry (with the mandatory
- *                                 machine-assist label enforced, Constitution IV)
+ *   3. {@link buildPublication}   the lean Publication entry (with a mandatory
+ *                                 provenance disclosure -- machineAssist (French)
+ *                                 or ocrTranscription (English, spec 015) --
+ *                                 enforced, Constitution IV)
  *   4. {@link upsertPublication}  idempotent add to Source.publications[] + re-write
  *
  * See specs/008-edition-publishing/data-model.md §2/§3 and
@@ -25,7 +27,7 @@ import { stringify } from 'yaml';
 import { writeSourceFile } from '@/bibliography/source-writer';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import { cdnUrl, type PublicationVariant } from '@/pdf/publish/key';
-import type { MachineAssistLabel } from '@/pdf/model';
+import type { MachineAssistLabel, OcrTranscription } from '@/pdf/model';
 import type {
   Publication,
   PublicationManifest,
@@ -184,11 +186,20 @@ export interface BuildPublicationInput {
   keyScheme: Publication['keyScheme'];
   rightsBasis: string;
   /**
-   * REQUIRED for any translation-carrying variant (both in-scope variants
-   * qualify). Absent throws (Constitution IV). Modeled optional to make the
-   * contract explicit at the call site.
+   * The French-source machine-assisted translation label. Modeled optional:
+   * `buildPublication` enforces EXACTLY ONE of `machineAssist` /
+   * `ocrTranscription` for a real built issue (spec 015's `ColophonMeta`) --
+   * it throws if BOTH are absent (Constitution IV, zero provenance
+   * disclosure) AND if BOTH are present (two conflicting provenance stories,
+   * AUDIT-20260719-04/05).
    */
   machineAssist?: MachineAssistLabel;
+  /**
+   * The English-source OCR-transcription disclosure, recorded INSTEAD OF
+   * `machineAssist` for an English-source edition (spec 015 FR-008/FR-013).
+   * See `machineAssist`'s doc for the enforced exactly-one invariant.
+   */
+  ocrTranscription?: OcrTranscription;
   /** Repo-relative manifest path (from {@link writeManifestFile}). */
   manifestPath: string;
   /** Published-issue count (`manifest.issues.length`). */
@@ -196,28 +207,36 @@ export interface BuildPublicationInput {
 }
 
 /**
- * Whether a variant carries machine translation. BOTH in-scope variants do
- * (`english-only` = EN; `parallel` = FR OCR │ EN), so both MUST carry a
- * `machineAssist` label. Only a hypothetical pure-facsimile variant (none in
- * v1) would return false. Kept as a named predicate so the invariant is
- * explicit rather than a bare `true`.
- */
-function variantCarriesTranslation(_variant: PublicationVariant): boolean {
-  return true;
-}
-
-/**
  * Assemble the lean {@link Publication} entry. `publishedAt` comes from the
- * injected `clock` (ISO date, `YYYY-MM-DD`). Throws if a translation-carrying
- * variant is missing its `machineAssist` label (Constitution IV: translations
- * MUST be labeled machine-assisted unless human-reviewed).
+ * injected `clock` (ISO date, `YYYY-MM-DD`). Enforces EXACTLY ONE of
+ * `machineAssist` / `ocrTranscription`: throws if BOTH are absent
+ * (Constitution IV: every publication must disclose either a
+ * machine-assisted translation label (French) or an OCR-transcription
+ * disclosure (English) -- never neither), and throws if BOTH are present (two
+ * conflicting provenance stories -- AUDIT-20260719-04/05). The distinguishing
+ * signal is the disclosure SHAPE the caller collected from the built issues'
+ * `input.json` colophon (`@/pdf/publish/issue`), not the `variant` -- the
+ * `english-only` variant is ambiguous between a French source (EN
+ * translation) and an English source (EN OCR), so `variant` alone cannot
+ * decide this (AUDIT-20260719-02).
  */
 export function buildPublication(input: BuildPublicationInput, clock: Clock): Publication {
-  if (variantCarriesTranslation(input.variant) && input.machineAssist === undefined) {
+  if (input.machineAssist !== undefined && input.ocrTranscription !== undefined) {
     throw new Error(
-      `buildPublication: variant "${input.variant}" carries machine translation ` +
-        `but has no machineAssist label. Constitution IV requires machine-assisted ` +
-        `translations to be labeled; refusing to record an unlabeled publication.`,
+      `buildPublication: variant "${input.variant}" carries BOTH a machineAssist ` +
+        `label and an ocrTranscription disclosure. These are mutually exclusive ` +
+        `provenance stories (a French machine-assisted translation XOR an ` +
+        `English OCR transcription); refusing to record a publication with two ` +
+        `conflicting provenance disclosures (AUDIT-20260719-04/05).`,
+    );
+  }
+  if (input.machineAssist === undefined && input.ocrTranscription === undefined) {
+    throw new Error(
+      `buildPublication: variant "${input.variant}" has no machineAssist label ` +
+        `and no ocrTranscription disclosure. Constitution IV requires every ` +
+        `publication to disclose either a machine-assisted translation label ` +
+        `(French) or an OCR-transcription disclosure (English); refusing to ` +
+        `record a publication with no provenance disclosure at all.`,
     );
   }
 
@@ -236,6 +255,9 @@ export function buildPublication(input: BuildPublicationInput, clock: Clock): Pu
   };
   if (input.machineAssist !== undefined) {
     publication.machineAssist = input.machineAssist;
+  }
+  if (input.ocrTranscription !== undefined) {
+    publication.ocrTranscription = input.ocrTranscription;
   }
   return publication;
 }

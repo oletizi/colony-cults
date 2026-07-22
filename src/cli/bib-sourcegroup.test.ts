@@ -110,7 +110,7 @@ describe('registerMemberArchiveLayout', () => {
     expect(sourceLayout('PB-P921').case).toBe('a-different-case');
   });
 
-  it('registers a periodical member under "newspapers"', async () => {
+  it('registers a periodical-clipping member under "newspapers" with flat (monograph-kind) layout', async () => {
     dir = await seedSourcesDir([
       { source: group({ sourceId: 'PB-S903', case: 'port-breton' }) },
       {
@@ -123,7 +123,13 @@ describe('registerMemberArchiveLayout', () => {
 
     const layout = sourceLayout('PB-P922');
     expect(layout.type).toBe('newspapers');
-    expect(layout.kind).toBe('periodical');
+    // A source-group member is filed FLAT on disk (fNNN.yml directly under
+    // newspapers/<slug>/, no dated issue subdirs), so its layout resolution
+    // kind is `monograph` (flat) even though its bibliographic kind is
+    // `periodical` -- deriveSourceLayout keys on `partOf`. This is what routes
+    // resolveFetchedDir/monographDir and the PDF build to the correct flat dir
+    // (spec 017 T002b). `type` stays `newspapers` (the directory family).
+    expect(layout.kind).toBe('monograph');
   });
 
   it('fails loud when the sourceId does not resolve to any Source', async () => {

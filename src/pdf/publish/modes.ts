@@ -1,9 +1,9 @@
 /**
  * The mode runners + record/commit tail of the `pdf:publish` orchestrator
- * (spec 008-edition-publishing, T020/T024/T031). Extracted from `publish.ts`
- * (Constitution VII, <=500 lines); `publish.ts` stays the thin sequencer
- * (rights gate -> resolve -> dispatch here) and this module owns the four mode
- * bodies + their shared record/commit tail.
+ * (spec 008-edition-publishing, T020/T024/T031; spec 015-english-source-pdf).
+ * Extracted from `publish.ts` (Constitution VII, <=500 lines); `publish.ts`
+ * stays the thin sequencer (rights gate -> resolve -> dispatch here) and this
+ * module owns the four mode bodies + their shared record/commit tail.
  *
  * Ordering guarantees (contracts/cli.md): G-3/G-4 immutable idempotent uploads
  * (delegated to `upload`); G-5/G-6 integrity recorded + provenance committed
@@ -11,24 +11,19 @@
  * never abort siblings; G-9 warm is non-fatal.
  *
  * Reconcile (T031): {@link runReconcile} is the back-fill sibling of
- * {@link runConfirm} (contracts/cli.md G-8, FR-013, SC-006). It records the
- * already-served `legacy-flat` URLs of a source's issues WITHOUT any upload
- * (no `store.put`/`store.head`): it GETs each served URL via the injected
- * `httpGet` to compute the recorded `sha256`, reads the page count from the
- * build's `<issueId>.input.json` (same as confirm), and records with
- * `keyScheme: 'legacy-flat'` + the `legacy` manifest token. The record/commit
- * tail is shared, so the only behavioural difference is "GET-and-record" vs
- * "upload-and-record".
+ * {@link runConfirm} (G-8, FR-013, SC-006): GET-and-record each already-served
+ * `legacy-flat` URL (no `store.put`/`store.head`), reading the page count +
+ * disclosure from the same `<issueId>.input.json` confirm reads. The
+ * record/commit tail is shared between both.
  */
 
-import { readFile } from 'node:fs/promises';
-
-import { sha256OfBytes, sha256OfFile } from '@/archive/checksum';
+import { sha256OfBytes } from '@/archive/checksum';
 import { defaultHttpGet, type HttpGet } from '@/archive/public-cache';
 import { describeError } from '@/bibliography/load-primitives';
 import { loadSourceFile } from '@/bibliography/load';
-import type { MachineAssistLabel } from '@/pdf/model';
 import type { Publication } from '@/model/publication';
+import { applyMachineAssistOverride, type Disclosure, mergeDisclosure } from '@/pdf/publish/disclosure';
+import { validateIssueDisclosures, uploadValidatedIssues } from '@/pdf/publish/confirm-batch';
 import { cdnUrl, legacyFlatKey, versionedKey } from '@/pdf/publish/key';
 import {
   buildManifest,
@@ -37,7 +32,6 @@ import {
   writeManifestFile,
   type IssueUploadResult,
 } from '@/pdf/publish/record';
-import { uploadArtifact } from '@/pdf/publish/upload';
 import { warmUrls } from '@/pdf/publish/warm';
 import {
   inputJsonPathFor,
@@ -50,53 +44,6 @@ import type {
   PublishOptions,
   PublishResult,
 } from '@/pdf/publish/types';
-
-/** The per-issue confirm outcome: an upload record + provenance, or a failure. */
-interface ConfirmIssueOutcome {
-  upload?: IssueUploadResult;
-  /** `true` when bytes were newly PUT; `false` on an idempotent skip. */
-  uploaded?: boolean;
-  machineAssist?: MachineAssistLabel;
-  failure?: PublishFailure;
-}
-
-/**
- * Publish (or upload-skip) ONE present issue: hash + key + url + immutable
- * upload + page/label read. Every fault is caught and returned as a failure so
- * a sibling issue is never aborted (G-7).
- */
-async function publishIssue(
-  opts: PublishOptions,
-  issue: { issueId: string; pdfPath: string },
-  snapshotShort: string,
-  cdnBase: string,
-): Promise<ConfirmIssueOutcome> {
-  const { sourceId, variant } = opts;
-  try {
-    const bytes = await readFile(issue.pdfPath);
-    const sha256 = await sha256OfFile(issue.pdfPath);
-    const key = versionedKey(variant, sourceId, issue.issueId, snapshotShort);
-    const url = cdnUrl(cdnBase, key);
-
-    // Read the build metadata BEFORE the side-effecting upload: if the issue's
-    // `input.json` is missing/malformed, fail this issue with NO upload rather
-    // than leaving an orphaned, unrecorded artifact in the store (the upload
-    // then read ordering would upload bytes that a later read-failure never
-    // records).
-    const { pages, machineAssist } = readIssueBuildInfo(
-      inputJsonPathFor(issue.pdfPath, issue.issueId),
-    );
-    const { uploaded } = await uploadArtifact(opts.store, key, bytes, sha256);
-
-    return {
-      upload: { issueId: issue.issueId, key, url, sha256, pages },
-      uploaded,
-      machineAssist,
-    };
-  } catch (error) {
-    return { failure: { issueId: issue.issueId, reason: describeError(error) } };
-  }
-}
 
 /**
  * The version-scheme context {@link recordAndCommit} needs to differ between
@@ -124,7 +71,7 @@ interface RecordContext {
 async function recordAndCommit(
   opts: PublishOptions,
   uploads: IssueUploadResult[],
-  machineAssist: MachineAssistLabel | undefined,
+  disclosure: Disclosure,
   ctx: RecordContext,
   cdnBase: string,
   rightsBasis: string,
@@ -139,8 +86,8 @@ async function recordAndCommit(
   });
   const manifestPath = writeManifestFile(opts.publicationsDir, manifest, ctx.manifestVersion);
 
-  // buildPublication fails loud when a translation-carrying variant has no
-  // machineAssist label (Constitution IV) -- both in-scope variants qualify.
+  // buildPublication fails loud when NEITHER disclosure is present (Constitution
+  // IV) -- see `record.ts`'s `buildPublication`.
   const buildInput = {
     variant,
     snapshot: ctx.publicationSnapshot,
@@ -150,7 +97,8 @@ async function recordAndCommit(
     rightsBasis,
     manifestPath,
     issueCount: manifest.issues.length,
-    ...(machineAssist !== undefined ? { machineAssist } : {}),
+    ...(disclosure.machineAssist !== undefined ? { machineAssist: disclosure.machineAssist } : {}),
+    ...(disclosure.ocrTranscription !== undefined ? { ocrTranscription: disclosure.ocrTranscription } : {}),
   };
   const publication = buildPublication(buildInput, opts.clock);
 
@@ -206,8 +154,12 @@ export function runDryRun(
 }
 
 /**
- * The confirmed, mutating pipeline: per-issue immutable upload (G-3/G-4,
- * record-and-continue G-7), then record + commit (G-5/G-6) + non-fatal warm
+ * The confirmed, mutating pipeline (AUDIT-20260719-10: two strict phases --
+ * see `@/pdf/publish/confirm-batch`): phase 1 reads + validates/merges EVERY
+ * present issue's disclosure BEFORE any upload, so a cross-issue (or
+ * option-seed) disclosure conflict aborts the WHOLE run with NOTHING
+ * uploaded; phase 2 then uploads (G-3/G-4, record-and-continue G-7) only the
+ * issues phase 1 cleared. Then record + commit (G-5/G-6) + non-fatal warm
  * (G-9). Missing built PDFs (from resolve) are pre-counted failures.
  */
 export async function runConfirm(
@@ -231,13 +183,25 @@ export async function runConfirm(
     reason: `no built PDF at ${m.expectedPath}`,
   }));
 
+  // Phase 1 (AUDIT-20260719-10): read + validate/merge every present issue's
+  // disclosure -- built PURELY from per-issue outcomes (AUDIT-20260719-08),
+  // then the kind-aware `opts.machineAssist` fallback (never contaminates an
+  // English/ocrTranscription run). BOTH a cross-issue conflict and an
+  // option-seed conflict throw HERE, before phase 2's first upload.
+  const { validated, disclosure: perIssueDisclosure } = validateIssueDisclosures(present, failures);
+  const disclosure = applyMachineAssistOverride(
+    perIssueDisclosure,
+    opts,
+    '<publish option --machine-assist>',
+  );
+
+  // Phase 2: upload only the issues phase 1 cleared.
+  const outcomes = await uploadValidatedIssues(opts, validated, snapshotShort, cdnBase);
+
   const uploads: IssueUploadResult[] = [];
   let published = 0;
   let skipped = 0;
-  let machineAssist: MachineAssistLabel | undefined = opts.machineAssist;
-
-  for (const issue of present) {
-    const outcome = await publishIssue(opts, issue, snapshotShort, cdnBase);
+  for (const outcome of outcomes) {
     if (outcome.failure !== undefined) {
       failures.push(outcome.failure);
       log(`  FAIL  ${outcome.failure.issueId}: ${outcome.failure.reason}`);
@@ -254,9 +218,6 @@ export async function runConfirm(
       skipped += 1;
       log(`  SKIP  ${outcome.upload.issueId} -> ${outcome.upload.key}  (present, sha256 match)`);
     }
-    if (machineAssist === undefined) {
-      machineAssist = outcome.machineAssist;
-    }
   }
 
   // Record + commit only when at least one issue succeeded (G-5/G-6, FR-008).
@@ -264,7 +225,7 @@ export async function runConfirm(
     await recordAndCommit(
       opts,
       uploads,
-      machineAssist,
+      disclosure,
       {
         keyScheme: 'versioned',
         manifestSnapshot: snapshotFull,
@@ -321,17 +282,16 @@ export interface ReconcileTarget {
   inputJsonPath: string;
 }
 
-/** The per-issue reconcile outcome: a served-URL record + label, or a failure. */
-interface ReconcileIssueOutcome {
+/** The per-issue reconcile outcome: a served-URL record + disclosure, or a failure. */
+interface ReconcileIssueOutcome extends Disclosure {
   upload?: IssueUploadResult;
-  machineAssist?: MachineAssistLabel;
   failure?: PublishFailure;
 }
 
 /**
  * Reconcile ONE issue (G-8, no upload): derive its `legacyFlatKey` + `cdnUrl`,
  * GET the served bytes via the injected `httpGet` to compute the recorded
- * `sha256`, and read the page count + machine-assist label from the build's
+ * `sha256`, and read the page count + provenance disclosure from the build's
  * `<issueId>.input.json` (same source as confirm). A non-OK GET or a missing
  * `input.json` is caught and returned as an attributable failure (G-7), never a
  * silent skip and never fabricated.
@@ -356,9 +316,13 @@ async function reconcileIssue(
     const bytes = new Uint8Array(await response.arrayBuffer());
     const sha256 = sha256OfBytes(bytes);
 
-    const { pages, machineAssist } = readIssueBuildInfo(target.inputJsonPath);
+    const { pages, machineAssist, ocrTranscription } = readIssueBuildInfo(target.inputJsonPath);
 
-    return { upload: { issueId: target.issueId, key, url, sha256, pages }, machineAssist };
+    return {
+      upload: { issueId: target.issueId, key, url, sha256, pages },
+      machineAssist: machineAssist ?? undefined,
+      ocrTranscription: ocrTranscription ?? undefined,
+    };
   } catch (error) {
     return { failure: { issueId: target.issueId, reason: describeError(error) } };
   }
@@ -386,7 +350,9 @@ export async function runReconcile(
   const failures: PublishFailure[] = [];
   const uploads: IssueUploadResult[] = [];
   let recorded = 0;
-  let machineAssist: MachineAssistLabel | undefined = opts.machineAssist;
+  // Built PURELY from per-issue outcomes (AUDIT-20260719-08) -- see
+  // `runConfirm`'s matching comment + `applyMachineAssistOverride`.
+  let disclosure: Disclosure = {};
 
   for (const target of targets) {
     const outcome = await reconcileIssue(opts, target, cdnBase, httpGet);
@@ -401,14 +367,15 @@ export async function runReconcile(
     uploads.push(outcome.upload);
     recorded += 1;
     log(`  REC   ${outcome.upload.issueId} -> ${outcome.upload.key}  (served, recorded)`);
-    if (machineAssist === undefined) {
-      machineAssist = outcome.machineAssist;
-    }
+    // Throws (AUDIT-20260719-06) if this issue's disclosure conflicts with an
+    // earlier one in this run -- see `runConfirm`'s matching comment.
+    disclosure = mergeDisclosure(disclosure, outcome, target.issueId);
   }
 
   // Record + commit only when at least one issue was reconciled (G-5/G-6, FR-008).
   if (uploads.length > 0) {
-    await recordAndCommit(opts, uploads, machineAssist, LEGACY_FLAT_CONTEXT, cdnBase, rightsBasis);
+    disclosure = applyMachineAssistOverride(disclosure, opts, '<publish option --machine-assist>');
+    await recordAndCommit(opts, uploads, disclosure, LEGACY_FLAT_CONTEXT, cdnBase, rightsBasis);
   }
 
   const urls = uploads.map((u) => u.url);
