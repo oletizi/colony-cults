@@ -119,6 +119,19 @@ export interface Source {
   /** Free-text notes. */
   notes?: string;
   /**
+   * By-path pointer to this source's ROLLUP thorough summary artifact
+   * (`source.summary.long.en.md`), an archive-relative path string -- spec 017
+   * (FR-007), mirroring the existing `census:` by-path idiom
+   * (`@/model/repository-record`'s `RepositoryRecord.census`). The exhaustive
+   * summary prose is NEVER inlined into the structured SSOT (SC-005 -- 0 prose
+   * inlines); the record holds ONLY the path, and the summary stays a
+   * regenerable git-resident markdown artifact (`object_store: null`). Absent
+   * until a rollup has been generated and referenced; a light
+   * `validateSummaryRef` (`@/bibliography/summary-reference`) asserts a present
+   * value resolves to an existing artifact on disk (Decision 5).
+   */
+  summaryRef?: string;
+  /**
    * Published derivative editions of this Source (FR-005). Distinct from
    * `repositoryRecords[]`: a `repositoryRecords[]` entry is another archive's
    * held copy of the work, while a `publications[]` entry is a derivative

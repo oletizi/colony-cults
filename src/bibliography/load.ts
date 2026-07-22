@@ -64,6 +64,7 @@ const SOURCE_KEYS = new Set([
   'knownExtent',
   'suspected',
   'notes',
+  'summaryRef',
   'publications',
   'repositoryRecords',
   'threads',
@@ -307,6 +308,10 @@ export function loadSourceFile(filePath: string): LoadedSource {
   const language = optionalString(obj.language, filePath, 'language');
   const sourceCase = optionalString(obj.case, filePath, 'case');
   const notes = optionalString(obj.notes, filePath, 'notes');
+  // By-path pointer to the source rollup thorough summary (spec 017, FR-007),
+  // the `census:`-style idiom. Absent stays undefined -- no default invented;
+  // the exhaustive prose is never inlined (SC-005), only this path string.
+  const summaryRef = optionalString(obj.summaryRef, filePath, 'summaryRef');
 
   // Corpus-centrality mark (optional): absent means a central corpus work; a
   // present value is narrowed against the closed `SourceCentrality` vocab, so an
@@ -447,6 +452,7 @@ export function loadSourceFile(filePath: string): LoadedSource {
     knownExtent,
     suspected,
     notes,
+    summaryRef,
     publications,
     threads,
   };
