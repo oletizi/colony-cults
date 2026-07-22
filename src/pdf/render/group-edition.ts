@@ -236,7 +236,6 @@ export async function buildGroupEdition(
   const config = resolvePdfConfig(env);
   const repoRoot = resolveRepoRoot();
   const provider = opts.provider ?? config.imageProvider;
-  const showFrench = opts.showFrench ?? config.showFrench;
   const bibliographyDir = path.join(repoRoot, 'bibliography', 'sources');
 
   const rawMembers = opts.members ?? enumerateGroupMembers(groupId, bibliographyDir);
@@ -292,7 +291,14 @@ export async function buildGroupEdition(
     titlePage,
     pages: ordered.map((member) => member.page),
     colophon,
-    showFrench,
+    // Always english-only (FR-007), NEVER `opts.showFrench ?? config.showFrench`:
+    // a group edition's every page is a source-group member's collapsed page,
+    // composed via the exact same `composeMemberPage` `buildMemberItem` uses --
+    // that composer always hardcodes the recto's `ocrFrench: ''` /
+    // `machineAssist: null`, so reading the parallel-FR|EN config default here
+    // (its normal value) would render a broken, blank-French-column edition.
+    // See `@/pdf/render/member-build`'s `buildMemberItem`, fixed identically.
+    showFrench: false,
   };
 
   const inputPath = path.join(buildDir, `${groupId}.input.json`);

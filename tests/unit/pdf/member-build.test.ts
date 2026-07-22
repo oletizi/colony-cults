@@ -1,5 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import type { Source } from '@/model/source';
@@ -10,7 +12,90 @@ import { buildMemberItem, type BuildMemberOptions } from '@/pdf/render/member-bu
 import { writeMemberFixture } from './member-fixture';
 import { fakeTypstRunner, makeFixtureFetch } from './typst-fake';
 
+/**
+ * Builds one member fixture and returns the parsed `TypstInput` Typst
+ * actually received -- shared by the `showFrench` regression tests below so
+ * each only has to vary `opts.showFrench`/`env`.
+ */
+async function buildMemberAndReadInput(
+  sourceId: string,
+  showFrenchOverride: Partial<Pick<BuildMemberOptions, 'showFrench' | 'env'>>,
+): Promise<{ input: TypstInput; cleanup: () => void }> {
+  const fixture = await writeMemberFixture({
+    groupId: 'PB-G998',
+    sourceId,
+    case: 'port-breton',
+    slug: `test-member-showfrench-${sourceId.toLowerCase()}`,
+    pageCount: 1,
+    articleDate: '2026-01-16',
+    ocrText: 'English OCR text for the showFrench regression fixture.',
+  });
+
+  const tempDir = mkdtempSync(path.join(os.tmpdir(), 'member-build-showfrench-test-'));
+  const { runner, calls } = fakeTypstRunner();
+
+  const member: Source & { repositoryRecords: RepositoryRecord[] } = {
+    ...fixture.memberSource,
+    repositoryRecords: [fixture.repositoryRecord],
+  };
+
+  await buildMemberItem(member, {
+    archiveRoot: fixture.archiveRoot,
+    objectStore: fixture.objectStore,
+    fetchFn: makeFixtureFetch(fixture.imageBytes),
+    typst: runner,
+    outDir: tempDir,
+    provider: 'b2',
+    env: { ...process.env, CORPUS_CDN_BASE: 'https://cdn.example.com' },
+    ...showFrenchOverride,
+  });
+
+  const inputJson = await readFile(calls[0].inputPath, 'utf-8');
+  const input: TypstInput = JSON.parse(inputJson);
+
+  const cleanup = (): void => {
+    fixture.cleanup();
+    rmSync(tempDir, { recursive: true, force: true });
+  };
+
+  return { input, cleanup };
+}
+
 describe('buildMemberItem', () => {
+  // ---------------------------------------------------------------------------
+  // Regression (AUDIT-BARRAGE FINDING 1 / FR-007): a source-group member must
+  // ALWAYS render english-only. `buildMemberItem` must never inherit the
+  // parallel-FR|EN config default -- `composeMemberPage` hardcodes an
+  // english-only recto (`ocrFrench: ''`, `machineAssist: null`), so a
+  // `showFrench: true` render would show the PARALLEL-recto template with a
+  // BLANK French column: a broken member PDF.
+  // ---------------------------------------------------------------------------
+
+  it('forces TypstInput.showFrench === false even when opts.showFrench is UNSET and config default is true (FINDING 1)', async () => {
+    const { input, cleanup } = await buildMemberAndReadInput('PB-P908', {
+      // `showFrench` intentionally omitted from the override -- exercises
+      // `buildMemberItem`'s own `opts.showFrench ?? config.showFrench`
+      // fallback, whose config default (`resolvePdfConfig`) is `true` when
+      // `PDF_SHOW_FRENCH` is unset in `env`.
+      env: { ...process.env, CORPUS_CDN_BASE: 'https://cdn.example.com', PDF_SHOW_FRENCH: undefined },
+    });
+    try {
+      expect(input.showFrench).toBe(false);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('forces TypstInput.showFrench === false even when the caller explicitly passes showFrench: true (FINDING 1)', async () => {
+    const { input, cleanup } = await buildMemberAndReadInput('PB-P909', {
+      showFrench: true,
+    });
+    try {
+      expect(input.showFrench).toBe(false);
+    } finally {
+      cleanup();
+    }
+  });
   it('assembles a source-group member into ONE page whose verso stacks N segment images in ascending order, recto faces the whole English OCR, and carries honest OCR-transcription colophon', async () => {
     // Create a member fixture with 3 page-master segments (N=3).
     const fixture = await writeMemberFixture({

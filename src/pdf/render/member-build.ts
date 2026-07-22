@@ -115,22 +115,38 @@ export function commonAncestor(a: string, b: string): string {
  * under `imageDir` as `<folioId>.<ext>`, the extension detected from magic
  * bytes (GIF-aware -- Papers-Past segments are GIFs). Returns the staged
  * `TypstVersoSegment[]`, in the SAME (ascending) order as `segments`.
+ *
+ * @param sourceId the member's `sourceId` (FR-012/FR-013 attribution): a
+ *   failed segment fetch is re-thrown naming BOTH the member and the failing
+ *   segment/folio, so batch + standalone callers can pin which member broke
+ *   without having to infer it from an underlying `ImageByteSource` error
+ *   that only names the folio.
  */
 async function stageMemberSegments(
   imageSource: ImageByteSource,
   segments: MemberPageMasterSegment[],
   imageDir: string,
+  sourceId: string,
 ): Promise<TypstVersoSegment[]> {
   const staged: TypstVersoSegment[] = [];
   for (const segment of segments) {
-    const fetched = await imageSource.fetch({
-      folioId: segment.folioId,
-      // Archive-direct members carry no per-segment ark (mirrors build.ts's
-      // archive-direct pages -- see `stageImages`'s doc).
-      ark: null,
-      objectStoreKey: segment.objectStoreKey,
-      sha256: segment.sha256,
-    });
+    let fetched;
+    try {
+      fetched = await imageSource.fetch({
+        folioId: segment.folioId,
+        // Archive-direct members carry no per-segment ark (mirrors build.ts's
+        // archive-direct pages -- see `stageImages`'s doc).
+        ark: null,
+        objectStoreKey: segment.objectStoreKey,
+        sha256: segment.sha256,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `stageMemberSegments: member "${sourceId}" segment "${segment.folioId}" image fetch ` +
+          `failed -- ${message}`,
+      );
+    }
     const ext = detectImageExt(fetched.bytesPath, segment.folioId);
     const fileName = versoName(segment.folioId, ext);
     copyFileSync(fetched.bytesPath, path.join(imageDir, fileName));
@@ -200,7 +216,28 @@ export async function composeMemberPage(
   const assembly = await assembleMemberEdition(member, ctx.archiveRoot, ctx.pin);
 
   // 3. Fetch + sha256-verify + stage every segment's image bytes.
-  const stagedSegments = await stageMemberSegments(ctx.imageSource, assembly.segments, ctx.imageDir);
+  const stagedSegments = await stageMemberSegments(
+    ctx.imageSource,
+    assembly.segments,
+    ctx.imageDir,
+    member.sourceId,
+  );
+
+  // Defensive guard (belt-and-suspenders): `collectPageMasterSegments`
+  // (`@/pdf/render/member-edition`, called from `assembleMemberEdition` in
+  // step 2 above) already throws if the member carries zero `page-master`
+  // assets, so `assembly.segments`/`stagedSegments` should never be empty by
+  // the time execution reaches here. Guard it explicitly anyway -- an
+  // unattributable `TypeError: Cannot read properties of undefined` from a
+  // bare `assembly.segments[0]` index below would defeat FR-012's promise
+  // that every failure names the member.
+  if (assembly.segments.length === 0 || stagedSegments.length === 0) {
+    throw new Error(
+      `composeMemberPage: member "${member.sourceId}" has no page-master segments -- cannot ` +
+        'compose a collapsed page without at least one staged segment image.',
+    );
+  }
+
   const prefix = ctx.imagePathPrefix ?? '';
   const versoSegments: TypstVersoSegment[] = stagedSegments.map((segment) => ({
     imagePath: `${prefix}${segment.imagePath}`,
@@ -252,7 +289,14 @@ export async function buildMemberItem(
   const config = resolvePdfConfig(env);
   const repoRoot = resolveRepoRoot();
   const provider = opts.provider ?? config.imageProvider;
-  const showFrench = opts.showFrench ?? config.showFrench;
+  // Deliberately NOT `opts.showFrench ?? config.showFrench`: a source-group
+  // member is english-only BY DEFINITION (FR-007 -- no French-OCR |
+  // English-translation split for a clipping's detached OCR text), and
+  // `composeMemberPage` always hardcodes the recto's `ocrFrench: ''` /
+  // `machineAssist: null`. Reading the parallel-FR|EN config default here
+  // would (when that default is `true`, its normal value) render the
+  // PARALLEL recto template with a blank French column -- a broken member
+  // PDF. See `composeMemberPage`'s doc.
   const archiveRoot = resolveArchiveRoot(repoRoot, opts.archiveRoot, env);
 
   // Stage the per-source build dir + image dir.
@@ -282,7 +326,11 @@ export async function buildMemberItem(
     titlePage: assembly.titlePage,
     pages: [page],
     colophon: assembly.colophon,
-    showFrench,
+    // Always english-only (FR-007) -- see the comment above on why this is
+    // never read from `opts`/config for a member. Unconditional, not merely
+    // defaulted, so a caller cannot accidentally opt back into a broken
+    // parallel-FR|EN member render.
+    showFrench: false,
   };
 
   const inputPath = path.join(buildDir, `${member.sourceId}.input.json`);

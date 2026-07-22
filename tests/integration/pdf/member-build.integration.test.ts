@@ -23,6 +23,7 @@
 
 import { existsSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse as parseYaml } from 'yaml';
@@ -59,7 +60,7 @@ describe('buildMemberItem (integration)', () => {
       ocrText: 'Whole-article English OCR text for the end-to-end integration test.',
     });
 
-    const tempDir = mkdtempSync(path.join('/tmp', 'member-build-integration-'));
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), 'member-build-integration-'));
 
     try {
       const member: Source & { repositoryRecords: RepositoryRecord[] } = {

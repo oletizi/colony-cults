@@ -20,6 +20,7 @@
 
 import { existsSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -88,7 +89,7 @@ describe('buildGroupEdition (integration)', () => {
       memberCount,
     });
 
-    const tempDir = mkdtempSync(path.join('/tmp', 'group-edition-integration-'));
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), 'group-edition-integration-'));
 
     try {
       // `writeGroupFixture` builds `fixture.members` in ascending article-date

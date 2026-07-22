@@ -25,10 +25,29 @@
  * file was altered on disk, or the `ocr-text` asset changed upstream) all
  * throw a descriptive Error naming the member's `sourceId` -- never a silent
  * fallback, never a clobber.
+ *
+ * CRASH-SAFETY of the fresh-materialization write sequence (AUDIT-BARRAGE
+ * finding, spec 017 govern pass): the fresh path writes the sidecar
+ * (`issue.txt.yml`) BEFORE `issue.txt`, and writes `issue.txt` itself
+ * ATOMICALLY (a temp file in the same directory, then `rename`d into place).
+ * This closes a crash window that used to exist with the opposite order
+ * (`issue.txt` first, sidecar second): if the process died between the two
+ * writes, the next run would see a bare `issue.txt` with NO sidecar and
+ * misclassify it as a foreign/inline file (the FR-005 no-op branch above) --
+ * permanently serving the partial/stale generated text with no checksum
+ * re-verification, ever. With sidecar-first + atomic-rename ordering, the only
+ * reachable crash state is "sidecar present, `issue.txt` absent" (a crash
+ * between the sidecar write and the rename, or before the rename lands),
+ * which `existing !== undefined` correctly still classifies as unwritten
+ * (`existing === undefined`) -- the NEXT call takes the fresh path again,
+ * safely re-fetching and re-verifying rather than trusting a half-written
+ * file. "`issue.txt` present with no sidecar" can now ONLY mean a genuinely
+ * foreign, out-of-band file (FR-005) -- it can never be one of this module's
+ * own half-finished writes.
  */
 
-import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseYaml, stringify } from 'yaml';
 
@@ -132,6 +151,21 @@ function parseSidecarSha256(raw: string, sidecarPath: string, sourceId: string):
     );
   }
   return parsed.sha256;
+}
+
+/**
+ * Write `text` to `issueTxtPath` ATOMICALLY: write to a temp file in the
+ * SAME directory (so the final `rename` is same-filesystem and therefore
+ * atomic on POSIX), then `rename` it into place. A crash mid-write can only
+ * ever leave the temp file behind (never a truncated `issueTxtPath`) -- a
+ * reader either sees the complete prior content (no `issueTxtPath` written
+ * yet) or the complete new content, never a partial one.
+ */
+async function writeIssueTextAtomic(issueTxtPath: string, text: string): Promise<void> {
+  const dir = path.dirname(issueTxtPath);
+  const tmpPath = path.join(dir, `.${path.basename(issueTxtPath)}.${randomUUID()}.tmp`);
+  await writeFile(tmpPath, text, 'utf-8');
+  await rename(tmpPath, issueTxtPath);
 }
 
 /**
@@ -243,8 +277,12 @@ export async function materializeIssueText(
   const text = Buffer.from(bytes).toString('utf-8');
 
   await mkdir(memberDir, { recursive: true });
-  await writeFile(issueTxtPath, text, 'utf-8');
+  // Sidecar FIRST, `issue.txt` second (atomically) -- see the module doc's
+  // "CRASH-SAFETY" note for why this order (and not the reverse) closes the
+  // window where a crash mid-write could leave a bare, sidecar-less
+  // `issue.txt` that a later run would misclassify as foreign (FR-005).
   await writeSidecar(sidecarPath, member.sourceId, asset, actualSha256);
+  await writeIssueTextAtomic(issueTxtPath, text);
 
   return issueTxtPath;
 }

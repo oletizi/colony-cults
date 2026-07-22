@@ -11,6 +11,13 @@ import { materializeIssueText } from '@/archive/issue-text-materialize';
 
 /**
  * A Source with its repositoryRecords, as expected by materializeIssueText.
+ *
+ * NOTE: the CRASH-SAFETY / write-order regression tests (T7, T8) for the
+ * AUDIT-BARRAGE "fresh materialization write-order" finding live in the
+ * sibling `issue-text-materialize-crash-safety.test.ts` -- split out to keep
+ * this file, and that one, each under the project's 500-line file-size
+ * guideline (that file needs a file-scoped `vi.mock('node:fs/promises', ...)`
+ * this file's T1-T6 do not).
  */
 type SourceWithRecords = Source & { repositoryRecords: RepositoryRecord[] };
 

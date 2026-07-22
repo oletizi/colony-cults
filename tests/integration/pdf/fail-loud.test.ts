@@ -23,6 +23,8 @@
  */
 
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import type { RepositoryRecord } from '@/model/repository-record';
@@ -46,7 +48,7 @@ describe('fail-loud coverage sweep (FR-012, T016)', () => {
       ocrText: 'OCR text that will be stripped.',
     });
 
-    const tempDir = mkdtempSync('/tmp/fail-loud-ocr-');
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), 'fail-loud-ocr-'));
 
     try {
       // Strip the ocr-text asset from repositoryRecord.assets.
@@ -112,7 +114,7 @@ describe('fail-loud coverage sweep (FR-012, T016)', () => {
       ocrText: 'OCR text for missing segment test.',
     });
 
-    const tempDir = mkdtempSync('/tmp/fail-loud-segment-');
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), 'fail-loud-segment-'));
 
     try {
       const member: Source & { repositoryRecords: RepositoryRecord[] } = {
@@ -175,7 +177,7 @@ describe('fail-loud coverage sweep (FR-012, T016)', () => {
   });
 
   it('case 3: empty group throws with id-naming error, produces no PDF', async () => {
-    const tempDir = mkdtempSync('/tmp/fail-loud-empty-group-');
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), 'fail-loud-empty-group-'));
 
     try {
       const { runner, calls } = fakeTypstRunner();
