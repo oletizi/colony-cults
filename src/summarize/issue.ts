@@ -1,9 +1,9 @@
-import { existsSync } from 'node:fs';
 import { assertInsideArchive } from '@/archive/location';
-import { companionYamlPath, storeAsset } from '@/archive/store';
+import { storeAsset } from '@/archive/store';
 import { readProvenance, type InputLayer } from '@/archive/provenance';
 import { firstPageProvenanceYaml } from '@/translate/rights';
-import { selectSummaryInput, type SelectedSummaryInput } from '@/summarize/select-input';
+import { selectSummaryInput } from '@/summarize/select-input';
+import { summaryIsUpToDate } from '@/summarize/idempotency';
 import {
   buildSummaryProvenance,
   issueConciseSummaryPath,
@@ -66,37 +66,6 @@ function encode(text: string): Uint8Array {
 }
 
 /**
- * True when the thorough summary artifact already on disk was generated from
- * the SAME input-layer paths + shas {@link selected} identifies (FR-010's
- * idempotency key) -- i.e. re-running would be redundant. A missing artifact,
- * a missing/unreadable sidecar, a missing `input_layers` block, or a
- * path/sha256 mismatch (in either order or count) all mean "not up to date";
- * this never throws, it only ever returns `false` on anything short of an
- * exact match.
- */
-async function isUpToDate(
-  issueDir: string,
-  selected: SelectedSummaryInput,
-): Promise<boolean> {
-  const yamlPath = companionYamlPath(issueThoroughSummaryPath(issueDir));
-  if (!existsSync(yamlPath)) {
-    return false;
-  }
-  try {
-    const existing = await readProvenance(yamlPath);
-    const recorded = existing.input_layers;
-    if (recorded === undefined || recorded.length !== selected.layers.length) {
-      return false;
-    }
-    return selected.layers.every(
-      (layer, i) => recorded[i]?.path === layer.path && recorded[i]?.sha256 === layer.sha256,
-    );
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Generate one issue's two-depth summary from its best-available acquired
  * text (T018, US1, FR-001/002/003/004/005/010/016).
  *
@@ -107,9 +76,10 @@ async function isUpToDate(
  *     nothing) when the issue has no usable text layer (FR-003, US1 AC-3).
  *  3. DRY-RUN (contracts/cli-summarize.md `--dry-run`): report the intended
  *     work and return -- never calls the runner, never writes.
- *  4. Idempotency (FR-010): when NOT forced and the existing thorough
- *     artifact's sidecar already records these exact input layers, skip --
- *     no engine call, no write.
+ *  4. Idempotency (FR-010, `@/summarize/idempotency`): when NOT forced and
+ *     {@link summaryIsUpToDate} reports the existing thorough artifact's
+ *     sidecar already records these exact input layers, skip -- no engine
+ *     call, no write.
  *  5. One `runner.summarize` call produces BOTH depths (FR-001, one
  *     full-text pass, two depths, so the concise can never disagree with the
  *     thorough it was distilled from).
@@ -141,7 +111,7 @@ export async function summarizeIssue(
     return { issueDir, status: 'dry-run', thoroughPath, concisePath };
   }
 
-  if (ctx.force !== true && (await isUpToDate(issueDir, selected))) {
+  if (ctx.force !== true && (await summaryIsUpToDate(issueDir, selected.layers))) {
     ctx.log(`  skip  ${issueDir} (input layers unchanged)`);
     return { issueDir, status: 'skipped', thoroughPath, concisePath };
   }
@@ -176,19 +146,29 @@ export async function summarizeIssue(
 
   // Constitution XV weld: BOTH artifacts go through storeAsset, which writes
   // the bytes + companion sidecar + MANIFEST.sha256 entry as one operation.
+  //
+  // `force: true` here (NOT `ctx.force`) is deliberate: the regenerate-vs-skip
+  // decision already happened above via `summaryIsUpToDate`, so reaching this
+  // line always means "write". `storeAsset`'s OWN legacy byte-level dedup
+  // (skip when the target's on-disk bytes already hash to what its companion
+  // records) exists for a different case -- resuming an interrupted fetch --
+  // and must NOT be allowed to veto this write: a regeneration triggered by a
+  // changed input layer (FR-010 US5 AC-2) must always land its updated
+  // `input_layers` provenance, even on the rare occasion the newly generated
+  // markdown bytes happen to coincide with what is already on disk.
   await storeAsset(
     encode(renderThoroughMarkdown(generated)),
     thoroughPath,
     thoroughProvenance,
     ctx.archiveRoot,
-    { force: ctx.force },
+    { force: true },
   );
   await storeAsset(
     encode(renderConciseMarkdown(generated)),
     concisePath,
     conciseProvenance,
     ctx.archiveRoot,
-    { force: ctx.force },
+    { force: true },
   );
 
   ctx.log(`  summarize  ${issueDir} -> generated (thorough + concise)`);

@@ -27,3 +27,5 @@ export {
   resolveSummarizerName,
 } from './config';
 export { createClaudeSummarizer } from './runner-claude';
+export type { SummaryFreshness, SummaryIdempotencyCheck } from './idempotency';
+export { checkSummaryFreshness, summaryIsUpToDate } from './idempotency';
