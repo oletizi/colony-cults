@@ -6,9 +6,12 @@ import { createHash } from 'node:crypto';
 import { selectSummaryInput, type SummaryInputRequest } from '@/summarize/select-input';
 import { writeProvenance, type ProvenanceFields } from '@/archive/provenance';
 import { companionYamlPath } from '@/archive/store';
+import type { ObjectStore } from '@/archive/object-store';
 import type { LoadedSource } from '@/bibliography/load';
 import type { Source } from '@/model/source';
 import type { AuthoredRepositoryRecord } from '@/bibliography/model';
+import type { AcquiredAsset } from '@/model/acquired-asset';
+import { writeMemberFixture, type WriteMemberFixtureResult } from '../pdf/member-fixture';
 
 /** Lowercase-hex SHA-256, computed independently of the implementation under test. */
 function sha256(text: string): string {
@@ -16,14 +19,14 @@ function sha256(text: string): string {
 }
 
 /**
- * Minimal source-aware {@link LoadedSource} fixture (FR-018). `language` drives
- * the Gallica French/English routing; `papersPastOcr` (an object-store key +
- * checksum) makes it a Papers Past source with an `ocr-text` asset.
+ * Minimal source-aware Gallica {@link LoadedSource} fixture (FR-018).
+ * `language` drives the French/English routing; it carries NO repository
+ * records, so it is never a source-group member -- its reading text is always
+ * the on-disk `issue.txt`/`issue.en.txt`. A MEMBER (Papers Past) whose reading
+ * text is a detached `ocr-text` asset is exercised separately via
+ * {@link memberLoadedSource} + `writeMemberFixture`.
  */
-function loadedSource(opts: {
-  language?: string;
-  papersPastOcr?: { objectStoreKey: string; checksum: string };
-} = {}): LoadedSource {
+function loadedSource(opts: { language?: string } = {}): LoadedSource {
   const source: Source = {
     sourceId: 'PB-P001',
     titles: [{ text: 'Test Source', role: 'canonical' }],
@@ -31,30 +34,19 @@ function loadedSource(opts: {
     identifiers: [],
     ...(opts.language !== undefined ? { language: opts.language } : {}),
   };
-  const records: AuthoredRepositoryRecord[] =
-    opts.papersPastOcr === undefined
-      ? []
-      : [
-          {
-            sourceArchive: 'Papers Past',
-            status: 'archived',
-            sourceUrl: 'https://paperspast.natlib.govt.nz/newspapers/ESD18800401.2.28',
-            assets: [
-              {
-                sourceUrl: 'https://paperspast.natlib.govt.nz/newspapers/ESD18800401.2.28',
-                mediaType: 'text/plain; charset=utf-8',
-                objectStoreKey: opts.papersPastOcr.objectStoreKey,
-                checksum: opts.papersPastOcr.checksum,
-                byteLength: 100,
-                provenancePath: 'archive/papers-past/x/x.yml',
-                role: 'ocr-text',
-                sequence: 0,
-                sourceRepresentation: 'papers-past-text-tab',
-              },
-            ],
-          },
-        ];
-  return { source, records, identifierLeaks: [] };
+  return { source, records: [], identifierLeaks: [] };
+}
+
+/** A member {@link LoadedSource} carrying a fixture's detached `ocr-text` asset. */
+function memberLoadedSource(fixture: WriteMemberFixtureResult): LoadedSource {
+  const record: AuthoredRepositoryRecord = {
+    sourceArchive: fixture.repositoryRecord.sourceArchive,
+    status: fixture.repositoryRecord.status,
+    catalogUrl: fixture.repositoryRecord.catalogUrl,
+    identifiers: fixture.repositoryRecord.identifiers,
+    assets: fixture.repositoryRecord.assets,
+  };
+  return { source: fixture.memberSource, records: [record], identifierLeaks: [] };
 }
 
 /** Minimal valid provenance record, overridable per test (mirrors other unit-test fixtures). */
@@ -157,31 +149,6 @@ describe('selectSummaryInput', () => {
     await expect(
       selectSummaryInput(req(loadedSource({ language: 'French' }))),
     ).rejects.toThrow(/French/);
-  });
-
-  it('reads a Papers Past ocr-text asset (English-only, attributed to Papers Past) with NO translation layer', async () => {
-    const ocrKey = 'archive/papers-past/esd18800401.2.28/deadbeef.txt';
-    const ocrText = 'THREATENED INVASION OF WESTERN AUSTRALIA. The Evening Star reports ...';
-    const dest = path.join(archiveRoot, ocrKey);
-    mkdirSync(path.dirname(dest), { recursive: true });
-    writeFileSync(dest, ocrText, 'utf-8');
-
-    const result = await selectSummaryInput(
-      req(loadedSource({ language: 'English', papersPastOcr: { objectStoreKey: ocrKey, checksum: 'deadbeef' } })),
-    );
-
-    // Exactly ONE layer: the Papers Past OCR, attributed as source-downloaded.
-    expect(result.layers).toEqual([
-      {
-        path: ocrKey,
-        sha256: sha256(ocrText),
-        origin: 'papers-past-ocr',
-        sourceRepresentation: 'papers-past-text-tab',
-      },
-    ]);
-    expect(result.text).toContain('THREATENED INVASION');
-    // No translation layer, no French OCR delimiters.
-    expect(result.text).not.toContain('FRENCH OCR TEXT');
   });
 
   it('fails loud, naming the missing text, when neither issue.txt nor issue.en.txt exists', async () => {
@@ -328,5 +295,95 @@ describe('selectSummaryInput', () => {
         selectSummaryInput(req(loadedSource({ language: 'French' }))),
       ).rejects.toThrow(/empty|whitespace/);
     });
+  });
+});
+
+/**
+ * Source-group MEMBER (Papers Past) convergence (spec 017): a member whose
+ * reading text is a DETACHED `ocr-text` asset is materialized into a standard
+ * `issue.txt` (+ full-`ProvenanceFields` sidecar) via `materializeIssueText`,
+ * then selected through the NORMAL English-OCR path -- the layer path is
+ * `issue.txt` (not the raw B2 key) and its `origin` DERIVES from the
+ * materialized sidecar's `source_representation`. `issueDir` is the member's
+ * flat archive dir (== the dir `materializeIssueText` writes into), which the
+ * fixture provides. A fake `ObjectStore` serves the asset bytes.
+ */
+describe('selectSummaryInput for a source-group member (materializeIssueText convergence)', () => {
+  let fixture: WriteMemberFixtureResult | undefined;
+
+  afterEach(() => {
+    fixture?.cleanup();
+    fixture = undefined;
+  });
+
+  async function member(sourceId: string, ocrText: string): Promise<WriteMemberFixtureResult> {
+    return writeMemberFixture({
+      groupId: 'PB-G930',
+      sourceId,
+      case: 'port-breton',
+      slug: `member-clipping-${sourceId.toLowerCase()}`,
+      pageCount: 1,
+      articleDate: '1880-04-01',
+      ocrText,
+      language: 'English',
+      sourceArchive: 'Papers Past',
+    });
+  }
+
+  it('materializes issue.txt from the ocr-text asset and returns a single papers-past-ocr layer (path issue.txt, no translation)', async () => {
+    const ocrText = 'THREATENED INVASION OF WESTERN AUSTRALIA. The Evening Star reports ...';
+    fixture = await member('PB-P931', ocrText);
+
+    const result = await selectSummaryInput({
+      issueDir: fixture.sourceDir,
+      source: memberLoadedSource(fixture),
+      archiveRoot: fixture.archiveRoot,
+      objectStore: fixture.objectStore,
+    });
+
+    // Exactly ONE layer: the materialized issue.txt, attributed as
+    // source-downloaded Papers Past OCR -- path is issue.txt (the canonical
+    // materialized filename), NOT the raw B2 object-store key.
+    expect(result.layers).toEqual([
+      {
+        path: 'issue.txt',
+        sha256: fixture.ocrTextSha256,
+        origin: 'papers-past-ocr',
+        sourceRepresentation: 'papers-past-text-tab',
+      },
+    ]);
+    expect(result.text).toContain('THREATENED INVASION');
+    expect(result.text).not.toContain('FRENCH OCR TEXT');
+  });
+
+  it('fails loud (no silent skip) when a member needs materialization but no ObjectStore is provided', async () => {
+    fixture = await member('PB-P932', 'Some OCR reading text.');
+
+    await expect(
+      selectSummaryInput({
+        issueDir: fixture.sourceDir,
+        source: memberLoadedSource(fixture),
+        archiveRoot: fixture.archiveRoot,
+        // objectStore intentionally omitted.
+      }),
+    ).rejects.toThrow(/ObjectStore/);
+  });
+
+  it('fails loud on an ocr-text checksum mismatch (materializeIssueText contract)', async () => {
+    fixture = await member('PB-P933', 'Correct OCR text.');
+    const tampered = memberLoadedSource(fixture);
+    tampered.records[0].assets = (tampered.records[0].assets ?? []).map(
+      (asset): AcquiredAsset =>
+        asset.role === 'ocr-text' ? { ...asset, checksum: 'deadbeef'.repeat(8) } : asset,
+    );
+
+    await expect(
+      selectSummaryInput({
+        issueDir: fixture.sourceDir,
+        source: tampered,
+        archiveRoot: fixture.archiveRoot,
+        objectStore: fixture.objectStore,
+      }),
+    ).rejects.toThrow(/checksum|mismatch|sha256|PB-P933/i);
   });
 });

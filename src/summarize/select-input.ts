@@ -5,21 +5,24 @@ import { sha256OfBytes } from '@/archive/checksum';
 import { companionYamlPath } from '@/archive/store';
 import { readProvenance, type OcrQualityTier } from '@/archive/provenance';
 import type { InputLayerOrigin } from '@/archive/provenance-blocks';
+import { materializeIssueText } from '@/archive/issue-text-materialize';
+import type { ObjectStore } from '@/archive/object-store';
 import type { LoadedSource } from '@/bibliography/load';
-import { isPapersPastSource } from '@/browser/load/papers-past';
-import { resolvePapersPastInput } from '@/summarize/papers-past-input';
+import { hasDetachedOcrTextAsset, toMemberWithRecords } from '@/summarize/papers-past-input';
 
 /**
  * One input companion consumed to build a summary, and its content sha256 at
  * selection time (research.md Decision 6). This is BOTH the shape fed into
  * `SummaryResult` generation (via {@link SelectedSummaryInput.text}) AND the
  * source of a summary provenance sidecar's `input_layers` (FR-005) -- the
- * idempotency key (Decision 4). `path` is relative to the issue directory for a
- * Gallica layer (e.g. `issue.txt`, `issue.en.txt`), or archive-relative (the B2
- * object-store key) for a Papers Past layer, matching the convention used by
- * `ProvenanceFields.input_layers` (see `src/archive/provenance.ts`). `origin`
- * attributes the layer honestly (FR-021): our own OCR/translation, or
- * source-downloaded Papers Past OCR.
+ * idempotency key (Decision 4). `path` is relative to the issue directory
+ * (e.g. `issue.txt`, `issue.en.txt`) -- for a source-group member (Papers
+ * Past) the detached `ocr-text` asset is first materialized into that same
+ * `issue.txt` by `materializeIssueText`, so the summarizer never references the
+ * raw B2 object-store key. `origin` attributes the layer honestly (FR-021):
+ * our own OCR/translation, or source-downloaded Papers Past OCR -- and is now
+ * DERIVED from the materialized `issue.txt`'s companion `source_representation`
+ * rather than a hardcoded source-family branch.
  */
 export interface SelectedInputLayer {
   readonly path: string;
@@ -124,16 +127,59 @@ async function readInputQuality(frenchOcrPath: string): Promise<SummaryInputQual
 }
 
 /**
+ * Derive the honest FR-021 `origin` (and `source_representation`, when present)
+ * for the single English-OCR `issue.txt` layer from its companion sidecar --
+ * NOT from a hardcoded source-family branch. A source-group member (Papers
+ * Past) whose detached ocr-text was just materialized carries
+ * `source_representation: papers-past-text-tab` on `issue.txt.yml`, so its
+ * layer is attributed as source-downloaded `papers-past-ocr` and that
+ * representation is carried through; a project OCR (no such marker) attributes
+ * `project-ocr`.
+ *
+ * Best-effort (never fail-loud): a missing or unreadable companion, or one
+ * without a Papers Past `source_representation`, defaults to the conservative
+ * honest `project-ocr` -- attribution is a value-add label, never a
+ * precondition for summarization.
+ */
+async function deriveOcrLayerOrigin(
+  frenchOcrPath: string,
+): Promise<{ origin: InputLayerOrigin; sourceRepresentation?: string }> {
+  const yamlPath = companionYamlPath(frenchOcrPath);
+  if (!existsSync(yamlPath)) {
+    return { origin: 'project-ocr' };
+  }
+  try {
+    const provenance = await readProvenance(yamlPath);
+    const representation = provenance.source_representation?.trim();
+    if (representation !== undefined && representation.startsWith('papers-past')) {
+      return { origin: 'papers-past-ocr', sourceRepresentation: representation };
+    }
+    return { origin: 'project-ocr' };
+  } catch {
+    return { origin: 'project-ocr' };
+  }
+}
+
+/**
  * The source-aware input-selection request (FR-018): input resolution needs the
  * source's IDENTITY + LANGUAGE (the SSOT {@link LoadedSource}), not just a bare
  * `issueDir`, so it routes by source family and never guesses language from
- * which files happen to be present (the AUDIT-17 defect). `archiveRoot` locates
- * a Papers Past `ocr-text` asset (archive-relative object-store key).
+ * which files happen to be present (the AUDIT-17 defect).
+ *
+ * `archiveRoot` + `objectStore` let a source-group MEMBER (Papers Past) have
+ * its detached `ocr-text` asset MATERIALIZED into a standard `issue.txt` (+
+ * full-`ProvenanceFields` sidecar) via the canonical `materializeIssueText`
+ * mechanism before selection. `objectStore` is the injected reader that
+ * fetches the asset's bytes; it is REQUIRED (fail loud) only when a member
+ * actually needs materialization -- a Gallica source with an on-disk
+ * `issue.txt` never touches it.
  */
 export interface SummaryInputRequest {
   readonly issueDir: string;
   readonly source: LoadedSource;
   readonly archiveRoot: string;
+  /** Reader `materializeIssueText` fetches a member's `ocr-text` asset through. */
+  readonly objectStore?: ObjectStore;
 }
 
 /**
@@ -153,31 +199,56 @@ function isKnownFrench(source: LoadedSource): boolean {
  * summarizer input, SOURCE-AWARE per research.md Decision 6/8 / spec.md
  * FR-002/FR-018..FR-023:
  *
- * 1. **Papers Past** (`isPapersPastSource`): read the B2-resident `ocr-text`
- *    asset (English-only, no translation), attributed to Papers Past (FR-019/
- *    FR-021). See `@/summarize/papers-past-input`.
- * 2. **Translation present** (`issue.en.txt`): use BOTH `issue.txt` (the French
+ * 0. **Source-group MEMBER** (a detached `ocr-text` asset AND no on-disk
+ *    `issue.txt`, e.g. Papers Past): MATERIALIZE `issue.txt` (+ its full
+ *    `ProvenanceFields` sidecar) from the `ocr-text` asset via the canonical
+ *    {@link materializeIssueText} mechanism (idempotent, crash-safe,
+ *    fail-loud), then fall through to the NORMAL path below. The member's
+ *    language is English (the `ocr-text` IS the English OCR; there is no
+ *    translation), so it lands in case 4. This replaces the interim Papers
+ *    Past adapter that pre-fetched the `.txt` itself: "downstream readers do
+ *    not need to know which path produced it."
+ * 1. **Translation present** (`issue.en.txt`): use BOTH `issue.txt` (the French
  *    OCR) and `issue.en.txt` -- the {@link combineFrenchAndEnglish} format,
  *    attributed to the project (`project-ocr` + `project-translation`).
- * 3. **Known-French source, translation ABSENT**: FAIL LOUD ("translation
+ * 2. **Known-French source, translation ABSENT**: FAIL LOUD ("translation
  *    pending") -- never summarize raw French OCR as if English-native (FR-023).
- * 4. **English-native / unknown-language source**: `issue.txt` alone
- *    (`project-ocr`).
- * 5. Else FAIL LOUD (FR-003) -- no usable text layer, no fabricated summary.
+ * 3. **English-native / member / unknown-language source**: `issue.txt` alone,
+ *    with the layer `origin` DERIVED from `issue.txt`'s companion
+ *    `source_representation` (FR-021) -- `papers-past-text-tab` ->
+ *    `papers-past-ocr` (source-downloaded), otherwise `project-ocr`.
+ * 4. Else FAIL LOUD (FR-003) -- no usable text layer, no fabricated summary.
  *
- * Reads only already-acquired inputs from disk; the Papers Past branch may
- * pre-fetch its own B2/CDN asset (FR-020) but writes nothing else.
+ * The member branch WRITES `issue.txt` (+ sidecar) via `materializeIssueText`;
+ * every other branch only reads already-acquired inputs from disk.
  */
 export async function selectSummaryInput(req: SummaryInputRequest): Promise<SelectedSummaryInput> {
-  const { issueDir, source, archiveRoot } = req;
-
-  // (1) Papers Past family: English-only OCR from the B2-resident ocr-text asset.
-  if (isPapersPastSource(source)) {
-    return resolvePapersPastInput(source, archiveRoot);
-  }
+  const { issueDir, source, archiveRoot, objectStore } = req;
 
   const frenchOcrPath = path.join(issueDir, FRENCH_OCR_FILENAME);
   const translationPath = path.join(issueDir, ENGLISH_TRANSLATION_FILENAME);
+
+  // (0) Source-group MEMBER (Papers Past): its reading text is a detached
+  // `ocr-text` asset, not an on-disk issue.txt. Rehydrate it into a standard
+  // issue.txt (+ full-ProvenanceFields sidecar) via the CANONICAL mechanism,
+  // THEN select via the normal path below. materializeIssueText writes into
+  // the member's flat archive dir which -- by the registered layout -- IS this
+  // `issueDir` (verified by the dir-match test); it is idempotent, crash-safe,
+  // and fail-loud (missing/ambiguous ocr-text asset or checksum mismatch all
+  // throw naming the member). The `!existsSync(frenchOcrPath)` guard keeps it a
+  // no-op once materialized and never disturbs a source that already has an
+  // on-disk issue.txt.
+  if (!existsSync(frenchOcrPath) && hasDetachedOcrTextAsset(source)) {
+    if (objectStore === undefined) {
+      throw new Error(
+        `selectSummaryInput: source ${source.source.sourceId} carries a detached ocr-text ` +
+          `asset that must be materialized into issue.txt, but no ObjectStore was provided to ` +
+          `fetch its bytes -- inject an ObjectStore (tests) or run through the CLI, whose ` +
+          `buildSummarizeCliDeps constructs one from the B2 config (no silent skip).`,
+      );
+    }
+    await materializeIssueText(toMemberWithRecords(source), archiveRoot, objectStore);
+  }
 
   const hasTranslation = existsSync(translationPath);
   const hasFrenchOcr = existsSync(frenchOcrPath);
@@ -244,7 +315,11 @@ export async function selectSummaryInput(req: SummaryInputRequest): Promise<Sele
     );
   }
 
-  // (4) English-native / unknown-language source: issue.txt (English OCR) alone.
+  // (4) English-native / MEMBER / unknown-language source: issue.txt (English
+  // OCR) alone. For a materialized Papers Past member this issue.txt IS the
+  // rehydrated ocr-text; its origin is DERIVED from the companion sidecar's
+  // source_representation (FR-021), so the attribution comes from the real
+  // record rather than a hardcoded source-family branch.
   if (hasFrenchOcr) {
     const ocr = await readWithSha(frenchOcrPath);
     if (isBlank(ocr.text)) {
@@ -257,8 +332,18 @@ export async function selectSummaryInput(req: SummaryInputRequest): Promise<Sele
       );
     }
     const inputQuality = await readInputQuality(frenchOcrPath);
+    const attribution = await deriveOcrLayerOrigin(frenchOcrPath);
     return {
-      layers: [{ path: FRENCH_OCR_FILENAME, sha256: ocr.sha256, origin: 'project-ocr' }],
+      layers: [
+        {
+          path: FRENCH_OCR_FILENAME,
+          sha256: ocr.sha256,
+          origin: attribution.origin,
+          ...(attribution.sourceRepresentation !== undefined
+            ? { sourceRepresentation: attribution.sourceRepresentation }
+            : {}),
+        },
+      ],
       text: ocr.text,
       ...(inputQuality !== undefined ? { inputQuality } : {}),
     };

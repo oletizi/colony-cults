@@ -1,6 +1,7 @@
 import { assertInsideArchive } from '@/archive/location';
 import { storeAsset } from '@/archive/store';
 import { readProvenance, type InputLayer } from '@/archive/provenance';
+import type { ObjectStore } from '@/archive/object-store';
 import { firstPageProvenanceYaml } from '@/translate/rights';
 import { selectSummaryInput } from '@/summarize/select-input';
 import { summaryIsUpToDate } from '@/summarize/idempotency';
@@ -39,6 +40,16 @@ export interface SummarizeIssueCtx {
   model: string;
   /** Absolute private-archive root (all writes are guarded inside it). */
   archiveRoot: string;
+  /**
+   * Reader `selectSummaryInput` -> `materializeIssueText` fetches a source-group
+   * MEMBER's detached `ocr-text` asset through (spec 017 convergence), so a
+   * Papers Past member's reading text is rehydrated into a standard `issue.txt`
+   * before selection. Injected (tests pass a fake); the CLI weld
+   * (`buildSummarizeCliDeps`) constructs a real, lazily-initialized B2 store.
+   * Absent for a Gallica source (on-disk `issue.txt`), which never needs it;
+   * required (fail loud) only when a member actually needs materialization.
+   */
+  objectStore?: ObjectStore;
   /** Clock for the `retrieved` provenance timestamp (determinism/testability). */
   clock: () => Date;
   /** Line-oriented progress sink. */
@@ -134,6 +145,7 @@ export async function summarizeIssue(
     issueDir,
     source: ctx.source,
     archiveRoot: ctx.archiveRoot,
+    objectStore: ctx.objectStore,
   });
 
   if (ctx.dryRun === true) {

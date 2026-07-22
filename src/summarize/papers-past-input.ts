@@ -1,155 +1,61 @@
 /**
- * The Papers Past summarizer INPUT adapter (FR-019/FR-020/FR-021).
+ * Detection + widening helpers for a source-group MEMBER whose reading text is
+ * a DETACHED `ocr-text` asset (Papers Past today) rather than an on-disk
+ * `issue.txt`.
  *
- * A Papers Past source's reading text is its `ocr-text` asset -- a B2-resident
- * `text/plain` `<sha>.txt` the SSOT repository record points at, NOT an
- * `issue.txt` on disk. This module resolves that asset via the SHIPPED browser
- * resolver (`papersPastOcrAsset`, `src/browser/load/papers-past.ts`) rather than
- * re-encoding the `archive/papers-past/<id>/<sha>.txt` layout, ensures the
- * `.txt` is present locally (pre-fetching it from the CDN/B2 the same way
- * `scripts/build-snapshot.ts` does when it is absent from a fresh clone), and
- * returns it as a SINGLE English-only input layer honestly attributed to Papers
- * Past (`origin: 'papers-past-ocr'`, `sourceRepresentation: 'papers-past-text-tab'`).
+ * CONVERGENCE (spec 017): the interim Papers Past input adapter that lived here
+ * -- it re-resolved the `ocr-text` asset and PRE-FETCHED the `.txt` from the
+ * CDN/B2 itself -- has been REMOVED. That duplicated the canonical mechanism
+ * `@/archive/issue-text-materialize`'s `materializeIssueText`, which rehydrates
+ * the SAME detached `ocr-text` asset into a standard `issue.txt` PLUS a full
+ * `ProvenanceFields` `issue.txt.yml` sidecar (idempotent, crash-safe,
+ * fail-loud). Its design intent -- "downstream readers do not need to know
+ * which path produced it" -- is exactly what the summarizer now relies on:
+ * `@/summarize/select-input` materializes via `materializeIssueText`, then
+ * selects the resulting `issue.txt` through its NORMAL English-OCR path.
  *
- * Fail-loud throughout: a missing OCR asset, an unfetchable `.txt` (no CDN base,
- * network failure, or non-200), or an empty/whitespace-only text all throw
- * naming the source + the missing asset -- never a fabricated or placeholder
- * layer (FR-020, Constitution V).
+ * What remains here is only the thin, fetch-free glue the summarizer needs to
+ * decide "is this a member that must be materialized?" ({@link
+ * hasDetachedOcrTextAsset}) and to hand `materializeIssueText` the widened
+ * `Source & { repositoryRecords }` shape it consumes ({@link
+ * toMemberWithRecords}). No CDN base, no `fetch`, no bespoke `.txt` read.
  */
 
-import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-
-import { sha256OfBytes } from '@/archive/checksum';
+import { authoredToRepositoryRecord } from '@/bibliography/authored-record';
 import type { LoadedSource } from '@/bibliography/load';
-import { papersPastOcrAsset, type PapersPastOcrAsset } from '@/browser/load/papers-past';
-import type { SelectedSummaryInput } from '@/summarize/select-input';
+import type { RepositoryRecord } from '@/model/repository-record';
+import type { Source } from '@/model/source';
 
 /**
- * Default CDN base fronting the B2 bucket for the OCR `.txt` pre-fetch, matching
- * `scripts/build-snapshot.ts`'s `DEFAULT_CDN_BASE` so the summarizer and the
- * snapshot builder reach the same shipped mechanism. Overridable via
- * `CORPUS_CDN_BASE` (or fully injected in tests).
+ * A `Source` carrying its widened `repositoryRecords` -- the exact shape
+ * `materializeIssueText` (`@/archive/issue-text-materialize`) consumes.
  */
-const DEFAULT_CDN_BASE = 'https://colony-cults-cdn.oletizi.workers.dev';
+export type MemberWithRecords = Source & { repositoryRecords: RepositoryRecord[] };
 
-/** The minimal `fetch` response surface this adapter consumes (injectable in tests). */
-export interface FetchResponseLike {
-  readonly ok: boolean;
-  readonly status: number;
-  text(): Promise<string>;
+/**
+ * True when `loaded` carries a detached `ocr-text`-role asset across its
+ * repository records -- i.e. a source-group member (e.g. a Papers Past
+ * clipping) whose reading text is a B2-resident `<sha>.txt`, NOT an inline
+ * `issue.txt`, and therefore must be rehydrated via `materializeIssueText`
+ * before the summarizer can select it. A source with no such asset (a Gallica
+ * periodical/monograph with an on-disk `issue.txt`) returns `false` and takes
+ * the summarizer's ordinary on-disk path unchanged.
+ */
+export function hasDetachedOcrTextAsset(loaded: LoadedSource): boolean {
+  return loaded.records.some((record) =>
+    (record.assets ?? []).some((asset) => asset.role === 'ocr-text'),
+  );
 }
 
 /**
- * The CDN/B2 pre-fetch seam. `cdnBase` fronts the B2 bucket (the object-store
- * key IS the request path, mirroring `makeB2CdnProvider`); `undefined` means no
- * CDN is configured, so an absent `.txt` fails loud rather than being fetched.
+ * Widen a {@link LoadedSource}'s authored repository records into the full
+ * `RepositoryRecord` shape `materializeIssueText` requires, attaching the
+ * owning `sourceId` (the SSOT's one-file-per-source layout implies it) via
+ * `authoredToRepositoryRecord`. Pure -- no I/O.
  */
-export interface PapersPastPrefetch {
-  readonly cdnBase: string | undefined;
-  readonly fetch: (url: string) => Promise<FetchResponseLike>;
-}
-
-/**
- * The default (real) pre-fetch: CDN base from `CORPUS_CDN_BASE` (falling back to
- * {@link DEFAULT_CDN_BASE}, as `build-snapshot` does) and the global `fetch`.
- * Fetching our OWN B2/CDN is not an external-source query (Constitution XII):
- * it is a single, bounded GET of a public-domain asset we already own.
- */
-export function defaultPapersPastPrefetch(): PapersPastPrefetch {
-  return {
-    cdnBase: process.env.CORPUS_CDN_BASE?.trim() || DEFAULT_CDN_BASE,
-    fetch: (url: string) => fetch(url),
-  };
-}
-
-/**
- * Resolve the Papers Past `ocr-text` asset for `loaded`, ensure its `.txt` is
- * local (pre-fetching from the CDN/B2 when absent), read it, and return the
- * single English-only input layer attributed to Papers Past (FR-019/FR-021).
- */
-export async function resolvePapersPastInput(
-  loaded: LoadedSource,
-  archiveRoot: string,
-  prefetch: PapersPastPrefetch = defaultPapersPastPrefetch(),
-): Promise<SelectedSummaryInput> {
-  const sourceId = loaded.source.sourceId;
-  const ocr = papersPastOcrAsset(loaded);
-  const localPath = await ensureLocalOcr(archiveRoot, ocr, sourceId, prefetch);
-
-  const bytes = await readFile(localPath);
-  const text = bytes.toString('utf-8');
-  if (text.trim().length === 0) {
-    throw new Error(
-      `selectSummaryInput(${sourceId}): Papers Past OCR text at ${localPath} ` +
-        `(asset ${ocr.objectStoreKey}) is empty/whitespace-only -- a blank OCR layer ` +
-        're-acquire the ocr-text asset before summarizing (FR-020, fail loud).',
-    );
-  }
-
-  return {
-    layers: [
-      {
-        // Archive-relative key (relative to archiveRoot, not the issue dir):
-        // the same B2 object-store key the SSOT record points at.
-        path: ocr.objectStoreKey,
-        sha256: sha256OfBytes(bytes),
-        origin: 'papers-past-ocr',
-        sourceRepresentation: 'papers-past-text-tab',
-      },
-    ],
-    text,
-  };
-}
-
-/**
- * Return the absolute local path of the OCR `.txt`, pre-fetching it into the
- * archive worktree at `<archiveRoot>/<objectStoreKey>` when it is not already
- * present. Fail-loud (FR-020): no CDN base, a network failure, or a non-200
- * response all throw naming the source + the missing asset + how to fetch it.
- */
-async function ensureLocalOcr(
-  archiveRoot: string,
-  ocr: PapersPastOcrAsset,
-  sourceId: string,
-  prefetch: PapersPastPrefetch,
-): Promise<string> {
-  const dest = path.join(archiveRoot, ocr.objectStoreKey);
-  if (existsSync(dest)) {
-    return dest;
-  }
-
-  const cdnBase = prefetch.cdnBase?.replace(/\/+$/, '');
-  if (cdnBase === undefined || cdnBase.length === 0) {
-    throw new Error(
-      `selectSummaryInput(${sourceId}): Papers Past OCR text ${ocr.objectStoreKey} is not ` +
-        `present at ${dest} and no CDN base is configured to pre-fetch it. Set CORPUS_CDN_BASE ` +
-        '(or run "npm run site:snapshot") to fetch the B2-resident asset before summarizing ' +
-        '(FR-020, fail loud).',
-    );
-  }
-
-  const url = `${cdnBase}/${ocr.objectStoreKey}`;
-  let response: FetchResponseLike;
-  try {
-    response = await prefetch.fetch(url);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `selectSummaryInput(${sourceId}): Papers Past OCR pre-fetch failed for ${url} -- ` +
-        `${message}. The asset ${ocr.objectStoreKey} could not be retrieved (FR-020, fail loud).`,
-    );
-  }
-  if (!response.ok) {
-    throw new Error(
-      `selectSummaryInput(${sourceId}): Papers Past OCR pre-fetch got HTTP ${response.status} ` +
-        `for ${url} (asset ${ocr.objectStoreKey}).`,
-    );
-  }
-
-  const body = await response.text();
-  await mkdir(path.dirname(dest), { recursive: true });
-  await writeFile(dest, body, 'utf-8');
-  return dest;
+export function toMemberWithRecords(loaded: LoadedSource): MemberWithRecords {
+  const repositoryRecords = loaded.records.map((record) =>
+    authoredToRepositoryRecord(loaded.source.sourceId, record),
+  );
+  return { ...loaded.source, repositoryRecords };
 }

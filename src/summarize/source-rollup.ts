@@ -10,6 +10,7 @@ import {
 import { sha256OfBytes } from '@/archive/checksum';
 import { companionYamlPath, storeAsset } from '@/archive/store';
 import { readProvenance, type InputLayer } from '@/archive/provenance';
+import type { ObjectStore } from '@/archive/object-store';
 import { discoverIssueArks } from '@/translate/source';
 import {
   buildSummaryProvenance,
@@ -34,6 +35,16 @@ export interface SummarizeSourceCtx {
   model: string;
   /** Absolute private-archive root (all writes are guarded inside it). */
   archiveRoot: string;
+  /**
+   * Object store threaded for symmetry with {@link import('@/summarize/issue').SummarizeIssueCtx}
+   * and the CLI weld (`buildSummarizeSourceCliDeps` constructs the same lazy B2
+   * store). A source ROLLUP synthesizes ALREADY-generated per-issue thorough
+   * summaries (`gatherCoverage`) and never re-selects raw input, so it does not
+   * itself materialize a member's `ocr-text` asset -- this seam exists so the
+   * rollup ctx can never diverge from the per-issue ctx a caller builds. Absent
+   * is harmless (nothing here consults it).
+   */
+  objectStore?: ObjectStore;
   /** Clock for the `retrieved` provenance timestamp (determinism/testability). */
   clock: () => Date;
   /** Line-oriented progress sink. */
