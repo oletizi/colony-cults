@@ -7,6 +7,10 @@ import { resolveSummarizerName, resolveSummaryModel } from '@/summarize/config';
 import { createSummarizer } from '@/summarize/factory';
 import type { SummarizationRunner } from '@/summarize/types';
 import { summarizeIssue, type SummarizeIssueCtx } from '@/summarize/issue';
+import { summarizeSource, type SummarizeSourceCtx } from '@/summarize/source-rollup';
+import { loadSourceFile } from '@/bibliography/load';
+import { writeSourceFile } from '@/bibliography/source-writer';
+import { validateSummaryRef, writeSummaryRef } from '@/bibliography/summary-reference';
 
 /**
  * Polite pacing delay (milliseconds) between engine-invoking issues in a
@@ -158,4 +162,121 @@ export async function runSummarize(
   if (dryRun) {
     d.log('summarize: (dry-run) wrote nothing');
   }
+}
+
+/** Injectable side effects for the `summarize-source` command (real preflight + disk by default). */
+export interface SummarizeSourceCliDeps {
+  /** Absolute private-archive root (`../colony-cults-archive`). */
+  archiveRoot: string;
+  /** `bibliography/sources` directory holding the source's SSOT record. */
+  sourcesDir: string;
+  /** Provenance-timestamp clock (injected for determinism/testability). */
+  clock: () => Date;
+  /** Line-oriented output sink (stdout in production). */
+  log: (message: string) => void;
+  /** Summarizer engine preflight (e.g. `assertClaudeAvailable`); fires once before any real run. */
+  preflight: () => Promise<void>;
+  /** Injected summarization engine adapter. */
+  runner: SummarizationRunner;
+  /** Resolved model id/alias for this run (CLI flag > config > default). */
+  model: string;
+}
+
+/**
+ * Build the default (real preflight + disk) `SummarizeSourceCliDeps`, mirroring
+ * `buildSummarizeCliDeps` -- same engine/model resolution, plus `sourcesDir`
+ * (needed here to load/write the bibliography SSOT record for the
+ * Constitution XV `summaryRef` weld).
+ */
+export function buildSummarizeSourceCliDeps(args: ParsedArgs): SummarizeSourceCliDeps {
+  const repoRoot = process.cwd();
+  const engineName = resolveSummarizerName(args.options.engine);
+  const model = resolveSummaryModel(args.options.model);
+  const { runner, preflight } = createSummarizer(engineName);
+  return {
+    archiveRoot: resolveArchiveRoot(repoRoot),
+    sourcesDir: path.join(repoRoot, 'bibliography', 'sources'),
+    clock: () => new Date(),
+    log: (message) => {
+      console.log(message);
+    },
+    preflight,
+    runner,
+    model,
+  };
+}
+
+/**
+ * `summarize-source <sourceId>` (T030, contracts/cli-summarize.md, US4 FR-009).
+ *
+ * Generates the per-source ROLLUP via {@link summarizeSource} (cover-what-exists
+ * over the source's existing per-issue thorough summaries), THEN writes the
+ * bibliography `summaryRef` pointer (`@/bibliography/summary-reference`) in the
+ * SAME operation -- Constitution XV: no dangling reference. Both halves are
+ * unconditional and un-caught on the real (non-dry-run) path, so an error in
+ * EITHER the rollup generation or the SSOT write propagates and the command
+ * exits non-zero rather than leaving one half silently unfinished.
+ *
+ * `--dry-run` resolves coverage and reports the intended work (forwarded into
+ * `SummarizeSourceCtx.dryRun`); zero artifacts and zero SSOT writes happen --
+ * neither the rollup nor the `summaryRef` is touched.
+ *
+ * The `summaryRef` write runs even on an idempotent `'skipped'` rollup (the
+ * covered/missing set was unchanged): a prior run could have written the
+ * rollup artifact but been interrupted before the SSOT write, so re-asserting
+ * the ref here is what keeps the weld actually welded across a resumed run.
+ */
+export async function runSummarizeSource(
+  args: ParsedArgs,
+  deps?: SummarizeSourceCliDeps,
+): Promise<void> {
+  const d = deps ?? buildSummarizeSourceCliDeps(args);
+
+  const sourceId = args.positional[0];
+  if (sourceId === undefined) {
+    throw new Error('summarize-source: missing required argument <sourceId>');
+  }
+  const dryRun = args.flags.dryRun;
+
+  ensureMemberLayoutRegistered(sourceId, d.sourcesDir);
+
+  if (!dryRun) {
+    await d.preflight();
+  }
+
+  const ctx: SummarizeSourceCtx = {
+    runner: d.runner,
+    model: d.model,
+    archiveRoot: d.archiveRoot,
+    clock: d.clock,
+    log: d.log,
+    force: args.flags.force,
+    dryRun,
+  };
+
+  const result = await summarizeSource(sourceId, ctx);
+
+  if (dryRun) {
+    d.log('summarize-source: (dry-run) wrote nothing');
+    return;
+  }
+
+  d.log(
+    `summarize-source: ${sourceId} -> ${result.status} ` +
+      `(covered ${result.coveredIssues.length}, missing ${result.missingIssues.length})`,
+  );
+
+  // Constitution XV weld: the summaryRef is written in the SAME operation as
+  // the rollup artifacts above -- never a follow-up/reconcile step.
+  const sourceFilePath = path.join(d.sourcesDir, `${sourceId}.yml`);
+  const loaded = loadSourceFile(sourceFilePath);
+  const ref = path.relative(d.archiveRoot, result.thoroughPath).split(path.sep).join('/');
+  const updated = writeSummaryRef(loaded.source, ref);
+  writeSourceFile(d.sourcesDir, { source: updated, records: loaded.records });
+  // Fail loud immediately if the just-written ref somehow does not resolve
+  // (e.g. a path-construction bug) rather than leaving a silently-dangling
+  // reference for a later `bib validate` run to discover.
+  validateSummaryRef(updated, d.archiveRoot);
+
+  d.log(`summarize-source: ${sourceId} -> summaryRef -> ${ref}`);
 }

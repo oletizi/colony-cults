@@ -316,6 +316,22 @@ export function monographDir(sourceId: string, archiveRoot: string): string {
 }
 
 /**
+ * Absolute path of a source's OWN directory -- the parent of every dated
+ * issue subdirectory for a `periodical` (`<archiveRoot>/archive/cases/<case>/
+ * <type>/<slug>/`), or the SAME directory {@link monographDir} resolves for a
+ * `monograph` (there, it holds the document's pages directly instead of dated
+ * issue subdirectories). The per-source ROLLUP summary (spec 017 US4,
+ * `source.summary.long.en.md` / `source.summary.short.en.md`) is always
+ * written here, one level above any per-issue artifact. Throws (fail loud)
+ * for a source ID with no registered layout, same as {@link issueDir} /
+ * {@link monographDir}.
+ */
+export function sourceRootDir(sourceId: string, archiveRoot: string): string {
+  const layout = sourceLayout(sourceId);
+  return path.join(archiveRoot, 'archive', 'cases', layout.case, layout.type, layout.slug);
+}
+
+/**
  * Locate an already-fetched issue's directory purely from what is on disk:
  * the reverse of {@link issueDir}, used by the `ocr` command (T031) so it
  * never needs the issue's date (no census lookup, no network) -- it just

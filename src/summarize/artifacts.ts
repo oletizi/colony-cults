@@ -86,6 +86,32 @@ export function renderConciseMarkdown(result: SummaryResult): string {
 }
 
 /**
+ * Render the source-ROLLUP thorough summary markdown artifact (US4, FR-009):
+ * the same structured-frontmatter + prose shape as {@link renderThoroughMarkdown},
+ * PLUS two rollup-only frontmatter fields recording cover-what-exists coverage
+ * -- `covered_issues` (issue arks whose thorough summary was folded into this
+ * rollup) and `missing_issues` (issue arks discovered for the source but not
+ * yet summarized, so the rollup covers what exists rather than failing loud
+ * on partial coverage). Deliberately recorded here, in the already-structured
+ * markdown frontmatter (and the sidecar's `notes`, see `buildRollupProvenance`
+ * in `src/summarize/source-rollup.ts`) rather than as a NEW `ProvenanceFields`
+ * key -- `src/archive/provenance.ts` is byte-identity-critical and already
+ * near its 500-line file-size ceiling.
+ */
+export function renderRollupThoroughMarkdown(
+  result: SummaryResult,
+  coveredIssues: readonly string[],
+  missingIssues: readonly string[],
+): string {
+  const frontmatter = [
+    renderStructuredFrontmatter(result.structured),
+    renderFrontmatterList('covered_issues', coveredIssues),
+    renderFrontmatterList('missing_issues', missingIssues),
+  ].join('\n');
+  return `---\n${frontmatter}\n---\n\n${result.thoroughBody}\n`;
+}
+
+/**
  * Build a NEW {@link ProvenanceFields} record for a summary artifact
  * (data-model.md "Summary Provenance Sidecar"), derived from the source
  * page's provenance `base` without mutating it -- mirrors
