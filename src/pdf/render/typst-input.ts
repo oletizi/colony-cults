@@ -73,6 +73,25 @@ export interface TypstVerso {
   imagePath: string;
   /** Content checksum of the image bytes (reproducibility cross-check). */
   sha256: string;
+  /**
+   * OPTIONAL ordered list (ascending `sequence`) of a source-group member's
+   * page-master segment images -- N vertical column-strips cut from one
+   * physical clipping (spec 017 T006, `research.md` "T006 design direction
+   * (stacked-segment verso)"). When absent or empty, `facsimile-verso`
+   * renders the single `imagePath` image exactly as before -- this field is
+   * strictly additive so existing monograph/periodical editions serialize
+   * byte-identically (FR-005/SC-003). `toTypstInput` does not populate this
+   * field yet; that is spec 017 T008's job for source-group members.
+   */
+  segments?: ReadonlyArray<TypstVersoSegment>;
+}
+
+/** One segment image reference within a stacked-segment verso (see {@link TypstVerso.segments}). */
+export interface TypstVersoSegment {
+  /** Filename under `CompileRequest.imageDir`, e.g. `f001-seg2.jpg`. */
+  imagePath: string;
+  /** Content checksum of the segment image bytes. */
+  sha256: string;
 }
 
 /**

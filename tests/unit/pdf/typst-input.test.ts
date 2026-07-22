@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ColophonMeta, Edition, EditionPage, TitlePageMeta } from '@/pdf/model';
+import type { TypstInput } from '@/pdf/render/typst-input';
 import { serializeTypstInput, toTypstInput } from '@/pdf/render/typst-input';
 
 const titlePage: TitlePageMeta = {
@@ -191,5 +192,66 @@ describe('serializeTypstInput (G-4 stable serialization)', () => {
     const input = toTypstInput(edition, true);
     const json = serializeTypstInput(input);
     expect(JSON.parse(json)).toEqual(input);
+  });
+});
+
+describe('TypstVerso.segments (spec 017 T006, additive/backward-compatible)', () => {
+  it('a verso WITHOUT segments serializes exactly as before (no "segments" key at all)', () => {
+    const edition = makeEdition('/tmp/build-abc');
+    const input = toTypstInput(edition, true);
+    const json = serializeTypstInput(input);
+
+    // toTypstInput does not populate `segments` (T008's job) -- the mapped
+    // verso must be the plain two-key shape, and the serialized JSON must not
+    // grow a `segments` key that didn't exist before this change.
+    for (const page of input.pages) {
+      expect(page.verso).toEqual({
+        imagePath: expect.stringMatching(/^f\d+\.jpg$/),
+        sha256: expect.stringMatching(/^sha-/),
+      });
+      expect(Object.keys(page.verso)).toEqual(['imagePath', 'sha256']);
+    }
+    expect(json).not.toContain('segments');
+  });
+
+  it('round-trips an ordered segments list through serializeTypstInput when present', () => {
+    const edition = makeEdition('/tmp/build-abc');
+    const input = toTypstInput(edition, true);
+
+    // Simulate what T008 will do: attach an ordered segment list to one
+    // page's verso. `segments` is optional on TypstVerso -- this is purely a
+    // data-shape/round-trip check, not a claim about toTypstInput's mapping.
+    const withSegments: TypstInput = {
+      ...input,
+      pages: input.pages.map((page, i) =>
+        i === 0
+          ? {
+              ...page,
+              verso: {
+                ...page.verso,
+                segments: [
+                  { imagePath: 'f001-seg1.jpg', sha256: 'sha-seg1' },
+                  { imagePath: 'f001-seg2.jpg', sha256: 'sha-seg2' },
+                  { imagePath: 'f001-seg3.jpg', sha256: 'sha-seg3' },
+                ],
+              },
+            }
+          : page
+      ),
+    };
+
+    const json = serializeTypstInput(withSegments);
+    const parsed = JSON.parse(json) as TypstInput;
+
+    expect(parsed.pages[0].verso.segments).toEqual([
+      { imagePath: 'f001-seg1.jpg', sha256: 'sha-seg1' },
+      { imagePath: 'f001-seg2.jpg', sha256: 'sha-seg2' },
+      { imagePath: 'f001-seg3.jpg', sha256: 'sha-seg3' },
+    ]);
+    // Order preserved verbatim (ascending `sequence`, G-1/G-4) and the page
+    // without segments is untouched.
+    expect(parsed.pages[1].verso).toEqual(input.pages[1].verso);
+    // Byte-identical across repeated calls (G-4).
+    expect(serializeTypstInput(withSegments)).toBe(json);
   });
 });
