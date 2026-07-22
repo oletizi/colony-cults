@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
   serializeProvenance,
   parseProvenance,
+  readProvenance,
+  writeProvenance,
   type ProvenanceFields,
 } from '@/archive/provenance';
 
@@ -84,6 +87,87 @@ function summaryFields(): ProvenanceFields {
     notes: null,
   };
 }
+
+/**
+ * A SOURCE-ROLLUP sidecar record carrying the machine-readable coverage lists
+ * (AUDIT-20260722-09): `covered_issues` non-empty, `missing_issues` present but
+ * possibly empty. Stands in for the canonical coverage contract downstream
+ * audit/browser/indexing code reads via `readProvenance`.
+ */
+function rollupFields(): ProvenanceFields {
+  return {
+    ...summaryFields(),
+    local_path: 'archive/papers-past/hns/source.summary.long.en.md',
+    covered_issues: ['bpt6k5603637g', 'bpt6k5603638h'],
+    missing_issues: ['bpt6k5603639i'],
+  };
+}
+
+describe('rollup coverage sidecar (covered_issues / missing_issues)', () => {
+  it('emits both lists as deterministic block sequences of quoted arks', () => {
+    const yaml = serializeProvenance(rollupFields());
+    expect(yaml).toContain('covered_issues:');
+    expect(yaml).toContain('  - "bpt6k5603637g"');
+    expect(yaml).toContain('  - "bpt6k5603638h"');
+    expect(yaml).toContain('missing_issues:');
+    expect(yaml).toContain('  - "bpt6k5603639i"');
+  });
+
+  it('places covered_issues/missing_issues after input_quality and before object_store', () => {
+    const yaml = serializeProvenance(rollupFields());
+    const topKeys = yaml
+      .trimEnd()
+      .split('\n')
+      .filter((line) => !/^\s/.test(line))
+      .map((line) => line.slice(0, line.indexOf(':')));
+    const idx = (k: string): number => topKeys.indexOf(k);
+    expect(idx('covered_issues')).toBe(idx('input_quality') + 1);
+    expect(idx('missing_issues')).toBe(idx('covered_issues') + 1);
+    expect(idx('object_store')).toBeGreaterThan(idx('missing_issues'));
+  });
+
+  it('round-trips the rollup record (serialize -> parse -> serialize stable)', () => {
+    const fields = rollupFields();
+    const yaml = serializeProvenance(fields);
+    const parsed = parseProvenance(yaml);
+    expect(parsed).toEqual(fields);
+    expect(serializeProvenance(parsed)).toBe(yaml);
+  });
+
+  it('emits an empty missing_issues as `missing_issues: []` and round-trips it to []', () => {
+    const fields: ProvenanceFields = { ...rollupFields(), missing_issues: [] };
+    const yaml = serializeProvenance(fields);
+    expect(yaml).toContain('missing_issues: []');
+    const parsed = parseProvenance(yaml);
+    expect(parsed.missing_issues).toEqual([]);
+    expect(serializeProvenance(parsed)).toBe(yaml);
+  });
+
+  it('(round-trip via disk) readProvenance recovers the coverage lists a rollup sidecar wrote', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'cc-rollup-prov-'));
+    try {
+      const yamlPath = path.join(dir, 'source.summary.long.en.md.yml');
+      const fields = rollupFields();
+      await writeProvenance(yamlPath, fields);
+      const recovered = await readProvenance(yamlPath);
+      expect(recovered.covered_issues).toEqual(['bpt6k5603637g', 'bpt6k5603638h']);
+      expect(recovered.missing_issues).toEqual(['bpt6k5603639i']);
+      // Full structural round-trip through the filesystem.
+      expect(recovered).toEqual(fields);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('omits both keys entirely on a non-rollup record (issue sidecar byte-identity)', () => {
+    const yaml = serializeProvenance(summaryFields());
+    expect(yaml).not.toMatch(/^covered_issues:/m);
+    expect(yaml).not.toMatch(/^missing_issues:/m);
+    const parsed = parseProvenance(yaml);
+    expect(parsed.covered_issues).toBeUndefined();
+    expect(parsed.missing_issues).toBeUndefined();
+  });
+});
 
 describe('summary provenance sidecar (additive-optional fields)', () => {
   it('(a) round-trips a record WITH the summary fields (serialize -> parse -> serialize stable)', () => {

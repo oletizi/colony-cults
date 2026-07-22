@@ -92,11 +92,13 @@ export function renderConciseMarkdown(result: SummaryResult): string {
  * -- `covered_issues` (issue arks whose thorough summary was folded into this
  * rollup) and `missing_issues` (issue arks discovered for the source but not
  * yet summarized, so the rollup covers what exists rather than failing loud
- * on partial coverage). Deliberately recorded here, in the already-structured
- * markdown frontmatter (and the sidecar's `notes`, see `buildRollupProvenance`
- * in `src/summarize/source-rollup.ts`) rather than as a NEW `ProvenanceFields`
- * key -- `src/archive/provenance.ts` is byte-identity-critical and already
- * near its 500-line file-size ceiling.
+ * on partial coverage). Recorded here in the human-readable markdown
+ * frontmatter for convenience, but the CANONICAL machine-readable coverage
+ * contract now lives as the structured `covered_issues` / `missing_issues`
+ * fields on the rollup provenance SIDECAR (AUDIT-20260722-09,
+ * contracts/summary-artifacts.md "Rollup sidecars additionally carry ...") --
+ * see where `summarizeSource` (`src/summarize/source-rollup.ts`) sets them on
+ * both rollup sidecars via `ProvenanceFields`.
  */
 export function renderRollupThoroughMarkdown(
   result: SummaryResult,

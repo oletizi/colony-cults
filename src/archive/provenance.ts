@@ -1,12 +1,16 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  blockScalar,
   emitInputLayers,
   emitInputQuality,
+  emitIssueList,
   emitObjectStore,
   emitOcrQuality,
+  parseBlockScalar,
   parseInputLayersBlock,
   parseInputQualityBlock,
+  parseIssueList,
   parseObjectStoreBlock,
   parseOcrQualityBlock,
   quotedScalar,
@@ -146,6 +150,15 @@ export interface ProvenanceFields {
    * OPTIONAL key: omitted when unset (present only when the input tier is low).
    */
   input_quality?: InputQuality;
+  /**
+   * SOURCE-ROLLUP coverage (FR-009): issue arks whose thorough summary was
+   * folded into the rollup. Additive OPTIONAL, rollup-only -- omitted on every
+   * non-rollup record (byte-identical re-serialize); present (maybe `[]`) only
+   * on rollup sidecars. Same omit-when-unset rule for {@link missing_issues}.
+   */
+  covered_issues?: string[];
+  /** SOURCE-ROLLUP coverage (FR-009): issue arks discovered but not yet summarized. */
+  missing_issues?: string[];
   /** Integer byte count of the asset (T008), emitted as a bare integer. */
   size: number;
   /** Object-store master location (T009), or `null` when not yet uploaded. */
@@ -191,25 +204,13 @@ const KEY_ORDER: readonly (keyof ProvenanceFields)[] = [
   'interpretation',
   'input_layers',
   'input_quality',
+  'covered_issues',
+  'missing_issues',
   'object_store',
   'ocr_quality',
   'notes',
   'rights_raw',
 ];
-
-/**
- * A YAML literal block scalar with an explicit indentation indicator (`|2`),
- * so a first content line that itself begins with whitespace can never be
- * misread as the block's indentation. Every content line is indented by two
- * spaces; blank lines are emitted empty.
- */
-function blockScalar(key: string, text: string): string {
-  const lines = text.split('\n');
-  const body = lines
-    .map((line) => (line.length === 0 ? '' : `  ${line}`))
-    .join('\n');
-  return `${key}: |2\n${body}`;
-}
 
 /** Emit one `key: value` line (or block), choosing scalar vs block by shape. */
 function emitField(key: keyof ProvenanceFields, value: string | null): string {
@@ -248,6 +249,9 @@ function emitEntry(
       return emitInputLayers(fields.input_layers);
     case 'input_quality':
       return emitInputQuality(fields.input_quality);
+    case 'covered_issues':
+    case 'missing_issues':
+      return emitIssueList(key, fields[key]);
     case 'engine':
     case 'model':
     case 'translation':
@@ -298,6 +302,10 @@ interface ParsedRaw {
   inputLayers?: InputLayer[];
   /** The parsed `input_quality` block, or `undefined` when the key is absent. */
   inputQuality?: InputQuality;
+  /** The parsed `covered_issues` list, or `undefined` when the key is absent. */
+  coveredIssues?: string[];
+  /** The parsed `missing_issues` list, or `undefined` when the key is absent. */
+  missingIssues?: string[];
 }
 
 /** Read one required field out of the raw parsed map, failing loud if absent. */
@@ -338,6 +346,8 @@ function parseRawFields(text: string): ParsedRaw {
   let ocrQuality: OcrQuality | undefined;
   let inputLayers: InputLayer[] | undefined;
   let inputQuality: InputQuality | undefined;
+  let coveredIssues: string[] | undefined;
+  let missingIssues: string[] | undefined;
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
@@ -392,32 +402,21 @@ function parseRawFields(text: string): ParsedRaw {
       const block = parseInputQualityBlock(lines, i + 1);
       inputQuality = block.quality;
       i = block.next;
+    } else if (key === 'covered_issues' || key === 'missing_issues') {
+      const block = parseIssueList(lines, i, rest);
+      if (key === 'covered_issues') {
+        coveredIssues = block.items;
+      } else {
+        missingIssues = block.items;
+      }
+      i = block.next;
     } else if (rest === 'null') {
       raw.set(key, null);
       i += 1;
     } else if (rest === '|2') {
-      const blockLines: string[] = [];
-      i += 1;
-      while (i < lines.length) {
-        const blockLine = lines[i];
-        if (blockLine.length === 0) {
-          blockLines.push('');
-          i += 1;
-          continue;
-        }
-        if (blockLine.startsWith('  ')) {
-          blockLines.push(blockLine.slice(2));
-          i += 1;
-          continue;
-        }
-        break;
-      }
-      // The trailing newline of the file yields one spurious empty element
-      // at the very end of the block when it runs to EOF; drop it.
-      if (blockLines.length > 0 && blockLines[blockLines.length - 1] === '') {
-        blockLines.pop();
-      }
-      raw.set(key, blockLines.join('\n'));
+      const block = parseBlockScalar(lines, i + 1);
+      raw.set(key, block.text);
+      i = block.next;
     } else if (rest.startsWith('"') && rest.endsWith('"') && rest.length >= 2) {
       raw.set(key, unquoteScalar(rest.slice(1, -1)));
       i += 1;
@@ -433,6 +432,8 @@ function parseRawFields(text: string): ParsedRaw {
     ocrQuality,
     inputLayers,
     inputQuality,
+    coveredIssues,
+    missingIssues,
   };
 }
 
@@ -450,6 +451,8 @@ export function parseProvenance(text: string): ProvenanceFields {
     ocrQuality,
     inputLayers,
     inputQuality,
+    coveredIssues,
+    missingIssues,
   } = parseRawFields(text);
   if (!objectStoreSeen) {
     throw new Error('parseProvenance: missing required field "object_store"');
@@ -479,6 +482,8 @@ export function parseProvenance(text: string): ProvenanceFields {
     interpretation: scalars.get('interpretation') ?? undefined,
     input_layers: inputLayers,
     input_quality: inputQuality,
+    covered_issues: coveredIssues,
+    missing_issues: missingIssues,
     object_store: objectStore,
     ocr_quality: ocrQuality,
     notes: scalars.get('notes') ?? null,

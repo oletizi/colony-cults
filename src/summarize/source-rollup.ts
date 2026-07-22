@@ -227,10 +227,11 @@ async function isUpToDate(sourceDir: string, coveredLayers: InputLayer[]): Promi
  *     new page scan.
  *  7. Write BOTH artifacts via `storeAsset` ONLY (Constitution XV weld) --
  *     never a direct `fs.writeFile` of summary markdown. `covered_issues` /
- *     `missing_issues` are recorded in the thorough markdown's frontmatter
- *     (`renderRollupThoroughMarkdown`) and summarized in the sidecar `notes`
- *     -- deliberately NOT a new `ProvenanceFields` key (see
- *     `renderRollupThoroughMarkdown`'s doc comment).
+ *     `missing_issues` are recorded as structured, machine-readable fields on
+ *     BOTH rollup provenance sidecars (the canonical coverage contract,
+ *     AUDIT-20260722-09) AND, for human convenience, in the thorough markdown's
+ *     frontmatter (`renderRollupThoroughMarkdown`); the prose sidecar `notes`
+ *     is a redundant human summary, no longer the machine coverage channel.
  */
 export async function summarizeSource(
   sourceId: string,
@@ -301,12 +302,23 @@ export async function summarizeSource(
     `Source rollup covers ${covered.length}/${covered.length + missing.length} issues. ` +
     `Missing: ${missing.length > 0 ? missing.join(', ') : 'none'}.`;
 
+  // covered_issues / missing_issues are the CANONICAL machine-readable coverage
+  // contract on the rollup sidecars (AUDIT-20260722-09, contracts/
+  // summary-artifacts.md:57, cli-summarize.md:34-37): structured list fields
+  // downstream audit/browser/indexing code reads via `readProvenance`, not the
+  // unreliable prose `notes` string. Rollup-only -- issue-level sidecars
+  // (built by the same `buildSummaryProvenance` in `src/summarize/issue.ts`)
+  // never set them, so they stay omitted and re-serialize byte-identically.
   const thoroughProvenance = {
     ...buildSummaryProvenance(base, 'thorough', ctx.runner.name, ctx.model, retrieved, coveredLayers),
+    covered_issues: coveredArks,
+    missing_issues: missing,
     notes: coverageNote,
   };
   const conciseProvenance = {
     ...buildSummaryProvenance(base, 'concise', ctx.runner.name, ctx.model, retrieved, coveredLayers),
+    covered_issues: coveredArks,
+    missing_issues: missing,
     notes: coverageNote,
   };
 

@@ -13,6 +13,52 @@ const OBJECT_STORE_KEYS: readonly (keyof ObjectStoreLocation)[] = [
   'endpoint',
 ];
 
+/**
+ * A YAML literal block scalar with an explicit indentation indicator (`|2`),
+ * so a first content line that itself begins with whitespace can never be
+ * misread as the block's indentation. Every content line is indented by two
+ * spaces; blank lines are emitted empty.
+ */
+export function blockScalar(key: string, text: string): string {
+  const lines = text.split('\n');
+  const body = lines
+    .map((line) => (line.length === 0 ? '' : `  ${line}`))
+    .join('\n');
+  return `${key}: |2\n${body}`;
+}
+
+/**
+ * Parse the two-space-indented body of a `key: |2` literal block scalar,
+ * starting at `start` (the first body line). Returns the reconstructed text and
+ * the index of the first line after the block. The file's trailing newline
+ * yields one spurious empty element when the block runs to EOF; it is dropped.
+ */
+export function parseBlockScalar(
+  lines: string[],
+  start: number,
+): { text: string; next: number } {
+  const body: string[] = [];
+  let i = start;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.length === 0) {
+      body.push('');
+      i += 1;
+      continue;
+    }
+    if (line.startsWith('  ')) {
+      body.push(line.slice(2));
+      i += 1;
+      continue;
+    }
+    break;
+  }
+  if (body.length > 0 && body[body.length - 1] === '') {
+    body.pop();
+  }
+  return { text: body.join('\n'), next: i };
+}
+
 /** A single-line, always-double-quoted YAML scalar (safe for `:`/`#`/quotes). */
 export function quotedScalar(value: string): string {
   const escaped = value
@@ -122,6 +168,59 @@ export function emitInputQuality(
     `  tier: ${quotedScalar(quality.tier)}`,
     `  note: ${quotedScalar(quality.note)}`,
   ].join('\n');
+}
+
+/**
+ * Emit an optional rollup coverage list (`covered_issues` / `missing_issues`,
+ * FR-009): omitted entirely when `undefined` (so non-rollup records
+ * re-serialize byte-identically), `key: []` when present-but-empty, else a
+ * deterministic block sequence of quoted issue-ark scalars (mirroring the
+ * frontmatter list shape in `src/summarize/artifacts.ts`).
+ */
+export function emitIssueList(
+  key: string,
+  values: string[] | undefined,
+): string | undefined {
+  if (values === undefined) {
+    return undefined;
+  }
+  if (values.length === 0) {
+    return `${key}: []`;
+  }
+  const items = values.map((value) => `  - ${quotedScalar(value)}`);
+  return [`${key}:`, ...items].join('\n');
+}
+
+/**
+ * Parse an optional rollup coverage list emitted by {@link emitIssueList}.
+ * `headerIndex` is the `key:` line index; `rest` its inline remainder. `[]` is
+ * the empty list; an empty remainder introduces a block sequence of quoted
+ * scalars. Returns the items and the index of the first line after the field.
+ */
+export function parseIssueList(
+  lines: string[],
+  headerIndex: number,
+  rest: string,
+): { items: string[]; next: number } {
+  if (rest === '[]') {
+    return { items: [], next: headerIndex + 1 };
+  }
+  if (rest !== '') {
+    throw new Error(
+      `parseProvenance: malformed issue-list line: "${lines[headerIndex]}"`,
+    );
+  }
+  const items: string[] = [];
+  let i = headerIndex + 1;
+  while (i < lines.length) {
+    const item = lines[i].match(/^ {2}- (.*)$/);
+    if (!item) {
+      break;
+    }
+    items.push(readSubScalar(item[1]));
+    i += 1;
+  }
+  return { items, next: i };
 }
 
 /** Read one required sub-key out of an object_store block, failing loud. */
