@@ -1,0 +1,38 @@
+{"id":"T001","tierLabel":"fast","model":"haiku","commitRange":"65f51f8","reviewClean":true,"note":"summarize module barrel"}
+{"id":"T002","tierLabel":"fast","model":"haiku","commitRange":"65f51f8","reviewClean":true,"note":"Command union + COMMANDS + required positional"}
+{"id":"T003","tierLabel":"fast","model":"haiku","commitRange":"65f51f8","reviewClean":true,"note":"help text + fail-loud handler stubs"}
+{"id":"T004","tierLabel":"balanced","model":"sonnet","commitRange":"2d7ecd6","reviewClean":true,"note":"SummarizationRunner interfaces"}
+{"id":"T005","tierLabel":"powerful","model":"opus","commitRange":"fe1d3fa","reviewClean":true,"note":"provenance summary fields; byte-identical verified; 746 lines -> refactor queued"}
+{"id":"T006","tierLabel":"balanced","model":"sonnet","commitRange":"fe1d3fa","reviewClean":true,"note":"RED-first provenance test"}
+{"id":"T005a","tierLabel":"powerful","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"extract provenance-blocks.ts; provenance.ts 493 lines; VII compliant"}
+{"id":"T007","tierLabel":"fast","model":"haiku","commitRange":"T007","reviewClean":true,"note":"summary config default sonnet-5"}
+{"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"T008","reviewClean":true,"note":"two-depth JSON-envelope prompt"}
+{"id":"T009","tierLabel":"powerful","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"claude summarizer adapter + envelope parser"}
+{"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"HEAD","reviewClean":true,"note":"RED adapter test (25)"}
+{"id":"T011","tierLabel":"balanced","model":"sonnet","commitRange":"HEAD","reviewClean":true,"note":"summarizer factory + barrel; Phase 2 done"}
+{"id":"T012","tierLabel":"fast","model":"haiku","commitRange":"select-input","reviewClean":true,"note":"RED select-input test"}
+{"id":"T016","tierLabel":"balanced","model":"sonnet","commitRange":"select-input","reviewClean":true,"note":"best-available-text selection"}
+{"id":"T013","tierLabel":"balanced","model":"sonnet","commitRange":"artifacts","reviewClean":true,"note":"RED artifacts test"}
+{"id":"T017","tierLabel":"balanced","model":"sonnet","commitRange":"artifacts","reviewClean":true,"note":"summary artifacts + provenance builder"}
+{"id":"T014","tierLabel":"balanced","model":"sonnet","commitRange":"US1","reviewClean":true,"note":"RED integration test (artifacts+sidecars+manifest)"}
+{"id":"T015","tierLabel":"fast","model":"sonnet","commitRange":"US1","reviewClean":true,"note":"RED fail-loud integration test"}
+{"id":"T018","tierLabel":"balanced","model":"sonnet","commitRange":"US1","reviewClean":true,"note":"summarizeIssue storeAsset weld"}
+{"id":"T019","tierLabel":"balanced","model":"sonnet","commitRange":"US1","reviewClean":true,"note":"bib summarize CLI verb"}
+{"id":"T020","tierLabel":"fast","model":"sonnet","commitRange":"US1","reviewClean":true,"note":"XV grep-check clean; US1 MVP validated"}
+{"id":"T021","tierLabel":"fast","model":"haiku","commitRange":"US2","reviewClean":true,"note":"RED loader honest-absence test"}
+{"id":"T022","tierLabel":"balanced","model":"sonnet","commitRange":"US2","reviewClean":true,"note":"loadIssueSummary/loadSourceSummary"}
+{"id":"T023","tierLabel":"balanced","model":"sonnet","commitRange":"US2","reviewClean":true,"note":"view-model + corpus wiring"}
+{"id":"T025","tierLabel":"balanced","model":"opus","commitRange":"US3","reviewClean":true,"note":"RED reference test (dispatched at opus w/ slice)"}
+{"id":"T026","tierLabel":"balanced","model":"opus","commitRange":"US3","reviewClean":true,"note":"summaryRef field + serialize/load"}
+{"id":"T027","tierLabel":"powerful","model":"opus","commitRange":"US3","reviewClean":true,"note":"summary-reference read/write/validate"}
+{"id":"T028","tierLabel":"balanced","model":"sonnet","commitRange":"US4","reviewClean":true,"note":"RED rollup test"}
+{"id":"T029","tierLabel":"balanced","model":"sonnet","commitRange":"US4","reviewClean":true,"note":"summarizeSource cover-what-exists"}
+{"id":"T030","tierLabel":"balanced","model":"sonnet","commitRange":"US4","reviewClean":true,"note":"runSummarizeSource + summaryRef weld"}
+{"id":"T031","tierLabel":"fast","model":"sonnet","commitRange":"US5","reviewClean":true,"note":"RED idempotency-key test"}
+{"id":"T032","tierLabel":"balanced","model":"sonnet","commitRange":"US5","reviewClean":true,"note":"RED idempotent integration; found storeAsset dedup bug"}
+{"id":"T033","tierLabel":"balanced","model":"sonnet","commitRange":"US5","reviewClean":true,"note":"idempotency.ts input-layer key"}
+{"id":"T034","tierLabel":"balanced","model":"sonnet","commitRange":"US5","reviewClean":true,"note":"issue.ts skip/regen + force fix"}
+{"id":"T024","tierLabel":"powerful","model":"opus","commitRange":"HEAD","reviewClean":true,"note":"SummaryAbstract UI via /frontend-design; astro build + screenshots verified"}
+{"id":"T035","tierLabel":"fast","model":"haiku","commitRange":"polish","reviewClean":true,"note":"quickstart scenarios validated via suite"}
+{"id":"T036","tierLabel":"fast","model":"haiku","commitRange":"polish","reviewClean":true,"note":"docs/asset-summaries.md + help"}
+{"id":"T037","tierLabel":"balanced","model":"sonnet","commitRange":"polish","reviewClean":true,"note":"type/size sweep clean; full suite green modulo pre-existing"}
