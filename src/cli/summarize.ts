@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
-import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
+import { resolveArchiveRoot, resolveFetchedDir, sourceLayout } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
 import { discoverIssueArks, CONSECUTIVE_FAILURE_ABORT } from '@/translate/source';
 import { loadSummaryConfig, resolveSummarizerName, resolveSummaryModel } from '@/summarize/config';
@@ -108,7 +108,23 @@ export async function runSummarize(
     path.join(process.cwd(), 'bibliography', 'sources'),
   );
 
-  const arks = issueArk !== undefined ? [issueArk] : discoverIssueArks(sourceId, d.archiveRoot);
+  // AUDIT-live-01: a MONOGRAPH source (`sourceLayout(sourceId).kind ===
+  // 'monograph'`) is a single flat document directory, not a set of dated
+  // issue subdirectories -- `discoverIssueArks` enumerates SUBDIRECTORIES
+  // (the periodical convention) and always finds none for a monograph, which
+  // silently no-ops the whole-source (no-`issueArk`) run (zero artifacts,
+  // exit 0). Monographs are in spec 017 v1 scope (FR-016) and a silent no-op
+  // violates fail-loud (Constitution V), so treat a monograph as a SINGLE
+  // synthetic "issue": `resolveFetchedDir` below ignores the ark entirely for
+  // a monograph (it always resolves to the one `monographDir`), so any
+  // non-empty placeholder works -- `sourceId` is used for a legible log line.
+  // The periodical path (`discoverIssueArks`) is untouched.
+  const arks =
+    issueArk !== undefined
+      ? [issueArk]
+      : sourceLayout(sourceId).kind === 'monograph'
+        ? [sourceId]
+        : discoverIssueArks(sourceId, d.archiveRoot);
 
   // AUDIT-20260722-04: preflight is NOT fired eagerly here -- it is passed
   // through into `SummarizeIssueCtx.preflight` below and fires lazily, at the

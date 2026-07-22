@@ -1,7 +1,12 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { assertInsideArchive, resolveFetchedDir, sourceRootDir } from '@/archive/location';
+import {
+  assertInsideArchive,
+  resolveFetchedDir,
+  sourceLayout,
+  sourceRootDir,
+} from '@/archive/location';
 import { sha256OfBytes } from '@/archive/checksum';
 import { companionYamlPath, storeAsset } from '@/archive/store';
 import { readProvenance, type InputLayer } from '@/archive/provenance';
@@ -101,7 +106,19 @@ async function gatherCoverage(
   sourceId: string,
   archiveRoot: string,
 ): Promise<{ covered: CoveredIssue[]; missing: string[] }> {
-  const arks = discoverIssueArks(sourceId, archiveRoot);
+  // AUDIT-live-01: the analogous monograph gap to `runSummarize`'s
+  // (`src/cli/summarize.ts`) -- `discoverIssueArks` enumerates dated issue
+  // SUBDIRECTORIES (the periodical convention) and always finds none for a
+  // monograph's flat document directory, so an unpatched rollup would ALWAYS
+  // report zero covered issues and throw "nothing to roll up" below, even
+  // after `bib summarize <monographId>` has already generated that single
+  // document's thorough summary. Treat a monograph as one synthetic "issue"
+  // (`resolveFetchedDir` ignores the ark for a monograph), mirroring
+  // `runSummarize`'s fix exactly. The periodical path is untouched.
+  const arks =
+    sourceLayout(sourceId).kind === 'monograph'
+      ? [sourceId]
+      : discoverIssueArks(sourceId, archiveRoot);
   const covered: CoveredIssue[] = [];
   const missing: string[] = [];
 
