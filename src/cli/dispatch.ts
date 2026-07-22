@@ -8,6 +8,7 @@ import { runCensus } from '@/cli/census';
 import { runFetchIssue, runFetchSource } from '@/cli/fetch';
 import { runOcr } from '@/cli/ocr';
 import { runRestoreImages } from '@/cli/restore-images';
+import { runSummarize } from '@/cli/summarize';
 import { describeError } from '@/bibliography/load-primitives';
 
 /** A command handler: given the parsed invocation, performs the command. */
@@ -18,22 +19,20 @@ type Handler = (args: ParsedArgs) => Promise<void>;
 // (src/translate-index.ts). This bin does not wire them and reports a
 // helpful pointer instead.
 //
-// `summarize` / `summarize-source` have minimal stubs that throw a descriptive
-// "not yet implemented" error; handlers are wired in Phase 3 (spec 017).
+// `summarize-source` (the per-source rollup, spec 017 US4) still has a
+// minimal stub that throws a descriptive "not yet implemented" error; it is
+// wired in a later phase. `summarize` (the per-issue generation flow, US1)
+// is wired here (T019).
 const HANDLERS: Partial<Record<Command, Handler>> = {
   census: (args) => runCensus(args),
   'fetch-issue': (args) => runFetchIssue(args),
   'fetch-source': (args) => runFetchSource(args),
   ocr: (args) => runOcr(args),
   'restore-images': (args) => runRestoreImages(args),
-  summarize: () => {
-    throw new Error(
-      'summarize: not yet implemented (spec 017 Phase 3 — see specs/017-asset-summaries/)',
-    );
-  },
+  summarize: (args) => runSummarize(args),
   'summarize-source': () => {
     throw new Error(
-      'summarize-source: not yet implemented (spec 017 Phase 3 — see specs/017-asset-summaries/)',
+      'summarize-source: not yet implemented (spec 017 Phase 5 — see specs/017-asset-summaries/)',
     );
   },
 };
