@@ -1072,3 +1072,4 @@ workflow(graduate): impl:feature/acquire-metadata-completion merging -> validati
 workflow(graduate): impl:feature/source-query-client merging -> validating
 workflow(graduate): impl:feature/papers-past-acquisition merging -> validating
 workflow(graduate): impl:feature/source-group-pdf merging -> validating
+workflow(graduate): impl:feature/asset-summaries merging -> validating

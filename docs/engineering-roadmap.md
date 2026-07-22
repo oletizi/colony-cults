@@ -212,7 +212,7 @@ Render English-language sources as facsimile-edition PDFs. English documents (PB
 Render source-group members (Papers Past NZ press articles PB-P060/PB-P061-P092) as facsimile-edition PDFs: per-member (stacked-segment verso | English OCR recto) and one combined date-ordered group edition. Implemented -- member-layout registration wired into buildSource/buildAll, a materializer sources the English recto from the detached ocr-text asset, members resolve flat (monograph-kind), and the group edition orders chronologically by article date.
 
 ## impl:feature/asset-summaries
-- status: in-flight
+- status: shipped
 - analyze-clean: yes
 - spec: specs/017-asset-summaries
 - design-approved: yes
