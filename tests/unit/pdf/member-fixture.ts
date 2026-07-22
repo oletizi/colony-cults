@@ -4,12 +4,21 @@ import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 
 import type { Source } from '@/model/source';
-import type { RepositoryRecord } from '@/model/repository-record';
+import type { RepositoryRecord, CopyIdentifier } from '@/model/repository-record';
 import type { AcquiredAsset } from '@/model/acquired-asset';
 import type { ObjectStore } from '@/archive/object-store';
 import type { ProvenanceFields } from '@/archive/provenance';
 import { serializeProvenance } from '@/archive/provenance';
 import { sha256OfBytes } from '@/archive/checksum';
+
+/** A FIXED acquisition timestamp (not wall-clock, not derived from `articleDate` -- that conflation masked the T011b bug) for every fixture folio's `retrieved` field. */
+const FIXTURE_RETRIEVED_AT = '2026-01-01T00:00:00.000Z';
+
+/** A Papers-Past-style copy identifier encoding `articleDate` as `YYYYMMDD`, the shape `resolveMemberArticleDate` (`@/pdf/render/member-edition`) parses (mirrors `bibliography/sources/PB-P061.yml`'s real `HNS18840103.2.19.3`). */
+function papersPastIdentifierFor(articleDate: string): CopyIdentifier {
+  const yyyymmdd = articleDate.replaceAll('-', '');
+  return { type: 'papers-past', value: `HNS${yyyymmdd}.2.19.3` };
+}
 
 /**
  * Options for building a source-group member fixture.
@@ -239,14 +248,9 @@ export async function writeMemberFixture(
         catalog_url: catalogUrl,
         original_url: `${catalogUrl}/f${folioNum}`,
         rights_status: 'public-domain',
-        // Derived from `opts.articleDate` (NOT wall-clock "now"): a group
-        // fixture's members must resolve to their INTENDED, distinct dates
-        // (`resolveMemberDate` reads this `retrieved` field's YYYY-MM-DD
-        // prefix as the member's article date -- `@/pdf/render/member-edition`),
-        // so `buildGroupEdition`'s chronological ordering has real, per-member
-        // dates to sort by rather than every member collapsing onto the
-        // current test-run day.
-        retrieved: new Date(`${opts.articleDate}T00:00:00.000Z`).toISOString(),
+        // Fixed acquisition timestamp -- never the article date; see
+        // `FIXTURE_RETRIEVED_AT` + `resolveMemberArticleDate`.
+        retrieved: FIXTURE_RETRIEVED_AT,
         local_path: localPath,
         sha256: imageSha256,
         format: 'image/gif',
@@ -313,12 +317,13 @@ export async function writeMemberFixture(
       ],
     };
 
-    // Build the repository record with assets.
+    // `identifiers` carries the Papers-Past-style identifier `resolveMemberArticleDate` reads for the member's article date.
     const repositoryRecord: RepositoryRecord = {
       sourceId: opts.sourceId,
       sourceArchive,
       status: 'archived',
       catalogUrl,
+      identifiers: [papersPastIdentifierFor(opts.articleDate)],
       assets,
     };
 

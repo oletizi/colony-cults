@@ -126,23 +126,65 @@ function resolveMemberRights(
 }
 
 /**
- * The title-page `date`: the `YYYY-MM-DD` prefix of the lead segment's
- * provenance `retrieved` timestamp -- a member's flat archive directory
- * carries no dated issue subdirectory to derive a date from otherwise
- * (mirrors `@/pdf/load/archive-edition`'s `resolveDate` fallback).
+ * The title-page `date` -- and, transitively (via each member's assembled
+ * `titlePage.date`), the group edition's chronological ordering key
+ * (FR-009/SC-002, `@/pdf/render/group-edition`'s `orderGroupMembers`) --
+ * derived from the member's Papers Past identifier (e.g.
+ * `HNS18840103.2.19.3` -> `1884-01-03`), NEVER from the folio provenance
+ * `retrieved` timestamp.
+ *
+ * `retrieved` records WHEN this repository asset was mirrored into the
+ * archive -- an acquisition-pipeline fact, e.g. `2026-07-18T23:53:24.461Z`
+ * for a real 1884 newspaper clipping (see `bibliography/sources/PB-P061.yml`)
+ * -- not when the underlying article was published. Using it as the
+ * article's date would silently collapse every source-group member onto its
+ * acquisition day, breaking the group's chronological ordering and
+ * mislabeling every facsimile title page with the wrong date. There is
+ * currently no clean first-class publication-`date` field on
+ * `Source`/`RepositoryRecord` to read instead (backlogged: add one at
+ * ingest time from each repository's own normalized date, once every
+ * adapter surfaces it); until then, the Papers Past identifier's embedded
+ * `YYYYMMDD` run is the only reliable publication-date signal a member
+ * carries.
+ *
+ * @throws Error if the member carries no `papers-past` identifier across its
+ *   `repositoryRecords`, or if that identifier's value carries no valid
+ *   8-digit `YYYYMMDD` run -- NO fallback to `retrieved`, NO silent default
+ *   (Principle V).
  */
-function resolveMemberDate(leadProvenance: ProvenanceFields, context: string): string {
-  const retrieved = leadProvenance.retrieved.trim();
-  const match = /^(\d{4}-\d{2}-\d{2})/.exec(retrieved);
-  if (match !== null) {
-    return match[1];
+function resolveMemberArticleDate(member: MemberWithRecords, context: string): string {
+  const identifiers = member.repositoryRecords.flatMap((record) => record.identifiers ?? []);
+  const papersPast = identifiers.find((identifier) => identifier.type === 'papers-past');
+  if (papersPast === undefined) {
+    throw new Error(
+      `${context}: no "papers-past" identifier found across source "${member.sourceId}"'s ` +
+        'repositoryRecords -- resolving the member\'s article date requires one (see ' +
+        'resolveMemberArticleDate).',
+    );
   }
-  if (retrieved.length > 0) {
-    return retrieved;
+
+  const match = /\d{8}/.exec(papersPast.value);
+  if (match === null) {
+    throw new Error(
+      `${context}: papers-past identifier ${JSON.stringify(papersPast.value)} for source ` +
+        `"${member.sourceId}" carries no 8-digit YYYYMMDD date run.`,
+    );
   }
-  throw new Error(
-    `${context}: no date available -- the lead segment's provenance carries no "retrieved" timestamp.`,
-  );
+
+  const digits = match[0];
+  const year = Number(digits.slice(0, 4));
+  const month = Number(digits.slice(4, 6));
+  const day = Number(digits.slice(6, 8));
+
+  if (year < 1000 || year > 2999 || month < 1 || month > 12 || day < 1 || day > 31) {
+    throw new Error(
+      `${context}: papers-past identifier ${JSON.stringify(papersPast.value)} for source ` +
+        `"${member.sourceId}" encodes an invalid date "${digits}" (expected YYYYMMDD).`,
+    );
+  }
+
+  const pad2 = (value: number): string => String(value).padStart(2, '0');
+  return `${digits.slice(0, 4)}-${pad2(month)}-${pad2(day)}`;
 }
 
 /** The member's catalog URL: the first repositoryRecord that carries one, else `null`. */
@@ -208,7 +250,7 @@ export async function assembleMemberEdition(
   const titlePage: TitlePageMeta = {
     title: resolveMemberTitle(member, context),
     creator: resolveCreator(member),
-    date: resolveMemberDate(leadProvenance, context),
+    date: resolveMemberArticleDate(member, context),
     rights: resolveMemberRights(member, leadProvenance, context),
     ark: resolveArk(member),
     catalogUrl: resolveCatalogUrl(member),
