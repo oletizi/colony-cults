@@ -1071,3 +1071,4 @@ workflow(graduate): impl:feature/english-source-pdf merging -> validating
 workflow(graduate): impl:feature/acquire-metadata-completion merging -> validating
 workflow(graduate): impl:feature/source-query-client merging -> validating
 workflow(graduate): impl:feature/papers-past-acquisition merging -> validating
+workflow(graduate): impl:feature/source-group-pdf merging -> validating
