@@ -11,6 +11,7 @@ import { sourceRootDir } from '@/archive/location';
 import { parse } from '@/cli/parse';
 import { runSummarizeSource, type SummarizeSourceCliDeps } from '@/cli/summarize';
 import { summarizeIssue, type SummarizeIssueCtx } from '@/summarize/issue';
+import { summarizeSource, type SummarizeSourceCtx } from '@/summarize/source-rollup';
 import {
   sourceConciseSummaryPath,
   sourceThoroughSummaryPath,
@@ -229,5 +230,147 @@ describe('runSummarizeSource (T028, US4 per-source rollup end-to-end)', () => {
     expect(loaded.source.summaryRef).toBe(thoroughRel);
     const resolved = validateSummaryRef(loaded.source, built.archiveRoot);
     expect(resolved).toBe(thoroughPath);
+  });
+});
+
+/**
+ * Direct `summarizeSource` coverage for the govern findings AUDIT-20260722-08
+ * (both-artifact idempotency), AUDIT-20260722-02 (resolved `thoroughPath` on
+ * a skip), and AUDIT-20260722-04 (lazy `ctx.preflight`). Drives
+ * `summarizeSource` directly (not through the CLI weld) so each scenario can
+ * tamper with exactly one artifact/sidecar between calls -- channel
+ * enumeration over the two-artifact, non-atomic write: thorough-only,
+ * concise-only, and both-present-but-stale.
+ */
+describe('summarizeSource (AUDIT-20260722-08/02/04: both-artifact idempotency + lazy preflight)', () => {
+  let built: BuiltSource | undefined;
+
+  afterEach(() => {
+    built?.cleanup();
+    built = undefined;
+  });
+
+  function ctxFor(built0: BuiltSource, runner: SummarizationRunner): SummarizeSourceCtx {
+    return {
+      runner,
+      model: 'claude-sonnet-5',
+      archiveRoot: built0.archiveRoot,
+      clock: () => new Date(FIXED_DATE),
+      log: () => {},
+    };
+  }
+
+  it('regenerates when the thorough artifact is present but the concise artifact is missing (interrupted write)', async () => {
+    built = await buildPartiallySummarizedSource();
+    const first = fakeRunner(ROLLUP_RESULT);
+    const firstResult = await summarizeSource('PB-P001', ctxFor(built, first.runner));
+    expect(firstResult.status).toBe('generated');
+
+    // Simulate an interrupt landing BETWEEN the two non-atomic `storeAsset`
+    // calls: the thorough artifact + sidecar survive, the concise half never
+    // landed -- the state a keyed-on-thorough-only `isUpToDate` would
+    // silently skip over.
+    rmSync(firstResult.concisePath);
+    rmSync(companionYamlPath(firstResult.concisePath));
+    expect(existsSync(firstResult.thoroughPath)).toBe(true);
+    expect(existsSync(firstResult.concisePath)).toBe(false);
+
+    const second = fakeRunner(ROLLUP_RESULT);
+    const secondResult = await summarizeSource('PB-P001', ctxFor(built, second.runner));
+
+    expect(secondResult.status).toBe('generated');
+    expect(second.calls).toHaveLength(1);
+    expect(existsSync(secondResult.concisePath)).toBe(true);
+  });
+
+  it('regenerates when the concise artifact is present but the thorough artifact is missing (reverse interrupt)', async () => {
+    built = await buildPartiallySummarizedSource();
+    const first = fakeRunner(ROLLUP_RESULT);
+    const firstResult = await summarizeSource('PB-P001', ctxFor(built, first.runner));
+    expect(firstResult.status).toBe('generated');
+
+    rmSync(firstResult.thoroughPath);
+    rmSync(companionYamlPath(firstResult.thoroughPath));
+    expect(existsSync(firstResult.thoroughPath)).toBe(false);
+    expect(existsSync(firstResult.concisePath)).toBe(true);
+
+    const second = fakeRunner(ROLLUP_RESULT);
+    const secondResult = await summarizeSource('PB-P001', ctxFor(built, second.runner));
+
+    expect(secondResult.status).toBe('generated');
+    expect(second.calls).toHaveLength(1);
+    expect(existsSync(secondResult.thoroughPath)).toBe(true);
+  });
+
+  it('regenerates when both artifacts are present but the concise sidecar records a stale covered-issue set', async () => {
+    built = await buildPartiallySummarizedSource();
+    const first = fakeRunner(ROLLUP_RESULT);
+    const firstResult = await summarizeSource('PB-P001', ctxFor(built, first.runner));
+    expect(firstResult.status).toBe('generated');
+
+    const conciseYamlPath = companionYamlPath(firstResult.concisePath);
+    const staleProvenance = await readProvenance(conciseYamlPath);
+    await writeProvenance(conciseYamlPath, {
+      ...staleProvenance,
+      input_layers: [{ path: 'stale/no-longer-covered.md', sha256: '0'.repeat(64) }],
+    });
+
+    const second = fakeRunner(ROLLUP_RESULT);
+    const secondResult = await summarizeSource('PB-P001', ctxFor(built, second.runner));
+
+    expect(secondResult.status).toBe('generated');
+    expect(second.calls).toHaveLength(1);
+  });
+
+  it('skips when both artifacts are up to date, and result.thoroughPath stays resolved on the skip', async () => {
+    built = await buildPartiallySummarizedSource();
+    const first = fakeRunner(ROLLUP_RESULT);
+    const firstResult = await summarizeSource('PB-P001', ctxFor(built, first.runner));
+    expect(firstResult.status).toBe('generated');
+
+    const second = fakeRunner(ROLLUP_RESULT);
+    const secondResult = await summarizeSource('PB-P001', ctxFor(built, second.runner));
+
+    expect(secondResult.status).toBe('skipped');
+    expect(second.calls).toHaveLength(0);
+    // AUDIT-20260722-02: the CLI weld re-asserts the bibliography summaryRef
+    // from `result.thoroughPath` even on a 'skipped' rerun -- it must stay a
+    // resolved path, never undefined, on every non-dry-run status.
+    expect(secondResult.thoroughPath).toBe(firstResult.thoroughPath);
+    expect(existsSync(secondResult.thoroughPath)).toBe(true);
+  });
+
+  it('calls ctx.preflight lazily: never on dry-run, never on a skip, exactly once right before a real generation', async () => {
+    built = await buildPartiallySummarizedSource();
+    const preflightCalls: string[] = [];
+    const preflight = async () => {
+      preflightCalls.push('called');
+    };
+
+    const dryRunResult = await summarizeSource('PB-P001', {
+      ...ctxFor(built, fakeRunner(ROLLUP_RESULT).runner),
+      dryRun: true,
+      preflight,
+    });
+    expect(dryRunResult.status).toBe('dry-run');
+    expect(preflightCalls).toHaveLength(0);
+
+    const generateRunner = fakeRunner(ROLLUP_RESULT);
+    const generated = await summarizeSource('PB-P001', {
+      ...ctxFor(built, generateRunner.runner),
+      preflight,
+    });
+    expect(generated.status).toBe('generated');
+    expect(preflightCalls).toHaveLength(1);
+
+    const skipRunner = fakeRunner(ROLLUP_RESULT);
+    const skipped = await summarizeSource('PB-P001', {
+      ...ctxFor(built, skipRunner.runner),
+      preflight,
+    });
+    expect(skipped.status).toBe('skipped');
+    // Unchanged -- a skip never touches the engine, so it must never touch
+    // the preflight either.
+    expect(preflightCalls).toHaveLength(1);
   });
 });

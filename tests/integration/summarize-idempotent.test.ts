@@ -1,15 +1,19 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readProvenance, writeProvenance, type ProvenanceFields } from '@/archive/provenance';
-import { companionYamlPath } from '@/archive/store';
+import { companionYamlPath, storeAsset } from '@/archive/store';
 import { summarizeIssue, type SummarizeIssueCtx } from '@/summarize/issue';
+import { selectSummaryInput } from '@/summarize/select-input';
+import { firstPageProvenanceYaml } from '@/translate/rights';
 import {
+  buildSummaryProvenance,
   issueConciseSummaryPath,
   issueThoroughSummaryPath,
+  renderThoroughMarkdown,
 } from '@/summarize/artifacts';
 import type { SummarizationRunner, SummaryResult } from '@/summarize/types';
 
@@ -20,8 +24,12 @@ import type { SummarizationRunner, SummaryResult } from '@/summarize/types';
  * mutating `issue.en.txt` (the translation input layer) causes the issue to
  * be regenerated on the next run and its sidecar `input_layers` shas updated;
  * `force: true` always regenerates regardless of what is already recorded.
- * Mirrors `tests/integration/translate-idempotent.test.ts` (T020) and shares
- * the tmp-archive fixture shape with `tests/integration/summarize.test.ts`
+ * Also covers AUDIT-20260722-07 (a run interrupted between the thorough and
+ * concise `storeAsset` writes must regenerate on the next run, in EITHER
+ * half-written direction) and AUDIT-20260722-04 (`ctx.preflight` fires
+ * lazily, only right before generation, never on a skip). Mirrors
+ * `tests/integration/translate-idempotent.test.ts` (T020) and shares the
+ * tmp-archive fixture shape with `tests/integration/summarize.test.ts`
  * (T014).
  */
 
@@ -202,5 +210,108 @@ describe('summarizeIssue idempotency (T032, US5, FR-010)', () => {
 
     expect(secondResult.status).toBe('generated');
     expect(second.calls).toHaveLength(1);
+  });
+
+  it('AUDIT-20260722-07: regenerates (does not skip) when only the thorough artifact+sidecar was written before an interrupt, and produces the concise', async () => {
+    built = await buildIssueDir();
+
+    // Simulate a run that completed the FIRST `storeAsset` call in
+    // `summarizeIssue` (the thorough artifact) and was then interrupted
+    // before the second (the concise artifact) -- write ONLY the thorough
+    // artifact+sidecar directly, exactly as `summarizeIssue` would have left
+    // things at that point.
+    const selected = await selectSummaryInput(built.issueDir);
+    const base = await readProvenance(await firstPageProvenanceYaml(built.issueDir));
+    const inputLayers = selected.layers.map((layer) => ({ path: layer.path, sha256: layer.sha256 }));
+    const thoroughProvenance = buildSummaryProvenance(
+      base,
+      'thorough',
+      'fake-summarizer',
+      'claude-sonnet-5',
+      FIXED_DATE,
+      inputLayers,
+    );
+    await storeAsset(
+      new TextEncoder().encode(renderThoroughMarkdown(CANNED_RESULT)),
+      issueThoroughSummaryPath(built.issueDir),
+      thoroughProvenance,
+      built.archiveRoot,
+      { force: true },
+    );
+
+    // Confirm the interrupt is genuinely simulated: the concise artifact does
+    // NOT exist yet.
+    expect(existsSync(issueConciseSummaryPath(built.issueDir))).toBe(false);
+
+    const runner = fakeRunner();
+    const result = await summarizeIssue(built.issueDir, buildCtx(built.archiveRoot, runner.runner));
+
+    expect(result.status).toBe('generated');
+    expect(runner.calls).toHaveLength(1);
+    expect(existsSync(issueConciseSummaryPath(built.issueDir))).toBe(true);
+
+    const conciseText = await readFile(issueConciseSummaryPath(built.issueDir), 'utf-8');
+    expect(conciseText).toContain(CANNED_RESULT.concise);
+  });
+
+  it('round-0 self-red-team edge: regenerates when only the concise artifact+sidecar exists and the thorough is missing', async () => {
+    built = await buildIssueDir();
+
+    // Mirror-image half-pair: a concise sidecar exists (however that came to
+    // be) but the thorough is missing -- must still regenerate, not skip.
+    const selected = await selectSummaryInput(built.issueDir);
+    const base = await readProvenance(await firstPageProvenanceYaml(built.issueDir));
+    const inputLayers = selected.layers.map((layer) => ({ path: layer.path, sha256: layer.sha256 }));
+    const conciseProvenance = buildSummaryProvenance(
+      base,
+      'concise',
+      'fake-summarizer',
+      'claude-sonnet-5',
+      FIXED_DATE,
+      inputLayers,
+    );
+    await storeAsset(
+      new TextEncoder().encode(`${CANNED_RESULT.concise}\n`),
+      issueConciseSummaryPath(built.issueDir),
+      conciseProvenance,
+      built.archiveRoot,
+      { force: true },
+    );
+
+    expect(existsSync(issueThoroughSummaryPath(built.issueDir))).toBe(false);
+
+    const runner = fakeRunner();
+    const result = await summarizeIssue(built.issueDir, buildCtx(built.archiveRoot, runner.runner));
+
+    expect(result.status).toBe('generated');
+    expect(runner.calls).toHaveLength(1);
+    expect(existsSync(issueThoroughSummaryPath(built.issueDir))).toBe(true);
+  });
+
+  it('AUDIT-20260722-04: ctx.preflight is called lazily -- never on a skip, only right before generation', async () => {
+    built = await buildIssueDir();
+
+    let preflightCalls = 0;
+    const preflight = async (): Promise<void> => {
+      preflightCalls += 1;
+    };
+
+    const first = fakeRunner();
+    const firstResult = await summarizeIssue(
+      built.issueDir,
+      buildCtx(built.archiveRoot, first.runner, { preflight }),
+    );
+    expect(firstResult.status).toBe('generated');
+    expect(preflightCalls).toBe(1);
+
+    // A second run over unchanged input layers skips -- preflight must NOT
+    // fire again.
+    const second = fakeRunner();
+    const secondResult = await summarizeIssue(
+      built.issueDir,
+      buildCtx(built.archiveRoot, second.runner, { preflight }),
+    );
+    expect(secondResult.status).toBe('skipped');
+    expect(preflightCalls).toBe(1);
   });
 });

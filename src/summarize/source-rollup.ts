@@ -41,6 +41,16 @@ export interface SummarizeSourceCtx {
    * never writes anything.
    */
   dryRun?: boolean;
+  /**
+   * Summarizer engine preflight (e.g. `assertClaudeAvailable`), injected by
+   * the CLI weld (`src/cli/summarize.ts`). Called LAZILY -- only right before
+   * the `runner.summarize` call below, i.e. only on a real (non-dry-run,
+   * non-skip) generation. A dry-run or an idempotent skip never touches the
+   * engine, so neither should ever pay for/trip the preflight check
+   * (AUDIT-20260722-04). Optional so existing callers/tests that never
+   * exercise the generation path need not supply one.
+   */
+  preflight?: () => Promise<void>;
 }
 
 /** Terminal classification of one {@link summarizeSource} call. */
@@ -119,14 +129,16 @@ function combineIssueSummaries(covered: readonly CoveredIssue[]): string {
 }
 
 /**
- * True when the existing rollup thorough artifact on disk was generated from
- * the SAME set of covered-issue thorough summaries (by path + content sha256)
- * {@link coveredLayers} identifies -- i.e. re-running would be redundant.
- * Mirrors `isUpToDate` in `src/summarize/issue.ts`; never throws, only ever
- * returns `false` short of an exact match.
+ * True when an artifact's companion sidecar at `yamlPath` exists, is
+ * readable, and records `input_layers` matching `coveredLayers` EXACTLY (by
+ * path + content sha256, in order). Never throws -- an unreadable/malformed
+ * sidecar, a missing sidecar, or a layer-set mismatch are all simply "not up
+ * to date".
  */
-async function isUpToDate(sourceDir: string, coveredLayers: InputLayer[]): Promise<boolean> {
-  const yamlPath = companionYamlPath(sourceThoroughSummaryPath(sourceDir));
+async function layersMatchArtifact(
+  yamlPath: string,
+  coveredLayers: InputLayer[],
+): Promise<boolean> {
   if (!existsSync(yamlPath)) {
     return false;
   }
@@ -145,6 +157,30 @@ async function isUpToDate(sourceDir: string, coveredLayers: InputLayer[]): Promi
 }
 
 /**
+ * True when BOTH rollup artifacts on disk -- thorough AND concise -- were
+ * generated from the SAME set of covered-issue thorough summaries (by path +
+ * content sha256) {@link coveredLayers} identifies -- i.e. re-running would be
+ * redundant. Mirrors `isUpToDate` in `src/summarize/issue.ts`, extended to
+ * require BOTH sidecars (AUDIT-20260722-08): `summarizeSource` writes the
+ * thorough and concise artifacts as two separate, non-atomic `storeAsset`
+ * calls, so an interrupt between them can strand a rollup thorough artifact
+ * with no matching concise sidecar (the concise rollup is what the browser
+ * abstract consumes). Keying the skip on the thorough sidecar alone would
+ * silently skip over that half-written pair on a non-forced rerun. Never
+ * throws, only ever returns `false` short of an exact match on BOTH
+ * artifacts.
+ */
+async function isUpToDate(sourceDir: string, coveredLayers: InputLayer[]): Promise<boolean> {
+  const thoroughYamlPath = companionYamlPath(sourceThoroughSummaryPath(sourceDir));
+  const conciseYamlPath = companionYamlPath(sourceConciseSummaryPath(sourceDir));
+  const [thoroughOk, conciseOk] = await Promise.all([
+    layersMatchArtifact(thoroughYamlPath, coveredLayers),
+    layersMatchArtifact(conciseYamlPath, coveredLayers),
+  ]);
+  return thoroughOk && conciseOk;
+}
+
+/**
  * Generate a source's per-source ROLLUP two-depth summary from its existing
  * per-issue thorough summaries (T029, US4, FR-009).
  *
@@ -157,13 +193,17 @@ async function isUpToDate(sourceDir: string, coveredLayers: InputLayer[]): Promi
  *     (US4 AC-2).
  *  3. DRY-RUN: report the intended work and return -- never calls the runner,
  *     never writes.
- *  4. Idempotency: when NOT forced and the existing rollup thorough artifact's
- *     sidecar already records this exact covered-issue set (path + content
- *     sha256), skip -- no engine call, no write. A newly-covered or
- *     newly-missing issue changes this set, so a rollup re-run naturally picks
- *     up new coverage.
- *  5. One `runner.summarize` call over the combined covered-issue thorough
- *     content produces both rollup depths.
+ *  4. Idempotency: when NOT forced and BOTH existing rollup artifacts' --
+ *     thorough AND concise -- sidecars already record this exact covered-issue
+ *     set (path + content sha256), skip -- no engine call, no write. A
+ *     newly-covered or newly-missing issue changes this set, so a rollup
+ *     re-run naturally picks up new coverage. A half-written pair (e.g. an
+ *     interrupt after the thorough write below but before the concise one)
+ *     is NOT up to date and regenerates (AUDIT-20260722-08).
+ *  5. Lazy preflight (`ctx.preflight`, AUDIT-20260722-04), then one
+ *     `runner.summarize` call over the combined covered-issue thorough
+ *     content produces both rollup depths. Neither fires on a dry-run or a
+ *     skip -- both already returned above.
  *  6. Derive the base citation/rights provenance from the FIRST covered
  *     issue's already-built thorough-summary sidecar (itself derived from the
  *     issue's first-page provenance by `summarizeIssue`) -- no re-fetch, no
@@ -227,6 +267,13 @@ export async function summarizeSource(
       coveredIssues: coveredArks,
       missingIssues: missing,
     };
+  }
+
+  // Lazy preflight (AUDIT-20260722-04): fires ONLY here, right before the one
+  // engine call this function makes, so a dry-run or an idempotent skip
+  // (both already returned above) never pays for or trips it.
+  if (ctx.preflight !== undefined) {
+    await ctx.preflight();
   }
 
   const generated = await ctx.runner.summarize(combineIssueSummaries(covered), ctx.model);

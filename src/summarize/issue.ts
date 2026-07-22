@@ -43,6 +43,18 @@ export interface SummarizeIssueCtx {
    * never writes anything. Defaults to `false` (the normal, executing path).
    */
   dryRun?: boolean;
+  /**
+   * Optional summarizer engine preflight (e.g. `assertClaudeAvailable`),
+   * AUDIT-20260722-04: called LAZILY, immediately before `runner.summarize`,
+   * ONLY on the path that actually generates -- never on `dryRun` (which
+   * returns before this point) and never on an idempotent skip (which also
+   * returns before this point). This lets a rerun that will skip do so
+   * without requiring the underlying engine (e.g. the `claude` CLI) to be
+   * installed at all. The CLI caller is responsible for constructing this
+   * thunk and passing it in; `summarizeIssue` never calls it eagerly itself.
+   * Optional so existing/test callers that omit it are unaffected.
+   */
+  preflight?: () => Promise<void>;
 }
 
 /** Terminal classification of one {@link summarizeIssue} call. */
@@ -77,9 +89,15 @@ function encode(text: string): Uint8Array {
  *  3. DRY-RUN (contracts/cli-summarize.md `--dry-run`): report the intended
  *     work and return -- never calls the runner, never writes.
  *  4. Idempotency (FR-010, `@/summarize/idempotency`): when NOT forced and
- *     {@link summaryIsUpToDate} reports the existing thorough artifact's
- *     sidecar already records these exact input layers, skip -- no engine
- *     call, no write.
+ *     {@link summaryIsUpToDate} reports BOTH the thorough AND the concise
+ *     artifact's sidecars already record these exact input layers, skip --
+ *     no engine call, no write. A half-written pair (e.g. a prior run
+ *     interrupted between the two `storeAsset` calls below,
+ *     AUDIT-20260722-07) is never `'up-to-date'`, so it always regenerates.
+ *  4a. `ctx.preflight?.()` fires LAZILY here, immediately before the engine
+ *     call below (AUDIT-20260722-04) -- reached only when neither dry-run
+ *     nor skip returned above, so a rerun that will skip never requires the
+ *     engine to be installed.
  *  5. One `runner.summarize` call produces BOTH depths (FR-001, one
  *     full-text pass, two depths, so the concise can never disagree with the
  *     thorough it was distilled from).
@@ -115,6 +133,11 @@ export async function summarizeIssue(
     ctx.log(`  skip  ${issueDir} (input layers unchanged)`);
     return { issueDir, status: 'skipped', thoroughPath, concisePath };
   }
+
+  // AUDIT-20260722-04: preflight fires lazily, right at the generation
+  // boundary -- only reached when NOT dry-run and NOT skipped -- so a rerun
+  // that will skip never requires the engine to be installed.
+  await ctx.preflight?.();
 
   const generated = await ctx.runner.summarize(selected.text, ctx.model);
 

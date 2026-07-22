@@ -1,3 +1,5 @@
+import { access, readFile } from 'node:fs/promises';
+import path from 'node:path';
 import type { SummarizerName } from '@/summarize/types';
 
 /**
@@ -62,4 +64,66 @@ function validateSummarizerName(value: string): SummarizerName {
         `unknown summarizer "${value}" (expected one of: claude)`,
       );
   }
+}
+
+/** Narrow `unknown` to a plain (non-array) object without a type assertion. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Read the parsed JSON body of `summarize.config.json` into a
+ * {@link SummaryConfig}, defensively: unknown keys are ignored, `engine` is
+ * validated via {@link validateSummarizerName} when present as a string, and
+ * `model` is read only when it is a string. No type assertions are used --
+ * every field access is gated by a `typeof`/`isRecord` check. Mirrors
+ * `src/engine/config.ts`'s `readConfig`.
+ */
+function readConfig(parsed: Record<string, unknown>): SummaryConfig {
+  const cfg: SummaryConfig = {};
+
+  if (typeof parsed.model === 'string') {
+    cfg.model = parsed.model;
+  }
+
+  if (typeof parsed.engine === 'string') {
+    cfg.engine = validateSummarizerName(parsed.engine);
+  }
+
+  return cfg;
+}
+
+/**
+ * Load `summarize.config.json` from `repoRoot`. An absent file resolves to
+ * `{}` (no config = all defaults); a malformed file (invalid JSON, or a
+ * non-object root) throws rather than silently falling back, so operators
+ * discover a broken config immediately instead of getting unexplained
+ * default behavior. Mirrors `src/engine/config.ts`'s `loadEngineConfig`
+ * (AUDIT-20260722-03: the summarize CLI previously had no config layer at
+ * all, so `flag > config > default` degraded to `flag > default`).
+ *
+ * Absence is checked explicitly via `access` BEFORE the read, so only a
+ * missing file resolves to `{}` -- any error from the subsequent `readFile`
+ * or `JSON.parse` (permission denied, a directory in the file's place, a
+ * transient I/O error, malformed JSON) propagates uncaught instead of being
+ * silently swallowed as "no config".
+ */
+export async function loadSummaryConfig(repoRoot: string): Promise<SummaryConfig> {
+  const file = path.join(repoRoot, 'summarize.config.json');
+
+  try {
+    await access(file);
+  } catch {
+    return {};
+  }
+
+  const raw = await readFile(file, 'utf-8');
+  const parsed: unknown = JSON.parse(raw);
+  if (!isRecord(parsed)) {
+    throw new Error(
+      `summarize.config.json is malformed (expected a JSON object at the root): ${file}`,
+    );
+  }
+
+  return readConfig(parsed);
 }

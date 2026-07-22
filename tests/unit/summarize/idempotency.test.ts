@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { writeProvenance, type ProvenanceFields } from '@/archive/provenance';
 import { companionYamlPath } from '@/archive/store';
-import { issueThoroughSummaryPath } from '@/summarize/artifacts';
+import { issueConciseSummaryPath, issueThoroughSummaryPath } from '@/summarize/artifacts';
 import { checkSummaryFreshness, summaryIsUpToDate } from '@/summarize/idempotency';
 import type { SelectedInputLayer } from '@/summarize/select-input';
 
@@ -70,15 +70,44 @@ describe('checkSummaryFreshness / summaryIsUpToDate (T031, US5, FR-010)', () => 
     expect(await summaryIsUpToDate(issueDir, LAYERS)).toBe(false);
   });
 
-  it('reports "up-to-date" when every selected layer path+sha256 matches the recorded input_layers, in order', async () => {
+  it('reports "up-to-date" when every selected layer path+sha256 matches the recorded input_layers, in order, on BOTH the thorough and concise sidecars', async () => {
     await writeProvenance(
       companionYamlPath(issueThoroughSummaryPath(issueDir)),
       baseSummaryProvenance({ input_layers: LAYERS }),
+    );
+    await writeProvenance(
+      companionYamlPath(issueConciseSummaryPath(issueDir)),
+      baseSummaryProvenance({ type: 'summary-concise', input_layers: LAYERS }),
     );
 
     const result = await checkSummaryFreshness(issueDir, LAYERS);
     expect(result.freshness).toBe('up-to-date');
     expect(await summaryIsUpToDate(issueDir, LAYERS)).toBe(true);
+  });
+
+  it('reports "stale" (AUDIT-20260722-07) when only the thorough sidecar exists and matches -- the concise is missing (interrupted between the two storeAsset writes)', async () => {
+    await writeProvenance(
+      companionYamlPath(issueThoroughSummaryPath(issueDir)),
+      baseSummaryProvenance({ input_layers: LAYERS }),
+    );
+    // Deliberately no concise sidecar written -- simulates a run interrupted
+    // after the thorough `storeAsset` call but before the concise one.
+
+    const result = await checkSummaryFreshness(issueDir, LAYERS);
+    expect(result.freshness).toBe('stale');
+    expect(await summaryIsUpToDate(issueDir, LAYERS)).toBe(false);
+  });
+
+  it('reports "stale" (round-0 self-red-team edge) when only the concise sidecar exists and matches -- the thorough is missing', async () => {
+    await writeProvenance(
+      companionYamlPath(issueConciseSummaryPath(issueDir)),
+      baseSummaryProvenance({ type: 'summary-concise', input_layers: LAYERS }),
+    );
+    // Deliberately no thorough sidecar written -- the mirror-image half-pair.
+
+    const result = await checkSummaryFreshness(issueDir, LAYERS);
+    expect(result.freshness).toBe('stale');
+    expect(await summaryIsUpToDate(issueDir, LAYERS)).toBe(false);
   });
 
   it('reports "stale" when one layer\'s sha256 differs from the recorded value', async () => {

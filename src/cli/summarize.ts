@@ -3,7 +3,7 @@ import type { ParsedArgs } from '@/cli/parse';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
 import { discoverIssueArks, CONSECUTIVE_FAILURE_ABORT } from '@/translate/source';
-import { resolveSummarizerName, resolveSummaryModel } from '@/summarize/config';
+import { loadSummaryConfig, resolveSummarizerName, resolveSummaryModel } from '@/summarize/config';
 import { createSummarizer } from '@/summarize/factory';
 import type { SummarizationRunner } from '@/summarize/types';
 import { summarizeIssue, type SummarizeIssueCtx } from '@/summarize/issue';
@@ -41,17 +41,18 @@ export interface SummarizeCliDeps {
 
 /**
  * Build the default (real preflight + disk) `SummarizeCliDeps`, resolving the
- * engine + model from the `--engine`/`--model` flags (CLI flag beats the
- * built-in default; see `resolveSummarizerName`/`resolveSummaryModel` --
- * there is no `summarize.config.json` loader yet, so no config layer is
- * consulted here), then constructing that engine's real adapter + preflight
- * via `createSummarizer`. `runSummarize` calls this when no `deps` is
- * injected (tests inject their own).
+ * engine + model from the `--engine`/`--model` flags AND `summarize.config.json`
+ * (CLI flag beats config beats the built-in default; see
+ * `resolveSummarizerName`/`resolveSummaryModel`, AUDIT-20260722-03), then
+ * constructing that engine's real adapter + preflight via `createSummarizer`.
+ * `runSummarize` calls this when no `deps` is injected (tests inject their
+ * own).
  */
-export function buildSummarizeCliDeps(args: ParsedArgs): SummarizeCliDeps {
+export async function buildSummarizeCliDeps(args: ParsedArgs): Promise<SummarizeCliDeps> {
   const repoRoot = process.cwd();
-  const engineName = resolveSummarizerName(args.options.engine);
-  const model = resolveSummaryModel(args.options.model);
+  const config = await loadSummaryConfig(repoRoot);
+  const engineName = resolveSummarizerName(args.options.engine, config);
+  const model = resolveSummaryModel(args.options.model, config);
   const { runner, preflight } = createSummarizer(engineName);
   return {
     archiveRoot: resolveArchiveRoot(repoRoot),
@@ -93,7 +94,7 @@ export async function runSummarize(
   args: ParsedArgs,
   deps?: SummarizeCliDeps,
 ): Promise<void> {
-  const d = deps ?? buildSummarizeCliDeps(args);
+  const d = deps ?? (await buildSummarizeCliDeps(args));
 
   const sourceId = args.positional[0];
   if (sourceId === undefined) {
@@ -109,12 +110,12 @@ export async function runSummarize(
 
   const arks = issueArk !== undefined ? [issueArk] : discoverIssueArks(sourceId, d.archiveRoot);
 
-  // Preflight fires once, before any real generation -- never on a dry-run
-  // (which never calls the engine).
-  if (!dryRun) {
-    await d.preflight();
-  }
-
+  // AUDIT-20260722-04: preflight is NOT fired eagerly here -- it is passed
+  // through into `SummarizeIssueCtx.preflight` below and fires lazily, at the
+  // generation boundary inside `summarizeIssue`, ONLY when a real (non-dry-run,
+  // non-skip) generation is about to happen. This lets an idempotent rerun
+  // (or a dry-run) that will skip every issue do so without requiring the
+  // underlying engine (e.g. the `claude` CLI) to be installed at all.
   const ctx: SummarizeIssueCtx = {
     runner: d.runner,
     model: d.model,
@@ -123,6 +124,7 @@ export async function runSummarize(
     log: d.log,
     force: args.flags.force,
     dryRun,
+    preflight: d.preflight,
   };
 
   let consecutiveFailures = 0;
@@ -184,14 +186,18 @@ export interface SummarizeSourceCliDeps {
 
 /**
  * Build the default (real preflight + disk) `SummarizeSourceCliDeps`, mirroring
- * `buildSummarizeCliDeps` -- same engine/model resolution, plus `sourcesDir`
- * (needed here to load/write the bibliography SSOT record for the
- * Constitution XV `summaryRef` weld).
+ * `buildSummarizeCliDeps` -- same engine/model resolution (including
+ * `summarize.config.json`, AUDIT-20260722-03), plus `sourcesDir` (needed here
+ * to load/write the bibliography SSOT record for the Constitution XV
+ * `summaryRef` weld).
  */
-export function buildSummarizeSourceCliDeps(args: ParsedArgs): SummarizeSourceCliDeps {
+export async function buildSummarizeSourceCliDeps(
+  args: ParsedArgs,
+): Promise<SummarizeSourceCliDeps> {
   const repoRoot = process.cwd();
-  const engineName = resolveSummarizerName(args.options.engine);
-  const model = resolveSummaryModel(args.options.model);
+  const config = await loadSummaryConfig(repoRoot);
+  const engineName = resolveSummarizerName(args.options.engine, config);
+  const model = resolveSummaryModel(args.options.model, config);
   const { runner, preflight } = createSummarizer(engineName);
   return {
     archiveRoot: resolveArchiveRoot(repoRoot),
@@ -230,7 +236,7 @@ export async function runSummarizeSource(
   args: ParsedArgs,
   deps?: SummarizeSourceCliDeps,
 ): Promise<void> {
-  const d = deps ?? buildSummarizeSourceCliDeps(args);
+  const d = deps ?? (await buildSummarizeSourceCliDeps(args));
 
   const sourceId = args.positional[0];
   if (sourceId === undefined) {
@@ -240,10 +246,11 @@ export async function runSummarizeSource(
 
   ensureMemberLayoutRegistered(sourceId, d.sourcesDir);
 
-  if (!dryRun) {
-    await d.preflight();
-  }
-
+  // AUDIT-20260722-04: preflight is NOT fired eagerly here -- it is passed
+  // through into `SummarizeSourceCtx.preflight` below and fires lazily,
+  // inside `summarizeSource`, only right before the one real (non-dry-run,
+  // non-skip) engine call, so an idempotent rerun that will skip never
+  // requires the engine to be installed.
   const ctx: SummarizeSourceCtx = {
     runner: d.runner,
     model: d.model,
@@ -252,6 +259,7 @@ export async function runSummarizeSource(
     log: d.log,
     force: args.flags.force,
     dryRun,
+    preflight: d.preflight,
   };
 
   const result = await summarizeSource(sourceId, ctx);
@@ -265,6 +273,18 @@ export async function runSummarizeSource(
     `summarize-source: ${sourceId} -> ${result.status} ` +
       `(covered ${result.coveredIssues.length}, missing ${result.missingIssues.length})`,
   );
+
+  // AUDIT-20260722-02: guard `result.thoroughPath` explicitly before using it
+  // below, so a regression in `summarizeSource` that leaves it unset on a
+  // `'skipped'` (or any non-dry-run) result surfaces as a legible error
+  // instead of a raw `TypeError` out of `path.relative`. `summarizeSource`
+  // guarantees `thoroughPath` on every non-dry-run status -- this is a
+  // defense-in-depth check on that cross-file invariant, not an expected path.
+  if (!result.thoroughPath) {
+    throw new Error(
+      `summarize-source: rollup returned no thoroughPath for ${sourceId}`,
+    );
+  }
 
   // Constitution XV weld: the summaryRef is written in the SAME operation as
   // the rollup artifacts above -- never a follow-up/reconcile step.
