@@ -145,16 +145,27 @@ function combineIssueSummaries(covered: readonly CoveredIssue[]): string {
     .join('\n\n');
 }
 
+/** True when two ark lists are equal element-wise (order-sensitive; discovery order is deterministic). */
+function sameArks(a: readonly string[] | undefined, b: readonly string[]): boolean {
+  return a !== undefined && a.length === b.length && a.every((ark, i) => ark === b[i]);
+}
+
 /**
- * True when an artifact's companion sidecar at `yamlPath` exists, is
- * readable, and records `input_layers` matching `coveredLayers` EXACTLY (by
- * path + content sha256, in order). Never throws -- an unreadable/malformed
- * sidecar, a missing sidecar, or a layer-set mismatch are all simply "not up
- * to date".
+ * True when an artifact's companion sidecar at `yamlPath` exists, is readable,
+ * and records the SAME coverage SET this rerun would (AUDIT-11): `input_layers`
+ * matching `coveredLayers` EXACTLY (by path + content sha256, in order) AND the
+ * structured `covered_issues` / `missing_issues` lists matching the current
+ * covered/missing arks. Keying on the FULL coverage set -- not just the covered
+ * layers -- is what makes a newly-MISSING issue (covered set unchanged, missing
+ * set grown) refresh the `missing_issues` provenance instead of a stale skip.
+ * Never throws -- an unreadable/malformed sidecar, a missing sidecar, or any
+ * mismatch are all simply "not up to date".
  */
-async function layersMatchArtifact(
+async function coverageMatchesArtifact(
   yamlPath: string,
   coveredLayers: InputLayer[],
+  coveredArks: readonly string[],
+  missing: readonly string[],
 ): Promise<boolean> {
   if (!existsSync(yamlPath)) {
     return false;
@@ -165,8 +176,13 @@ async function layersMatchArtifact(
     if (recorded === undefined || recorded.length !== coveredLayers.length) {
       return false;
     }
-    return coveredLayers.every(
+    const layersMatch = coveredLayers.every(
       (layer, i) => recorded[i]?.path === layer.path && recorded[i]?.sha256 === layer.sha256,
+    );
+    return (
+      layersMatch &&
+      sameArks(existing.covered_issues, coveredArks) &&
+      sameArks(existing.missing_issues, missing)
     );
   } catch {
     return false;
@@ -175,24 +191,29 @@ async function layersMatchArtifact(
 
 /**
  * True when BOTH rollup artifacts on disk -- thorough AND concise -- were
- * generated from the SAME set of covered-issue thorough summaries (by path +
- * content sha256) {@link coveredLayers} identifies -- i.e. re-running would be
- * redundant. Mirrors `isUpToDate` in `src/summarize/issue.ts`, extended to
- * require BOTH sidecars (AUDIT-20260722-08): `summarizeSource` writes the
- * thorough and concise artifacts as two separate, non-atomic `storeAsset`
- * calls, so an interrupt between them can strand a rollup thorough artifact
- * with no matching concise sidecar (the concise rollup is what the browser
- * abstract consumes). Keying the skip on the thorough sidecar alone would
- * silently skip over that half-written pair on a non-forced rerun. Never
- * throws, only ever returns `false` short of an exact match on BOTH
- * artifacts.
+ * generated from the SAME coverage SET this rerun would produce: the same
+ * covered-issue thorough summaries (by path + content sha256) AND the same
+ * covered/missing arks (AUDIT-11) -- i.e. re-running would be redundant.
+ * Mirrors `isUpToDate` in `src/summarize/issue.ts`, extended to require BOTH
+ * sidecars (AUDIT-20260722-08): `summarizeSource` writes the thorough and
+ * concise artifacts as two separate, non-atomic `storeAsset` calls, so an
+ * interrupt between them can strand a rollup thorough artifact with no matching
+ * concise sidecar (the concise rollup is what the browser abstract consumes).
+ * Keying the skip on the thorough sidecar alone -- or on the covered layers
+ * without the missing set -- would silently skip over a half-written pair or a
+ * newly-missing issue on a non-forced rerun. Never throws.
  */
-async function isUpToDate(sourceDir: string, coveredLayers: InputLayer[]): Promise<boolean> {
+async function isUpToDate(
+  sourceDir: string,
+  coveredLayers: InputLayer[],
+  coveredArks: readonly string[],
+  missing: readonly string[],
+): Promise<boolean> {
   const thoroughYamlPath = companionYamlPath(sourceThoroughSummaryPath(sourceDir));
   const conciseYamlPath = companionYamlPath(sourceConciseSummaryPath(sourceDir));
   const [thoroughOk, conciseOk] = await Promise.all([
-    layersMatchArtifact(thoroughYamlPath, coveredLayers),
-    layersMatchArtifact(conciseYamlPath, coveredLayers),
+    coverageMatchesArtifact(thoroughYamlPath, coveredLayers, coveredArks, missing),
+    coverageMatchesArtifact(conciseYamlPath, coveredLayers, coveredArks, missing),
   ]);
   return thoroughOk && conciseOk;
 }
@@ -275,7 +296,7 @@ export async function summarizeSource(
     sha256: issue.sha256,
   }));
 
-  if (ctx.force !== true && (await isUpToDate(sourceDir, coveredLayers))) {
+  if (ctx.force !== true && (await isUpToDate(sourceDir, coveredLayers, coveredArks, missing))) {
     ctx.log(`  skip  ${sourceId} rollup (covered issues unchanged)`);
     return {
       sourceDir,
@@ -324,19 +345,30 @@ export async function summarizeSource(
 
   // Constitution XV weld: BOTH artifacts go through storeAsset, which writes
   // the bytes + companion sidecar + MANIFEST.sha256 entry as one operation.
+  //
+  // `force: true` here (NOT `ctx.force`) is deliberate, mirroring
+  // `summarizeIssue` (`src/summarize/issue.ts`): the regenerate-vs-skip
+  // decision already happened above via `isUpToDate`, so reaching this line
+  // always means "write". `storeAsset`'s OWN legacy byte-level dedup (skip when
+  // the target's on-disk bytes still hash to its companion's recorded sha)
+  // exists for resuming an interrupted fetch and must NOT veto this write: a
+  // rollup regenerated because the coverage SET changed (AUDIT-11 -- e.g. a
+  // newly-missing issue) must always land its refreshed `missing_issues` /
+  // `covered_issues` provenance, even though the file is currently present and
+  // self-consistent with its now-stale sidecar.
   await storeAsset(
     encode(renderRollupThoroughMarkdown(generated, coveredArks, missing)),
     thoroughPath,
     thoroughProvenance,
     ctx.archiveRoot,
-    { force: ctx.force },
+    { force: true },
   );
   await storeAsset(
     encode(renderConciseMarkdown(generated)),
     concisePath,
     conciseProvenance,
     ctx.archiveRoot,
-    { force: ctx.force },
+    { force: true },
   );
 
   ctx.log(

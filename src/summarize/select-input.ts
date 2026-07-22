@@ -4,19 +4,28 @@ import path from 'node:path';
 import { sha256OfBytes } from '@/archive/checksum';
 import { companionYamlPath } from '@/archive/store';
 import { readProvenance, type OcrQualityTier } from '@/archive/provenance';
+import type { InputLayerOrigin } from '@/archive/provenance-blocks';
+import type { LoadedSource } from '@/bibliography/load';
+import { isPapersPastSource } from '@/browser/load/papers-past';
+import { resolvePapersPastInput } from '@/summarize/papers-past-input';
 
 /**
  * One input companion consumed to build a summary, and its content sha256 at
  * selection time (research.md Decision 6). This is BOTH the shape fed into
  * `SummaryResult` generation (via {@link SelectedSummaryInput.text}) AND the
  * source of a summary provenance sidecar's `input_layers` (FR-005) -- the
- * idempotency key (Decision 4). `path` is relative to the issue directory
- * (e.g. `issue.txt`, `issue.en.txt`), matching the convention already used by
- * `ProvenanceFields.input_layers` (see `src/archive/provenance.ts`).
+ * idempotency key (Decision 4). `path` is relative to the issue directory for a
+ * Gallica layer (e.g. `issue.txt`, `issue.en.txt`), or archive-relative (the B2
+ * object-store key) for a Papers Past layer, matching the convention used by
+ * `ProvenanceFields.input_layers` (see `src/archive/provenance.ts`). `origin`
+ * attributes the layer honestly (FR-021): our own OCR/translation, or
+ * source-downloaded Papers Past OCR.
  */
 export interface SelectedInputLayer {
   readonly path: string;
   readonly sha256: string;
+  readonly origin: InputLayerOrigin;
+  readonly sourceRepresentation?: string;
 }
 
 /**
@@ -115,27 +124,65 @@ async function readInputQuality(frenchOcrPath: string): Promise<SummaryInputQual
 }
 
 /**
- * Select the best-available acquired text for one issue and build the
- * combined summarizer input, per research.md Decision 6 / spec.md FR-002:
- *
- * 1. If `issue.en.txt` (English translation) exists, use BOTH `issue.txt`
- *    (the French OCR it was translated from) and `issue.en.txt` -- the
- *    combined text is the {@link combineFrenchAndEnglish} format.
- * 2. Else if `issue.txt` exists (an English-language source's own OCR), use
- *    it alone.
- * 3. Else FAIL LOUD (FR-003) -- no usable text layer, no fabricated summary.
- *
- * Pure-ish: reads only from `issueDir` on disk (page images, translation
- * output, and OCR text are all already-acquired inputs; this function makes
- * no network call and writes nothing).
+ * The source-aware input-selection request (FR-018): input resolution needs the
+ * source's IDENTITY + LANGUAGE (the SSOT {@link LoadedSource}), not just a bare
+ * `issueDir`, so it routes by source family and never guesses language from
+ * which files happen to be present (the AUDIT-17 defect). `archiveRoot` locates
+ * a Papers Past `ocr-text` asset (archive-relative object-store key).
  */
-export async function selectSummaryInput(issueDir: string): Promise<SelectedSummaryInput> {
+export interface SummaryInputRequest {
+  readonly issueDir: string;
+  readonly source: LoadedSource;
+  readonly archiveRoot: string;
+}
+
+/**
+ * True when the source is KNOWN to be a non-English (French) work by its SSOT
+ * language metadata -- the signal (FR-023 / AUDIT-17) that its raw OCR is NOT
+ * English-native and MUST NOT be summarized without an English translation.
+ * Absent/unknown language is NOT known-French (it falls through to the legacy
+ * present-files behavior, e.g. a monograph whose SSOT omits `language`).
+ */
+function isKnownFrench(source: LoadedSource): boolean {
+  const language = source.source.language?.trim();
+  return language !== undefined && language.length > 0 && language !== 'English';
+}
+
+/**
+ * Select the best-available acquired text for one issue and build the combined
+ * summarizer input, SOURCE-AWARE per research.md Decision 6/8 / spec.md
+ * FR-002/FR-018..FR-023:
+ *
+ * 1. **Papers Past** (`isPapersPastSource`): read the B2-resident `ocr-text`
+ *    asset (English-only, no translation), attributed to Papers Past (FR-019/
+ *    FR-021). See `@/summarize/papers-past-input`.
+ * 2. **Translation present** (`issue.en.txt`): use BOTH `issue.txt` (the French
+ *    OCR) and `issue.en.txt` -- the {@link combineFrenchAndEnglish} format,
+ *    attributed to the project (`project-ocr` + `project-translation`).
+ * 3. **Known-French source, translation ABSENT**: FAIL LOUD ("translation
+ *    pending") -- never summarize raw French OCR as if English-native (FR-023).
+ * 4. **English-native / unknown-language source**: `issue.txt` alone
+ *    (`project-ocr`).
+ * 5. Else FAIL LOUD (FR-003) -- no usable text layer, no fabricated summary.
+ *
+ * Reads only already-acquired inputs from disk; the Papers Past branch may
+ * pre-fetch its own B2/CDN asset (FR-020) but writes nothing else.
+ */
+export async function selectSummaryInput(req: SummaryInputRequest): Promise<SelectedSummaryInput> {
+  const { issueDir, source, archiveRoot } = req;
+
+  // (1) Papers Past family: English-only OCR from the B2-resident ocr-text asset.
+  if (isPapersPastSource(source)) {
+    return resolvePapersPastInput(source, archiveRoot);
+  }
+
   const frenchOcrPath = path.join(issueDir, FRENCH_OCR_FILENAME);
   const translationPath = path.join(issueDir, ENGLISH_TRANSLATION_FILENAME);
 
   const hasTranslation = existsSync(translationPath);
   const hasFrenchOcr = existsSync(frenchOcrPath);
 
+  // (2) Translation present -> combined French OCR + English translation.
   if (hasTranslation) {
     if (!hasFrenchOcr) {
       throw new Error(
@@ -174,14 +221,30 @@ export async function selectSummaryInput(issueDir: string): Promise<SelectedSumm
     const inputQuality = await readInputQuality(frenchOcrPath);
     return {
       layers: [
-        { path: FRENCH_OCR_FILENAME, sha256: french.sha256 },
-        { path: ENGLISH_TRANSLATION_FILENAME, sha256: english.sha256 },
+        { path: FRENCH_OCR_FILENAME, sha256: french.sha256, origin: 'project-ocr' },
+        {
+          path: ENGLISH_TRANSLATION_FILENAME,
+          sha256: english.sha256,
+          origin: 'project-translation',
+        },
       ],
       text: combineFrenchAndEnglish(french.text, english.text),
       ...(inputQuality !== undefined ? { inputQuality } : {}),
     };
   }
 
+  // (3) AUDIT-17 / FR-023: a KNOWN-FRENCH source with no translation must fail
+  // loud -- never fall through to summarizing the raw French OCR as English.
+  if (isKnownFrench(source)) {
+    throw new Error(
+      `selectSummaryInput: source ${source.source.sourceId} is a known-French source but its ` +
+        `English translation (${ENGLISH_TRANSLATION_FILENAME}) is absent in ${issueDir} -- ` +
+        'translation pending -- cannot summarize a French source without its English ' +
+        'translation (FR-023). Run translation for this issue before summarizing.',
+    );
+  }
+
+  // (4) English-native / unknown-language source: issue.txt (English OCR) alone.
   if (hasFrenchOcr) {
     const ocr = await readWithSha(frenchOcrPath);
     if (isBlank(ocr.text)) {
@@ -195,7 +258,7 @@ export async function selectSummaryInput(issueDir: string): Promise<SelectedSumm
     }
     const inputQuality = await readInputQuality(frenchOcrPath);
     return {
-      layers: [{ path: FRENCH_OCR_FILENAME, sha256: ocr.sha256 }],
+      layers: [{ path: FRENCH_OCR_FILENAME, sha256: ocr.sha256, origin: 'project-ocr' }],
       text: ocr.text,
       ...(inputQuality !== undefined ? { inputQuality } : {}),
     };

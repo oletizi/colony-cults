@@ -10,6 +10,22 @@ import {
   issueThoroughSummaryPath,
 } from '@/summarize/artifacts';
 import type { SummarizationRunner } from '@/summarize/types';
+import type { LoadedSource } from '@/bibliography/load';
+
+/** An English-native Gallica source, so the no-usable-text path names both files. */
+function englishSource(): LoadedSource {
+  return {
+    source: {
+      sourceId: 'PB-P001',
+      titles: [{ text: 'La Nouvelle France', role: 'canonical' }],
+      kind: 'periodical',
+      language: 'English',
+      identifiers: [],
+    },
+    records: [],
+    identifierLeaks: [],
+  };
+}
 
 /**
  * Fail-loud coverage for the US1 generation flow (T015, spec.md FR-003, US1
@@ -59,6 +75,7 @@ describe('summarizeIssue fail-loud on no usable text (T015, FR-003)', () => {
     const ctx: SummarizeIssueCtx = {
       runner: unreachableRunner(),
       model: 'claude-sonnet-5',
+      source: englishSource(),
       archiveRoot,
       clock: () => new Date('2026-07-21T00:00:00.000Z'),
       log: () => {},

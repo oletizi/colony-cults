@@ -17,7 +17,7 @@ import {
   sourceThoroughSummaryPath,
 } from '@/summarize/artifacts';
 import type { SummarizationRunner, SummaryResult } from '@/summarize/types';
-import { loadSourceFile } from '@/bibliography/load';
+import { loadSourceFile, type LoadedSource } from '@/bibliography/load';
 import { writeSourceFile } from '@/bibliography/source-writer';
 import { validateSummaryRef } from '@/bibliography/summary-reference';
 import type { Source } from '@/model/source';
@@ -121,6 +121,11 @@ function baseSource(sourceId: string): Source {
   };
 }
 
+/** The per-issue ctx source: unknown-language -> English-native (issue.txt alone). */
+function loadedSource(sourceId: string): LoadedSource {
+  return { source: baseSource(sourceId), records: [], identifierLeaks: [] };
+}
+
 /**
  * Build a tmp archive + tmp bibliography sourcesDir with `PB-P001`: TWO
  * already-summarized issues (via the real `summarizeIssue`) and ONE fetched
@@ -137,6 +142,7 @@ async function buildPartiallySummarizedSource(): Promise<BuiltSource> {
   const issueCtx: SummarizeIssueCtx = {
     runner: fakeRunner(ISSUE_RESULT).runner,
     model: 'claude-sonnet-5',
+    source: loadedSource('PB-P001'),
     archiveRoot,
     clock: () => new Date(FIXED_DATE),
     log: () => {},
@@ -338,6 +344,31 @@ describe('summarizeSource (AUDIT-20260722-08/02/04: both-artifact idempotency + 
     // resolved path, never undefined, on every non-dry-run status.
     expect(secondResult.thoroughPath).toBe(firstResult.thoroughPath);
     expect(existsSync(secondResult.thoroughPath)).toBe(true);
+  });
+
+  it('AUDIT-11: a newly-missing issue on rerun refreshes missing_issues instead of a stale skip', async () => {
+    built = await buildPartiallySummarizedSource();
+    const first = fakeRunner(ROLLUP_RESULT);
+    const firstResult = await summarizeSource('PB-P001', ctxFor(built, first.runner));
+    expect(firstResult.status).toBe('generated');
+    expect(firstResult.missingIssues).toEqual(['bpt6k5603639i']);
+
+    // A NEW issue is fetched + OCR'd but NOT yet summarized -> newly missing.
+    // The COVERED set (its layers) is unchanged, so a rollup keyed only on the
+    // covered layers would stale-skip and leave missing_issues recording the
+    // OLD set. Keying on the full coverage set must regenerate instead.
+    await buildIssueDir(built.archiveRoot, 'bpt6k5603640j', '1875-04-15');
+
+    const second = fakeRunner(ROLLUP_RESULT);
+    const secondResult = await summarizeSource('PB-P001', ctxFor(built, second.runner));
+
+    expect(secondResult.status).toBe('generated');
+    expect(second.calls).toHaveLength(1);
+    expect(secondResult.missingIssues).toContain('bpt6k5603640j');
+
+    // The refreshed rollup sidecar records the newly-missing issue.
+    const thoroughYaml = await readFile(companionYamlPath(firstResult.thoroughPath), 'utf-8');
+    expect(thoroughYaml).toContain('bpt6k5603640j');
   });
 
   it('calls ctx.preflight lazily: never on dry-run, never on a skip, exactly once right before a real generation', async () => {

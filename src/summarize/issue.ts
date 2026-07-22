@@ -4,6 +4,7 @@ import { readProvenance, type InputLayer } from '@/archive/provenance';
 import { firstPageProvenanceYaml } from '@/translate/rights';
 import { selectSummaryInput } from '@/summarize/select-input';
 import { summaryIsUpToDate } from '@/summarize/idempotency';
+import type { LoadedSource } from '@/bibliography/load';
 import {
   buildSummaryProvenance,
   issueConciseSummaryPath,
@@ -23,6 +24,13 @@ import type { SummarizationRunner } from '@/summarize/types';
 export interface SummarizeIssueCtx {
   /** Injected summarization engine (the `claude` CLI adapter, or a fake in tests). */
   runner: SummarizationRunner;
+  /**
+   * The source's SSOT record (FR-018), threaded from the CLI so input
+   * resolution is SOURCE-AWARE: it routes by source family (Papers Past vs
+   * Gallica) and by language metadata, never by guessing from which files
+   * happen to be present. Loaded once by the CLI and reused across every issue.
+   */
+  source: LoadedSource;
   /**
    * Resolved model id/alias for this run (CLI flag > config > default; see
    * `resolveSummaryModel`), the exact value sent to `runner.summarize` AND
@@ -119,7 +127,14 @@ export async function summarizeIssue(
   const concisePath = issueConciseSummaryPath(issueDir);
 
   // FR-003 / US1 AC-3: fail loud, write nothing, when no usable text exists.
-  const selected = await selectSummaryInput(issueDir);
+  // Source-aware (FR-018): the SSOT record + archiveRoot route input resolution
+  // by source family (Papers Past ocr-text asset vs Gallica issue.txt/en.txt)
+  // and language, never by guessing from present files (fixes AUDIT-17).
+  const selected = await selectSummaryInput({
+    issueDir,
+    source: ctx.source,
+    archiveRoot: ctx.archiveRoot,
+  });
 
   if (ctx.dryRun === true) {
     const layerNames = selected.layers.map((layer) => layer.path).join(', ');
@@ -146,6 +161,13 @@ export async function summarizeIssue(
   const inputLayers: InputLayer[] = selected.layers.map((layer) => ({
     path: layer.path,
     sha256: layer.sha256,
+    // FR-021 honest attribution: carry each layer's origin (project OCR /
+    // project translation / source-downloaded Papers Past OCR) + the source
+    // representation into provenance. Omitted-when-unset keeps byte-identity.
+    origin: layer.origin,
+    ...(layer.sourceRepresentation !== undefined
+      ? { source_representation: layer.sourceRepresentation }
+      : {}),
   }));
 
   const thoroughProvenance = buildSummaryProvenance(

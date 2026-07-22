@@ -7,6 +7,7 @@ import {
   emitIssueList,
   emitObjectStore,
   emitOcrQuality,
+  type InputLayerOrigin,
   parseBlockScalar,
   parseInputLayersBlock,
   parseInputQualityBlock,
@@ -56,17 +57,17 @@ export interface OcrQuality {
 }
 
 /**
- * One input text layer a machine-generated summary was derived from (FR-005):
- * the archive-relative `path` of the consumed companion (e.g. `issue.txt`,
- * `issue.en.txt`) and the `sha256` it had at generation time. The pair is the
- * idempotency key. Emitted as a two-space-indented YAML sequence item under
- * `input_layers:` with the fixed sub-key order `path`, `sha256`.
+ * One input text layer a summary was derived from (FR-005): archive-relative
+ * `path` + `sha256` at generation time (the idempotency key). `origin` /
+ * `source_representation` (FR-021) attribute the layer honestly --
+ * additive-optional, omitted when unset (byte-identity); fixed sub-key order
+ * `path`, `sha256`, `origin`, `source_representation`.
  */
 export interface InputLayer {
-  /** Archive-relative path of the consumed input companion. */
   path: string;
-  /** Lowercase-hex SHA-256 the input layer had at generation time. */
   sha256: string;
+  origin?: InputLayerOrigin;
+  source_representation?: string;
 }
 
 /**

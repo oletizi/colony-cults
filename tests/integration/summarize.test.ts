@@ -12,6 +12,22 @@ import {
   issueThoroughSummaryPath,
 } from '@/summarize/artifacts';
 import type { SummarizationRunner, SummaryResult } from '@/summarize/types';
+import type { LoadedSource } from '@/bibliography/load';
+
+/** A minimal Gallica {@link LoadedSource} whose SSOT `language` drives routing. */
+function gallicaSource(language: string): LoadedSource {
+  return {
+    source: {
+      sourceId: 'PB-P001',
+      titles: [{ text: 'La Nouvelle France', role: 'canonical' }],
+      kind: 'periodical',
+      language,
+      identifiers: [],
+    },
+    records: [],
+    identifierLeaks: [],
+  };
+}
 
 /**
  * End-to-end coverage for the US1 generation flow (T014, contracts/cli-summarize.md
@@ -121,10 +137,15 @@ async function buildIssueDir(opts: { withTranslation: boolean }): Promise<BuiltI
   };
 }
 
-function buildCtx(archiveRoot: string, runner: SummarizationRunner): SummarizeIssueCtx {
+function buildCtx(
+  archiveRoot: string,
+  runner: SummarizationRunner,
+  source: LoadedSource,
+): SummarizeIssueCtx {
   return {
     runner,
     model: 'claude-sonnet-5',
+    source,
     archiveRoot,
     clock: () => new Date(FIXED_DATE),
     log: () => {},
@@ -143,7 +164,11 @@ describe('summarizeIssue (T014, US1 end-to-end generation)', () => {
     built = await buildIssueDir({ withTranslation: false });
     const { runner, calls } = fakeRunner();
 
-    const result = await summarizeIssue(built.issueDir, buildCtx(built.archiveRoot, runner));
+    // English-native source: issue.txt is the English OCR, summarized alone.
+    const result = await summarizeIssue(
+      built.issueDir,
+      buildCtx(built.archiveRoot, runner, gallicaSource('English')),
+    );
 
     expect(result.status).toBe('generated');
     expect(calls).toHaveLength(1);
@@ -199,7 +224,11 @@ describe('summarizeIssue (T014, US1 end-to-end generation)', () => {
     built = await buildIssueDir({ withTranslation: true });
     const { runner, calls } = fakeRunner();
 
-    const result = await summarizeIssue(built.issueDir, buildCtx(built.archiveRoot, runner));
+    // French source with a translation present: both layers are combined.
+    const result = await summarizeIssue(
+      built.issueDir,
+      buildCtx(built.archiveRoot, runner, gallicaSource('French')),
+    );
 
     expect(result.status).toBe('generated');
     expect(calls).toHaveLength(1);

@@ -169,6 +169,69 @@ describe('rollup coverage sidecar (covered_issues / missing_issues)', () => {
   });
 });
 
+describe('input_layers origin attribution (FR-021)', () => {
+  /** A Papers Past summary sidecar: one source-downloaded OCR layer, attributed. */
+  function papersPastSummaryFields(): ProvenanceFields {
+    return {
+      ...summaryFields(),
+      input_layers: [
+        {
+          path: 'archive/papers-past/esd18800401.2.28/abc.txt',
+          sha256: 'e'.repeat(64),
+          origin: 'papers-past-ocr',
+          source_representation: 'papers-past-text-tab',
+        },
+      ],
+    };
+  }
+
+  it('emits origin + source_representation as four-space-indented sub-keys after sha256', () => {
+    const yaml = serializeProvenance(papersPastSummaryFields());
+    expect(yaml).toContain('  - path: "archive/papers-past/esd18800401.2.28/abc.txt"');
+    expect(yaml).toContain(`    sha256: "${'e'.repeat(64)}"`);
+    expect(yaml).toContain('    origin: "papers-past-ocr"');
+    expect(yaml).toContain('    source_representation: "papers-past-text-tab"');
+  });
+
+  it('round-trips a record whose input_layers carry origin/source_representation', () => {
+    const fields = papersPastSummaryFields();
+    const yaml = serializeProvenance(fields);
+    const parsed = parseProvenance(yaml);
+    expect(parsed).toEqual(fields);
+    expect(serializeProvenance(parsed)).toBe(yaml);
+  });
+
+  it('round-trips project-ocr + project-translation origins in order', () => {
+    const fields: ProvenanceFields = {
+      ...summaryFields(),
+      input_layers: [
+        { path: 'issue.txt', sha256: 'c'.repeat(64), origin: 'project-ocr' },
+        { path: 'issue.en.txt', sha256: 'd'.repeat(64), origin: 'project-translation' },
+      ],
+    };
+    const yaml = serializeProvenance(fields);
+    expect(yaml).toContain('    origin: "project-ocr"');
+    expect(yaml).toContain('    origin: "project-translation"');
+    expect(parseProvenance(yaml)).toEqual(fields);
+  });
+
+  it('rejects an unknown input_layers origin (fail loud)', () => {
+    const yaml = serializeProvenance(summaryFields()).replace(
+      `    sha256: "${'c'.repeat(64)}"`,
+      `    sha256: "${'c'.repeat(64)}"\n    origin: "not-a-real-origin"`,
+    );
+    expect(() => parseProvenance(yaml)).toThrow(/origin/);
+  });
+
+  it('a layer WITHOUT origin re-serializes to the pre-FR-021 two-line shape (byte-identity)', () => {
+    // summaryFields()'s input_layers carry no origin -> the emitted item is
+    // still exactly `- path:` + `sha256:` with no extra sub-keys.
+    const yaml = serializeProvenance(summaryFields());
+    expect(yaml).not.toContain('    origin:');
+    expect(serializeProvenance(parseProvenance(yaml))).toBe(yaml);
+  });
+});
+
 describe('summary provenance sidecar (additive-optional fields)', () => {
   it('(a) round-trips a record WITH the summary fields (serialize -> parse -> serialize stable)', () => {
     const fields = summaryFields();

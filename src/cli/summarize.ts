@@ -25,6 +25,12 @@ export const PACE_MS = 250;
 export interface SummarizeCliDeps {
   /** Absolute private-archive root (`../colony-cults-archive`). */
   archiveRoot: string;
+  /**
+   * `bibliography/sources` directory holding the source's SSOT record, loaded
+   * ONCE (FR-018) so input resolution is source-aware -- reused across every
+   * issue of a whole-source run.
+   */
+  sourcesDir: string;
   /** Provenance-timestamp clock (injected for determinism/testability). */
   clock: () => Date;
   /** Line-oriented output sink (stdout in production). */
@@ -56,6 +62,7 @@ export async function buildSummarizeCliDeps(args: ParsedArgs): Promise<Summarize
   const { runner, preflight } = createSummarizer(engineName);
   return {
     archiveRoot: resolveArchiveRoot(repoRoot),
+    sourcesDir: path.join(repoRoot, 'bibliography', 'sources'),
     clock: () => new Date(),
     log: (message) => {
       console.log(message);
@@ -103,10 +110,12 @@ export async function runSummarize(
   const issueArk = args.positional[1];
   const dryRun = args.flags.dryRun;
 
-  ensureMemberLayoutRegistered(
-    sourceId,
-    path.join(process.cwd(), 'bibliography', 'sources'),
-  );
+  ensureMemberLayoutRegistered(sourceId, d.sourcesDir);
+
+  // FR-018: load the source's SSOT record ONCE and thread it into the ctx, so
+  // input resolution is source-aware (Papers Past vs Gallica, language) for
+  // every issue -- never guessing from which files happen to be present.
+  const source = loadSourceFile(path.join(d.sourcesDir, `${sourceId}.yml`));
 
   // AUDIT-live-01: a MONOGRAPH source (`sourceLayout(sourceId).kind ===
   // 'monograph'`) is a single flat document directory, not a set of dated
@@ -135,6 +144,7 @@ export async function runSummarize(
   const ctx: SummarizeIssueCtx = {
     runner: d.runner,
     model: d.model,
+    source,
     archiveRoot: d.archiveRoot,
     clock: d.clock,
     log: d.log,

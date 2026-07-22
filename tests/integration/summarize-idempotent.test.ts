@@ -16,6 +16,22 @@ import {
   renderThoroughMarkdown,
 } from '@/summarize/artifacts';
 import type { SummarizationRunner, SummaryResult } from '@/summarize/types';
+import type { LoadedSource } from '@/bibliography/load';
+
+/** French Gallica source (issues carry a translation, so both layers combine). */
+function frenchSource(): LoadedSource {
+  return {
+    source: {
+      sourceId: 'PB-P001',
+      titles: [{ text: 'La Nouvelle France', role: 'canonical' }],
+      kind: 'periodical',
+      language: 'French',
+      identifiers: [],
+    },
+    records: [],
+    identifierLeaks: [],
+  };
+}
 
 /**
  * Idempotency/resumability coverage for `summarizeIssue` (T032, US5, FR-010,
@@ -126,6 +142,7 @@ function buildCtx(
   return {
     runner,
     model: 'claude-sonnet-5',
+    source: frenchSource(),
     archiveRoot,
     clock: () => new Date(FIXED_DATE),
     log: () => {},
@@ -220,7 +237,7 @@ describe('summarizeIssue idempotency (T032, US5, FR-010)', () => {
     // before the second (the concise artifact) -- write ONLY the thorough
     // artifact+sidecar directly, exactly as `summarizeIssue` would have left
     // things at that point.
-    const selected = await selectSummaryInput(built.issueDir);
+    const selected = await selectSummaryInput({ issueDir: built.issueDir, source: frenchSource(), archiveRoot: built.archiveRoot });
     const base = await readProvenance(await firstPageProvenanceYaml(built.issueDir));
     const inputLayers = selected.layers.map((layer) => ({ path: layer.path, sha256: layer.sha256 }));
     const thoroughProvenance = buildSummaryProvenance(
@@ -259,7 +276,7 @@ describe('summarizeIssue idempotency (T032, US5, FR-010)', () => {
 
     // Mirror-image half-pair: a concise sidecar exists (however that came to
     // be) but the thorough is missing -- must still regenerate, not skip.
-    const selected = await selectSummaryInput(built.issueDir);
+    const selected = await selectSummaryInput({ issueDir: built.issueDir, source: frenchSource(), archiveRoot: built.archiveRoot });
     const base = await readProvenance(await firstPageProvenanceYaml(built.issueDir));
     const inputLayers = selected.layers.map((layer) => ({ path: layer.path, sha256: layer.sha256 }));
     const conciseProvenance = buildSummaryProvenance(

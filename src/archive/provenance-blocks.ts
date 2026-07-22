@@ -5,6 +5,20 @@ import type {
   OcrQuality,
 } from '@/archive/provenance';
 
+/**
+ * Provenance origin of one summary input layer (FR-021): the project's own OCR
+ * or English translation, or source-downloaded OCR (Papers Past's own text-tab
+ * OCR, honestly attributed as NOT the project's work).
+ */
+export type InputLayerOrigin = 'project-ocr' | 'project-translation' | 'papers-past-ocr';
+
+/** Runtime guard for a parsed {@link InputLayerOrigin} value (fail loud on unknown). */
+function isInputLayerOrigin(value: string): value is InputLayerOrigin {
+  return (
+    value === 'project-ocr' || value === 'project-translation' || value === 'papers-past-ocr'
+  );
+}
+
 /** Fixed emission order of the nested `object_store` block's sub-keys. */
 const OBJECT_STORE_KEYS: readonly (keyof ObjectStoreLocation)[] = [
   'provider',
@@ -137,8 +151,10 @@ export function emitOcrQuality(
 /**
  * Emit the optional `input_layers` sequence: omitted entirely when absent (so
  * non-summary records re-serialize byte-identically), else a YAML sequence of
- * `{ path, sha256 }` mappings, each a two-space-indented item with the fixed
- * sub-key order (`- path:` then a four-space-indented `sha256:`).
+ * mappings, each a two-space-indented item with the fixed sub-key order
+ * (`- path:` then four-space-indented `sha256:`, then the additive-optional
+ * `origin:` and `source_representation:` -- both omitted when unset, so a layer
+ * without them re-serializes byte-identically to the pre-FR-021 two-line shape).
  */
 export function emitInputLayers(
   layers: InputLayer[] | undefined,
@@ -146,10 +162,19 @@ export function emitInputLayers(
   if (layers === undefined) {
     return undefined;
   }
-  const items = layers.flatMap((layer) => [
-    `  - path: ${quotedScalar(layer.path)}`,
-    `    sha256: ${quotedScalar(layer.sha256)}`,
-  ]);
+  const items = layers.flatMap((layer) => {
+    const lines = [
+      `  - path: ${quotedScalar(layer.path)}`,
+      `    sha256: ${quotedScalar(layer.sha256)}`,
+    ];
+    if (layer.origin !== undefined) {
+      lines.push(`    origin: ${quotedScalar(layer.origin)}`);
+    }
+    if (layer.source_representation !== undefined) {
+      lines.push(`    source_representation: ${quotedScalar(layer.source_representation)}`);
+    }
+    return lines;
+  });
   return ['input_layers:', ...items].join('\n');
 }
 
@@ -313,9 +338,12 @@ export function parseOcrQualityBlock(
 }
 
 /**
- * Parse the `input_layers:` sequence starting at `start`: repeated pairs of a
- * `  - path: "..."` item line followed by a `    sha256: "..."` continuation
- * line. Returns the layers and the index of the first line after the block.
+ * Parse the `input_layers:` sequence starting at `start`: repeated items, each
+ * a `  - path: "..."` line followed by four-space-indented continuation
+ * sub-keys -- `sha256:` (required) and the additive-optional `origin:` /
+ * `source_representation:` (FR-021). Returns the layers and the index of the
+ * first line after the block. A layer without the optional keys round-trips to
+ * the pre-FR-021 `{ path, sha256 }` shape (byte-identity preserved).
  */
 export function parseInputLayersBlock(
   lines: string[],
@@ -328,17 +356,39 @@ export function parseInputLayersBlock(
     if (!item) {
       break;
     }
-    const cont = (lines[i + 1] ?? '').match(/^ {4}sha256:\s?(.*)$/);
-    if (!cont) {
+    const layerPath = readSubScalar(item[1]);
+    i += 1;
+    const sub = new Map<string, string>();
+    while (i < lines.length) {
+      const cont = lines[i].match(/^ {4}([a-zA-Z0-9_]+):\s?(.*)$/);
+      if (!cont) {
+        break;
+      }
+      sub.set(cont[1], readSubScalar(cont[2]));
+      i += 1;
+    }
+    const sha256 = sub.get('sha256');
+    if (sha256 === undefined) {
       throw new Error(
-        `parseProvenance: input_layers item missing sha256 for "${lines[i]}"`,
+        `parseProvenance: input_layers item missing sha256 for path "${layerPath}"`,
       );
     }
-    layers.push({
-      path: readSubScalar(item[1]),
-      sha256: readSubScalar(cont[1]),
-    });
-    i += 2;
+    const layer: InputLayer = { path: layerPath, sha256 };
+    const origin = sub.get('origin');
+    if (origin !== undefined) {
+      if (!isInputLayerOrigin(origin)) {
+        throw new Error(
+          `parseProvenance: input_layers origin "${origin}" is not ` +
+            'project-ocr|project-translation|papers-past-ocr',
+        );
+      }
+      layer.origin = origin;
+    }
+    const representation = sub.get('source_representation');
+    if (representation !== undefined) {
+      layer.source_representation = representation;
+    }
+    layers.push(layer);
   }
   if (layers.length === 0) {
     throw new Error('parseProvenance: input_layers block is empty');

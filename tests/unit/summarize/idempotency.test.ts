@@ -49,8 +49,8 @@ function baseSummaryProvenance(
 }
 
 const LAYERS: SelectedInputLayer[] = [
-  { path: 'issue.txt', sha256: 'c'.repeat(64) },
-  { path: 'issue.en.txt', sha256: 'd'.repeat(64) },
+  { path: 'issue.txt', sha256: 'c'.repeat(64), origin: 'project-ocr' },
+  { path: 'issue.en.txt', sha256: 'd'.repeat(64), origin: 'project-translation' },
 ];
 
 describe('checkSummaryFreshness / summaryIsUpToDate (T031, US5, FR-010)', () => {
@@ -118,7 +118,7 @@ describe('checkSummaryFreshness / summaryIsUpToDate (T031, US5, FR-010)', () => 
 
     const mutated: SelectedInputLayer[] = [
       LAYERS[0],
-      { path: 'issue.en.txt', sha256: 'e'.repeat(64) },
+      { path: 'issue.en.txt', sha256: 'e'.repeat(64), origin: 'project-translation' },
     ];
 
     const result = await checkSummaryFreshness(issueDir, mutated);

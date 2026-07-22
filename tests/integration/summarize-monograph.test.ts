@@ -174,6 +174,7 @@ describe('AUDIT-live-01: bib summarize <monograph> with no issueArk', () => {
 
     const deps: SummarizeCliDeps = {
       archiveRoot: built.archiveRoot,
+      sourcesDir: built.sourcesDir,
       clock: () => new Date(FIXED_DATE),
       log: () => {},
       preflight: async () => {},
@@ -207,6 +208,7 @@ describe('AUDIT-live-01: bib summarize <monograph> with no issueArk', () => {
     const issueRun = fakeRunner(ISSUE_RESULT);
     await runSummarize(parse(['summarize', MONO_SOURCE_ID]), {
       archiveRoot: built.archiveRoot,
+      sourcesDir: built.sourcesDir,
       clock: () => new Date(FIXED_DATE),
       log: () => {},
       preflight: async () => {},

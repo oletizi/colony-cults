@@ -7,7 +7,9 @@ import { readProvenance, writeProvenance, type ProvenanceFields } from '@/archiv
 import { companionYamlPath } from '@/archive/store';
 import { parse } from '@/cli/parse';
 import { runSummarize, type SummarizeCliDeps } from '@/cli/summarize';
+import { writeSourceFile } from '@/bibliography/source-writer';
 import type { SummarizationRunner, SummaryResult } from '@/summarize/types';
+import type { Source } from '@/model/source';
 
 /**
  * AUDIT-20260722-04, CLI side (self-red-team, per the task driving this
@@ -54,9 +56,26 @@ function fakeRunner(): SummarizationRunner {
   };
 }
 
-/** Build a tmp archive holding one registered PB-P001 issue with a usable OCR text layer. */
-async function buildIssueDir(): Promise<{ archiveRoot: string; cleanup: () => void }> {
+/** An English-native PB-P001 source (issue.txt is the English OCR, summarized alone). */
+function baseSource(): Source {
+  return {
+    sourceId: 'PB-P001',
+    kind: 'periodical',
+    case: 'port-breton',
+    titles: [{ text: 'La Nouvelle France', role: 'canonical' }],
+    language: 'English',
+    identifiers: [],
+  };
+}
+
+/** Build a tmp archive + sourcesDir holding one registered PB-P001 issue with a usable OCR text layer. */
+async function buildIssueDir(): Promise<{
+  archiveRoot: string;
+  sourcesDir: string;
+  cleanup: () => void;
+}> {
   const archiveRoot = mkdtempSync(path.join(tmpdir(), 'cc-summarize-cli-preflight-'));
+  const sourcesDir = mkdtempSync(path.join(tmpdir(), 'cc-summarize-cli-preflight-bib-'));
   const issueDir = path.join(
     archiveRoot,
     'archive/cases/port-breton/newspapers/la-nouvelle-france',
@@ -68,8 +87,8 @@ async function buildIssueDir(): Promise<{ archiveRoot: string; cleanup: () => vo
   writeFileSync(path.join(issueDir, 'f001.jpg'), 'FAKE-PAGE-1');
   await writeProvenance(path.join(issueDir, 'f001.yml'), pageProvenance);
 
-  const frenchText = 'Ceci est le texte francais original de ce numero du journal.';
-  writeFileSync(path.join(issueDir, 'issue.txt'), frenchText);
+  const englishText = 'This is the English OCR text of this issue.';
+  writeFileSync(path.join(issueDir, 'issue.txt'), englishText);
   const ocrProvenance: ProvenanceFields = {
     ...pageProvenance,
     type: 'ocr-text',
@@ -77,14 +96,20 @@ async function buildIssueDir(): Promise<{ archiveRoot: string; cleanup: () => vo
   };
   await writeProvenance(companionYamlPath(path.join(issueDir, 'issue.txt')), ocrProvenance);
 
+  writeSourceFile(sourcesDir, { source: baseSource(), records: [] });
+
   return {
     archiveRoot,
-    cleanup: () => rmSync(archiveRoot, { recursive: true, force: true }),
+    sourcesDir,
+    cleanup: () => {
+      rmSync(archiveRoot, { recursive: true, force: true });
+      rmSync(sourcesDir, { recursive: true, force: true });
+    },
   };
 }
 
 describe('runSummarize --dry-run: preflight is never invoked (AUDIT-20260722-04 CLI wiring)', () => {
-  let built: { archiveRoot: string; cleanup: () => void } | undefined;
+  let built: { archiveRoot: string; sourcesDir: string; cleanup: () => void } | undefined;
 
   afterEach(() => {
     built?.cleanup();
@@ -97,6 +122,7 @@ describe('runSummarize --dry-run: preflight is never invoked (AUDIT-20260722-04 
 
     const deps: SummarizeCliDeps = {
       archiveRoot: built.archiveRoot,
+      sourcesDir: built.sourcesDir,
       clock: () => new Date('2026-07-21T00:00:00.000Z'),
       log: () => {},
       preflight,
@@ -117,6 +143,7 @@ describe('runSummarize --dry-run: preflight is never invoked (AUDIT-20260722-04 
 
     const deps: SummarizeCliDeps = {
       archiveRoot: built.archiveRoot,
+      sourcesDir: built.sourcesDir,
       clock: () => new Date('2026-07-21T00:00:00.000Z'),
       log: () => {},
       preflight,
