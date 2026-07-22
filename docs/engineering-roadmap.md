@@ -203,7 +203,7 @@ Render English-language sources as facsimile-edition PDFs. English documents (PB
 - ref: Constitution Principle XV (v1.4.0); backlog TASK-46; supersedes-history TASK-20/21
 
 ## impl:feature/source-group-pdf
-- status: shipped
+- status: planned
 - analyze-clean: yes
 - spec: specs/017-source-group-pdf
 - design-approved: yes
