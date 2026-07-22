@@ -123,3 +123,36 @@ UI (Astro under `site/`) is built **only** through `/frontend-design:frontend-de
 - None blocking. The `/frontend-design` invocation is a hard precondition on the browser-display
   task (not startable without it).
 - Operator may override Decision 1 (CLI vs HTTP API) — surfaced, not assumed-final.
+
+## Decision 8 — Papers Past input adapter (extended 2026-07-22)
+
+**Decision**: Make input resolution **source-aware** and add a Papers Past branch. `selectSummaryInput`
+grows from `(issueDir)` to also receive the source record / language (FR-018). Routing:
+- **Gallica French source**: French OCR (`issue.txt`, our OCR) + English translation (`issue.en.txt`,
+  our work). If the source is known-French but `issue.en.txt` is absent → **fail loud**
+  ("translation pending"), never fall through to English-native (FR-023, fixes AUDIT-17).
+- **Papers Past source** (`isPapersPastSource`): read the `ocr-text` B2 asset via the shipped
+  `papersPastOcrAsset` (`src/browser/load/papers-past.ts`) → `archive/papers-past/<id>/<sha>.txt`.
+  English-only, no translation. The `.txt` is B2-only in a fresh clone, so **pre-fetch it** using
+  the same CDN/B2 fetch the browser snapshot uses (or fail loud naming the asset) — FR-020, respecting
+  Constitution XII if a network call is involved.
+
+**Rationale**: reuse the browser's Papers Past resolver rather than duplicate the layout (single
+source of the layout knowledge); the source-aware signature is also the correct fix for the
+untranslated-French defect (AUDIT-17) — both stem from `selectSummaryInput` having no language signal.
+
+**Provenance (FR-021, operator-authoritative)**: the Papers Past input layer is recorded as
+**source-downloaded OCR attributed to Papers Past** (`origin: papers-past`,
+`sourceRepresentation: papers-past-text-tab`), explicitly distinct from the Gallica layers which are
+the **project's own** OCR + translation. This honesty in provenance is the point — a summary of the
+source's OCR is our interpretation, but the OCR itself is not our work.
+
+**Alternatives rejected**: duplicating the Papers Past layout in `src/summarize` (drift risk — reuse
+the browser resolver); treating absent `issue.en.txt` as English-native (the AUDIT-17 defect — a French
+source mid-pipeline looks identical, so it must be gated on real language metadata).
+
+## Decision 9 — enforce summaryRef (extended 2026-07-22)
+
+**Decision**: Wire `validateSummaryRef` into a real check point (a doctor/validate rule or a validating
+load path), and reject archive-root-escaping paths (`..`/absolute), so a dangling or traversing
+`summaryRef` fails loud at check time (FR-024) — not just via a helper nothing calls (AUDIT-14/15/12).

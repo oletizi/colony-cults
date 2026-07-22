@@ -40,6 +40,12 @@ OCR; a summary is a finding-aid over them.
 - Q: How far should this feature go toward feeding `corpus-gap-closure` / the coverage audit from the structured fields? → A: **Produce only** — emit the structured fields in a stable, documented shape; `corpus-gap-closure` / the audit consume them in separate, later work.
 - Q: Concise length target (settled by reasonable default, not asked)? → A: Concise is **~1–3 sentences (~60–80 words)**; the thorough summary is **exhaustive** (structured fields + narrative, no hard length cap).
 
+### Session 2026-07-22 (extend — Papers Past input adapter)
+
+- Q: The Papers Past newspaper articles have OCR text — where does it live, and can the summarizer read it? → A: The OCR is a **B2-resident `ocr-text` asset** (`archive/papers-past/<id>/<sha>.txt`, `sourceRepresentation: papers-past-text-tab`) the SSOT record points at — NOT `issue.txt`. The summarizer must resolve it via the shipped browser resolver and pre-fetch the B2 `.txt` (FR-018–FR-020).
+- Q: How should the OCR provenance of Papers Past differ from Gallica? (operator-authoritative) → A: The Gallica OCR **and** English translation are the **project's own derived work**; the Papers Past OCR is **downloaded from the source (Papers Past's own OCR), NOT our work**. Papers Past input is **English-only, no translation**, and its provenance MUST attribute the OCR to Papers Past as source-downloaded (FR-021).
+- Q: What happens to a French Gallica source whose translation hasn't run yet? → A: **Fail loud** ("translation pending") — never summarize raw French OCR as if English-native (FR-023; fixes the silent wrong-input defect).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Generate a per-issue two-depth summary from acquired text (Priority: P1)
@@ -183,6 +189,34 @@ only that issue is regenerated.
 3. **Given** an interrupted run, **When** summarization is re-run, **Then** it resumes and
    completes the not-yet-summarized issues without redoing completed ones.
 
+---
+
+### User Story 6 - Summarize the English-language Papers Past articles (Priority: P2)
+
+The ~32 acquired Papers Past newspaper articles (their OCR text downloaded from the source) are
+summarized like any other document — completing v1's named "English-language Papers Past items"
+scope, so a full corpus generation run covers Gallica (issues + books) **and** Papers Past.
+
+**Why this priority**: Papers Past articles are explicitly in v1 scope, and live validation showed
+the summarizer could not read them at all (source-family gap). Delivers a whole missing slice of
+the corpus. Depends on US1's generation core.
+
+**Independent Test**: Run `bib summarize <PapersPastSourceId>` on an acquired Papers Past source;
+confirm it resolves the source's `ocr-text` asset (pre-fetching the B2 `.txt` as needed), generates
+both summaries, and the provenance attributes the input OCR to **Papers Past (source-downloaded)**,
+with **no** translation layer. Confirm a source whose `.txt` cannot be fetched fails loud.
+
+**Acceptance Scenarios**:
+
+1. **Given** an acquired Papers Past source, **When** it is summarized, **Then** the OCR text is
+   read from its `ocr-text` asset (not `issue.txt`), both summaries are written, and the sidecar's
+   input layer is attributed to Papers Past as source-downloaded OCR (English-only, no translation).
+2. **Given** a Papers Past source whose OCR `.txt` is not local and cannot be fetched, **When**
+   summarization runs, **Then** it fails loud naming the missing asset (no fabricated summary).
+3. **Given** a French Gallica source whose translation has not yet been generated, **When**
+   summarization runs, **Then** it fails loud ("translation pending") rather than summarizing the
+   raw French OCR as if English (FR-023).
+
 ### Edge Cases
 
 - **No usable text layer**: fail loud, write nothing (US1 AC-3). Never fabricate.
@@ -267,6 +301,43 @@ only that issue is regenerated.
   this feature **produces only** — it MUST NOT itself drive evidence-class assignment or
   thematic discovery (that is separate, later work). (Clarified 2026-07-21.)
 
+### Source-aware input & the Papers Past family (extended 2026-07-22)
+
+- **FR-018**: Input resolution MUST be **source-aware** — it MUST receive the source's identity/
+  language metadata (not just a bare issue-dir path) and select the input layer(s) by source
+  family, never by guessing language from which files happen to be present.
+- **FR-019**: For a **Papers Past** source (the English-language newspaper articles named in v1
+  scope), the system MUST read the OCR text from the source's **`ocr-text` asset** — the
+  B2-resident `text/plain` `<sha>.txt` under `archive/papers-past/<article-id>/` that the SSOT
+  repository record's `assets[]` points at — reusing the shipped browser resolver
+  (`isPapersPastSource` / `papersPastOcrAsset`, `src/browser/load/papers-past.ts`) rather than
+  duplicating the layout knowledge. Papers Past input is **English-only** (no translation layer).
+- **FR-020**: Because the Papers Past `ocr-text` `.txt` is **B2-only** (absent from a fresh
+  clone), the system MUST ensure it is available locally before summarizing — **pre-fetch it from
+  the CDN/B2 reusing the shipped mechanism the browser snapshot uses** — or **fail loud** naming
+  the missing asset and how to fetch it (never fabricate). Any network access MUST respect
+  Constitution XII (frugal, governed access).
+- **FR-021**: Papers Past summary **provenance MUST honestly attribute the OCR to its origin**:
+  the Papers Past OCR text is **downloaded from the source (Papers Past's own OCR text-tab —
+  `sourceRepresentation: papers-past-text-tab`), NOT the project's own work**, and the input-layer
+  provenance MUST record this — distinct from the Gallica layers, where the OCR **and** the
+  English translation are the **project's own derived work**. (Operator-authoritative distinction,
+  2026-07-22.) The interpretation-not-evidence label (FR-006) is unchanged.
+- **FR-022**: A Papers Past summary MUST NOT re-publish the source's OCR text verbatim — a summary
+  is **interpretation/cataloging, not a reproduction** (Constitution IV); summarizing downloaded
+  OCR of public-domain articles is permitted, but the artifact is a finding-aid, not a copy.
+- **FR-023 (fixes the untranslated-French defect)**: For a **known-French Gallica source** whose
+  English translation (`issue.en.txt`) is **absent**, the system MUST **fail loud** ("translation
+  pending — cannot summarize a French source without its English translation") — it MUST NOT fall
+  through to treating the raw **French OCR as if it were English-native** input (a silent
+  wrong-input summary). English-native handling applies ONLY to a source actually known to be
+  English (Papers Past, or a Gallica source whose language metadata is English).
+- **FR-024 (enforces the reference invariant, SC-005)**: The `summaryRef` MUST be **enforced**, not
+  merely validatable — a dangling `summaryRef` (artifact renamed/moved/never generated) MUST fail
+  loud at a **wired** check point (a doctor/validate rule or a validating load path), not only via
+  a helper nothing calls; and the resolution MUST reject paths that escape the archive root
+  (no `..`/absolute traversal).
+
 *Requirements deferred to `/speckit-plan` (implementation-detail, non-blocking):*
 
 - **FR-C3**: Exact **companion + provenance schema** — file naming (e.g. `issue.summary.long.en.md`
@@ -316,6 +387,12 @@ only that issue is regenerated.
   calls); changing one issue's input layer regenerates exactly that issue (1 regeneration).
 - **SC-007**: A new source can be added to the summarization pipeline without code changes to the
   generation core (configuration/registration only), demonstrating generalization beyond the v1 set.
+- **SC-008**: The **Papers Past** family is summarizable — every acquired Papers Past source in v1
+  produces both summaries from its `ocr-text` asset, with input provenance attributed to Papers
+  Past (source-downloaded); a full corpus run covers Gallica **and** Papers Past (0 in-scope source
+  families the summarizer cannot read).
+- **SC-009**: A French Gallica source lacking its translation produces a loud "translation pending"
+  error, never a summary built from untranslated French OCR (0 silent wrong-language summaries).
 
 ## Assumptions
 
