@@ -18,8 +18,10 @@
 import type { GetStaticPaths } from 'astro';
 import { loadCorpus } from '@/browser/load/corpus';
 import { resolveConfig } from '@/browser/config';
+import type { LoadedSummary } from '@/browser/model';
 import BaseLayout from '@site/layouts/BaseLayout.astro';
 import Masthead from '@site/components/Masthead.astro';
+import SummaryAbstract from '@site/components/SummaryAbstract.astro';
 
 export const getStaticPaths = (() => {
   // Defined inside getStaticPaths: Astro evaluates this export in isolation, so
@@ -74,6 +76,9 @@ export const getStaticPaths = (() => {
         skippedCount,
         bookPageCount,
         bookHref,
+        // The source-rollup concise abstract (undefined when none) -- shown once
+        // directly under the source masthead.
+        conciseSummary: source.conciseSummary,
       },
     };
   });
@@ -97,10 +102,21 @@ interface Props {
   skippedCount: number;
   bookPageCount: number;
   bookHref: string | null;
+  conciseSummary?: LoadedSummary;
 }
 
-const { sourceId, title, kind, ark, rights, issues, skippedCount, bookPageCount, bookHref } =
-  Astro.props;
+const {
+  sourceId,
+  title,
+  kind,
+  ark,
+  rights,
+  issues,
+  skippedCount,
+  bookPageCount,
+  bookHref,
+  conciseSummary,
+} = Astro.props;
 
 const isBook = kind === 'monograph';
 const issueCount = issues.length;
@@ -143,6 +159,8 @@ const docDesc = isBook
         )}
       </p>
     </header>
+
+    <SummaryAbstract summary={conciseSummary} scope="source" />
 
     {isBook ? (
       <div class="ledger__frame">
