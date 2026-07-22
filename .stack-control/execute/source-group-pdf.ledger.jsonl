@@ -8,3 +8,4 @@
 {"id":"T007","tierLabel":"fast","model":"haiku","commitRange":"7f85dc0..HEAD-test","reviewClean":true,"note":"test-first RED half; verified when T008 greens; flagged gif-vs-jpg fetch mismatch"}
 {"id":"T008","tierLabel":"balanced","model":"sonnet","commitRange":"5b23a18..3c7ab0f","reviewClean":true,"note":"crux: member collapse in member-build.ts+member-edition.ts; reuses shared colophon/ocr helpers; gif magic; buildSource member routing (partOf+page-master)"}
 {"id":"T009","tierLabel":"balanced","model":"sonnet","commitRange":"3c7ab0f..c487cfa","reviewClean":true,"note":"US1 complete: member end-to-end (one PDF, materialized issue.txt+provenance, stacked verso)"}
+{"id":"T010","tierLabel":"fast","model":"haiku","commitRange":"26ad2d4..f3c89c6","reviewClean":true,"note":"test-first RED half; verified when T011 greens"}
