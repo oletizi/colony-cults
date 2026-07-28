@@ -6,6 +6,18 @@ import path from 'node:path';
 import { migrate } from '@/bibliography/migrate';
 import { writeProvenance } from '@/archive/provenance';
 import type { ProvenanceFields } from '@/archive/provenance';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 /**
  * US1 slice (T012): the PB-P001 two-copy restoration, driven end-to-end
@@ -173,7 +185,7 @@ describe('bibliography integration (US1: PB-P001 two-copy restoration)', () => {
     const arch = seedArchiveBase();
     await writeGallicaProvenance(arch, ['f001', 'f002']);
 
-    const result = await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    const result = await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
     const records = result.model.repositoryRecords.filter((r) => r.sourceId === 'PB-P001');
 
     expect(records).toHaveLength(2);
@@ -200,8 +212,8 @@ describe('bibliography integration (US1: PB-P001 two-copy restoration)', () => {
     const arch = seedArchiveBase();
     await writeGallicaProvenance(arch, ['f001', 'f002']);
 
-    await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
-    const second = await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
+    const second = await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
 
     const records = second.model.repositoryRecords.filter((r) => r.sourceId === 'PB-P001');
     expect(records).toHaveLength(2);
@@ -213,7 +225,7 @@ describe('bibliography integration (US1: PB-P001 two-copy restoration)', () => {
     const arch = seedArchiveBase();
     await writeGallicaProvenance(arch, ['f001', 'f002']);
 
-    const first = await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    const first = await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
     const firstGallica = first.model.repositoryRecords.filter(
       (r) => r.sourceId === 'PB-P001' && r.sourceArchive === 'Gallica / BnF',
     );
@@ -222,7 +234,7 @@ describe('bibliography integration (US1: PB-P001 two-copy restoration)', () => {
 
     // A second roll-up fetches one more page for the SAME archive.
     await writeGallicaProvenance(arch, ['f003']);
-    const second = await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    const second = await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
 
     const secondGallica = second.model.repositoryRecords.filter(
       (r) => r.sourceId === 'PB-P001' && r.sourceArchive === 'Gallica / BnF',

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi, beforeAll, afterAll } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,6 +10,32 @@ import type { Source } from '@/model/source';
 import { runPromote } from '@/sourcegroup/promote';
 import { runAcquire, type FetchSourceFn } from '@/sourcegroup/acquire';
 import type { ArkResolver, ExistingMemberRecord } from '@/sourcegroup/verify-member';
+import { installSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * These fixtures use a `PB-G###` group namespace, which the COMMITTED Port
+ * Breton manifest does not declare (`PB-P###` + `PB-S###`). Since T023
+ * (FR-018) the SSOT enumeration path takes an injected `SourceFilenamePolicy`
+ * instead of a hardcoded pattern, so this suite installs the policy its own
+ * fixtures need -- the same seam an alternative composition root or a second
+ * corpus uses (SC-003). Installed once for the file and cleared afterwards so
+ * no other suite inherits it.
+ */
+const FIXTURE_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+  { prefix: 'PB-G', padWidth: 3 },
+]);
+
+beforeAll(() => {
+  installSourceFilenamePolicy(FIXTURE_FILENAMES);
+});
+
+afterAll(() => {
+  installSourceFilenamePolicy(null);
+});
+
 
 /**
  * T016/T017 (spec 010, US3/FR-007; contracts/scope-model.md INV-APPROVE,

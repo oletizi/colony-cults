@@ -5,6 +5,18 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { loadAllSources, loadSourceFile, sourceKind } from '@/bibliography/load';
 import { serializeSource } from '@/bibliography/migrate-serialize';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 const VALID_YAML = `
 sourceId: PB-P001
@@ -326,14 +338,14 @@ describe('loadAllSources', () => {
     writeSource('PB-P001.yml', VALID_YAML);
     writeSource('not-a-source.yml', 'ignored: true');
 
-    const loaded = loadAllSources(dir);
+    const loaded = loadAllSources(dir, PB_FILENAMES);
     expect(loaded.map((l) => l.source.sourceId)).toEqual(['PB-P001', 'PB-P002']);
   });
 
   it('propagates a malformed file with a locating error', () => {
     writeSource('PB-P001.yml', VALID_YAML);
     writeSource('PB-P002.yml', 'key: [1, 2');
-    expect(() => loadAllSources(dir)).toThrow(/malformed YAML/);
+    expect(() => loadAllSources(dir, PB_FILENAMES)).toThrow(/malformed YAML/);
   });
 });
 
@@ -639,18 +651,18 @@ titles:
 `,
     );
 
-    expect(sourceKind('PB-P004', dir)).toBe('source-group');
+    expect(sourceKind('PB-P004', dir, PB_FILENAMES)).toBe('source-group');
   });
 
   it('returns the kind of an ordinary source', () => {
     writeSource('PB-P001.yml', VALID_YAML);
 
-    expect(sourceKind('PB-P001', dir)).toBe('periodical');
+    expect(sourceKind('PB-P001', dir, PB_FILENAMES)).toBe('periodical');
   });
 
   it('returns undefined for an unknown sourceId', () => {
     writeSource('PB-P001.yml', VALID_YAML);
 
-    expect(sourceKind('PB-NOPE', dir)).toBeUndefined();
+    expect(sourceKind('PB-NOPE', dir, PB_FILENAMES)).toBeUndefined();
   });
 });

@@ -28,6 +28,7 @@ import {
 } from '@/bibliography/vocab';
 import type { SourceCentrality, SourceLifecycleStatus } from '@/bibliography/vocab';
 import { validateSummaryRef } from '@/bibliography/summary-reference';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import type { Publication } from '@/model/publication';
 import type { Reference, Source, SuspectedGap, WorkIdentifier } from '@/model/source';
 
@@ -43,8 +44,22 @@ export interface LoadedSource {
   identifierLeaks: IdentifierLeak[];
 }
 
-const SOURCE_ID_PATTERN = /^PB-[A-Z]?\d{3}$/;
-const SOURCE_FILE_PATTERN = /^PB-[A-Z]?\d{3}\.yml$/;
+/**
+ * CORPUS-NEUTRAL id SHAPE check for rule 1 (T023, FR-018). This replaced the
+ * corpus-specific `^PB-[A-Z]?\d{3}$`, which -- like the retired
+ * `SOURCE_FILE_PATTERN` beside it -- would have rejected a second corpus's
+ * `SYN-001` outright.
+ *
+ * It deliberately checks SHAPE ONLY: an uppercase, hyphen-separated prefix
+ * (the FR-002a prefix grammar) followed by a numeric suffix. WHICH namespaces
+ * are legitimate is a corpus question, and it is answered by config in two
+ * places that both fail loud -- the injected {@link SourceFilenamePolicy} at
+ * enumeration time ({@link loadAllSources}) and
+ * `@/corpus/validate-existing-data` at `bib validate` time (every Source must
+ * conform to one of its corpus's declared ID policies). Neither belongs in a
+ * per-file parser that 180+ call sites reach with no corpus in hand.
+ */
+const SOURCE_ID_GRAMMAR = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*\d+$/;
 
 const SOURCE_KEYS = new Set([
   'sourceId',
@@ -128,8 +143,12 @@ export function loadSourceFile(filePath: string, archiveRoot?: string): LoadedSo
 
   // Rule 1: sourceId shape + filename-stem agreement.
   const sourceId = requireString(obj.sourceId, filePath, 'sourceId');
-  if (!SOURCE_ID_PATTERN.test(sourceId)) {
-    fail(filePath, `sourceId "${sourceId}" does not match ^PB-[A-Z]?\\d{3}$ (rule 1)`);
+  if (!SOURCE_ID_GRAMMAR.test(sourceId)) {
+    fail(
+      filePath,
+      `sourceId "${sourceId}" does not match the Source-ID grammar ` +
+        `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*\\d+$ (rule 1)`,
+    );
   }
   const stem = path.basename(filePath, path.extname(filePath));
   if (sourceId !== stem) {
@@ -350,15 +369,32 @@ function readSourceDir(dir: string): string[] {
 }
 
 /**
- * Read every `bibliography/sources/PB-*.yml` SSOT file in `dir`, in
- * deterministic (sorted) filename order. `archiveRoot` forwards to
- * {@link loadSourceFile}'s validating mode (AUDIT-20260722-14) for every
- * file; omit it (the default) to load without the summaryRef check, same as
- * every existing caller today.
+ * Read every Source SSOT file in `dir`, in deterministic (sorted) filename
+ * order.
+ *
+ * `policy` is REQUIRED and has NO DEFAULT (T023, FR-018, INV-16). This
+ * function used to filter filenames through a hardcoded
+ * `SOURCE_FILE_PATTERN = /^PB-[A-Z]?\d{3}\.yml$/` -- a fifth corpus-specific
+ * constant whose failure mode was SILENCE: a second corpus's `SYN-001.yml`
+ * simply did not match, so enumeration returned zero Sources with no error,
+ * and any check built on that list would pass vacuously. A default policy
+ * here would reintroduce exactly that silent fallback (Principle V), so every
+ * caller must decide: a CLI command passes the narrow policy its composition
+ * root derived (`corpus.sourceFilenames`), and a call site on a chain that
+ * carries no corpus passes `@/corpus/source-filename-bootstrap`'s
+ * `committedSourceFilenamePolicy()` explicitly.
+ *
+ * `archiveRoot` forwards to {@link loadSourceFile}'s validating mode
+ * (AUDIT-20260722-14) for every file; omit it (the default) to load without
+ * the summaryRef check, same as every existing caller today.
  */
-export function loadAllSources(dir: string, archiveRoot?: string): LoadedSource[] {
+export function loadAllSources(
+  dir: string,
+  policy: SourceFilenamePolicy,
+  archiveRoot?: string,
+): LoadedSource[] {
   const names = readSourceDir(dir)
-    .filter((name) => SOURCE_FILE_PATTERN.test(name))
+    .filter((name) => policy.isSourceFile(name))
     .sort();
   return names.map((name) => loadSourceFile(path.join(dir, name), archiveRoot));
 }
@@ -379,9 +415,14 @@ export function loadAllSources(dir: string, archiveRoot?: string): LoadedSource[
  * that genuinely needs to fail loud on a missing SSOT directory (e.g. `bib
  * validate`) uses {@link loadAllSources} directly, which still throws.
  */
-export function sourceKind(sourceId: string, dir: string): Source['kind'] | undefined {
+export function sourceKind(
+  sourceId: string,
+  dir: string,
+  policy: SourceFilenamePolicy,
+): Source['kind'] | undefined {
   if (!existsSync(dir)) {
     return undefined;
   }
-  return loadAllSources(dir).find((loaded) => loaded.source.sourceId === sourceId)?.source.kind;
+  return loadAllSources(dir, policy).find((loaded) => loaded.source.sourceId === sourceId)?.source
+    .kind;
 }

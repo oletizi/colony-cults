@@ -2,6 +2,7 @@ import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { resolveArchiveRoot, resolveFetchedDir, sourceLayout } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { createCdnObjectStore } from '@/archive/cdn-object-store';
 import type { ObjectStore } from '@/archive/object-store';
 import { discoverIssueArks, CONSECUTIVE_FAILURE_ABORT } from '@/translate/source';
@@ -154,7 +155,7 @@ export async function runSummarize(
   const issueArk = args.positional[1];
   const dryRun = args.flags.dryRun;
 
-  ensureMemberLayoutRegistered(sourceId, d.sourcesDir);
+  ensureMemberLayoutRegistered(sourceId, d.sourcesDir, committedSourceFilenamePolicy());
 
   // FR-018: load the source's SSOT record ONCE and thread it into the ctx, so
   // input resolution is source-aware (Papers Past vs Gallica, language) for
@@ -323,7 +324,7 @@ export async function runSummarizeSource(
   }
   const dryRun = args.flags.dryRun;
 
-  ensureMemberLayoutRegistered(sourceId, d.sourcesDir);
+  ensureMemberLayoutRegistered(sourceId, d.sourcesDir, committedSourceFilenamePolicy());
 
   // AUDIT-20260722-04: preflight is NOT fired eagerly here -- it is passed
   // through into `SummarizeSourceCtx.preflight` below and fires lazily,

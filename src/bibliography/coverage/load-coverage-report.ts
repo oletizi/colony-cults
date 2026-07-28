@@ -8,7 +8,8 @@ import { buildCoverageReport } from '@/bibliography/coverage/coverage-model';
 import { loadAllSources } from '@/bibliography/load';
 import { loadScopesRegistry, threadIdSet } from '@/bibliography/scopes-registry';
 import { loadSearchLog } from '@/bibliography/search-log';
-import { listCorpusManifests } from '@/corpus/manifest';
+import { listCorpusManifests, type CorpusManifest } from '@/corpus/manifest';
+import { unionSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 
 /**
  * Every case id declared by ANY committed corpus manifest under `<repoRoot>/
@@ -29,12 +30,7 @@ import { listCorpusManifests } from '@/corpus/manifest';
  * the CLI composition root's `corporaRoot` is (that root is REQUIRED to
  * exist, per `@/cli/composition-root`).
  */
-function deriveAllCaseIds(repoRoot: string): ReadonlySet<string> {
-  const corporaRoot = resolveCorporaRoot(repoRoot);
-  if (!existsSync(corporaRoot)) {
-    return new Set();
-  }
-  const manifests = listCorpusManifests(corporaRoot);
+function deriveAllCaseIds(manifests: readonly CorpusManifest[]): ReadonlySet<string> {
   const caseIds = new Set<string>();
   for (const manifest of manifests) {
     for (const caseId of manifest.cases) {
@@ -42,6 +38,27 @@ function deriveAllCaseIds(repoRoot: string): ReadonlySet<string> {
     }
   }
   return caseIds;
+}
+
+/**
+ * Every committed manifest under `<repoRoot>/corpora`, loaded ONCE per report
+ * so the two policies derived from them -- the case-id set above and the
+ * source-filename policy `loadAllSources` now requires (T023, FR-018) -- come
+ * from one read of one root.
+ *
+ * ABSENCE: an absent `corpora/` directory yields an empty list, preserving
+ * this loader's documented best-effort case-id behavior. That empty list is
+ * NOT tolerated by the source-filename policy, which fails loud instead --
+ * correctly so: "no manifests" makes the case-id check merely unenforceable,
+ * but it makes Source enumeration ANSWERLESS, and quietly enumerating nothing
+ * is the failure FR-018 exists to remove.
+ */
+function listManifests(repoRoot: string): CorpusManifest[] {
+  const corporaRoot = resolveCorporaRoot(repoRoot);
+  if (!existsSync(corporaRoot)) {
+    return [];
+  }
+  return listCorpusManifests(corporaRoot);
 }
 
 /**
@@ -64,9 +81,10 @@ export function loadCoverageReport(repoRoot?: string): CoverageReport {
   const searchLogPath = path.join(root, 'bibliography', 'search-log.yml');
   const scopesPath = path.join(root, 'bibliography', 'scopes.yml');
 
-  const sources = loadAllSources(sourcesDir);
+  const manifests = listManifests(root);
+  const sources = loadAllSources(sourcesDir, unionSourceFilenamePolicy(manifests));
   const searchLog = loadSearchLog(searchLogPath);
   const threadIds = threadIdSet(loadScopesRegistry(scopesPath));
-  const validCaseIds = deriveAllCaseIds(root);
+  const validCaseIds = deriveAllCaseIds(manifests);
   return buildCoverageReport({ sources, searchLog, threadIds, validCaseIds });
 }

@@ -10,7 +10,7 @@
  * CorpusSnapshotReader / clock, a valid `rights: public-domain` Source
  * written via `writeSourceFile`, and pre-built `<issueId>.pdf` +
  * `<issueId>.input.json` fixtures (what `pdf:build` writes). Uses source id
- * `PB-990` -- the loader's `SOURCE_ID_PATTERN` rejects arbitrary ids. Counts
+ * `PB-990` -- the loader's Source-ID grammar rejects arbitrary ids. Counts
  * `ObjectStore.put` calls via a counting `FakeObjectStore` subclass, the
  * same pattern as `tests/unit/archive/store-idempotent.test.ts`'s
  * `CountingStore`.

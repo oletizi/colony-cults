@@ -187,6 +187,7 @@ async function runMuseumInventoryCli(args: {
       baseDir: repoRoot,
       registry,
       sourceIdPolicy: corpus.sourceIds,
+      sourceFilenames: corpus.sourceFilenames,
     });
     console.log(`bib inventory: created ${result.sourceId} (status: discovered, record: wanted)`);
     console.log(`  sourceArchive: ${result.record.sourceArchive}`);
@@ -296,6 +297,7 @@ export async function runInventoryCli(rest: string[], corpus: CorpusComposition)
       baseDir: repoRoot,
       resolveArk,
       sourceIdPolicy: corpus.sourceIds,
+      sourceFilenames: corpus.sourceFilenames,
     });
     console.log(`bib inventory: created ${result.sourceId} (status: discovered, record: wanted)`);
     console.log(`  sourceArchive: ${result.record.sourceArchive}`);

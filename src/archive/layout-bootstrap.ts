@@ -9,6 +9,7 @@ import {
   type ArchiveLayoutOverride,
   type ArchiveLayoutPolicy,
 } from '@/corpus/policies';
+import { unionSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import type { SourceLayout } from '@/archive/derive-layout';
 
 /**
@@ -105,7 +106,14 @@ export function composeArchiveLayoutPolicy(
     );
   }
 
-  const sources = loadAllSources(sourcesDir).map((loaded) => loaded.source);
+  // The Source files to enumerate are exactly those matching some committed
+  // corpus's declared id shapes (T023, FR-018) -- unioned from the manifests
+  // already loaded above, for the same reason the layout policy itself unions
+  // them (see this module's doc comment). No hardcoded filename pattern.
+  const sources = loadAllSources(
+    sourcesDir,
+    unionSourceFilenamePolicy(manifests),
+  ).map((loaded) => loaded.source);
 
   const overrides = new Map<string, ArchiveLayoutOverride>();
   const derived = new Map<string, SourceLayout>();

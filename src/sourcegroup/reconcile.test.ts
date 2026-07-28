@@ -11,6 +11,18 @@ import { writeFile } from 'node:fs/promises';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import { loadAllSources } from '@/bibliography/load';
 import { runReconcile, type GatherProvenanceFn } from '@/sourcegroup/reconcile';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 /**
  * Tests for `runReconcile` (TASK-21, spec-compliance for
@@ -142,7 +154,7 @@ async function seedSourcesDir(
 
 /** Read back one source's sole record status from the written SSOT file. */
 async function statusOf(dir: string, sourceId: string, archive = ARCHIVE): Promise<string> {
-  const loaded = loadAllSources(dir);
+  const loaded = loadAllSources(dir, PB_FILENAMES);
   const entry = loaded.find((l) => l.source.sourceId === sourceId);
   if (entry === undefined) {
     throw new Error(`test: ${sourceId} not found`);
@@ -524,7 +536,7 @@ describe('runReconcile', () => {
 
     await runReconcile({ sourcesDir: dir, archiveRoot: '/unused', sourceId: 'PB-P100', gather });
 
-    const loaded = loadAllSources(dir);
+    const loaded = loadAllSources(dir, PB_FILENAMES);
     const entry = loaded.find((l) => l.source.sourceId === 'PB-P100');
     expect(entry).toBeDefined();
     expect(entry?.records[0]?.folios).toEqual([48, 49, 50]);

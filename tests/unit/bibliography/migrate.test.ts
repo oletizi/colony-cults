@@ -6,6 +6,18 @@ import path from 'node:path';
 import { migrate, migrateSourceToGroup } from '@/bibliography/migrate';
 import { loadSourceFile } from '@/bibliography/load';
 import type { Source } from '@/model/source';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 /**
  * Unit tests for the five-representation -> SSOT migration (T013). Every
@@ -128,7 +140,7 @@ describe('migrate', () => {
     const repo = seedRepo();
     const arch = seedArchive();
 
-    const result = await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    const result = await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
 
     expect(result.written).toContain(sourcePath(repo, 'PB-P001'));
 
@@ -142,7 +154,7 @@ describe('migrate', () => {
   it('restores the lost SLQ copy with the real onesearch catalogUrl + SLQ ids in notes', async () => {
     const repo = seedRepo();
     const arch = seedArchive();
-    await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
 
     const loaded = loadSourceFile(sourcePath(repo, 'PB-P001'));
     const slq = loaded.records.find((r) => r.sourceArchive === 'State Library of Queensland');
@@ -159,7 +171,7 @@ describe('migrate', () => {
   it('maps the Gallica copy from the stub (mirror_status in-progress -> collecting) with ark + census', async () => {
     const repo = seedRepo();
     const arch = seedArchive();
-    await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
 
     const loaded = loadSourceFile(sourcePath(repo, 'PB-P001'));
     const gallica = loaded.records.find((r) => r.sourceArchive === 'Gallica / BnF');
@@ -174,10 +186,10 @@ describe('migrate', () => {
     const repo = seedRepo();
     const arch = seedArchive();
 
-    await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
     const first = readFileSync(sourcePath(repo, 'PB-P001'), 'utf-8');
 
-    await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
     const second = readFileSync(sourcePath(repo, 'PB-P001'), 'utf-8');
 
     expect(second).toBe(first);
@@ -186,7 +198,7 @@ describe('migrate', () => {
   it('captures a bare-ISBN tracker reference as a work-level Source identifier; a URL reference does not', async () => {
     const repo = seedRepo();
     const arch = seedArchive();
-    await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
 
     const p002 = loadSourceFile(sourcePath(repo, 'PB-P002'));
     expect(p002.source.identifiers).toEqual([{ type: 'isbn', value: '9782914612029' }]);
@@ -198,7 +210,7 @@ describe('migrate', () => {
   it('yields ZERO repository records for a wanted source with no acquired copy', async () => {
     const repo = seedRepo();
     const arch = seedArchive();
-    await migrate({ repoRoot: repo, archiveRoot: arch, write: true });
+    await migrate({ repoRoot: repo, archiveRoot: arch, write: true, sourceFilenames: PB_FILENAMES });
 
     const loaded = loadSourceFile(sourcePath(repo, 'PB-P002'));
     expect(loaded.records).toEqual([]);
@@ -214,7 +226,12 @@ describe('migrate', () => {
     const repo = seedRepo(badTracker);
 
     await expect(
-      migrate({ repoRoot: repo, archiveRoot: path.join(repo, 'archive'), write: false }),
+      migrate({
+        repoRoot: repo,
+        archiveRoot: path.join(repo, 'archive'),
+        write: false,
+        sourceFilenames: PB_FILENAMES,
+      }),
     ).rejects.toThrow(/status/i);
   });
 
@@ -226,6 +243,7 @@ describe('migrate', () => {
       repoRoot: repo,
       archiveRoot: missingArchive,
       write: true,
+      sourceFilenames: PB_FILENAMES,
     });
 
     const loaded = loadSourceFile(sourcePath(repo, 'PB-P001'));
@@ -349,7 +367,12 @@ describe('migrate: source-group preservation across a re-run (R-003)', () => {
     mkdirSync(sourcesDir, { recursive: true });
     writeFileSync(path.join(sourcesDir, 'PB-P004.yml'), EXISTING_PB_P004_GROUP_YML);
 
-    await migrate({ repoRoot: repo, archiveRoot: path.join(repo, 'archive'), write: true });
+    await migrate({
+      repoRoot: repo,
+      archiveRoot: path.join(repo, 'archive'),
+      write: true,
+      sourceFilenames: PB_FILENAMES,
+    });
 
     const loaded = loadSourceFile(sourcePath(repo, 'PB-P004'));
     expect(loaded.source.kind).toBe('source-group');
@@ -366,10 +389,20 @@ describe('migrate: source-group preservation across a re-run (R-003)', () => {
     mkdirSync(sourcesDir, { recursive: true });
     writeFileSync(path.join(sourcesDir, 'PB-P004.yml'), EXISTING_PB_P004_GROUP_YML);
 
-    await migrate({ repoRoot: repo, archiveRoot: path.join(repo, 'archive'), write: true });
+    await migrate({
+      repoRoot: repo,
+      archiveRoot: path.join(repo, 'archive'),
+      write: true,
+      sourceFilenames: PB_FILENAMES,
+    });
     const first = readFileSync(sourcePath(repo, 'PB-P004'), 'utf-8');
 
-    await migrate({ repoRoot: repo, archiveRoot: path.join(repo, 'archive'), write: true });
+    await migrate({
+      repoRoot: repo,
+      archiveRoot: path.join(repo, 'archive'),
+      write: true,
+      sourceFilenames: PB_FILENAMES,
+    });
     const second = readFileSync(sourcePath(repo, 'PB-P004'), 'utf-8');
 
     expect(second).toBe(first);
@@ -382,7 +415,12 @@ describe('migrate: source-group preservation across a re-run (R-003)', () => {
     mkdirSync(sourcesDir, { recursive: true });
     writeFileSync(path.join(sourcesDir, 'PB-P004.yml'), EXISTING_PB_P004_GROUP_YML);
 
-    await migrate({ repoRoot: repo, archiveRoot: path.join(repo, 'archive'), write: true });
+    await migrate({
+      repoRoot: repo,
+      archiveRoot: path.join(repo, 'archive'),
+      write: true,
+      sourceFilenames: PB_FILENAMES,
+    });
 
     const loaded = loadSourceFile(sourcePath(repo, 'PB-X001'));
     expect(loaded.source.kind).toBe('monograph');

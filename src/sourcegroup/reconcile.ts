@@ -1,4 +1,5 @@
 import { loadAllSources } from '@/bibliography/load';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { writeSourceFile } from '@/bibliography/source-writer';
 import type { AssetProvenance } from '@/bibliography/provenance-read';
@@ -315,7 +316,11 @@ async function reconcileFromObjectStore(
 export async function runReconcile(input: ReconcileInput): Promise<ReconcileResult> {
   assertWellFormed(input);
 
-  const loaded = loadAllSources(input.sourcesDir);
+  // T023/FR-018: enumeration takes an injected `SourceFilenamePolicy`, never a
+  // filename literal. This chain carries no corpus parameter (its input record is
+  // the CLI's, not the composition root's), so it composes the union over every
+  // COMMITTED manifest -- see `@/corpus/source-filename-bootstrap`.
+  const loaded = loadAllSources(input.sourcesDir, committedSourceFilenamePolicy());
   const entry = loaded.find((l) => l.source.sourceId === input.sourceId);
   if (entry === undefined) {
     throw new Error(`reconcile: unknown sourceId "${input.sourceId}".`);

@@ -1,5 +1,9 @@
 import { tryLoadBrowserProfile } from '@/corpus/browser-profile';
 import type { SelectedCorpus } from '@/corpus/select';
+import {
+  buildSourceFilenamePolicy,
+  type SourceFilenamePolicy,
+} from '@/corpus/source-filename-policy';
 import { deriveSourceLayout, type SourceLayout } from '@/archive/derive-layout';
 import type { Source } from '@/model/source';
 
@@ -91,6 +95,30 @@ export function deriveSourceIdPolicy(corpus: SelectedCorpus): SourceIdPolicy {
   return { prefix, padWidth };
 }
 
+/**
+ * Derive the narrow policy `@/bibliography/load`'s `loadAllSources` consumes
+ * (FR-004, FR-018): which filenames in a `bibliography/sources` directory are
+ * this corpus's Source files.
+ *
+ * PLURAL, unlike {@link deriveSourceIdPolicy}. Allocation writes into exactly
+ * ONE namespace, so the allocator's policy is singular; enumeration must
+ * recognize EVERY namespace the corpus declares, so this is built from all of
+ * `manifest.sourceIds`. For Port Breton that is `PB-P`/pad 3 AND `PB-S`/pad 3
+ * — the two together reproduce the retired `^PB-[A-Z]?\d{3}\.yml$` pattern's
+ * behavior over the shipped SSOT exactly (FR-010: 92 `PB-P###` + 2 `PB-S###`
+ * = 94 records), which a singular allocatable-only policy would NOT (it would
+ * silently drop the 2 hand-authored secondary works).
+ *
+ * The manifest loader (`@/corpus/manifest`) already guarantees `sourceIds` is
+ * non-empty, so the empty-shape-list failure in `buildSourceFilenamePolicy`
+ * is unreachable from here — it guards the other constructors (a union over
+ * committed manifests, a hand-built test policy) that do not go through the
+ * loader.
+ */
+export function deriveSourceFilenamePolicy(corpus: SelectedCorpus): SourceFilenamePolicy {
+  return buildSourceFilenamePolicy(corpus.manifest.sourceIds);
+}
+
 /** One validated per-Source archive-layout override, carried unchanged from the manifest. */
 export interface ArchiveLayoutOverride {
   readonly relativePath: string;
@@ -125,12 +153,12 @@ export interface ArchiveLayoutPolicy {
  * WHY `sources` IS A SEPARATE PARAMETER, NOT LOADED HERE: this module is a
  * PURE derivation over typed data (see the module doc comment) — it does
  * not read `bibliography/sources` itself. Enumerating "every Source that
- * belongs to this corpus" from disk is a distinct concern (today,
- * `@/bibliography/load`'s `loadAllSources` hardcodes a Port-Breton-shaped
- * `^PB-[A-Z]?\d{3}$` filename pattern — one of the very constants this spec
- * exists to retire, and generalizing it is out of this task's scope). The
- * composition root (a later task) is responsible for loading the Sources
- * and passing them in here.
+ * belongs to this corpus" from disk is a distinct concern, and since T023 it
+ * has its own narrow policy: `@/bibliography/load`'s `loadAllSources` takes
+ * the injected {@link deriveSourceFilenamePolicy} result (FR-018) in place of
+ * the retired hardcoded pattern. The composition root — for this seam,
+ * `@/archive/layout-bootstrap` — does the loading and passes the Sources in
+ * here.
  *
  * WHY THE `derived` MAP IS PRECOMPUTED HERE, NOT LAZILY INSIDE
  * `sourceLayout` (FR-017): `sourceLayout(sourceId)` (in `@/archive/

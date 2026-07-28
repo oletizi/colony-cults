@@ -21,6 +21,7 @@
 import { parseArgs as nodeParseArgs } from 'node:util';
 
 import { loadAllSources } from '@/bibliography/load';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { describeError } from '@/bibliography/load-primitives';
 import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
@@ -111,7 +112,7 @@ export async function runVerifyMemberCli(rest: string[]): Promise<number> {
     archive,
     json,
     sourcesDir: sourcesDirOf(repoRoot),
-    loadMembers: loadAllSources,
+    loadMembers: (dir) => loadAllSources(dir, committedSourceFilenamePolicy()),
     resolveArk: gallicaArkIdentifierResolver(new GallicaHttpClient(new HttpClient())),
   });
   // A verdict (pass or fail) is data -> exit 0; a tooling error -> non-zero.
@@ -149,7 +150,10 @@ export async function runPromoteCli(rest: string[]): Promise<number> {
   const repoRoot = resolveRepoRoot();
   const sourcesDir = sourcesDirOf(repoRoot);
   try {
-    const existingMembers = buildExistingMembers(loadAllSources(sourcesDir), id);
+    const existingMembers = buildExistingMembers(
+      loadAllSources(sourcesDir, committedSourceFilenamePolicy()),
+      id,
+    );
     const result = await runPromote({
       sourcesDir,
       sourceId: id,

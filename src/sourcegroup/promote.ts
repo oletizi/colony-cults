@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { authoredToRepositoryRecord } from '@/bibliography/authored-record';
 import { loadSourceFile, sourceKind } from '@/bibliography/load';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import { isFetchableWork } from '@/bibliography/scope';
 import type { VerificationVerdict } from '@/model/repository-record';
@@ -140,7 +141,11 @@ function resolvePartOfGroup(source: Source, input: PromoteInput): string {
     );
   }
 
-  const groupKind = sourceKind(partOf, input.sourcesDir);
+  // T023/FR-018: enumeration takes an injected `SourceFilenamePolicy`, never a
+  // filename literal. This chain carries no corpus parameter (its input record is
+  // the CLI's, not the composition root's), so it composes the union over every
+  // COMMITTED manifest -- see `@/corpus/source-filename-bootstrap`.
+  const groupKind = sourceKind(partOf, input.sourcesDir, committedSourceFilenamePolicy());
   if (groupKind === undefined) {
     throw new Error(
       `runPromote(${input.sourceId}): partOf "${partOf}" does not resolve to any source in ` +

@@ -13,6 +13,18 @@ import {
   registerMemberArchiveLayout,
 } from '@/cli/bib-sourcegroup';
 import { sourceLayout } from '@/archive/location';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 /**
  * Tests for `registerMemberArchiveLayout` (the gap-fix wiring): before `bib
@@ -87,7 +99,7 @@ describe('registerMemberArchiveLayout', () => {
       { source: member({ sourceId: 'PB-P920', partOf: 'PB-S901' }), records: [record()] },
     ]);
 
-    registerMemberArchiveLayout(dir, 'PB-P920');
+    registerMemberArchiveLayout(dir, 'PB-P920', PB_FILENAMES);
 
     const layout = sourceLayout('PB-P920');
     expect(layout.case).toBe('port-breton');
@@ -105,7 +117,7 @@ describe('registerMemberArchiveLayout', () => {
       },
     ]);
 
-    registerMemberArchiveLayout(dir, 'PB-P921');
+    registerMemberArchiveLayout(dir, 'PB-P921', PB_FILENAMES);
 
     expect(sourceLayout('PB-P921').case).toBe('a-different-case');
   });
@@ -119,7 +131,7 @@ describe('registerMemberArchiveLayout', () => {
       },
     ]);
 
-    registerMemberArchiveLayout(dir, 'PB-P922');
+    registerMemberArchiveLayout(dir, 'PB-P922', PB_FILENAMES);
 
     const layout = sourceLayout('PB-P922');
     expect(layout.type).toBe('newspapers');
@@ -135,7 +147,7 @@ describe('registerMemberArchiveLayout', () => {
   it('fails loud when the sourceId does not resolve to any Source', async () => {
     dir = await seedSourcesDir([{ source: group({ sourceId: 'PB-S904', case: 'port-breton' }) }]);
 
-    expect(() => registerMemberArchiveLayout(dir, 'PB-P999')).toThrow(/unknown sourceId/i);
+    expect(() => registerMemberArchiveLayout(dir, 'PB-P999', PB_FILENAMES)).toThrow(/unknown sourceId/i);
   });
 
   it('fails loud when the member\'s partOf group does not resolve to any Source', async () => {
@@ -143,7 +155,7 @@ describe('registerMemberArchiveLayout', () => {
       { source: member({ sourceId: 'PB-P923', partOf: 'PB-S999' }), records: [record()] },
     ]);
 
-    expect(() => registerMemberArchiveLayout(dir, 'PB-P923')).toThrow(/PB-S999/);
+    expect(() => registerMemberArchiveLayout(dir, 'PB-P923', PB_FILENAMES)).toThrow(/PB-S999/);
   });
 
   it('fails loud when neither the member nor its group carries a case', async () => {
@@ -155,7 +167,7 @@ describe('registerMemberArchiveLayout', () => {
       },
     ]);
 
-    expect(() => registerMemberArchiveLayout(dir, 'PB-P924')).toThrow(/case/i);
+    expect(() => registerMemberArchiveLayout(dir, 'PB-P924', PB_FILENAMES)).toThrow(/case/i);
   });
 
   it('is idempotent across repeated invocations (e.g. a retried acquire) for the same member', async () => {
@@ -164,8 +176,8 @@ describe('registerMemberArchiveLayout', () => {
       { source: member({ sourceId: 'PB-P925', partOf: 'PB-S906' }), records: [record()] },
     ]);
 
-    registerMemberArchiveLayout(dir, 'PB-P925');
-    expect(() => registerMemberArchiveLayout(dir, 'PB-P925')).not.toThrow();
+    registerMemberArchiveLayout(dir, 'PB-P925', PB_FILENAMES);
+    expect(() => registerMemberArchiveLayout(dir, 'PB-P925', PB_FILENAMES)).not.toThrow();
   });
 });
 

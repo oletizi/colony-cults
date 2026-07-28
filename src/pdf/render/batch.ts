@@ -39,6 +39,7 @@ import {
   sourceLayout,
 } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { resolveObjectStoreConfig } from '@/archive/b2-config';
 import { S3ObjectStore } from '@/archive/s3-object-store';
 import type { ObjectStore } from '@/archive/object-store';
@@ -204,9 +205,16 @@ function hasArchiveDir(sourceId: string, archiveRoot: string): boolean {
  */
 function discoverBuildableSourceIds(repoRoot: string, archiveRoot: string): string[] {
   const bibliographyDir = path.join(repoRoot, 'bibliography', 'sources');
-  const sourceIds = loadAllSources(bibliographyDir).map((loaded) => loaded.source.sourceId);
+  // T023/FR-018: which files are Sources comes from the committed corpora, not
+  // from a filename literal. This build has no `--corpus` of its own, so it
+  // uses the union over every committed manifest -- see
+  // `@/corpus/source-filename-bootstrap`.
+  const sourceFilenames = committedSourceFilenamePolicy();
+  const sourceIds = loadAllSources(bibliographyDir, sourceFilenames).map(
+    (loaded) => loaded.source.sourceId,
+  );
   for (const sourceId of sourceIds) {
-    ensureMemberLayoutRegistered(sourceId, bibliographyDir);
+    ensureMemberLayoutRegistered(sourceId, bibliographyDir, sourceFilenames);
   }
   return sourceIds.filter((sourceId) => hasArchiveDir(sourceId, archiveRoot)).sort();
 }
@@ -237,7 +245,7 @@ export async function buildSource(
   // to the static `SOURCE_LAYOUTS` registry -- derive+register its layout
   // BEFORE `resolveArchiveSource` needs it (a no-op for every other source,
   // see the bridge's own doc comment).
-  ensureMemberLayoutRegistered(sourceId, bibliographyDir);
+  ensureMemberLayoutRegistered(sourceId, bibliographyDir, committedSourceFilenamePolicy());
 
   // Spec 017 T008: a source-group MEMBER collapses its N page-master
   // segments into ONE PDF page via `buildMemberItem`, an entirely different

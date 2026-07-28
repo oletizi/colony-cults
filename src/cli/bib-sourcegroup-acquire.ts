@@ -23,6 +23,8 @@ import { deriveSourceLayout, registerSourceLayout, resolveArchiveRoot } from '@/
 import { runFetchSource } from '@/cli/fetch';
 import { parseCheckpointEvery } from '@/cli/parse';
 import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { runAcquire } from '@/sourcegroup/acquire';
 import { buildMuseumAdapterForMember } from '@/cli/bib-acquire-museum';
 import { buildInternetArchiveAdapterForMember } from '@/cli/bib-acquire-internet-archive';
@@ -49,8 +51,12 @@ import type { RepositoryRecord } from '@/model/repository-record';
  * directly unit-testable without standing up the full CLI (real repo root,
  * real network-backed fetcher).
  */
-export function registerMemberArchiveLayout(sourcesDir: string, id: string): void {
-  const loaded = loadAllSources(sourcesDir);
+export function registerMemberArchiveLayout(
+  sourcesDir: string,
+  id: string,
+  sourceFilenames: SourceFilenamePolicy,
+): void {
+  const loaded = loadAllSources(sourcesDir, sourceFilenames);
   const memberEntry = loaded.find((entry) => entry.source.sourceId === id);
   if (memberEntry === undefined) {
     throw new Error(`bib acquire: unknown sourceId "${id}" -- cannot resolve its archive layout`);
@@ -187,10 +193,13 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
 
   const repoRoot = resolveRepoRoot();
   const sourcesDir = sourcesDirOf(repoRoot);
+  // The committed corpora's Source-filename policy (T023, FR-018), composed
+  // ONCE here and threaded into every helper below that enumerates the SSOT.
+  const sourceFilenames = committedSourceFilenamePolicy();
   try {
     // Auto-register this member's archive layout BEFORE the fetcher (below)
     // resolves it -- see `registerMemberArchiveLayout`'s doc comment.
-    registerMemberArchiveLayout(sourcesDir, id);
+    registerMemberArchiveLayout(sourcesDir, id, sourceFilenames);
 
     // Register all FOUR adapters: the Gallica fetcher is always injected;
     // the museum adapter (T019), the Internet Archive adapter (T026/T027),
@@ -200,13 +209,20 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
     // / `buildPapersPastAdapterForMember`), so an ark acquire never pays the
     // museum's B2/codex cost, the IA path's poppler/staging cost, or the
     // Papers Past path's browser/B2 cost.
-    const museumAdapter = await buildMuseumAdapterForMember(sourcesDir, id, archive);
-    const internetArchiveAdapter = await buildInternetArchiveAdapterForMember(sourcesDir, id, archive, {
-      approvedRange,
-      reject,
-      notes,
-    });
-    const papersPastAdapter = await buildPapersPastAdapterForMember(sourcesDir, id, archive);
+    const museumAdapter = await buildMuseumAdapterForMember(sourcesDir, id, archive, sourceFilenames);
+    const internetArchiveAdapter = await buildInternetArchiveAdapterForMember(
+      sourcesDir,
+      id,
+      archive,
+      sourceFilenames,
+      { approvedRange, reject, notes },
+    );
+    const papersPastAdapter = await buildPapersPastAdapterForMember(
+      sourcesDir,
+      id,
+      archive,
+      sourceFilenames,
+    );
 
     // For a B2-direct acquire (museum / Internet Archive / Papers Past), give
     // runAcquire the archive-clone root + object-store coordinates so it
@@ -338,9 +354,10 @@ function selectedCopyHasRecordedAssets(
   sourcesDir: string,
   id: string,
   archive: string | undefined,
+  sourceFilenames: SourceFilenamePolicy,
 ): boolean {
   try {
-    const loaded = loadAllSources(sourcesDir);
+    const loaded = loadAllSources(sourcesDir, sourceFilenames);
     const entry = loaded.find((e) => e.source.sourceId === id);
     if (entry === undefined) {
       return false;
@@ -396,7 +413,8 @@ export async function runReconcileCli(rest: string[]): Promise<number> {
 
   const repoRoot = resolveRepoRoot();
   const sourcesDir = sourcesDirOf(repoRoot);
-  const isMuseumCopy = selectedCopyHasRecordedAssets(sourcesDir, id, archive);
+  const sourceFilenames = committedSourceFilenamePolicy();
+  const isMuseumCopy = selectedCopyHasRecordedAssets(sourcesDir, id, archive, sourceFilenames);
   try {
     let result: ReconcileResult;
     if (isMuseumCopy) {
@@ -415,7 +433,7 @@ export async function runReconcileCli(rest: string[]): Promise<number> {
       // source's slug via the synchronous, sourceId-only `sourceLayout(sourceId)`,
       // which throws for a source-group member absent this runtime overlay.
       const archiveRoot = resolveArchiveRoot(repoRoot, archiveRootOverride);
-      registerMemberArchiveLayout(sourcesDir, id);
+      registerMemberArchiveLayout(sourcesDir, id, sourceFilenames);
       result = await runReconcile({
         sourcesDir,
         archiveRoot,

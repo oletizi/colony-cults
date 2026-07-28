@@ -10,6 +10,18 @@ import { runPromote } from '@/sourcegroup/promote';
 import { loadAllSources, loadSourceFile } from '@/bibliography/load';
 import type { ArkResolver, ExistingMemberRecord } from '@/sourcegroup/verify-member';
 import type { SourceIdPolicy } from '@/corpus/policies';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 /** The real, shipped Port Breton allocatable policy (`corpora/port-breton.yml`). */
 const PORT_BRETON_POLICY: SourceIdPolicy = { prefix: 'PB-P', padWidth: 3 };
@@ -118,6 +130,7 @@ describe('reusability (T038, SC-003/FR-023): inventory -> verify-member -> promo
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       resolveArk: inventoryResolverFor(secondGroupArkMetadata()),
     });
 
@@ -134,7 +147,7 @@ describe('reusability (T038, SC-003/FR-023): inventory -> verify-member -> promo
     const verifyResult = await runVerifyMember({
       id: memberId,
       sourcesDir,
-      loadMembers: (dir) => loadAllSources(dir),
+      loadMembers: (dir) => loadAllSources(dir, PB_FILENAMES),
       resolveArk: resolvesLive,
     });
 
@@ -204,6 +217,7 @@ describe('reusability (T038, SC-003/FR-023): inventory -> verify-member -> promo
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       resolveArk: inventoryResolverFor(secondGroupArkMetadata()),
     });
 
@@ -306,7 +320,7 @@ describe('shipped second-group fixture (__fixtures__/PB-S901.yml) loads via the 
   });
 
   it('loadAllSources scans the fixtures dir and includes both PB-P004 and PB-S901 as distinct source-groups', () => {
-    const loaded = loadAllSources(fixturesDir);
+    const loaded = loadAllSources(fixturesDir, PB_FILENAMES);
     const ids = loaded.map((l) => l.source.sourceId);
 
     expect(ids).toContain('PB-P004');

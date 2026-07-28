@@ -31,6 +31,7 @@ import path from 'node:path';
 import { resolveArchiveRoot } from '@/archive/location';
 import { authoredToRepositoryRecord } from '@/bibliography/authored-record';
 import { loadAllSources, loadSourceFile } from '@/bibliography/load';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { resolveRepoRoot } from '@/browser/load/repo-root';
 import { resolvePdfConfig } from '@/pdf/config';
 import { makeArchivePinReader } from '@/pdf/load/edition';
@@ -95,7 +96,10 @@ export function orderGroupMembers<T extends { sourceId: string; articleDate: str
  */
 function enumerateGroupMembers(groupId: string, bibliographyDir: string): MemberWithRecords[] {
   const members: MemberWithRecords[] = [];
-  for (const { source, records } of loadAllSources(bibliographyDir)) {
+  for (const { source, records } of loadAllSources(
+    bibliographyDir,
+    committedSourceFilenamePolicy(),
+  )) {
     if (source.partOf !== groupId) {
       continue;
     }

@@ -7,6 +7,19 @@ import { runInventory } from '@/sourcegroup/inventory';
 import type { ArkMetadata, ArkResolver } from '@/sourcegroup/inventory';
 import { loadSourceFile } from '@/bibliography/load';
 import type { SourceIdPolicy } from '@/corpus/policies';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes plus the bare `PB-###` shape
+ * this file's fixtures use, as the `SourceFilenamePolicy` `loadAllSources` now
+ * REQUIRES (T023, FR-018).
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+  { prefix: 'PB-', padWidth: 3 },
+]);
+
 
 /** The real, shipped Port Breton allocatable policy (`corpora/port-breton.yml`). */
 const PORT_BRETON_POLICY: SourceIdPolicy = { prefix: 'PB-P', padWidth: 3 };
@@ -87,6 +100,7 @@ describe('runInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       resolveArk: resolverFor(publicDomainMetadata()),
     });
 
@@ -133,6 +147,7 @@ describe('runInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       resolveArk: resolverFor(publicDomainMetadata()),
     });
 
@@ -150,6 +165,7 @@ describe('runInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       resolveArk: resolverFor(publicDomainMetadata()),
     });
 
@@ -167,6 +183,7 @@ describe('runInventory', () => {
         sourcesDir,
         baseDir,
         sourceIdPolicy: PORT_BRETON_POLICY,
+        sourceFilenames: PB_FILENAMES,
         resolveArk: resolverFor(publicDomainMetadata()),
       }),
     ).rejects.toThrow(/PB-S999/);
@@ -185,6 +202,7 @@ describe('runInventory', () => {
         sourcesDir,
         baseDir,
         sourceIdPolicy: PORT_BRETON_POLICY,
+        sourceFilenames: PB_FILENAMES,
         resolveArk: resolverFor(publicDomainMetadata()),
       }),
     ).rejects.toThrow(/not a source-group|kind "monograph"/i);
@@ -204,6 +222,7 @@ describe('runInventory', () => {
         sourcesDir,
         baseDir,
         sourceIdPolicy: PORT_BRETON_POLICY,
+        sourceFilenames: PB_FILENAMES,
         resolveArk: resolverFor(null),
       }),
     ).rejects.toThrow(/ark/i);
@@ -221,6 +240,7 @@ describe('runInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       resolveArk: resolverFor(
         publicDomainMetadata({ rightsRaw: 'Copyrighted -- access restricted' }),
       ),
@@ -243,6 +263,7 @@ describe('runInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       resolveArk: resolverFor(publicDomainMetadata()),
     });
 
@@ -252,6 +273,7 @@ describe('runInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       resolveArk: resolverFor(
         publicDomainMetadata({ retrievedAt: '2026-07-11T00:00:00.000Z' }),
       ),
@@ -276,6 +298,7 @@ describe('runInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       resolveArk: resolverFor(publicDomainMetadata({ language: undefined })),
     });
 
@@ -293,6 +316,7 @@ describe('runInventory', () => {
         sourcesDir,
         baseDir,
         sourceIdPolicy: PORT_BRETON_POLICY,
+        sourceFilenames: PB_FILENAMES,
         resolveArk: resolverFor(publicDomainMetadata({ archive: undefined })),
       }),
     ).rejects.toThrow(/archive/i);

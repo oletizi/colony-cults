@@ -4,10 +4,12 @@ import { fileURLToPath } from 'node:url';
 
 import {
   deriveScopeContext,
+  deriveSourceFilenamePolicy,
   deriveSourceIdPolicy,
   type ScopeResolutionContext,
   type SourceIdPolicy,
 } from '@/corpus/policies';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { selectCorpus, type SelectedCorpus } from '@/corpus/select';
 
 /**
@@ -82,8 +84,10 @@ export function resolveCorporaRoot(repoRoot: string): string {
  *   Source id; see `@/corpus/policies`). Loading the whole SSOT for every
  *   command — including commands that never touch a layout — would change
  *   observable behavior (a malformed SSOT would start failing at startup) and
- *   contradict FR-010. `archive/location.ts`'s seam is T013; the load-side
- *   `SourceFilenamePolicy` it needs is T023.
+ *   contradict FR-010. `archive/location.ts`'s seam is T013, which composes
+ *   its policy lazily in `@/archive/layout-bootstrap` — including the
+ *   `SourceFilenamePolicy` its `loadAllSources` call now requires (T023),
+ *   unioned there from the manifests it already loaded.
  * - `BrowserDefaultsPolicy` — per the FR-014 table, **no** registered CLI
  *   command consumes browser defaults; the only consumer is the Astro site
  *   build (`src/browser/config.ts`), a separate composition root wired in
@@ -97,6 +101,14 @@ export interface CorpusComposition {
   readonly scope: ScopeResolutionContext;
   /** Narrow policy for `sourcegroup/id-alloc.ts` (T012). */
   readonly sourceIds: SourceIdPolicy;
+  /**
+   * Narrow policy for `bibliography/load.ts`'s `loadAllSources` (T023,
+   * FR-018) — which filenames under `bibliography/sources` are this corpus's
+   * Source files. PLURAL where {@link CorpusComposition.sourceIds} is
+   * singular: allocation writes into one namespace, enumeration must see them
+   * all (Port Breton: `PB-P###` AND `PB-S###`).
+   */
+  readonly sourceFilenames: SourceFilenamePolicy;
 }
 
 /** Inputs to {@link composeCorpus}: pure data, resolved by the caller. */
@@ -145,6 +157,7 @@ export function composeCorpus(options: ComposeCorpusOptions): CorpusComposition 
     selected,
     scope: deriveScopeContext(selected),
     sourceIds: deriveSourceIdPolicy(selected),
+    sourceFilenames: deriveSourceFilenamePolicy(selected),
   };
 }
 

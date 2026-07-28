@@ -3,6 +3,7 @@ import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import {
   assertOcrToolchain,
   defaultOcrPreflightDeps,
@@ -92,6 +93,7 @@ export async function runOcr(
   ensureMemberLayoutRegistered(
     sourceId,
     path.join(process.cwd(), 'bibliography', 'sources'),
+    committedSourceFilenamePolicy(),
   );
   const dir = resolveFetchedDir(sourceId, issueArk, deps.archiveRoot);
 

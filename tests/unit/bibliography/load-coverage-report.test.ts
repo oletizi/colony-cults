@@ -24,6 +24,19 @@ const FIXTURES_SOURCES_DIR = path.resolve(
   'sources',
 );
 
+/** The repository's real committed manifests (`<repoRoot>/corpora`). */
+const REAL_CORPORA_ROOT = path.resolve(__dirname, '..', '..', '..', 'corpora');
+
+/**
+ * Seed a temp repoRoot with the committed corpus manifests. Since T023
+ * (FR-018) `loadCoverageReport` derives its Source-filename policy from the
+ * manifests under `<repoRoot>/corpora` -- a repo root with none cannot say
+ * which files are Sources and fails loud rather than enumerating nothing.
+ */
+function seedCorpora(repoRoot: string): void {
+  cpSync(REAL_CORPORA_ROOT, path.join(repoRoot, 'corpora'), { recursive: true });
+}
+
 let dir: string;
 
 beforeEach(() => {
@@ -53,13 +66,14 @@ describe('loadCoverageReport: fail-loud on malformed data', () => {
   it('throws rather than returning a partial report when a source is malformed', () => {
     const sourcesDir = path.join(dir, 'bibliography', 'sources');
     mkdirSync(sourcesDir, { recursive: true });
-    // Matches the loader's SOURCE_FILE_PATTERN/sourceId-stem rules by name,
-    // but omits the required `titles` field (rule 2) -- loadAllSources fails
-    // loud on this, and that failure must propagate unchanged.
+    seedCorpora(dir);
+    // Matches the corpus's Source-filename policy + the sourceId-stem rule by
+    // name, but omits the required `titles` field (rule 2) -- loadAllSources
+    // fails loud on this, and that failure must propagate unchanged.
     writeFileSync(
-      path.join(sourcesDir, 'PB-999.yml'),
+      path.join(sourcesDir, 'PB-P999.yml'),
       `
-sourceId: PB-999
+sourceId: PB-P999
 kind: monograph
 `,
       'utf-8',
@@ -75,6 +89,7 @@ describe('loadCoverageReport: absent search log is not an error', () => {
     const sourcesDir = path.join(dir, 'bibliography', 'sources');
     mkdirSync(sourcesDir, { recursive: true });
     cpSync(FIXTURES_SOURCES_DIR, sourcesDir, { recursive: true });
+    seedCorpora(dir);
     // No bibliography/search-log.yml written -- loadSearchLog's documented
     // "none logged yet" case.
 

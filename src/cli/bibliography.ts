@@ -18,6 +18,7 @@ import { runQuerySourceCli } from '@/cli/bib-query-source';
 import { runRightsAssessCli } from '@/cli/bib-rights-assess';
 import { deriveModel, gatherCensusForAll, gatherProvenance } from '@/bibliography/derive';
 import { loadAllSources } from '@/bibliography/load';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { describeError } from '@/bibliography/load-primitives';
 import { migrate } from '@/bibliography/migrate';
 import { buildViewRegistry, readViewIfExists } from '@/bibliography/regenerate';
@@ -105,7 +106,7 @@ async function gatherProvenanceForAll(
 }
 
 /** `bib migrate [--archive-root <path>]`: fold the legacy representations into the SSOT. */
-async function runMigrate(rest: string[]): Promise<number> {
+async function runMigrate(rest: string[], corpus: CorpusComposition): Promise<number> {
   let args: BibArgs;
   try {
     args = parseBibArgs(rest);
@@ -115,7 +116,12 @@ async function runMigrate(rest: string[]): Promise<number> {
   }
   const repoRoot = resolveRepoRoot();
   try {
-    const result = await migrate({ repoRoot, archiveRoot: args.archiveRoot, write: true });
+    const result = await migrate({
+      repoRoot,
+      archiveRoot: args.archiveRoot,
+      write: true,
+      sourceFilenames: corpus.sourceFilenames,
+    });
     console.log(`bib migrate: wrote ${result.written.length} SSOT file(s):`);
     for (const file of result.written) {
       console.log(`  ${file}`);
@@ -233,7 +239,7 @@ function printShow(source: Source, records: RepositoryRecord[], members: readonl
 }
 
 /** `bib show <sourceId> [--json] [--archive-root <path>]`: the canonical model for one source. */
-async function runShow(rest: string[]): Promise<number> {
+async function runShow(rest: string[], corpus: CorpusComposition): Promise<number> {
   let args: BibArgs;
   try {
     args = parseBibArgs(rest);
@@ -254,7 +260,7 @@ async function runShow(rest: string[]): Promise<number> {
   let records: RepositoryRecord[];
   let members: Source[] = [];
   try {
-    const loaded = loadAllSources(sourcesDir);
+    const loaded = loadAllSources(sourcesDir, corpus.sourceFilenames);
     const archiveRoot = resolveArchiveRoot(repoRoot, args.archiveRoot);
     const provenanceBySource = await gatherProvenanceForAll(
       loaded.map((entry) => entry.source),
@@ -356,7 +362,7 @@ async function runValidate(rest: string[], corpus: CorpusComposition): Promise<n
     // escapes the archive root (AUDIT-20260722-15/-12) fails loud here,
     // naming the offending source, instead of loading silently.
     const archiveRoot = resolveArchiveRoot(repoRoot, args.archiveRoot);
-    const loaded = loadAllSources(sourcesDir, archiveRoot);
+    const loaded = loadAllSources(sourcesDir, corpus.sourceFilenames, archiveRoot);
     const searchLog = loadSearchLogForValidate(repoRoot);
     const provenanceBySource = await gatherProvenanceForAll(
       loaded.map((entry) => entry.source),
@@ -394,9 +400,13 @@ async function runValidate(rest: string[], corpus: CorpusComposition): Promise<n
 }
 
 /** Build the canonical model the same way `runShow`/`runValidate` do. */
-async function buildCanonicalModel(repoRoot: string, archiveRootOverride: string | undefined): Promise<CanonicalModel> {
+async function buildCanonicalModel(
+  repoRoot: string,
+  archiveRootOverride: string | undefined,
+  sourceFilenames: SourceFilenamePolicy,
+): Promise<CanonicalModel> {
   const sourcesDir = path.join(repoRoot, 'bibliography', 'sources');
-  const loaded = loadAllSources(sourcesDir);
+  const loaded = loadAllSources(sourcesDir, sourceFilenames);
   const archiveRoot = resolveArchiveRoot(repoRoot, archiveRootOverride);
   const provenanceBySource = await gatherProvenanceForAll(
     loaded.map((entry) => entry.source),
@@ -456,7 +466,7 @@ function runRegenerateWrite(views: readonly ViewInstance[], repoRoot: string): n
  * exits `1` if any view would change (drift) or `0` if both are already in
  * sync (contracts/cli.md).
  */
-async function runRegenerate(rest: string[]): Promise<number> {
+async function runRegenerate(rest: string[], corpus: CorpusComposition): Promise<number> {
   let args: BibArgs;
   try {
     args = parseBibArgs(rest);
@@ -468,7 +478,7 @@ async function runRegenerate(rest: string[]): Promise<number> {
   const repoRoot = resolveRepoRoot();
   let model: CanonicalModel;
   try {
-    model = await buildCanonicalModel(repoRoot, args.archiveRoot);
+    model = await buildCanonicalModel(repoRoot, args.archiveRoot, corpus.sourceFilenames);
   } catch (error) {
     console.error(`bib regenerate: ${describeError(error)}`);
     return 2;
@@ -505,13 +515,13 @@ export async function runBibliography(
   }
   switch (subaction) {
     case 'migrate':
-      return runMigrate(rest);
+      return runMigrate(rest, requireCorpus(corpus, 'bib migrate'));
     case 'show':
-      return runShow(rest);
+      return runShow(rest, requireCorpus(corpus, 'bib show'));
     case 'validate':
       return runValidate(rest, requireCorpus(corpus, 'bib validate'));
     case 'regenerate':
-      return runRegenerate(rest);
+      return runRegenerate(rest, requireCorpus(corpus, 'bib regenerate'));
     case 'inventory':
       return runInventoryCli(rest, requireCorpus(corpus, 'bib inventory'));
     case 'verify-member':

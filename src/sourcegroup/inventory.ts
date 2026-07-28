@@ -6,6 +6,7 @@ import { serializeSource } from '@/bibliography/migrate-serialize';
 import type { RightsStatus } from '@/bibliography/vocab';
 import { allocateMemberId } from '@/sourcegroup/id-alloc';
 import type { SourceIdPolicy } from '@/corpus/policies';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { writeSnapshot } from '@/sourcegroup/snapshot';
 import type { MetadataSnapshotRef } from '@/model/repository-record';
 import type { RepositoryRecord } from '@/model/repository-record';
@@ -122,6 +123,15 @@ export interface RunInventoryInput {
    * itself.
    */
   sourceIdPolicy: SourceIdPolicy;
+  /**
+   * The selected corpus's `SourceFilenamePolicy` (FR-004/FR-018), derived at
+   * the composition root by `@/corpus/policies`' `deriveSourceFilenamePolicy`
+   * and threaded straight through to `resolveSourceGroup` -- this module names
+   * no corpus-specific filename pattern itself. PLURAL where
+   * {@link RunInventoryInput.sourceIdPolicy} is singular: allocation writes
+   * into ONE namespace, enumeration must recognize them all.
+   */
+  sourceFilenames: SourceFilenamePolicy;
 }
 
 /** The outcome of one `runInventory` call. */
@@ -170,10 +180,14 @@ function normalizeRightsStatus(rightsRaw: string | undefined): RightsStatus {
  * `runMuseumInventory` -- the `--repository`-routed sibling of `runInventory`
  * -- can reuse this SAME group-resolution rule rather than duplicating it.
  */
-export function resolveSourceGroup(sourcesDir: string, groupId: string): LoadedSource {
+export function resolveSourceGroup(
+  sourcesDir: string,
+  groupId: string,
+  sourceFilenames: SourceFilenamePolicy,
+): LoadedSource {
   let loaded: ReturnType<typeof loadAllSources>;
   try {
-    loaded = loadAllSources(sourcesDir);
+    loaded = loadAllSources(sourcesDir, sourceFilenames);
   } catch (error) {
     throw new Error(
       `runInventory: cannot resolve --group "${groupId}": failed to load sources from ` +
@@ -216,7 +230,7 @@ export async function runInventory(input: RunInventoryInput): Promise<RunInvento
   // member's `case` (below) -- a member is self-describing for archive-layout
   // derivation (see `@/archive/location`'s `deriveSourceLayout`) without
   // requiring a second lookup at acquire time.
-  const group = resolveSourceGroup(sourcesDir, groupId);
+  const group = resolveSourceGroup(sourcesDir, groupId, input.sourceFilenames);
 
   // FR-002: resolve the ark's metadata via the injected resolver. A `null`
   // result (unresolvable ark) fails loud without writing anything; a thrown

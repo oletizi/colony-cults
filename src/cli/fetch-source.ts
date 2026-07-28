@@ -3,6 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { sourceKind } from '@/bibliography/load';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { issueDir, monographDir, sourceLayout } from '@/archive/location';
 import { buildCensus } from '@/census/build';
 import { serializeCensus } from '@/census/serialize';
@@ -49,7 +50,7 @@ export async function runFetchSource(
   // otherwise surface the opaque "no archive layout registered" error instead
   // of this actionable redirect. Must run BEFORE `sourceLayout` is consulted.
   const sourcesDir = path.join(deps.repoRoot, 'bibliography', 'sources');
-  if (sourceKind(sourceId, sourcesDir) === 'source-group') {
+  if (sourceKind(sourceId, sourcesDir, committedSourceFilenamePolicy()) === 'source-group') {
     throw new Error(
       `fetch-source: "${sourceId}" is a Source Group — it has no archival object to fetch. ` +
         `Discover and inventory its members, then fetch the members.`,

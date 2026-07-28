@@ -10,6 +10,18 @@ import { serializeSource } from '@/bibliography/migrate-serialize';
 import { loadAllSources } from '@/bibliography/load';
 import { runAcquire, type FetchSourceFn } from '@/sourcegroup/acquire';
 import { runReconcile, type GatherProvenanceFn } from '@/sourcegroup/reconcile';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 /**
  * CHARACTERIZATION TESTS for the shipped Gallica acquisition path (spec 011,
@@ -360,7 +372,7 @@ describe('Gallica acquisition path — characterization (pre-cutover baseline)',
     expect(result.changed).toBe(true);
 
     // The transition is persisted back to the SSOT (to-collect -> archived).
-    const reloaded = loadAllSources(dir).find((l) => l.source.sourceId === 'PB-P100');
+    const reloaded = loadAllSources(dir, PB_FILENAMES).find((l) => l.source.sourceId === 'PB-P100');
     expect(reloaded?.records[0]?.status).toBe('archived');
   });
 
@@ -379,7 +391,7 @@ describe('Gallica acquisition path — characterization (pre-cutover baseline)',
     });
 
     expect(result.status).toBe('collected');
-    const reloaded = loadAllSources(dir).find((l) => l.source.sourceId === 'PB-P100');
+    const reloaded = loadAllSources(dir, PB_FILENAMES).find((l) => l.source.sourceId === 'PB-P100');
     expect(reloaded?.records[0]?.status).toBe('collected');
   });
 });

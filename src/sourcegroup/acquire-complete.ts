@@ -1,6 +1,7 @@
 import { runReconcile } from '@/sourcegroup/reconcile';
 import { verifyRecordComplete } from '@/sourcegroup/acquire-completeness';
 import { loadAllSources } from '@/bibliography/load';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { writeSourceFile } from '@/bibliography/source-writer';
 import { writeRecordCompanions } from '@/archive/write-record-companions';
 import type { CompanionObjectStore } from '@/archive/write-record-companions';
@@ -52,7 +53,11 @@ async function completeAndVerify(
   // qualityAssessment, excludedLeaves, metadataSnapshot) plus the advanced
   // status, so the on-disk record is the single source of truth the verifier
   // must judge. `reconciled.status` is passed as the authoritative outcome.
-  const loaded = loadAllSources(input.sourcesDir);
+  // T023/FR-018: enumeration takes an injected `SourceFilenamePolicy`, never a
+  // filename literal. This chain carries no corpus parameter (its input record is
+  // the CLI's, not the composition root's), so it composes the union over every
+  // COMMITTED manifest -- see `@/corpus/source-filename-bootstrap`.
+  const loaded = loadAllSources(input.sourcesDir, committedSourceFilenamePolicy());
   const persisted = loaded
     .find((l) => l.source.sourceId === input.sourceId)
     ?.records.find((r) => r.sourceArchive === record.sourceArchive);

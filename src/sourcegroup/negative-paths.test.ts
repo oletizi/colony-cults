@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi, beforeAll, afterAll } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -13,6 +13,36 @@ import { runExcludeMember } from '@/sourcegroup/exclude-member';
 import { runAcquire, type FetchSourceFn } from '@/sourcegroup/acquire';
 import { runVerifyMember } from '@/sourcegroup/verify-member-command';
 import type { ArkResolver, ExistingMemberRecord } from '@/sourcegroup/verify-member';
+import { installSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * These fixtures use a `PB-G###` group namespace, which the COMMITTED Port
+ * Breton manifest does not declare (`PB-P###` + `PB-S###`). Since T023
+ * (FR-018) the SSOT enumeration path takes an injected `SourceFilenamePolicy`
+ * instead of a hardcoded pattern, so this suite installs the policy its own
+ * fixtures need -- the same seam an alternative composition root or a second
+ * corpus uses (SC-003). Installed once for the file and cleared afterwards so
+ * no other suite inherits it.
+ */
+const FIXTURE_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+  { prefix: 'PB-G', padWidth: 3 },
+]);
+
+beforeAll(() => {
+  installSourceFilenamePolicy(FIXTURE_FILENAMES);
+});
+
+afterAll(() => {
+  installSourceFilenamePolicy(null);
+});
+
+
+/** This suite's own enumeration calls use the same fixture policy. */
+const PB_FILENAMES = FIXTURE_FILENAMES;
+
 
 /**
  * T035 — fail-loud negative-path coverage sweep (spec SC-005 / FR-021).
@@ -239,7 +269,7 @@ describe('negative-path sweep: gaps found and filled (T035)', () => {
       const result = await runVerifyMember({
         id: MEMBER_ID,
         sourcesDir: dir,
-        loadMembers: (sourcesDir) => loadAllSources(sourcesDir),
+        loadMembers: (sourcesDir) => loadAllSources(sourcesDir, PB_FILENAMES),
         resolveArk: resolvesLive,
       });
 

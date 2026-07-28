@@ -6,6 +6,7 @@ import { parseCsv } from '@/bibliography/csv';
 import { deriveModel, gatherCensusForAll, gatherProvenance } from '@/bibliography/derive';
 import { loadAllSources } from '@/bibliography/load';
 import type { LoadedSource } from '@/bibliography/load';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import type { AuthoredRepositoryRecord, CanonicalModel } from '@/bibliography/model';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import type { MigratedSource } from '@/bibliography/migrate-serialize';
@@ -38,6 +39,13 @@ export interface MigrateOptions {
   archiveRoot?: string;
   /** Persist the SSOT files to disk (default `true`). */
   write?: boolean;
+  /**
+   * The selected corpus's Source-filename policy (T023, FR-018), threaded from
+   * the composition root through `@/cli/bibliography`'s `runMigrate`.
+   * REQUIRED -- migration re-reads the SSOT it just wrote, and a wrong or
+   * defaulted policy would silently re-read NOTHING.
+   */
+  sourceFilenames: SourceFilenamePolicy;
 }
 
 /** Result of a migration run. */
@@ -433,7 +441,7 @@ export async function migrate(opts: MigrateOptions): Promise<MigrateResult> {
   // promotion, with zero repository records (a group holds none).
   const existingGroups = new Map<string, Source>();
   if (existsSync(sourcesDir)) {
-    for (const existing of loadAllSources(sourcesDir)) {
+    for (const existing of loadAllSources(sourcesDir, opts.sourceFilenames)) {
       if (existing.source.kind === 'source-group') {
         existingGroups.set(existing.source.sourceId, existing.source);
       }
@@ -457,7 +465,7 @@ export async function migrate(opts: MigrateOptions): Promise<MigrateResult> {
   }
 
   const loaded: LoadedSource[] = write
-    ? loadAllSources(sourcesDir)
+    ? loadAllSources(sourcesDir, opts.sourceFilenames)
     : finalized.map((entry) => ({ source: entry.source, records: entry.records, identifierLeaks: [] }));
 
   const provenanceBySource = new Map<string, AssetProvenance[]>();

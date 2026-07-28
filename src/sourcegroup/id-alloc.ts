@@ -33,6 +33,7 @@
 import { readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { escapeRegExp } from '@/corpus/escape-regexp';
 import type { SourceIdPolicy } from '@/corpus/policies';
 
 /** Default bound on EEXIST retries before failing loud. */
@@ -45,20 +46,6 @@ const DEFAULT_MAX_RETRIES = 50;
  * MUST be a pure function of the candidate id.
  */
 export type MemberContent = string | ((allocatedId: string) => string | Promise<string>);
-
-/**
- * Escape a string for literal (non-metacharacter) use inside a `RegExp`
- * pattern. Defensive: the prefix grammar (FR-002a,
- * `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$`) means `-` is the only non-alphanumeric
- * character a valid prefix can contain today, and `-` is not a regex
- * metacharacter outside a character class — but this escapes the full
- * metacharacter set anyway rather than relying on that grammar holding
- * forever, since a raw interpolation would silently corrupt the pattern for
- * any prefix containing `.`, `*`, `+`, etc.
- */
-function escapeRegExp(literal: string): string {
-  return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 /**
  * Build the filename-matching regex for a `SourceIdPolicy`'s prefix: matches

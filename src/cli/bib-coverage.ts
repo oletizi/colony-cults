@@ -61,7 +61,7 @@ export async function runCoverageCli(rest: string[], corpus: CorpusComposition):
   const scopesPath = path.join(repoRoot, 'bibliography', 'scopes.yml');
 
   try {
-    const sources = loadAllSources(sourcesDir);
+    const sources = loadAllSources(sourcesDir, corpus.sourceFilenames);
     const searchLog = loadSearchLog(searchLogPath);
     const threadIds = threadIdSet(loadScopesRegistry(scopesPath));
     const report = buildCoverageReport({

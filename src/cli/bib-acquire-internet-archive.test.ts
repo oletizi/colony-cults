@@ -8,9 +8,22 @@ import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import type { QualityGateInput } from '@/repository/internet-archive/quality-gate';
 import {
+
   buildInternetArchiveAdapterForMember,
   makeCliQualityGate,
 } from '@/cli/bib-acquire-internet-archive';
+
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
 
 /**
  * Tests for the Internet Archive `bib acquire` composition-root wiring
@@ -165,7 +178,7 @@ describe('buildInternetArchiveAdapterForMember', () => {
       { source: member(), records: [arkRecord()] },
     ]);
 
-    const adapter = await buildInternetArchiveAdapterForMember(dir, 'PB-P910', undefined);
+    const adapter = await buildInternetArchiveAdapterForMember(dir, 'PB-P910', undefined, PB_FILENAMES);
 
     expect(adapter).toBeUndefined();
   });
@@ -173,7 +186,7 @@ describe('buildInternetArchiveAdapterForMember', () => {
   it('returns undefined for an unknown sourceId', async () => {
     dir = await seedSourcesDir([{ source: group(), records: [] }]);
 
-    const adapter = await buildInternetArchiveAdapterForMember(dir, 'PB-P999', undefined);
+    const adapter = await buildInternetArchiveAdapterForMember(dir, 'PB-P999', undefined, PB_FILENAMES);
 
     expect(adapter).toBeUndefined();
   });
@@ -230,7 +243,7 @@ describe('buildInternetArchiveAdapterForMember', () => {
         { source: member({ sourceId: 'PB-P911' }), records: [iaRecord()] },
       ]);
 
-      const adapter = await buildInternetArchiveAdapterForMember(dir, 'PB-P911', undefined);
+      const adapter = await buildInternetArchiveAdapterForMember(dir, 'PB-P911', undefined, PB_FILENAMES);
 
       expect(adapter).toBeDefined();
       expect(adapter?.repository).toBe('internet-archive');
@@ -243,7 +256,7 @@ describe('buildInternetArchiveAdapterForMember', () => {
         { source: member({ sourceId: 'PB-P912' }), records: [iaRecord()] },
       ]);
 
-      const adapter = await buildInternetArchiveAdapterForMember(dir, 'PB-P912', undefined, {
+      const adapter = await buildInternetArchiveAdapterForMember(dir, 'PB-P912', undefined, PB_FILENAMES, {
         approvedRange: { start: 4, end: 368 },
       });
 

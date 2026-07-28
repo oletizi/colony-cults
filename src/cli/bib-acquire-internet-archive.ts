@@ -31,6 +31,7 @@
  */
 
 import { loadAllSources } from '@/bibliography/load';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { HttpClient } from '@/gallica/http-client';
 import { InternetArchiveAdapter } from '@/repository/internet-archive/adapter';
@@ -131,11 +132,12 @@ export async function buildInternetArchiveAdapterForMember(
   sourcesDir: string,
   id: string,
   archive: string | undefined,
+  sourceFilenames: SourceFilenamePolicy,
   gateOptions?: AcquireGateOptions,
 ): Promise<RepositoryAdapter | undefined> {
   let record: RepositoryRecord;
   try {
-    const loaded = loadAllSources(sourcesDir);
+    const loaded = loadAllSources(sourcesDir, sourceFilenames);
     const entry = loaded.find((e) => e.source.sourceId === id);
     if (entry === undefined) {
       return undefined;

@@ -10,6 +10,7 @@
  */
 
 import { loadAllSources } from '@/bibliography/load';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
 import { PapersPastAdapter } from '@/repository/papers-past/adapter';
 import { PlaywrightBrowserSession } from '@/sourcequery/browser-session-playwright';
@@ -36,10 +37,11 @@ export async function buildPapersPastAdapterForMember(
   sourcesDir: string,
   id: string,
   archive: string | undefined,
+  sourceFilenames: SourceFilenamePolicy,
 ): Promise<RepositoryAdapter | undefined> {
   let record: RepositoryRecord;
   try {
-    const loaded = loadAllSources(sourcesDir);
+    const loaded = loadAllSources(sourcesDir, sourceFilenames);
     const entry = loaded.find((e) => e.source.sourceId === id);
     if (entry === undefined) {
       return undefined;

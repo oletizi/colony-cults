@@ -1,4 +1,5 @@
 import { loadAllSources } from '@/bibliography/load';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import type { CompanionObjectStore } from '@/archive/write-record-companions';
 import { isFetchableWork } from '@/bibliography/scope';
 import { selectRepositoryRecord } from '@/sourcegroup/record-select';
@@ -323,7 +324,11 @@ function assertWellFormed(input: AcquireInput): void {
 export async function runAcquire(input: AcquireInput): Promise<AcquireResult> {
   assertWellFormed(input);
 
-  const loaded = loadAllSources(input.sourcesDir);
+  // T023/FR-018: enumeration takes an injected `SourceFilenamePolicy`, never a
+  // filename literal. This chain carries no corpus parameter (its input record is
+  // the CLI's, not the composition root's), so it composes the union over every
+  // COMMITTED manifest -- see `@/corpus/source-filename-bootstrap`.
+  const loaded = loadAllSources(input.sourcesDir, committedSourceFilenamePolicy());
   const entry = loaded.find((l) => l.source.sourceId === input.sourceId);
   if (entry === undefined) {
     throw new Error(`acquire: unknown sourceId "${input.sourceId}".`);

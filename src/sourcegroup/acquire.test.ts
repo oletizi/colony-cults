@@ -11,6 +11,7 @@ import type { GatherProvenanceFn } from '@/sourcegroup/reconcile';
 import { loadAllSources } from '@/bibliography/load';
 import { runAcquire, type FetchSourceFn } from '@/sourcegroup/acquire';
 import {
+
   ARK,
   publicDomainRights,
   otherRights,
@@ -33,6 +34,18 @@ import {
   idempotentMuseumAdapter,
   seedSourcesDir,
 } from './acquire-fixtures';
+
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
 
 describe('runAcquire — dispatch & gates', () => {
   let dir: string;
@@ -319,7 +332,7 @@ describe('runAcquire — dispatch & gates', () => {
 
     // Re-load the SSOT: the acquired master is now recorded on the copy, and
     // survives serialize -> load unchanged (round-trip wiring).
-    const loaded = loadAllSources(dir);
+    const loaded = loadAllSources(dir, PB_FILENAMES);
     const entry = loaded.find((l) => l.source.sourceId === 'PB-P200');
     if (entry === undefined) {
       throw new Error('test: PB-P200 not found after acquire');
@@ -338,7 +351,7 @@ describe('runAcquire — dispatch & gates', () => {
 
     await runAcquire({ sourcesDir: dir, sourceId: 'PB-P100', fetch, ...gallicaCompletionDeps() });
 
-    const loaded = loadAllSources(dir);
+    const loaded = loadAllSources(dir, PB_FILENAMES);
     const entry = loaded.find((l) => l.source.sourceId === 'PB-P100');
     const record = entry?.records.find((r) => r.sourceArchive === 'Gallica / BnF');
     expect(record?.assets).toBeUndefined();

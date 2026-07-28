@@ -7,6 +7,7 @@ import type {
 } from '@/repository/adapter';
 import { allocateMemberId } from '@/sourcegroup/id-alloc';
 import type { SourceIdPolicy } from '@/corpus/policies';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { resolveSourceGroup } from '@/sourcegroup/inventory';
 import { writeSnapshot } from '@/sourcegroup/snapshot';
 import type { MetadataSnapshotRef, RepositoryRecord } from '@/model/repository-record';
@@ -58,6 +59,11 @@ export interface RunMuseumInventoryInput {
    * `RunInventoryInput.sourceIdPolicy` in `@/sourcegroup/inventory`.
    */
   sourceIdPolicy: SourceIdPolicy;
+  /**
+   * The selected corpus's `SourceFilenamePolicy` (FR-004/FR-018), threaded to
+   * `resolveSourceGroup` exactly as `RunInventoryInput.sourceFilenames` is.
+   */
+  sourceFilenames: SourceFilenamePolicy;
 }
 
 /** The outcome of one `runMuseumInventory` call. */
@@ -155,12 +161,13 @@ function titleFromResolvedItem(item: ResolvedRepositoryItem): Title[] {
 export async function runMuseumInventory(
   input: RunMuseumInventoryInput,
 ): Promise<RunMuseumInventoryResult> {
-  const { locator, repository, groupId, sourcesDir, baseDir, registry, sourceIdPolicy } = input;
+  const { locator, repository, groupId, sourcesDir, baseDir, registry, sourceIdPolicy, sourceFilenames } =
+    input;
 
   // FR-005: validate the group BEFORE any resolve/allocation/write -- a
   // failure here must create nothing. Also the source of the new member's
   // `case`, mirroring `runInventory`.
-  const group = resolveSourceGroup(sourcesDir, groupId);
+  const group = resolveSourceGroup(sourcesDir, groupId, sourceFilenames);
 
   // INV-D/INV-A: the registry and adapter are the only sources of truth for
   // dispatch and verification -- no locator-shape sniffing here.

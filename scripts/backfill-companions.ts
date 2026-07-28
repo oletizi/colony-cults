@@ -8,6 +8,7 @@
  *      tsx scripts/backfill-companions.ts
  */
 import { loadAllSources } from '@/bibliography/load';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { authoredToRepositoryRecord } from '@/bibliography/authored-record';
 import { writeRecordCompanions } from '@/archive/write-record-companions';
 import { resolveArchiveRoot } from '@/archive/location';
@@ -29,7 +30,10 @@ async function main(): Promise<void> {
   };
   const now = new Date().toISOString();
 
-  const loaded = loadAllSources(join(repoRoot, 'bibliography', 'sources'));
+  const loaded = loadAllSources(
+    join(repoRoot, 'bibliography', 'sources'),
+    committedSourceFilenamePolicy(),
+  );
   let records = 0;
   let companions = 0;
   for (const entry of loaded) {

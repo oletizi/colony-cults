@@ -23,11 +23,14 @@ import { describeError } from '@/bibliography/load-primitives';
  *
  * WHY NOT REUSE `loadAllSources` HERE
  *
- * `loadAllSources` filters filenames through a hardcoded `^PB-[A-Z]?\d{3}\.yml$`
- * pattern — one of the very Port-Breton-shaped constants this spec exists to
- * retire. Reusing it would make the validator STRUCTURALLY INCAPABLE of
- * seeing a second corpus's Sources: a `SYN-001.yml` under a synthetic corpus
- * would be silently skipped, and its conformance/uniqueness checks would
+ * `loadAllSources` enumerates only the files matching a CORPUS'S OWN declared
+ * id shapes — a hardcoded `^PB-[A-Z]?\d{3}\.yml$` before T023, an injected
+ * `SourceFilenamePolicy` since (FR-018). Either way it is the wrong tool
+ * HERE: this validator's whole job is to catch a Source that conforms to NO
+ * corpus's policy, and enumerating through a policy would make it
+ * STRUCTURALLY INCAPABLE of seeing exactly those files — a stray
+ * `SYN-001.yml` under a repository whose manifests do not declare `SYN-`
+ * would be silently skipped, and the conformance/uniqueness checks would
  * "pass" by never running. A validator that cannot see the data it is
  * supposed to gate is worse than no validator, and that silent skip is
  * exactly the kind of fallback Principle V forbids. So enumeration here is

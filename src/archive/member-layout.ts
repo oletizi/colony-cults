@@ -1,4 +1,5 @@
 import { loadAllSources } from '@/bibliography/load';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import {
   deriveSourceLayout,
   isSourceLayoutRegistered,
@@ -31,15 +32,22 @@ import {
  * Fails loud only if a genuine member's layout cannot be derived (e.g. no case
  * and no owning-group case) -- a layout cannot be placed in the archive tree
  * from nothing.
+ *
+ * `policy` is REQUIRED (T023, FR-018): the SSOT enumeration this performs used
+ * to run through a hardcoded `^PB-[A-Z]?\d{3}\.yml$` filename pattern, which
+ * silently saw NO Sources for any other corpus -- and a silent empty
+ * enumeration here reads exactly like "this id is not a member", the quietest
+ * possible wrong answer. There is deliberately no default.
  */
 export function ensureMemberLayoutRegistered(
   sourceId: string,
   sourcesDir: string,
+  policy: SourceFilenamePolicy,
 ): void {
   if (isSourceLayoutRegistered(sourceId)) {
     return;
   }
-  const loaded = loadAllSources(sourcesDir);
+  const loaded = loadAllSources(sourcesDir, policy);
   const memberEntry = loaded.find((entry) => entry.source.sourceId === sourceId);
   if (memberEntry === undefined) {
     return;

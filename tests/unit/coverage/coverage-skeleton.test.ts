@@ -6,6 +6,18 @@ import type { CoverageInput, CoverageReport } from '@/bibliography/coverage/cove
 import { renderCoverage } from '@/bibliography/coverage/coverage-render';
 import { loadAllSources } from '@/bibliography/load';
 import { loadSearchLog } from '@/bibliography/search-log';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 /**
  * T007 skeleton proof: the pure {@link buildCoverageReport} projects the loaded
@@ -21,7 +33,7 @@ const FIXTURE_ROOT = path.resolve(__dirname, '../../fixtures/coverage');
 
 /** Load the fixture bibliography via the REAL loaders, then bundle for the pure builder. */
 function loadFixtureInput(): CoverageInput {
-  const sources = loadAllSources(path.join(FIXTURE_ROOT, 'sources'));
+  const sources = loadAllSources(path.join(FIXTURE_ROOT, 'sources'), PB_FILENAMES);
   const searchLog = loadSearchLog(path.join(FIXTURE_ROOT, 'search-log.yml'));
   return { sources, searchLog };
 }

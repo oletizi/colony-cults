@@ -10,6 +10,18 @@ import type { Source } from '@/model/source';
 import type { ArkResolver } from '@/sourcegroup/verify-member';
 import { runVerifyMember } from '@/sourcegroup/verify-member-command';
 import type { LoadMembers, RunVerifyMemberInput } from '@/sourcegroup/verify-member-command';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 /**
  * Tests for `runVerifyMember` (T021/T022, FR-006-009a, US2): the thin,
@@ -245,7 +257,7 @@ describe('runVerifyMember', () => {
       const result = await runVerifyMember({
         id: 'PB-P100',
         sourcesDir: dir,
-        loadMembers: (sourcesDir) => loadAllSources(sourcesDir),
+        loadMembers: (sourcesDir) => loadAllSources(sourcesDir, PB_FILENAMES),
         resolveArk: resolvesLive,
       });
 

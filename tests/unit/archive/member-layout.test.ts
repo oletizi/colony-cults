@@ -4,6 +4,18 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
 import { sourceLayout, isSourceLayoutRegistered } from '@/archive/location';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 /**
  * The member-layout bridge lets ocr/translate/restore-images resolve a
@@ -54,7 +66,7 @@ describe('ensureMemberLayoutRegistered', () => {
     });
     expect(isSourceLayoutRegistered('PB-P941')).toBe(false);
 
-    ensureMemberLayoutRegistered('PB-P941', sourcesDir);
+    ensureMemberLayoutRegistered('PB-P941', sourcesDir, PB_FILENAMES);
 
     const layout = sourceLayout('PB-P941');
     expect(layout.kind).toBe('monograph');
@@ -68,7 +80,7 @@ describe('ensureMemberLayoutRegistered', () => {
     const sourcesDir = sourcesDirWith({ 'PB-P940.yml': GROUP });
     // PB-P002 is a static monograph with a HAND-SET slug; the bridge must not
     // re-derive it (which would produce a different slug from the title).
-    ensureMemberLayoutRegistered('PB-P002', sourcesDir);
+    ensureMemberLayoutRegistered('PB-P002', sourcesDir, PB_FILENAMES);
     expect(sourceLayout('PB-P002').slug).toBe(
       'nouvelle-france-colonie-libre-port-breton',
     );
@@ -76,13 +88,13 @@ describe('ensureMemberLayoutRegistered', () => {
 
   it('is a no-op for an unknown id (leaves resolution to the caller)', () => {
     const sourcesDir = sourcesDirWith({ 'PB-P940.yml': GROUP });
-    ensureMemberLayoutRegistered('PB-P999', sourcesDir);
+    ensureMemberLayoutRegistered('PB-P999', sourcesDir, PB_FILENAMES);
     expect(isSourceLayoutRegistered('PB-P999')).toBe(false);
   });
 
   it('is a no-op for a source-group id (no archival object)', () => {
     const sourcesDir = sourcesDirWith({ 'PB-P940.yml': GROUP });
-    ensureMemberLayoutRegistered('PB-P940', sourcesDir);
+    ensureMemberLayoutRegistered('PB-P940', sourcesDir, PB_FILENAMES);
     expect(isSourceLayoutRegistered('PB-P940')).toBe(false);
   });
 });

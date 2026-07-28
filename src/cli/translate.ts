@@ -3,6 +3,7 @@ import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import {
   commitAndPushIssueCheckpoint,
   buildMonographPageCheckpointHook,
@@ -145,6 +146,7 @@ export async function runTranslate(
   ensureMemberLayoutRegistered(
     sourceId,
     path.join(process.cwd(), 'bibliography', 'sources'),
+    committedSourceFilenamePolicy(),
   );
   const dryRun = args.flags.dryRun;
 
@@ -270,7 +272,7 @@ export async function runTranslateSource(
   // consults `sourceLayout` (which would otherwise surface an opaque layout
   // error), mirroring `fetch-source`'s guard.
   const sourcesDir = path.join(process.cwd(), 'bibliography', 'sources');
-  if (sourceKind(sourceId, sourcesDir) === 'source-group') {
+  if (sourceKind(sourceId, sourcesDir, committedSourceFilenamePolicy()) === 'source-group') {
     throw new Error(
       `translate-source: "${sourceId}" is a Source Group — it has no archival object to translate. ` +
         `Translate its concrete member Sources instead.`,
@@ -278,7 +280,7 @@ export async function runTranslateSource(
   }
 
   // Register a member's derived archive layout so discovery/resolution resolve it.
-  ensureMemberLayoutRegistered(sourceId, sourcesDir);
+  ensureMemberLayoutRegistered(sourceId, sourcesDir, committedSourceFilenamePolicy());
 
   const dryRun = args.flags.dryRun;
 

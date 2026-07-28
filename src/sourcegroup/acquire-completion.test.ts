@@ -11,6 +11,7 @@ import type { GatherProvenanceFn } from '@/sourcegroup/reconcile';
 import { loadAllSources } from '@/bibliography/load';
 import { runAcquire, type FetchSourceFn } from '@/sourcegroup/acquire';
 import {
+
   ARK,
   publicDomainRights,
   otherRights,
@@ -33,6 +34,18 @@ import {
   idempotentMuseumAdapter,
   seedSourcesDir,
 } from './acquire-fixtures';
+
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
 
 describe('runAcquire — spec 016 completion (Principle XV)', () => {
   let dir: string;
@@ -63,7 +76,7 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
       completionObjectStore: objectStore,
     });
 
-    const loaded = loadAllSources(dir);
+    const loaded = loadAllSources(dir, PB_FILENAMES);
     const record = loaded
       .find((l) => l.source.sourceId === 'PB-P200')
       ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
@@ -94,7 +107,7 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
 
     // The failure must NOT leave a falsely-advanced status on disk
     // (AUDIT-20260720-10): the record stays `to-collect`, never `archived`.
-    const record = loadAllSources(dir)
+    const record = loadAllSources(dir, PB_FILENAMES)
       .find((l) => l.source.sourceId === 'PB-P200')
       ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
     expect(record?.status).toBe('to-collect');
@@ -120,7 +133,7 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
     ).rejects.toThrow(/mismatch|checksum|sha256/i);
 
     // A mismatched master must never advance the status (AUDIT-20260720-10).
-    const record = loadAllSources(dir)
+    const record = loadAllSources(dir, PB_FILENAMES)
       .find((l) => l.source.sourceId === 'PB-P200')
       ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
     expect(record?.status).toBe('to-collect');
@@ -151,7 +164,7 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
       completionObjectStore: objectStore,
     });
 
-    const loaded = loadAllSources(dir);
+    const loaded = loadAllSources(dir, PB_FILENAMES);
     const record = loaded
       .find((l) => l.source.sourceId === 'PB-P200')
       ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
@@ -198,7 +211,7 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
       completionObjectStore: objectStore,
     });
 
-    const loaded = loadAllSources(dir);
+    const loaded = loadAllSources(dir, PB_FILENAMES);
     const record = loaded
       .find((l) => l.source.sourceId === 'PB-P200')
       ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
@@ -226,7 +239,7 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
     });
 
     expect(result.ark).toBe(ARK);
-    const loaded = loadAllSources(dir);
+    const loaded = loadAllSources(dir, PB_FILENAMES);
     const record = loaded
       .find((l) => l.source.sourceId === 'PB-P100')
       ?.records.find((r) => r.sourceArchive === 'Gallica / BnF');
@@ -311,7 +324,7 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
       completionObjectStore: objectStore,
     });
 
-    const loaded = loadAllSources(dir);
+    const loaded = loadAllSources(dir, PB_FILENAMES);
     const record = loaded
       .find((l) => l.source.sourceId === 'PB-P200')
       ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
@@ -361,7 +374,7 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
     ).resolves.toMatchObject({ sourceId: 'PB-P200', accession: 'NIMI-0844' });
 
     // No master mirrored ⇒ nothing to complete ⇒ status stays as authored.
-    const loaded = loadAllSources(dir);
+    const loaded = loadAllSources(dir, PB_FILENAMES);
     const record = loaded
       .find((l) => l.source.sourceId === 'PB-P200')
       ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
@@ -405,7 +418,7 @@ describe('runAcquire — spec 016 completion (Principle XV)', () => {
     ).rejects.toThrow(/ZERO object-store masters|not report the item complete|Principle XV/i);
 
     // The failure leaves the record unadvanced (AUDIT-20260720-10).
-    const record = loadAllSources(dir)
+    const record = loadAllSources(dir, PB_FILENAMES)
       .find((l) => l.source.sourceId === 'PB-P200')
       ?.records.find((r) => r.sourceArchive === 'New Italy Museum');
     expect(record?.status).toBe('to-collect');

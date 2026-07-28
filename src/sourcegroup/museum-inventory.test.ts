@@ -18,6 +18,19 @@ import type {
 } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { GroundedExtraction, MuseumItemFields } from '@/extraction/structured-extractor';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes plus the bare `PB-###` shape
+ * this file's fixtures use, as the `SourceFilenamePolicy` `loadAllSources` now
+ * REQUIRES (T023, FR-018).
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+  { prefix: 'PB-', padWidth: 3 },
+]);
+
 
 /** The real, shipped Port Breton allocatable policy (`corpora/port-breton.yml`). */
 const PORT_BRETON_POLICY: SourceIdPolicy = { prefix: 'PB-P', padWidth: 3 };
@@ -163,6 +176,7 @@ describe('runMuseumInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       registry: fakeRegistry(adapter),
     });
 
@@ -216,6 +230,7 @@ describe('runMuseumInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       registry: fakeRegistry(adapter),
     });
 
@@ -252,6 +267,7 @@ describe('runMuseumInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       registry: fakeRegistry(adapter),
     });
 
@@ -271,6 +287,7 @@ describe('runMuseumInventory', () => {
         sourcesDir,
         baseDir,
         sourceIdPolicy: PORT_BRETON_POLICY,
+        sourceFilenames: PB_FILENAMES,
         registry: fakeRegistry(adapter),
       }),
     ).rejects.toThrow(/PB-S999/);
@@ -293,6 +310,7 @@ describe('runMuseumInventory', () => {
         sourcesDir,
         baseDir,
         sourceIdPolicy: PORT_BRETON_POLICY,
+        sourceFilenames: PB_FILENAMES,
         registry: fakeRegistry(adapter),
       }),
     ).rejects.toThrow(/not a source-group|kind "monograph"/i);
@@ -312,6 +330,7 @@ describe('runMuseumInventory', () => {
         sourcesDir,
         baseDir,
         sourceIdPolicy: PORT_BRETON_POLICY,
+        sourceFilenames: PB_FILENAMES,
         // No adapter registered at all -- selectByName must throw.
         registry: fakeRegistry(undefined),
       }),
@@ -335,6 +354,7 @@ describe('runMuseumInventory', () => {
         sourcesDir,
         baseDir,
         sourceIdPolicy: PORT_BRETON_POLICY,
+        sourceFilenames: PB_FILENAMES,
         registry: fakeRegistry(adapter),
       }),
     ).rejects.toThrow(/objectaccession/);
@@ -357,6 +377,7 @@ describe('runMuseumInventory', () => {
         sourcesDir,
         baseDir,
         sourceIdPolicy: PORT_BRETON_POLICY,
+        sourceFilenames: PB_FILENAMES,
         registry: fakeRegistry(adapter),
       }),
     ).rejects.toThrow(/carries an empty deterministic title/);
@@ -382,6 +403,7 @@ describe('runMuseumInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       registry: fakeRegistry(adapter),
     });
 
@@ -420,6 +442,7 @@ describe('runMuseumInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       registry: fakeRegistry(adapter1),
     });
 
@@ -430,6 +453,7 @@ describe('runMuseumInventory', () => {
       sourcesDir,
       baseDir,
       sourceIdPolicy: PORT_BRETON_POLICY,
+      sourceFilenames: PB_FILENAMES,
       registry: fakeRegistry(adapter2),
     });
 

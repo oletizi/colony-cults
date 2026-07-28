@@ -48,6 +48,18 @@ import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
 import { loadAllSources } from '@/bibliography/load';
 import { resolveObjectStoreConfig } from '@/archive/b2-config';
 import type { AcquiredAsset } from '@/model/acquired-asset';
+import { buildSourceFilenamePolicy } from '@/corpus/source-filename-policy';
+
+/**
+ * Port Breton's two declared source-ID shapes (corpora/port-breton.yml) as the
+ * `SourceFilenamePolicy` `loadAllSources` now REQUIRES (T023, FR-018) -- built
+ * explicitly here rather than defaulted, which is the whole point of the seam.
+ */
+const PB_FILENAMES = buildSourceFilenamePolicy([
+  { prefix: 'PB-P', padWidth: 3 },
+  { prefix: 'PB-S', padWidth: 3 },
+]);
+
 
 /** Env gate: skip cleanly (0 network calls) unless a live run is explicitly requested. */
 const RUN_PAPERS_PAST_ACQUIRE = process.env.RUN_PAPERS_PAST_ACQUIRE === '1';
@@ -152,7 +164,7 @@ describe.skipIf(!RUN_PAPERS_PAST_ACQUIRE)('Papers Past adapter (live, operator-r
       const exitFirst = await runAcquireCli([DE_RAYS_SOURCE_ID]);
       expect(exitFirst).toBe(0);
 
-      const afterFirst = loadAllSources(sourcesDir).find(
+      const afterFirst = loadAllSources(sourcesDir, PB_FILENAMES).find(
         (entry) => entry.source.sourceId === DE_RAYS_SOURCE_ID,
       );
       if (afterFirst === undefined) {
@@ -178,7 +190,7 @@ describe.skipIf(!RUN_PAPERS_PAST_ACQUIRE)('Papers Past adapter (live, operator-r
       const exitSecond = await runAcquireCli([DE_RAYS_SOURCE_ID]);
       expect(exitSecond).toBe(0);
 
-      const afterSecond = loadAllSources(sourcesDir).find(
+      const afterSecond = loadAllSources(sourcesDir, PB_FILENAMES).find(
         (entry) => entry.source.sourceId === DE_RAYS_SOURCE_ID,
       );
       if (afterSecond === undefined) {
