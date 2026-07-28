@@ -18,7 +18,8 @@ import { loadCoverageReport } from '@/bibliography/coverage/load-coverage-report
 import { loadAllSources } from '@/bibliography/load';
 import { resolveRepoRoot } from '@/browser/load/repo-root';
 import { loadCorpus } from '@/browser/load/corpus';
-import { resolveConfig } from '@/browser/config';
+import { resolveConfig, selectBrowserCorpus } from '@/browser/config';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 
 import BaseLayout from '@site/layouts/BaseLayout.astro';
 import Masthead from '@site/components/Masthead.astro';
@@ -32,14 +33,31 @@ import SearchHistory from '@site/components/coverage/SearchHistory.astro';
 // where the CLI's fixed-offset resolver would land on `site/` instead).
 const repoRoot = resolveRepoRoot();
 
+// Select the corpus ONCE, through the browser/site-build composition root
+// (@/browser/config, T014) -- the same selection `resolveConfig()` below
+// makes for the corpus browser itself -- and bind the coverage report's
+// search-log case-scope check to it, in place of the union-across-every-
+// corpus fallback that loader falls back to when no selection reaches it.
+const selectedCorpus = selectBrowserCorpus();
+
 // Fail-loud: a malformed bibliography must fail the build, not degrade.
-const report = loadCoverageReport(repoRoot);
+const report = loadCoverageReport(repoRoot, selectedCorpus);
 
 // Titles from the bibliography. Canonical title, else the first authored title;
 // a source with no usable title is simply omitted so the components fall back to
 // the bare id rather than a fabricated label.
+//
+// `committedSourceFilenamePolicy()` (T023, FR-018), NOT `selectedCorpus`'s own
+// `sourceFilenames`: this reads every corpus's Source files (this page renders
+// the whole committed bibliography, unscoped to one corpus), the same union
+// `loadCoverageReport` above uses for the identical reason (see its own doc
+// comment) -- binding this enumeration to one selection would silently drop a
+// second corpus's Sources the moment one exists.
 const titleById = new Map<string, string>();
-for (const loaded of loadAllSources(path.join(repoRoot, 'bibliography', 'sources'))) {
+for (const loaded of loadAllSources(
+  path.join(repoRoot, 'bibliography', 'sources'),
+  committedSourceFilenamePolicy(),
+)) {
   const { titles } = loaded.source;
   const title = titles.find((t) => t.role === 'canonical')?.text ?? titles[0]?.text;
   if (title !== undefined) {

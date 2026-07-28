@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { CoverageReport } from '@/bibliography/coverage/coverage-model';
 import { loadCoverageReport } from '@/bibliography/coverage/load-coverage-report';
+import { selectCorpus } from '@/corpus/select';
 
 /**
  * T003: unit coverage for {@link loadCoverageReport}
@@ -98,5 +99,69 @@ describe('loadCoverageReport: absent search log is not an error', () => {
       report = loadCoverageReport(dir);
     }).not.toThrow();
     expect(report?.searchHistory.matrix).toEqual([]);
+  });
+});
+
+/**
+ * T014 (specs/018-corpus-config-seam, FR-004): `selectedCorpus` binds the
+ * search-log case-scope check to ONE corpus's own `validCaseIds`, in place
+ * of the union-across-every-manifest fallback -- a union T011 left in place
+ * because it is behavior-identical with one committed corpus, but which a
+ * second corpus makes WRONG (a case-scope entry naming corpus A's case would
+ * validate under corpus B's own selection purely because A and B share one
+ * `bibliography/sources` directory). This test seeds a SECOND corpus manifest
+ * (`alpha`, reused unmodified from `@/corpus/validate`'s fixtures) alongside
+ * the real Port Breton manifest, to make that union-vs-selection difference
+ * observable.
+ */
+describe('loadCoverageReport: selectedCorpus binds validCaseIds to ONE corpus, not the union', () => {
+  const ALPHA_MANIFEST = path.resolve(
+    __dirname,
+    '..',
+    '..',
+    'fixtures',
+    'corpora',
+    'validate-valid',
+    'alpha.yml',
+  );
+
+  function seedSearchLogNamingPortBretonCase(repoRoot: string): void {
+    writeFileSync(
+      path.join(repoRoot, 'bibliography', 'search-log.yml'),
+      `
+- id: SRCH-0001
+  date: 2026-01-01
+  repository: Test Repository
+  scope:
+    kind: case
+    id: port-breton
+  query: test query
+  coverage: test coverage
+`,
+      'utf-8',
+    );
+  }
+
+  it('the same case-scope entry validates under the union but throws when bound to a narrower selection', () => {
+    const sourcesDir = path.join(dir, 'bibliography', 'sources');
+    mkdirSync(sourcesDir, { recursive: true });
+    cpSync(FIXTURES_SOURCES_DIR, sourcesDir, { recursive: true });
+    seedCorpora(dir);
+    cpSync(ALPHA_MANIFEST, path.join(dir, 'corpora', 'alpha.yml'));
+    seedSearchLogNamingPortBretonCase(dir);
+
+    // No selection: the union spans BOTH manifests, so 'port-breton' (from
+    // the port-breton manifest) is a valid case id -- this does not throw.
+    expect(() => loadCoverageReport(dir)).not.toThrow();
+
+    // Bound to the 'alpha' selection (cases: ['alpha-case']), the identical
+    // entry's 'port-breton' case id is NOT one of alpha's own cases.
+    const selectedAlpha = selectCorpus({
+      corporaRoot: path.join(dir, 'corpora'),
+      cliCorpus: 'alpha',
+    });
+    expect(() => loadCoverageReport(dir, selectedAlpha)).toThrow(
+      /case ref id "port-breton" is not a valid case id/,
+    );
   });
 });

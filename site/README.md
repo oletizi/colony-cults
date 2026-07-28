@@ -13,9 +13,10 @@ Spec: [`specs/005-corpus-browser/`](../specs/005-corpus-browser/). The headless 
 
 | Var | Required | Meaning |
 |-----|----------|---------|
+| `COLONY_CORPUS` | **yes** | Which corpus to build (e.g. `port-breton`). Selected explicitly, no implicit default (specs/018-corpus-config-seam) — an unset value fails the build loud rather than silently assuming Port Breton. Must name a manifest under [`corpora/`](../corpora/). |
 | `CORPUS_ARCHIVE_PATH` | no | Path to the local archive clone. When set and present, the build reads it fresh; when unset, the build reads the committed snapshot (below). |
 | `CORPUS_SNAPSHOT_DIR` | no (default `site/data`) | Where the committed snapshot lives (one `<sourceId>.json` per source). Absolute, or relative to the repo root. |
-| `CORPUS_SOURCES` | no (default `PB-P001`) | Comma-separated source ids to include. |
+| `CORPUS_SOURCES` | no (default: the selected corpus's committed `<corporaRoot>/<id>.browser.yml` `defaultSources`) | Comma-separated source ids to include. Overrides the committed defaults outright when set (specs/018-corpus-config-seam FR-005). |
 | `CORPUS_IMAGE_PROVIDER` | no (default `source-iiif`) | `source-iiif` (Gallica IIIF) or `b2-cdn` (object-store + CDN). |
 | `CORPUS_CDN_BASE` | only for `b2-cdn` | CDN base fronting the B2 bucket. Fail-loud if the provider is `b2-cdn` and this is unset. |
 
@@ -25,13 +26,13 @@ Spec: [`specs/005-corpus-browser/`](../specs/005-corpus-browser/). The headless 
 
 ```bash
 # from the repo root
-CORPUS_ARCHIVE_PATH=/path/to/colony-cults-archive npm run site:build   # astro build + Pagefind index
+COLONY_CORPUS=port-breton CORPUS_ARCHIVE_PATH=/path/to/colony-cults-archive npm run site:build   # astro build + Pagefind index
 npm run site:preview -- --host 0.0.0.0                                  # serve site/dist (add --host to expose)
 ```
 
 `site:build` runs `astro build --root site && pagefind --site site/dist`. Output is the static `site/dist/` (git-ignored). `site:preview` serves it — no application server, no env var needed at serve time.
 
-With `CORPUS_ARCHIVE_PATH` unset, the same `npm run site:build` builds entirely from the committed snapshot (no archive) — this is what the public/Netlify deploy runs.
+With `CORPUS_ARCHIVE_PATH` unset, the same `npm run site:build` builds entirely from the committed snapshot (no archive) — this is what the public/Netlify deploy runs (`netlify.toml` sets `COLONY_CORPUS` there).
 
 ## Publishable snapshot (build without the archive)
 

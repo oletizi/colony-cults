@@ -1,5 +1,31 @@
 import { resolve } from 'path';
 import type { ImageProviderConfig } from '@/browser/model';
+import { resolveRepoRoot } from '@/browser/load/repo-root';
+import { resolveCorporaRoot } from '@/cli/composition-root';
+import { deriveBrowserProfile } from '@/corpus/policies';
+import { selectCorpus, type SelectedCorpus } from '@/corpus/select';
+
+/**
+ * THE BROWSER / SITE-BUILD COMPOSITION ROOT (T014, specs/018-corpus-config-seam
+ * FR-004, FR-005, FR-016). `site:build`/`site:preview` (`npm run`, invoked from
+ * `site/src/pages/*.astro`) are a SEPARATE entrypoint from the `bib`/`translate`
+ * CLIs that `@/cli/composition-root` wires (T009) — this module is their
+ * counterpart, and the ONLY place a corpus is selected for a browser build.
+ *
+ * It reuses `@/cli/composition-root`'s `resolveCorporaRoot` and
+ * `@/corpus/select`'s `selectCorpus` rather than inventing a parallel
+ * mechanism — same production corpora directory (FR-016), same
+ * `--corpus`-then-`COLONY_CORPUS`-then-fail-loud precedence (FR-003), minus
+ * `--corpus` itself: a site build has no argv to parse, so only
+ * `COLONY_CORPUS` is read (an operator/CI concern — see `netlify.toml` and
+ * `site/README.md`, updated alongside this module).
+ *
+ * `resolveRepoRoot` — NOT `@/cli/composition-root`'s `resolveRepoRootUpward`
+ * — resolves the repo root here: it is anchored on `bibliography/sources`
+ * rather than `package.json`, which is what already lets every other browser
+ * module (`@/browser/load/corpus`, the `.astro` pages) resolve correctly both
+ * under `tsx`/vitest and from Astro's bundled `site/dist` server output.
+ */
 
 /** Default snapshot directory (relative to the repo root) when unset. */
 const DEFAULT_SNAPSHOT_DIR = 'site/data';
@@ -36,8 +62,18 @@ export interface LoadConfig {
  * the "neither available" throw, live in `loadCorpus`). Still fail-loud on a
  * genuinely invalid provider config.
  *
+ * `sources` (FR-005) comes from the browser/site-build composition root
+ * (module doc comment above), via {@link resolveBrowserSources}: `--corpus`
+ * has no site-build equivalent, so `COLONY_CORPUS` selects the corpus, whose
+ * `<corporaRoot>/<id>.browser.yml` `defaultSources` apply UNLESS
+ * `CORPUS_SOURCES` is set, in which case it wins outright (FR-005,
+ * unchanged operator-visible behavior).
+ *
  * @param env - Environment variables (defaults to process.env)
  * @returns LoadConfig ready for corpus loading
+ * @throws Error if no corpus is selected (neither `COLONY_CORPUS` is set)
+ * @throws Error if the selected corpus has no browser-defaults policy (no
+ *   `CORPUS_SOURCES` override and no committed `<id>.browser.yml`)
  * @throws Error if CORPUS_IMAGE_PROVIDER is set to an unknown value
  * @throws Error if CORPUS_IMAGE_PROVIDER is 'b2-cdn' but CORPUS_CDN_BASE is missing
  */
@@ -48,55 +84,10 @@ export function resolveConfig(env: NodeJS.ProcessEnv = process.env): LoadConfig 
   const snapshotDirRaw = env.CORPUS_SNAPSHOT_DIR?.trim();
   const snapshotDir = snapshotDirRaw ? snapshotDirRaw : DEFAULT_SNAPSHOT_DIR;
 
-  const sourcesRaw = env.CORPUS_SOURCES?.trim();
-  const sources = sourcesRaw
-    ? sourcesRaw.split(',').map((s) => s.trim())
-    : [
-        'PB-P001',
-        'PB-P002',
-        'PB-P003',
-        'PB-P007',
-        'PB-P008',
-        'PB-P009',
-        'PB-P010',
-        'PB-P011',
-        'PB-P055',
-        'PB-P057',
-        'PB-P058',
-        'PB-P059',
-        'PB-P061',
-        'PB-P062',
-        'PB-P063',
-        'PB-P064',
-        'PB-P065',
-        'PB-P066',
-        'PB-P067',
-        'PB-P068',
-        'PB-P069',
-        'PB-P070',
-        'PB-P071',
-        'PB-P072',
-        'PB-P073',
-        'PB-P074',
-        'PB-P075',
-        'PB-P076',
-        'PB-P077',
-        'PB-P078',
-        'PB-P079',
-        'PB-P080',
-        'PB-P081',
-        'PB-P082',
-        'PB-P083',
-        'PB-P084',
-        'PB-P085',
-        'PB-P086',
-        'PB-P087',
-        'PB-P088',
-        'PB-P089',
-        'PB-P090',
-        'PB-P091',
-        'PB-P092',
-      ];
+  const sources = resolveBrowserSources({
+    env,
+    corporaRoot: resolveCorporaRoot(resolveRepoRoot()),
+  });
 
   const providerKind = env.CORPUS_IMAGE_PROVIDER?.trim() ?? 'source-iiif';
 
@@ -126,6 +117,87 @@ export function resolveConfig(env: NodeJS.ProcessEnv = process.env): LoadConfig 
     sources,
     provider,
   };
+}
+
+/**
+ * Select the active corpus for a browser build (T014, FR-003, FR-016): the
+ * first step of the browser/site-build composition root (module doc comment
+ * above). `COLONY_CORPUS` is the only selector a site build has — there is no
+ * `--corpus` flag on `npm run site:build`/`site:preview` — and there is no
+ * implicit Port-Breton default: an unset `COLONY_CORPUS` fails loud, exactly
+ * as `selectCorpus` documents for the CLI.
+ *
+ * Exported (not `resolveBrowserSources`-internal only) so another
+ * browser/site-build entrypoint that needs the selected corpus itself — e.g.
+ * `site/src/pages/coverage/index.astro`, which binds `@/bibliography/
+ * coverage/load-coverage-report`'s scope check to this same selection — can
+ * reuse this ONE composition root rather than re-deriving the selection
+ * inline.
+ *
+ * @param env - Environment variables (defaults to process.env)
+ * @throws Error if `COLONY_CORPUS` is unset, or names no committed manifest
+ */
+export function selectBrowserCorpus(env: NodeJS.ProcessEnv = process.env): SelectedCorpus {
+  const corporaRoot = resolveCorporaRoot(resolveRepoRoot());
+  return selectCorpus({ corporaRoot, envCorpus: env.COLONY_CORPUS });
+}
+
+/** Inputs to {@link resolveBrowserSources}: pure data, injected by the caller. */
+export interface ResolveBrowserSourcesOptions {
+  /** Environment variables to read `CORPUS_SOURCES`/`COLONY_CORPUS` from. */
+  readonly env: NodeJS.ProcessEnv;
+  /**
+   * The injected corpora root (FR-016). A production caller passes
+   * `resolveCorporaRoot(resolveRepoRoot())` (as {@link resolveConfig} does);
+   * a test injects a fixture directory directly, without a process.env
+   * round-trip.
+   */
+  readonly corporaRoot: string;
+}
+
+/**
+ * Resolve the browser build's default source ids (FR-005, FR-014): select
+ * the corpus, then derive its `BrowserDefaultsPolicy`
+ * (`@/corpus/policies`' `deriveBrowserProfile`).
+ *
+ * `CORPUS_SOURCES` is read and split HERE, at the composition root — a
+ * comma-separated-string CLI/env-input concern, not something a policy
+ * derivation should own (see `deriveBrowserProfile`'s own doc comment) — and
+ * handed down as the already-parsed `envOverride`, which wins outright over
+ * the corpus's committed `defaultSources` when supplied (FR-005, unchanged
+ * operator-visible behavior).
+ *
+ * ABSENCE IS FATAL HERE (unlike most of the codebase, FR-005): a site build
+ * IS a browser-default-CONSUMING path — its only job is producing default
+ * sources — so `deriveBrowserProfile` returning `null` (no override, no
+ * committed `<id>.browser.yml`) is this function's OWN "no defaults
+ * configured" failure, thrown loud rather than swallowed. Every OTHER
+ * command in the codebase must keep tolerating profile absence
+ * (`tryLoadBrowserProfile`'s documented contract) — this function is the one
+ * place that is exempt, because unlike them it has no other job to fall back
+ * to.
+ */
+export function resolveBrowserSources(options: ResolveBrowserSourcesOptions): string[] {
+  const { env, corporaRoot } = options;
+
+  const sourcesRaw = env.CORPUS_SOURCES?.trim();
+  const envOverride =
+    sourcesRaw === undefined || sourcesRaw.length === 0
+      ? undefined
+      : sourcesRaw.split(',').map((s) => s.trim());
+
+  const selected = selectCorpus({ corporaRoot, envCorpus: env.COLONY_CORPUS });
+  const policy = deriveBrowserProfile(selected, envOverride);
+
+  if (policy === null) {
+    throw new Error(
+      `resolveBrowserSources: no browser-defaults policy for corpus ${JSON.stringify(selected.manifest.id)} -- ` +
+        `no CORPUS_SOURCES override, and no ${selected.manifest.id}.browser.yml under ${corporaRoot}. ` +
+        'The site build is a browser-default-consuming path (FR-005) and requires one of the two.',
+    );
+  }
+
+  return [...policy.defaultSources];
 }
 
 /**

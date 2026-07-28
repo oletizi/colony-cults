@@ -9,18 +9,18 @@ import { loadAllSources } from '@/bibliography/load';
 import { loadScopesRegistry, threadIdSet } from '@/bibliography/scopes-registry';
 import { loadSearchLog } from '@/bibliography/search-log';
 import { listCorpusManifests, type CorpusManifest } from '@/corpus/manifest';
+import { deriveScopeContext } from '@/corpus/policies';
+import type { SelectedCorpus } from '@/corpus/select';
 import { unionSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 
 /**
  * Every case id declared by ANY committed corpus manifest under `<repoRoot>/
- * corpora` (FR-004, FR-010): this build-time loader has no per-request
- * `--corpus`/`COLONY_CORPUS` selection of its own (unlike the CLI composition
- * root, `@/cli/composition-root`) -- the Astro coverage page it backs already
- * renders the WHOLE committed bibliography unscoped to one corpus (see its
- * own doc comment), so the search-log scope check here is scoped the same
- * way: valid against every case any manifest declares, not one hardcoded id.
- * With exactly one committed manifest (`corpora/port-breton.yml`, `cases:
- * [port-breton]`) this is behavior-identical to the retired hardcoded check.
+ * corpora` (FR-004, FR-010): the union fallback for a caller with no
+ * `SelectedCorpus` of its own to bind to (see {@link loadCoverageReport}'s
+ * `selectedCorpus` parameter, T014). With exactly one committed manifest
+ * (`corpora/port-breton.yml`, `cases: [port-breton]`) this is
+ * behavior-identical to the retired hardcoded check, and to the bound path,
+ * since the union and the one selected corpus's own cases coincide.
  *
  * ABSENCE: an absent `corpora/` directory (e.g. a test fixture `repoRoot`
  * with no corpora committed at all) yields an empty set rather than
@@ -42,9 +42,8 @@ function deriveAllCaseIds(manifests: readonly CorpusManifest[]): ReadonlySet<str
 
 /**
  * Every committed manifest under `<repoRoot>/corpora`, loaded ONCE per report
- * so the two policies derived from them -- the case-id set above and the
- * source-filename policy `loadAllSources` now requires (T023, FR-018) -- come
- * from one read of one root.
+ * so the two UNION policies derived from them -- the case-id fallback above
+ * and the source-filename policy below -- come from one read of one root.
  *
  * ABSENCE: an absent `corpora/` directory yields an empty list, preserving
  * this loader's documented best-effort case-id behavior. That empty list is
@@ -74,8 +73,39 @@ function listManifests(repoRoot: string): CorpusManifest[] {
  * `loadAllSources`'s error unchanged (fail loud), and an absent search log is
  * `loadSearchLog`'s own documented "no searches logged yet" case (`[]`), not a
  * substitution made here.
+ *
+ * `selectedCorpus` (T014, FR-004): OPTIONAL, and bound to the SELECTED
+ * corpus's own `validCaseIds` (`@/corpus/policies`' `deriveScopeContext`) when
+ * supplied, in place of the union-across-every-manifest fallback
+ * ({@link deriveAllCaseIds}) -- a union that is behavior-identical with one
+ * committed corpus but WRONG once a second exists (T011 flagged this
+ * explicitly for this task to close). The one present-day caller that CAN
+ * reach a selection, `site/src/pages/coverage/index.astro`, does so via the
+ * browser/site-build composition root (`@/browser/config`'s
+ * `selectBrowserCorpus`) and passes it here. Every other caller -- this
+ * module's own unit tests, and any future non-browser build step with no
+ * `--corpus`/`COLONY_CORPUS` selection of its own -- has no selection to
+ * reach, so the parameter stays optional and the union remains its
+ * documented, intentional behavior, not a silently-stale default.
+ *
+ * The source-filename policy is DELIBERATELY NOT bound to `selectedCorpus`
+ * even when one is supplied -- unlike the case-id check above, this is not
+ * an oversight left for a later task. `bibliography/sources` holds every
+ * corpus's Source files, and "which files in that directory count as
+ * Sources" is a question about the SHARED directory's own naming
+ * conventions, not about which corpus a browser session happens to have
+ * selected (`@/corpus/source-filename-bootstrap`'s module doc comment makes
+ * the identical argument for `@/archive/layout-bootstrap`). Binding it to one
+ * selected corpus would make the coverage report silently DROP a second
+ * corpus's Sources from `sources` the moment one exists -- while the page
+ * itself is documented to render the whole committed bibliography, unscoped
+ * to any one corpus. So this stays a union unconditionally, stated here
+ * explicitly per that same reasoning.
  */
-export function loadCoverageReport(repoRoot?: string): CoverageReport {
+export function loadCoverageReport(
+  repoRoot?: string,
+  selectedCorpus?: SelectedCorpus,
+): CoverageReport {
   const root = repoRoot ?? resolveRepoRoot();
   const sourcesDir = path.join(root, 'bibliography', 'sources');
   const searchLogPath = path.join(root, 'bibliography', 'search-log.yml');
@@ -85,6 +115,9 @@ export function loadCoverageReport(repoRoot?: string): CoverageReport {
   const sources = loadAllSources(sourcesDir, unionSourceFilenamePolicy(manifests));
   const searchLog = loadSearchLog(searchLogPath);
   const threadIds = threadIdSet(loadScopesRegistry(scopesPath));
-  const validCaseIds = deriveAllCaseIds(manifests);
+  const validCaseIds =
+    selectedCorpus !== undefined
+      ? deriveScopeContext(selectedCorpus).validCaseIds
+      : deriveAllCaseIds(manifests);
   return buildCoverageReport({ sources, searchLog, threadIds, validCaseIds });
 }

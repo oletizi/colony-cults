@@ -14,6 +14,12 @@
   # Astro 7 requires Node >= 22.12.0; pin it so Netlify's default image Node
   # (older) does not fail the build. Keep in sync with .nvmrc.
   NODE_VERSION = "22"
+  # Corpus selection (specs/018-corpus-config-seam, FR-003): the browser/
+  # site-build composition root (src/browser/config.ts) requires an explicit
+  # corpus, with no implicit default -- there is no `--corpus` flag for a site
+  # build, so COLONY_CORPUS is the only selector. Must name a manifest under
+  # corpora/ (today, only "port-breton").
+  COLONY_CORPUS = "port-breton"
   # Serve page images from our Cloudflare read-through CDN in front of the public
   # B2 bucket (TASK-12, infra/cloudflare-cdn/), NOT straight from Gallica -- so
   # public reads hit the edge cache and never hammer the upstream French source.
