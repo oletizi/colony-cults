@@ -1,21 +1,26 @@
-## 2026-07-28: <!-- session title -->
+## 2026-07-27: Scope multi-corpus generalization → drive spec 1 (corpus config seam) through design → define → spec-review to review-hardened
 
-**Goal:** <!-- compose: what we set out to do -->
+**Goal:** Generalize the single-corpus apparatus to run varied research subjects on one shared core. Scope the work honestly (rewrite vs. seam?), then drive the first spec of the epic — the corpus config seam — through the full governed lifecycle to an implementable, review-hardened state.
 
 **Accomplished:**
-- <!-- compose -->
+- **Measured the coupling before designing** (Explore agent). The apparatus is ~80% corpus-neutral; real single-corpus coupling lives in exactly 4 files: `archive/location.ts` `SOURCE_LAYOUTS`, `bibliography/scope.ts` `PORT_BRETON_CASE_ID`, `sourcegroup/id-alloc.ts` PB-P allocator, `browser/config.ts` default sources. Verdict: multi-corpus support is a small DI-shaped **config seam**, not a rewrite/restructure.
+- **Stood up the epic** `multi:feature/multi-corpus-generalization` + spec 1 `impl:feature/corpus-config-seam`; drove `/stack-control:design` (brainstorming, ≥2 alternatives, operator-approved, gate met) → `/stack-control:define` → the full Spec Kit chain: spec.md (4 user stories, 15+ FRs, 5 SCs), plan.md (Constitution PASS, new `src/corpus/` module + 4 hotspot edits), data-model.md, contracts/corpus-seam.md (INV-1..12), tasks.md (20 test-first tasks). Node at `specifying`.
+- **Integrated two third-party reviews in full.** DESIGN review folded into the design record. SPEC review resolved four blocking gaps across all four artifacts: `requiredCapabilities` (Model A), `archiveLayoutOverrides` modeling + validator rules, `BrowserProfile` at `corpora/<id>.browser.yml` (absence valid for non-browser commands), and hardened ID-namespace rules (prefix grammar + **disjointness** — no prefix a leading substring of another; `padWidth ∈ 1..8`; existing-data validation). Plus the normative corpus-dependent **command-scope** boundary (FR-014), the **strict** validation policy (FR-015), a **structured** coverage-snapshot comparison (SC-001), and the synthetic second corpus reframed as **fixtures-only** (SC-003).
+- **Closed the shipped `asset-summaries` feature** (validated → closed).
 
 **Didn't Work:**
-- <!-- compose -->
+- No dead ends in this arc — but the scoping pass was what prevented one. The operator's opening framing ("not sure the best way") could have become a speculative multi-corpus rewrite; measuring the coupling first ruled that out before any design was written.
 
 **Course Corrections:**
-- <!-- compose -->
+- **Framed generalization as a DI seam, not a restructure** — once the coupling was *measured* (4 constants, one repo, `cases/<case>/` grain preserved), the "how do we support multiple corpora" question collapsed to a behavior-preserving extraction with Port Breton as corpus instance #1. No repo restructure.
+- **Adopted both reviews essentially in full** rather than defending the drafts. Both found real "the spec can't be implemented as written" gaps — FRs referencing configuration the data model never declared. Where the SPEC review offered options, chose the simpler path each time (Model A capabilities; one browser file per corpus; strict validation) to match a solo-operator setup.
 
 **Insights:**
-- <!-- compose -->
+- **The apparatus was already ~80% corpus-neutral** — the single-corpus coupling was localized to 4 constants, so generalization is provable by a byte-identical **characterization gate** (the 9 legacy Port Breton archive paths) plus a **fixtures-only synthetic second corpus** that must be selectable with zero `src/` core edits (proves the constants were *removed*, not relocated into a Port-Breton loader).
+- **Domain coupling is the hard knot, and it's deliberately deferred.** BnF-SRU discovery and French date normalization (`census/date.ts`) are pluggable-capability work scoped to **epic spec 2**, triggered by the first non-French subject — kept out of the spec-1 types (INV-8) so this spec stays a clean config seam.
 
 **Quantitative (auto-derived from git; verify before publishing):**
-- Commits: 5
+- Commits: 5 (the corpus-config-seam design/define/spec-review arc + the `asset-summaries` close, which landed at the start of this boundary; the earlier coupling-assessment turns fall before the auto-derived merge-base)
   - spec(corpus-config-seam): fold in third-party spec review
   - define(corpus-config-seam): spec + plan + tasks (spec 1 of multi-corpus-generalization)
   - design(corpus-config-seam): fold in third-party review
