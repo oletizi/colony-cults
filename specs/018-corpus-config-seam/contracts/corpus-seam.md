@@ -7,8 +7,10 @@ The new seam. Everything else reuses shipped modules unchanged. Revised after th
 ```
 loadCorpusManifest(corporaRoot, id): CorpusManifest   // reads <corporaRoot>/<id>.yml
                                                       // typed; throws on unsupported schemaVersion / malformed / basename != id
-loadBrowserProfile(corporaRoot, id): BrowserProfile   // reads <corporaRoot>/<id>.browser.yml
-                                                      // typed; throws on malformed / unknown corpus
+loadBrowserProfile(corporaRoot, id): BrowserProfile        // reads <corporaRoot>/<id>.browser.yml
+                                                           // typed; throws on malformed AND on absence
+tryLoadBrowserProfile(corporaRoot, id): BrowserProfile|null // null ONLY when absent; a malformed
+                                                           // profile that EXISTS still throws (FR-005)
 listCorpusManifests(corporaRoot): CorpusManifest[]    // enumerates ALL committed manifests under the root (FR-015)
 ```
 `corporaRoot` is an **injected parameter** (FR-016), resolved once at the composition root — `<repoRoot>/corpora` in production, `tests/fixtures/corpora` under test. Manifest and profile share one convention under it. No core module may hardcode it; **SC-003 depends on this**.
@@ -16,7 +18,8 @@ listCorpusManifests(corporaRoot): CorpusManifest[]    // enumerates ALL committe
 ## Selection (composition root)
 
 ```
-selectCorpus({ cliCorpus?, envCorpus? }): SelectedCorpus
+selectCorpus({ corporaRoot, cliCorpus?, envCorpus? }): SelectedCorpus
+   // corporaRoot REQUIRED, no default (FR-016); returns { corporaRoot, manifest }
 ```
 - Precedence `cliCorpus` (`--corpus`) → `envCorpus` (`COLONY_CORPUS`) → **throw** (no default). Unknown id → throw.
 - Called ONCE at the CLI / browser-build composition root; result derives the narrow policies. No core function re-inspects env or a case operand.
