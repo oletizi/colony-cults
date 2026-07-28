@@ -44,7 +44,12 @@ validateCorpora(corporaRoot, sourcesDir, installedCapabilities): Result
    // enumerates every committed manifest + profile under corporaRoot (FR-015)
    // and reads existing Sources from sourcesDir for existing-data validation
 ```
-Fail loud, specific message per failure — per-manifest, repository-wide, existing-data, browser-profile/override references, and (at selection) capability subset. **Every committed manifest must validate before any corpus runs.** Surfaced as `bib validate-config` (full) + startup validation (selected corpus + global identity index).
+Fail loud, specific message per failure — per-manifest, repository-wide, existing-data, browser-profile/override references, and (at selection) capability subset. **Every committed manifest must validate before any corpus runs.** Two entry points with a **structural** split, drawn at *does the rule read the bibliography SSOT*:
+
+- **Startup** (every corpus-dependent command) — `validateCorporaConfig(corporaRoot)`, which takes **no `sourcesDir` at all**, plus the selected corpus's capability-subset check. Covers: every committed manifest/profile loads (FR-015), unique corpus ids, prefix disjointness across all policies of all corpora, unique case ids, profile references. Cost is bounded by the **number of corpora**, not corpus size. These are preconditions for the policies derived one line later being meaningful — an overlapping prefix means the `SourceIdPolicy` reaching the allocator could mint an ambiguous ID.
+- **Full sweep** (`bib validate-config`) — `validateCorpora(corporaRoot, sourcesDir, …)`: the above **plus** existing-data rules, archive-override rules, and the capability check for every manifest.
+
+**Startup deliberately EXCLUDES the global identity index.** An earlier draft of this contract said startup covered "selected corpus + global identity index", but that read requires enumerating every Source on every invocation, which violates FR-010: a single malformed or nonconforming Source would begin failing `bib show` on an unrelated id, `query-source`, or a fetch — commands that never load a Source. A *data* defect must fail the commands that read that data, not all of them. Same reasoning that keeps `ArchiveLayoutPolicy` out of the composition root. Startup guarantees the **config** is coherent; the full sweep guarantees config and **data** agree.
 
 ## Archive-layout resolution order (FR-017)
 

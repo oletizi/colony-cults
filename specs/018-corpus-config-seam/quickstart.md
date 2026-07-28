@@ -23,7 +23,7 @@ Expect: all existing Sources validate unchanged; the 9 legacy archive paths byte
 unset COLONY_CORPUS
 npx tsx src/index.ts bib coverage        # FAILS LOUD — no selected corpus, no implicit default
 npx tsx src/index.ts bib coverage --corpus does-not-exist   # FAILS LOUD — unknown corpus
-npx tsx src/index.ts bib validate-config # validator over all manifests: pass/fail with specific messages
+npx tsx src/index.ts validate-config     # validator over all manifests: pass/fail with specific messages
 ```
 
 ## Proof 3 — a second corpus, zero core edits (US3 / SC-003 — the load-bearing proof)
@@ -45,7 +45,7 @@ The synthetic corpus lives under `tests/fixtures/`, **not** `corpora/`: under th
 
 ```
 # A second manifest reusing PB-P (or a Port Breton case id) → validate-config FAILS LOUD (repo-wide collision).
-npx tsx src/index.ts bib validate-config
+npx tsx src/index.ts validate-config    
 ```
 
 ## Done when
