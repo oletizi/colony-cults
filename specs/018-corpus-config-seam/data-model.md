@@ -11,7 +11,7 @@ New config layer + narrow policies. Existing SSOT types reused unchanged **(reus
 | `schemaVersion` | `1` (discriminant) | loader rejects unsupported versions |
 | `id` | string | == filename basename; unique across the repository |
 | `cases` | `string[]` | ≥1; grammar `^[a-z][a-z0-9-]*$`; unique within + across manifests |
-| `sourceIds` | `{ prefix: string; padWidth: number }` | prefix grammar `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$` — **no trailing delimiter** (Port Breton ships `PB-P` + pad 3 → `PB-P007`); `1 ≤ padWidth ≤ 8`; disjointness comes from the leading-substring rule (FR-002a) |
+| `sourceIds` | `{ prefix: string; padWidth: number; allocatable: boolean }[]` | **non-empty list**; exactly ONE entry with `allocatable: true` (FR-002b). Prefix grammar `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$` — **no trailing delimiter** (Port Breton ships `PB-P` + pad 3 → `PB-P007`); `1 ≤ padWidth ≤ 8`; disjointness is compared across ALL policies of ALL corpora via the leading-substring rule (FR-002a) |
 | `requiredCapabilities` | `{ repositories: string[]; sourceQueries: string[] }` | **names** of installed capabilities the corpus depends on (Model A); orthogonal to the registries |
 | `archiveLayoutOverrides` | `{ [SourceId]: { relativePath, reason } } | null` | default `null`; used ONLY where generic layout differs from characterized legacy output |
 
@@ -20,12 +20,15 @@ Port Breton instance:
 schemaVersion: 1
 id: port-breton
 cases: [port-breton]
-sourceIds: { prefix: PB-P, padWidth: 3 }
+sourceIds:
+  - { prefix: PB-P, padWidth: 3, allocatable: true }    # 92 primary sources, machine-allocated
+  - { prefix: PB-S, padWidth: 3, allocatable: false }   # PB-S001/PB-S002, hand-authored secondary works
 requiredCapabilities:
   repositories: [gallica, new-italy-museum, internet-archive, papers-past]
   sourceQueries: [papers-past]
 archiveLayoutOverrides: null   # pending the characterization gate
 ```
+Two policies because the corpus genuinely carries two namespaces (verified against the SSOT: 92 `PB-P###` + 2 `PB-S###`, all `case: port-breton`). `PB-P` and `PB-S` are disjoint under the leading-substring rule. Only `PB-P` is allocatable — `src/sourcegroup/id-alloc.ts` allocates nowhere else.
 No `discoveryMechanism` / `dateNormalizer` (spec 2).
 
 ## BrowserProfile (new — `<corporaRoot>/<id>.browser.yml`)
@@ -46,7 +49,7 @@ Absence is valid for non-browser commands; required only by browser-deploy / bro
 | Policy | Shape | Consumer |
 |---|---|---|
 | `ScopeResolutionContext` | `{ validCaseIds: ReadonlySet<string>, …existing }` | `bibliography/scope.ts` |
-| `SourceIdPolicy` | `{ prefix: string; padWidth: number }` | `sourcegroup/id-alloc.ts` |
+| `SourceIdPolicy` | `{ prefix: string; padWidth: number }` — **singular**, derived from the corpus's ONE `allocatable: true` policy (FR-002b), so the allocation seam is unchanged | `sourcegroup/id-alloc.ts` |
 | `ArchiveLayoutPolicy` | `overrides: ReadonlyMap<SourceId, { relativePath, reason }>` + `derived: ReadonlyMap<SourceId, SourceLayout>` (**precomputed** at construction — see below) | `archive/location.ts` |
 | `BrowserProfile` | `{ corpus; defaultSources: ReadonlyArray<string> }` | `browser/config.ts` (deployment) |
 
@@ -82,7 +85,7 @@ The exported API `registerSourceLayout` / `isSourceLayoutRegistered` / `deriveSo
 
 **Per manifest**: supported schema version; corpus-id validity + `basename==id`; ≥1 case; case-id grammar + within-manifest uniqueness; source-ID prefix grammar (no trailing delimiter); `padWidth ∈ 1..8`.
 **Repository-wide (ALL committed manifests)**: unique corpus ids; **prefix disjointness** — no configured prefix equals or is a leading substring of another; unique case ids; browser-profile `corpus` references a known corpus + unique profile ids; archive-override references a known Source in a Case of that corpus, relative path, no archive-root escape, no two Sources to one location, every override has a `reason`.
-**Existing-data**: every existing Source ID globally unique; every Source under a Corpus conforms to its ID policy (unless grandfathered); the next allocated ID cannot collide with any existing ID or another Corpus's namespace.
+**Existing-data**: every existing Source ID globally unique; every Source under a Corpus conforms to **at least one of** its ID policies (FR-002b — this is what makes `PB-S001`/`PB-S002` valid without a grandfathering carve-out); the next allocated ID, drawn from the **allocatable** policy, cannot collide with any existing ID or another Corpus's namespace.
 **At selection**: selected corpus exists; `requiredCapabilities` ⊆ installed capabilities.
 **Policy**: every committed manifest MUST validate before ANY corpus runs (drafts live outside `corpora/`).
 

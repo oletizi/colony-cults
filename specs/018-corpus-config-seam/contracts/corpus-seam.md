@@ -29,7 +29,8 @@ selectCorpus({ corporaRoot, cliCorpus?, envCorpus? }): SelectedCorpus
 
 ```
 deriveScopeContext(corpus): ScopeResolutionContext      // { validCaseIds: ReadonlySet }
-deriveSourceIdPolicy(corpus): SourceIdPolicy            // { prefix, padWidth }
+deriveSourceIdPolicy(corpus): SourceIdPolicy            // { prefix, padWidth } — SINGULAR:
+                                                        // the corpus's one allocatable policy (FR-002b)
 deriveArchiveLayoutPolicy(corpus): ArchiveLayoutPolicy  // generic + ReadonlyMap overrides
 deriveBrowserProfile(corpus, envOverride?): BrowserProfile
 ```
@@ -83,6 +84,7 @@ Compare a **structured** snapshot, not rendered prose: Source/group counts, stat
 - **INV-9**: A selected corpus whose `requiredCapabilities` are not all installed fails startup validation (FR-008).
 - **INV-10**: An archive override referencing an unknown Source (or a path escaping the archive root, or missing a reason) fails validation (FR-007).
 - **INV-11**: A browser profile referencing an unknown corpus, or a duplicate profile id, fails validation (FR-005/008).
-- **INV-12**: Existing-data validation catches a Source whose ID does not conform to its Corpus's policy (unless grandfathered) and a next-allocated ID that would collide (FR-002a).
+- **INV-12**: Existing-data validation catches a Source whose ID conforms to **none** of its Corpus's policies, and a next-allocated ID that would collide (FR-002a/002b). `PB-S001`/`PB-S002` conform via the corpus's second policy and MUST validate.
+- **INV-15**: A manifest with zero `sourceIds` policies, or with a count of `allocatable: true` other than exactly one, fails validation; prefix disjointness is checked across ALL policies of ALL corpora, not one per corpus (FR-002b).
 - **INV-13**: No core module hardcodes the corpora root — pointing `corporaRoot` at a fixture directory selects and operates a corpus there with zero `src/` edits (FR-016, SC-003).
 - **INV-14**: Layout resolution follows the total order overrides → runtime overlay → precomputed derivation → throw; `registerSourceLayout` still throws on a conflicting re-registration, and `ensureMemberLayoutRegistered` resolves a mid-run member exactly as before (FR-017, SC-001).
