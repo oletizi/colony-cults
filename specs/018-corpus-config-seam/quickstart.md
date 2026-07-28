@@ -12,8 +12,8 @@ Two proofs: Port Breton is unchanged, and a second corpus works without touching
 ```
 export COLONY_CORPUS=port-breton        # explicit composition (dev convenience), not a code fallback
 npm test                                # full suite green, incl. the characterization test
-npx tsx src/index.ts bib validate       # clean
-npx tsx src/index.ts bib coverage       # semantically identical to pre-change
+npx tsx src/index.ts validate       # clean
+npx tsx src/index.ts coverage       # semantically identical to pre-change
 ```
 Expect: all existing Sources validate unchanged; the 9 legacy archive paths byte-identical; coverage identical; no data migration.
 
@@ -21,8 +21,8 @@ Expect: all existing Sources validate unchanged; the 9 legacy archive paths byte
 
 ```
 unset COLONY_CORPUS
-npx tsx src/index.ts bib coverage        # FAILS LOUD — no selected corpus, no implicit default
-npx tsx src/index.ts bib coverage --corpus does-not-exist   # FAILS LOUD — unknown corpus
+npx tsx src/index.ts coverage        # FAILS LOUD — no selected corpus, no implicit default
+npx tsx src/index.ts coverage --corpus does-not-exist   # FAILS LOUD — unknown corpus
 npx tsx src/index.ts validate-config     # validator over all manifests: pass/fail with specific messages
 ```
 
@@ -34,7 +34,7 @@ npx tsx src/index.ts validate-config     # validator over all manifests: pass/fa
 #   tests/fixtures/corpora/synthetic.browser.yml   (profile beside it — same convention as production)
 #   tests/fixtures/cases/<second-case>/…           (a small fixture Source)
 # ...then inject corporaRoot=tests/fixtures/corpora at the composition root (FR-016).
-npx tsx src/index.ts bib coverage --corpus synthetic   # operates on the synthetic corpus
+npx tsx src/index.ts coverage --corpus synthetic   # operates on the synthetic corpus
 git diff --stat                                         # touches ONLY tests/fixtures/ — NO src/ core module
 ```
 Expect: scope resolution, ID allocation, archive layout, and browser defaults all use the synthetic corpus's policies; a synthetic ID allocates with its prefix/pad and is globally unique. If any core `src/` module had to change, the constants were relocated, not removed — **fail the feature.**
