@@ -225,6 +225,7 @@ Render source-group members (Papers Past NZ press articles PB-P060/PB-P061-P092)
 
 ## impl:feature/corpus-config-seam
 - status: in-flight
+- spec: specs/018-corpus-config-seam
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-27-corpus-config-seam-design.md
 - part-of: multi:feature/multi-corpus-generalization
