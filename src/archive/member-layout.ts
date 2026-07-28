@@ -11,17 +11,19 @@ import {
  * `restore-images` via `resolveFetchedDir` -- resolves it. This is the
  * reverse-lookup counterpart to what `bib acquire` does before FETCHING a
  * member (`registerMemberArchiveLayout`): a member created by `bib inventory`
- * is never hand-added to the static `SOURCE_LAYOUTS` registry, so every command
- * that must locate its files has to derive+register the same layout first.
+ * mid-run cannot be in an archive-layout policy composed earlier in the same
+ * process, so every command that must locate its files has to derive+register
+ * the same layout first.
  *
  * Deriving (rather than hardcoding) guarantees these commands resolve the SAME
- * slug `bib acquire` fetched into -- a hand-added static entry could silently
- * diverge from the derived slug and point at the wrong directory.
+ * slug `bib acquire` fetched into -- a hand-added entry could silently diverge
+ * from the derived slug and point at the wrong directory.
  *
  * No-op (returns) when:
- *  - a layout is already known (static registry OR already-registered overlay),
- *    so a static source (PB-P001..PB-P003) is never re-derived under a
- *    divergent slug;
+ *  - a layout is already resolvable by any step of the FR-017 order (a manifest
+ *    `archiveLayoutOverrides` entry, an already-registered overlay entry, or
+ *    the corpus's precomputed generic derivation), so a source the corpus
+ *    already places is never re-derived under a divergent slug;
  *  - `sourceId` is not a registered source at all, or is itself a source-group
  *    (which has no archival object) -- those cases are left for the caller's
  *    own resolution to reject with its clearer, command-specific error.

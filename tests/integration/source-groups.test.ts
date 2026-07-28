@@ -23,17 +23,26 @@ import type {
  *
  * The test arranges a temp bibliography/sources/ with:
  * - PB-P004: a source-group (no archival object, no layout)
- * - PB-P005: an ordinary monograph (has a layout, but will fail later for other reasons)
+ * - PB-P999: an ordinary monograph belonging to no committed corpus, so no
+ *   archive layout resolves for it
  *
  * Assertions:
  * 1. Fetching PB-P004 (source-group) throws with a message naming the ID and
  *    mentioning "Source Group" / "discover and inventory".
  * 2. The error is NOT the generic "no archive layout registered" message.
- * 3. Fetching PB-P005 (monograph) throws the sourceLayout error (positive control).
+ * 3. Fetching PB-P999 (monograph) throws the sourceLayout error (positive control).
+ *
+ * ON THE POSITIVE CONTROL'S ID (T013, spec 018-corpus-config-seam): it must be
+ * a Source ID absent from the COMMITTED bibliography SSOT. Before T013 only 9
+ * hand-registered sources had a layout, so any other real id (this test used
+ * PB-P005) threw. `sourceLayout` now resolves a layout for every Source of a
+ * committed corpus via the precomputed generic derivation, so a real id no
+ * longer throws -- which is the point of the retirement, not a regression.
+ * PB-P999 exercises the same throw for the same reason: no corpus places it.
  */
 
 const SOURCE_GROUP_ID = 'PB-P004';
-const MONOGRAPH_ID = 'PB-P005';
+const MONOGRAPH_ID = 'PB-P999';
 const DOCUMENT_ARK = 'bpt6kTEST00001';
 
 const SOURCE_GROUP_YAML = `
@@ -185,8 +194,9 @@ describe('fetch-source guardrail for source-groups (T004)', () => {
   });
 
   it('throws a sourceLayout error (not the source-group guardrail) for an unregistered monograph', async () => {
-    // PB-P005 is a monograph but is not registered in archive/location.ts,
-    // so it should fail with the sourceLayout error, not the source-group error.
+    // PB-P999 is a monograph belonging to no committed corpus, so no archive
+    // layout resolves for it: it should fail with the sourceLayout error, not
+    // the source-group error.
     let thrownError: unknown;
     try {
       await runFetchSource(argsFor(MONOGRAPH_ID), baseDeps());
@@ -197,7 +207,7 @@ describe('fetch-source guardrail for source-groups (T004)', () => {
     expect(thrownError).toBeDefined();
     const message = thrownError instanceof Error ? thrownError.message : String(thrownError);
 
-    // This SHOULD be the sourceLayout error since PB-P005 is not in the registry
+    // This SHOULD be the sourceLayout error since no corpus places PB-P999
     expect(message).toMatch(/no archive layout registered/i);
     // It should NOT be the source-group message
     expect(message).not.toMatch(/[Ss]ource [Gg]roup|group members/);

@@ -1,6 +1,6 @@
 import { tryLoadBrowserProfile } from '@/corpus/browser-profile';
 import type { SelectedCorpus } from '@/corpus/select';
-import { deriveSourceLayout, type SourceLayout } from '@/archive/location';
+import { deriveSourceLayout, type SourceLayout } from '@/archive/derive-layout';
 import type { Source } from '@/model/source';
 
 /**

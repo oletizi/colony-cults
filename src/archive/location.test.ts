@@ -122,10 +122,12 @@ describe('registerSourceLayout / sourceLayout overlay', () => {
     ).toThrow(/already registered/i);
   });
 
-  it('the static registry always wins over the overlay for the same id', () => {
-    // PB-P002 is a real static entry (see SOURCE_LAYOUTS): books/monograph
-    // under port-breton with a hand-authored slug. Registering a conflicting
-    // overlay entry for it must not change what sourceLayout resolves.
+  it('a manifest archiveLayoutOverride always wins over the overlay for the same id', () => {
+    // PB-P002 carries a validated `archiveLayoutOverrides` entry in
+    // corpora/port-breton.yml (T013): books/monograph under port-breton with
+    // the legacy hand-authored slug. An override is step 1 of the FR-017
+    // resolution order, so registering a conflicting overlay entry (step 2)
+    // must not change what sourceLayout resolves.
     const conflicting = deriveSourceLayout(
       member({
         sourceId: 'PB-P002',

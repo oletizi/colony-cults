@@ -7,4 +7,29 @@ sourceIds:
 requiredCapabilities:
   repositories: [gallica, new-italy-museum, internet-archive, papers-past]
   sourceQueries: [papers-past, papers-past-article]
-archiveLayoutOverrides: null   # pending the characterization gate (T013)
+# Per-Source archive-layout overrides (FR-007). Exactly TWO of the 9 legacy
+# Port Breton archive locations are not byte-reproducible by the generic
+# derivation (which slugifies the Source's canonical title); the other 7 are,
+# and deliberately carry NO override. Determined empirically against the T001
+# characterization fixture (tests/fixtures/archive/legacy-source-layouts.json).
+archiveLayoutOverrides:
+  PB-P002:
+    relativePath: archive/cases/port-breton/books/nouvelle-france-colonie-libre-port-breton
+    reason: >-
+      Legacy hand-authored slug. The generic derivation slugifies the canonical
+      title "Colonie libre de Port-Breton : Nouvelle France en Oceanie" to
+      "colonie-libre-de-port-breton-nouvelle-france-en-oceanie", but the masters
+      and provenance records already committed to the archive live at
+      "nouvelle-france-colonie-libre-port-breton" (title elements reordered and
+      abbreviated by hand when the source was first filed). Relocating them
+      would be a canonical data migration, which FR-010 forbids.
+  PB-P003:
+    relativePath: archive/cases/port-breton/books/baudouin-aventure-port-breton-1883
+    reason: >-
+      Legacy hand-authored slug. The generic derivation slugifies the canonical
+      title "L'aventure de Port-Breton et la colonie libre dite Nouvelle-France"
+      to "l-aventure-de-port-breton-et-la-colonie-libre-dite-nouvelle-france",
+      but the committed archive path is the author-first short form
+      "baudouin-aventure-port-breton-1883" (author surname + short title +
+      year). Relocating it would be a canonical data migration, which FR-010
+      forbids.

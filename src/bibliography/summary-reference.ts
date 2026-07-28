@@ -24,7 +24,7 @@
 import { existsSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 
-import { assertInsideArchive } from '@/archive/location';
+import { assertInsideArchive } from '@/archive/archive-root';
 import type { Source } from '@/model/source';
 
 /**
@@ -85,7 +85,7 @@ function hasParentTraversal(ref: string): boolean {
  * - Present, in-root, but the artifact is missing -> throws, naming the
  *   dangling ref and where it was expected.
  *
- * The in-root check reuses `@/archive/location`'s `assertInsideArchive` --
+ * The in-root check reuses `@/archive/archive-root`'s `assertInsideArchive` --
  * the same non-overridable write-guard the archive/summarize/OCR write paths
  * already rely on (FR-006) -- rather than re-implementing path-escape
  * detection here. Otherwise this stays a plain path-existence check by
