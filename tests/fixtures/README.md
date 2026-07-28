@@ -36,3 +36,14 @@ Recorded test fixtures for unit and integration tests. All live fixtures fetched
 - Purpose: Test fixture for rights-refusal scenarios (in-copyright)
 - Created: 2026-07-08
 - Note: Synthetic copy of `oairecord-bpt6k5603637g.xml` with `dc:rights` values changed from "domaine public"/"public domain" to "in copyright"
+
+### archive/legacy-source-layouts.json
+- Purpose: T001 (spec 018-corpus-config-seam) characterization gate -- a
+  byte-identical snapshot of every `@/archive/location` function whose output
+  depends on the static `SOURCE_LAYOUTS` map, for the 9 legacy Port Breton
+  source ids (`PB-P001/002/003/054/055/056/057/058/059`). Captured BEFORE
+  `SOURCE_LAYOUTS` was touched by T013 (which retires it for a generic
+  derivation + validated overrides). Read by
+  `tests/unit/archive/location-legacy-characterization.test.ts`; protects
+  SC-001/INV-4.
+- Created: 2026-07-27, generated from current (pre-T013) code, not fetched.

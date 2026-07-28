@@ -1,0 +1,307 @@
+{
+  "description": "Characterization fixture (T001, spec 018-corpus-config-seam): byte-identical snapshot of every src/archive/location.ts function whose output depends on the static SOURCE_LAYOUTS map, for the 9 legacy Port Breton source ids. Captured BEFORE SOURCE_LAYOUTS was touched by T013. Protects SC-001/INV-4: the 9 legacy archive paths must stay byte-identical after the retirement of the static registry in favor of generic derivation + validated overrides.",
+  "fixtureInputs": {
+    "archiveRoot": "/fixture-archive-root",
+    "issueArk": "bpt6k0000001",
+    "issueDate": "1882-03-15"
+  },
+  "sources": [
+    {
+      "sourceId": "PB-P001",
+      "sourceLayout": {
+        "ok": true,
+        "value": {
+          "case": "port-breton",
+          "type": "newspapers",
+          "slug": "la-nouvelle-france",
+          "kind": "periodical"
+        }
+      },
+      "isSourceLayoutRegistered": true,
+      "sourceRootDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/newspapers/la-nouvelle-france"
+      },
+      "monographDir": {
+        "ok": false,
+        "error": "monographDir: source \"PB-P001\" is registered as kind \"periodical\", not \"monograph\""
+      },
+      "issueDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/newspapers/la-nouvelle-france/1882-03-15_bpt6k0000001"
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "findIssueDir: no fetched issues found for source \"PB-P001\" (missing /fixture-archive-root/archive/cases/port-breton/newspapers/la-nouvelle-france) -- run fetch-issue/fetch-source first"
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "findIssueDir: no fetched issues found for source \"PB-P001\" (missing /fixture-archive-root/archive/cases/port-breton/newspapers/la-nouvelle-france) -- run fetch-issue/fetch-source first"
+      }
+    },
+    {
+      "sourceId": "PB-P002",
+      "sourceLayout": {
+        "ok": true,
+        "value": {
+          "case": "port-breton",
+          "type": "books",
+          "slug": "nouvelle-france-colonie-libre-port-breton",
+          "kind": "monograph"
+        }
+      },
+      "isSourceLayoutRegistered": true,
+      "sourceRootDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/nouvelle-france-colonie-libre-port-breton"
+      },
+      "monographDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/nouvelle-france-colonie-libre-port-breton"
+      },
+      "issueDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/nouvelle-france-colonie-libre-port-breton/1882-03-15_bpt6k0000001"
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "findIssueDir: no fetched issues found for source \"PB-P002\" (missing /fixture-archive-root/archive/cases/port-breton/books/nouvelle-france-colonie-libre-port-breton) -- run fetch-issue/fetch-source first"
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "resolveFetchedDir: no fetched document found for monograph source \"PB-P002\" (missing /fixture-archive-root/archive/cases/port-breton/books/nouvelle-france-colonie-libre-port-breton) -- run fetch-source first"
+      }
+    },
+    {
+      "sourceId": "PB-P003",
+      "sourceLayout": {
+        "ok": true,
+        "value": {
+          "case": "port-breton",
+          "type": "books",
+          "slug": "baudouin-aventure-port-breton-1883",
+          "kind": "monograph"
+        }
+      },
+      "isSourceLayoutRegistered": true,
+      "sourceRootDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/baudouin-aventure-port-breton-1883"
+      },
+      "monographDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/baudouin-aventure-port-breton-1883"
+      },
+      "issueDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/baudouin-aventure-port-breton-1883/1882-03-15_bpt6k0000001"
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "findIssueDir: no fetched issues found for source \"PB-P003\" (missing /fixture-archive-root/archive/cases/port-breton/books/baudouin-aventure-port-breton-1883) -- run fetch-issue/fetch-source first"
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "resolveFetchedDir: no fetched document found for monograph source \"PB-P003\" (missing /fixture-archive-root/archive/cases/port-breton/books/baudouin-aventure-port-breton-1883) -- run fetch-source first"
+      }
+    },
+    {
+      "sourceId": "PB-P054",
+      "sourceLayout": {
+        "ok": true,
+        "value": {
+          "case": "port-breton",
+          "type": "books",
+          "slug": "cour-de-cassation-chambre-criminelle-arret-de-rejet-du-pourvoi-de-charles",
+          "kind": "monograph"
+        }
+      },
+      "isSourceLayoutRegistered": true,
+      "sourceRootDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/cour-de-cassation-chambre-criminelle-arret-de-rejet-du-pourvoi-de-charles"
+      },
+      "monographDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/cour-de-cassation-chambre-criminelle-arret-de-rejet-du-pourvoi-de-charles"
+      },
+      "issueDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/cour-de-cassation-chambre-criminelle-arret-de-rejet-du-pourvoi-de-charles/1882-03-15_bpt6k0000001"
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "findIssueDir: no fetched issues found for source \"PB-P054\" (missing /fixture-archive-root/archive/cases/port-breton/books/cour-de-cassation-chambre-criminelle-arret-de-rejet-du-pourvoi-de-charles) -- run fetch-issue/fetch-source first"
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "resolveFetchedDir: no fetched document found for monograph source \"PB-P054\" (missing /fixture-archive-root/archive/cases/port-breton/books/cour-de-cassation-chambre-criminelle-arret-de-rejet-du-pourvoi-de-charles) -- run fetch-source first"
+      }
+    },
+    {
+      "sourceId": "PB-P055",
+      "sourceLayout": {
+        "ok": true,
+        "value": {
+          "case": "port-breton",
+          "type": "books",
+          "slug": "nouvelle-france-colonie-libre-de-port-breton-oceanie-uvre-de-colonisation",
+          "kind": "monograph"
+        }
+      },
+      "isSourceLayoutRegistered": true,
+      "sourceRootDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/nouvelle-france-colonie-libre-de-port-breton-oceanie-uvre-de-colonisation"
+      },
+      "monographDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/nouvelle-france-colonie-libre-de-port-breton-oceanie-uvre-de-colonisation"
+      },
+      "issueDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/nouvelle-france-colonie-libre-de-port-breton-oceanie-uvre-de-colonisation/1882-03-15_bpt6k0000001"
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "findIssueDir: no fetched issues found for source \"PB-P055\" (missing /fixture-archive-root/archive/cases/port-breton/books/nouvelle-france-colonie-libre-de-port-breton-oceanie-uvre-de-colonisation) -- run fetch-issue/fetch-source first"
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "resolveFetchedDir: no fetched document found for monograph source \"PB-P055\" (missing /fixture-archive-root/archive/cases/port-breton/books/nouvelle-france-colonie-libre-de-port-breton-oceanie-uvre-de-colonisation) -- run fetch-source first"
+      }
+    },
+    {
+      "sourceId": "PB-P056",
+      "sourceLayout": {
+        "ok": true,
+        "value": {
+          "case": "port-breton",
+          "type": "books",
+          "slug": "richmond-river-district-of-new-south-wales-new-italy-a-brief-sketch-of-a-new",
+          "kind": "monograph"
+        }
+      },
+      "isSourceLayoutRegistered": true,
+      "sourceRootDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/richmond-river-district-of-new-south-wales-new-italy-a-brief-sketch-of-a-new"
+      },
+      "monographDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/richmond-river-district-of-new-south-wales-new-italy-a-brief-sketch-of-a-new"
+      },
+      "issueDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/richmond-river-district-of-new-south-wales-new-italy-a-brief-sketch-of-a-new/1882-03-15_bpt6k0000001"
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "findIssueDir: no fetched issues found for source \"PB-P056\" (missing /fixture-archive-root/archive/cases/port-breton/books/richmond-river-district-of-new-south-wales-new-italy-a-brief-sketch-of-a-new) -- run fetch-issue/fetch-source first"
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "resolveFetchedDir: no fetched document found for monograph source \"PB-P056\" (missing /fixture-archive-root/archive/cases/port-breton/books/richmond-river-district-of-new-south-wales-new-italy-a-brief-sketch-of-a-new) -- run fetch-source first"
+      }
+    },
+    {
+      "sourceId": "PB-P057",
+      "sourceLayout": {
+        "ok": true,
+        "value": {
+          "case": "port-breton",
+          "type": "books",
+          "slug": "the-china-mail-hong-kong-16-october-1880-report-on-the-wreck-of-the-marquis-de",
+          "kind": "monograph"
+        }
+      },
+      "isSourceLayoutRegistered": true,
+      "sourceRootDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/the-china-mail-hong-kong-16-october-1880-report-on-the-wreck-of-the-marquis-de"
+      },
+      "monographDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/the-china-mail-hong-kong-16-october-1880-report-on-the-wreck-of-the-marquis-de"
+      },
+      "issueDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/the-china-mail-hong-kong-16-october-1880-report-on-the-wreck-of-the-marquis-de/1882-03-15_bpt6k0000001"
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "findIssueDir: no fetched issues found for source \"PB-P057\" (missing /fixture-archive-root/archive/cases/port-breton/books/the-china-mail-hong-kong-16-october-1880-report-on-the-wreck-of-the-marquis-de) -- run fetch-issue/fetch-source first"
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "resolveFetchedDir: no fetched document found for monograph source \"PB-P057\" (missing /fixture-archive-root/archive/cases/port-breton/books/the-china-mail-hong-kong-16-october-1880-report-on-the-wreck-of-the-marquis-de) -- run fetch-source first"
+      }
+    },
+    {
+      "sourceId": "PB-P058",
+      "sourceLayout": {
+        "ok": true,
+        "value": {
+          "case": "port-breton",
+          "type": "books",
+          "slug": "the-china-mail-hong-kong-8-march-1882-the-colony-of-port-breton-the-justice-of",
+          "kind": "monograph"
+        }
+      },
+      "isSourceLayoutRegistered": true,
+      "sourceRootDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/the-china-mail-hong-kong-8-march-1882-the-colony-of-port-breton-the-justice-of"
+      },
+      "monographDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/the-china-mail-hong-kong-8-march-1882-the-colony-of-port-breton-the-justice-of"
+      },
+      "issueDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/the-china-mail-hong-kong-8-march-1882-the-colony-of-port-breton-the-justice-of/1882-03-15_bpt6k0000001"
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "findIssueDir: no fetched issues found for source \"PB-P058\" (missing /fixture-archive-root/archive/cases/port-breton/books/the-china-mail-hong-kong-8-march-1882-the-colony-of-port-breton-the-justice-of) -- run fetch-issue/fetch-source first"
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "resolveFetchedDir: no fetched document found for monograph source \"PB-P058\" (missing /fixture-archive-root/archive/cases/port-breton/books/the-china-mail-hong-kong-8-march-1882-the-colony-of-port-breton-the-justice-of) -- run fetch-source first"
+      }
+    },
+    {
+      "sourceId": "PB-P059",
+      "sourceLayout": {
+        "ok": true,
+        "value": {
+          "case": "port-breton",
+          "type": "books",
+          "slug": "the-hong-kong-daily-press-16-july-1883-trial-of-the-marquis-de-rays-paris-12",
+          "kind": "monograph"
+        }
+      },
+      "isSourceLayoutRegistered": true,
+      "sourceRootDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/the-hong-kong-daily-press-16-july-1883-trial-of-the-marquis-de-rays-paris-12"
+      },
+      "monographDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/the-hong-kong-daily-press-16-july-1883-trial-of-the-marquis-de-rays-paris-12"
+      },
+      "issueDir": {
+        "ok": true,
+        "value": "/fixture-archive-root/archive/cases/port-breton/books/the-hong-kong-daily-press-16-july-1883-trial-of-the-marquis-de-rays-paris-12/1882-03-15_bpt6k0000001"
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "findIssueDir: no fetched issues found for source \"PB-P059\" (missing /fixture-archive-root/archive/cases/port-breton/books/the-hong-kong-daily-press-16-july-1883-trial-of-the-marquis-de-rays-paris-12) -- run fetch-issue/fetch-source first"
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "resolveFetchedDir: no fetched document found for monograph source \"PB-P059\" (missing /fixture-archive-root/archive/cases/port-breton/books/the-hong-kong-daily-press-16-july-1883-trial-of-the-marquis-de-rays-paris-12) -- run fetch-source first"
+      }
+    }
+  ]
+}
