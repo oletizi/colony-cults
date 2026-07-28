@@ -17,11 +17,11 @@ import { finding, type CorpusValidationFinding } from '@/corpus/validate-types';
  *
  * ON GRANDFATHERING — A SPEC GAP THAT FR-002b CLOSED
  *
- * FR-002a and INV-12 both qualify Source conformance with "unless explicitly
- * grandfathered", but NO grandfathering mechanism is defined anywhere in the
- * spec: there is no manifest field for it, and no rule describing how a
- * Source would be marked. This module therefore implements STRICT
- * conformance with no exemption path, and no bypass flag.
+ * FR-002a and INV-12 USED TO qualify Source conformance with "unless
+ * explicitly grandfathered", while defining no mechanism anywhere: no manifest
+ * field, no rule describing how a Source would be marked. Those clauses have
+ * since been removed from the spec. This module implements STRICT conformance
+ * with no exemption path and no bypass flag.
  *
  * The case that appeared to need one — Port Breton's hand-authored `PB-S001`
  * / `PB-S002` sitting beside 92 machine-allocated `PB-P###` records — is
