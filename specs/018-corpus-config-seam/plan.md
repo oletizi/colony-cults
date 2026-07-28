@@ -123,6 +123,14 @@ Traced from the real registration, not from docs/naming: `src/index.ts` → `src
 
 No flag names change any of these commands' corpus-touch — checked `--dry-run` (`acquire`, `inventory`), `--check` (`regenerate`), `--status` presence (`rights-assess`), and `--repository` (`inventory`); every mode of every corpus-dependent command above stays corpus-dependent in all its invocation modes, and neither ambiguous command becomes corpus-dependent under any flag combination.
 
+### Resolution of the two flagged ambiguities (controller decision, T002 review)
+
+Both `discover` and `query-source` are **exceptions for spec 1**, and T009 wires them as such. Rationale: neither triggers any of FR-014's six corpus-dependent clauses — `discover` is a stateless BnF SRU catalogue query, and `query-source` resolves `<source-id>` against the *capability* registry (external repository endpoints), not a corpus bibliographic Source id. Requiring a selected corpus for either would fail commands that legitimately have no corpus in hand.
+
+Two consequences recorded rather than left implicit:
+- **`discover` is revisited in epic spec 2.** When discovery becomes pluggable and corpus-scoped (`discoveryMechanism`), its classification flips to corpus-dependent. This is a known, scheduled change, not an oversight.
+- **`query-source` captures stay repo-wide.** Persisted captures land in `bibliography/repository-responses/`, which is NOT corpus-scoped. Under multi-corpus, two corpora share that cache. This is coherent — captures are keyed by external source + query, not by corpus — but it means the cache is a shared repository-level resource, not corpus data, which is precisely why the command is an exception.
+
 ### `translate` — separate bin (`src/translate-index.ts` → `src/cli/translate.ts`)
 
 `translate`/`translate-source` are recognized by the shared `Command` union (`src/cli/parse.ts`) but are **not** wired in `bib`'s `HANDLERS` (`src/cli/dispatch.ts` explicitly redirects them to this separate bin, exit code 2). They are real commands only under the `translate` executable.
