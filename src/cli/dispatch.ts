@@ -1,9 +1,19 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from '@/cli/parse';
 import type { Command, ParsedArgs } from '@/cli/parse';
 import { runBibliography, isBibSubaction } from '@/cli/bibliography';
+import {
+  composeCorpus,
+  corporaRootFor,
+  envCorpusFor,
+  findPackageJsonUpward,
+  type CliEnvironment,
+  type CorpusComposition,
+} from '@/cli/composition-root';
+import { isBibExceptionSubaction } from '@/cli/corpus-exceptions';
+import { extractCorpusFlag } from '@/cli/corpus-flag';
 import { runCensus } from '@/cli/census';
 import { runFetchIssue, runFetchSource } from '@/cli/fetch';
 import { runOcr } from '@/cli/ocr';
@@ -11,8 +21,19 @@ import { runRestoreImages } from '@/cli/restore-images';
 import { runSummarize, runSummarizeSource } from '@/cli/summarize';
 import { describeError } from '@/bibliography/load-primitives';
 
-/** A command handler: given the parsed invocation, performs the command. */
-type Handler = (args: ParsedArgs) => Promise<void>;
+/**
+ * A command handler: given the parsed invocation AND the corpus composed at
+ * the composition root, performs the command.
+ *
+ * The `corpus` parameter is the INJECTION POINT established by T009 (FR-004):
+ * every verb in `HANDLERS` is corpus-dependent per the FR-014 table, so it is
+ * always a real composition here — never `null`, never optional. Today's
+ * handlers ignore it; the hotspot tasks (T011 `bibliography/scope.ts`, T012
+ * `sourcegroup/id-alloc.ts`, T013 `archive/location.ts`) thread the narrow
+ * policy they need down from here, rather than re-resolving a corpus deeper in
+ * the call stack.
+ */
+type Handler = (args: ParsedArgs, corpus: CorpusComposition) => Promise<void>;
 
 // Partial: the shared `Command` union also carries `translate` /
 // `translate-source`, which belong to the separate `translate` bin
@@ -32,28 +53,10 @@ const HANDLERS: Partial<Record<Command, Handler>> = {
 };
 
 /**
- * Walk up from `startDir` to the nearest ancestor containing a
- * `package.json`, stopping at the filesystem root. This is depth-agnostic:
- * it works whether this module runs from `src/cli/` (tsx/source, depth 2
- * below the repo root) or from `dist/` (the esbuild bundle, depth 1) — a
- * single hardcoded relative path cannot be correct for both.
+ * Read this package's version from package.json (no hardcoded duplicate).
+ * The depth-agnostic `package.json` walk now lives in
+ * `@/cli/composition-root` so both bins share one implementation.
  */
-function findPackageJsonUpward(startDir: string): string {
-  let dir = startDir;
-  for (;;) {
-    const candidate = join(dir, 'package.json');
-    if (existsSync(candidate)) {
-      return candidate;
-    }
-    const parent = dirname(dir);
-    if (parent === dir) {
-      throw new Error(`bib: could not locate package.json above ${startDir}`);
-    }
-    dir = parent;
-  }
-}
-
-/** Read this package's version from package.json (no hardcoded duplicate). */
 export function readPackageVersion(): string {
   const moduleDir = dirname(fileURLToPath(import.meta.url));
   const packageJsonPath = findPackageJsonUpward(moduleDir);
@@ -96,6 +99,9 @@ Summarization (two-depth LLM):
   summarize-source <sourceId>          Per-source rollup summary
 
 Options:
+  --corpus <id>          Select the corpus to operate on (else COLONY_CORPUS).
+                         Required by every command except help/version,
+                         discover, and query-source. There is no default.
   --help, -h             Show this help message
   --version, -v          Show version
   --dry-run              Report intended actions; write nothing
@@ -110,37 +116,91 @@ Options:
   --object-store         Opt into the object-store (B2) backend for masters
 `;
 
-function wantsHelp(argv: string[]): boolean {
+function wantsHelp(argv: readonly string[]): boolean {
   return argv.length === 0 || argv.includes('--help') || argv.includes('-h');
 }
 
-function wantsVersion(argv: string[]): boolean {
+function wantsVersion(argv: readonly string[]): boolean {
   return argv.includes('--version') || argv.includes('-v');
 }
 
 /**
- * Flat top-level dispatch for the `bib` CLI. Every verb is a sibling:
- * bibliography SSOT subactions route to `runBibliography`; the Gallica
- * mirroring verbs route to the `parse` + `HANDLERS` path. Returns a process
- * exit code and never throws, so `src/index.ts` stays a thin wrapper.
+ * Flat top-level dispatch for the `bib` CLI — and the CLI COMPOSITION ROOT
+ * (T009). Every verb is a sibling: bibliography SSOT subactions route to
+ * `runBibliography`; the Gallica mirroring verbs route to the `parse` +
+ * `HANDLERS` path. Returns a process exit code and never throws, so
+ * `src/index.ts` stays a thin wrapper.
+ *
+ * CORPUS SELECTION (FR-003, FR-009, FR-016) happens here, once, BEFORE any
+ * command work begins:
+ *
+ * 1. The global `--corpus <id>` flag is stripped from argv (see
+ *    `@/cli/corpus-flag` for why it cannot be a `parseArgs` option).
+ * 2. Help/version short-circuit first — FR-014 exceptions, no corpus needed.
+ * 3. The verb is classified against the FR-014 table: the exception
+ *    subactions (`@/cli/corpus-exceptions`) bypass selection entirely; every
+ *    other registered command requires it.
+ * 4. `composeCorpus` resolves `--corpus` → `COLONY_CORPUS` → **fail loud**,
+ *    with `corporaRoot` resolved here (`<repoRoot>/corpora`) and
+ *    `COLONY_CORPUS` read here — the only place either may happen — and
+ *    derives the narrow policies, which are injected downward.
+ * 5. Any failure in step 4 returns exit code 2 with a descriptive message and
+ *    no command has run (SC-002).
+ *
+ * An UNRECOGNIZED verb is deliberately NOT gated: it falls through to the
+ * existing usage errors (`parse`'s "unknown command", or the `translate`-bin
+ * redirect), which do no work and already exit non-zero. Demanding a corpus
+ * before telling an operator the verb does not exist would be a worse error.
+ *
+ * `environment` exists so a test can inject a fixture `corporaRoot` and a
+ * known `COLONY_CORPUS` (FR-016, SC-003); production passes nothing.
  */
-export async function runCli(argv: string[]): Promise<number> {
-  if (wantsHelp(argv)) {
+export async function runCli(argv: string[], environment: CliEnvironment = {}): Promise<number> {
+  let cliCorpus: string | undefined;
+  let rest: readonly string[];
+  try {
+    const extracted = extractCorpusFlag(argv);
+    cliCorpus = extracted.corpus;
+    rest = extracted.rest;
+  } catch (error) {
+    console.error(`bib: ${describeError(error)}`);
+    return 2;
+  }
+
+  if (wantsHelp(rest)) {
     console.log(HELP_TEXT);
     return 0;
   }
-  if (wantsVersion(argv)) {
+  if (wantsVersion(rest)) {
     console.log(readPackageVersion());
     return 0;
   }
 
-  const verb = argv[0];
+  const compose = (): CorpusComposition =>
+    composeCorpus({
+      corporaRoot: corporaRootFor(environment),
+      cliCorpus,
+      envCorpus: envCorpusFor(environment),
+    });
+
+  const argvRest = [...rest];
+  const verb = argvRest[0];
+
   if (verb !== undefined && isBibSubaction(verb)) {
-    return runBibliography(argv);
+    let corpus: CorpusComposition | null = null;
+    if (!isBibExceptionSubaction(verb)) {
+      try {
+        corpus = compose();
+      } catch (error) {
+        console.error(`bib ${verb}: ${describeError(error)}`);
+        return 2;
+      }
+    }
+    return runBibliography(argvRest, corpus);
   }
 
   try {
-    const parsed = parse(argv);
+    const parsed = parse(argvRest);
     const handler = HANDLERS[parsed.command];
     if (handler === undefined) {
       console.error(
@@ -148,7 +208,17 @@ export async function runCli(argv: string[]): Promise<number> {
       );
       return 2;
     }
-    await handler(parsed);
+    // Every verb reachable here is corpus-dependent (FR-014 table), so the
+    // composition is unconditional — and it happens AFTER parsing (which is
+    // pure and does no command work) purely so the failure can name the verb.
+    let corpus: CorpusComposition;
+    try {
+      corpus = compose();
+    } catch (error) {
+      console.error(`bib ${parsed.command}: ${describeError(error)}`);
+      return 2;
+    }
+    await handler(parsed, corpus);
     return 0;
   } catch (error) {
     console.error(`bib: ${describeError(error)}`);

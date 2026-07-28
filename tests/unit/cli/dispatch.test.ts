@@ -29,7 +29,8 @@ describe('runCli flat dispatch', () => {
   it('routes a bibliography SSOT verb to runBibliography (usage error, no side effects)', async () => {
     // `query-source` with no source-id is a deterministic usage error (exit 2),
     // parsed before any browser is constructed — proves it hit the bib path.
-    const code = await runCli(['query-source']);
+    // It is also an FR-014 exception, so it needs no selected corpus (T009).
+    const code = await runCli(['query-source'], { envCorpus: undefined });
     expect(code).toBe(2);
     expect(errorSpy.mock.calls.map((c) => String(c[0])).join('\n')).toContain('source-id');
   });
@@ -37,14 +38,18 @@ describe('runCli flat dispatch', () => {
   it('routes a Gallica mirroring verb to the parse+HANDLERS path', async () => {
     // `census` with no periodicalArk throws in parse -> caught -> exit 2
     // (usage/parse errors dominate the catch path; deliberate change from
-    // the old blanket exit 1).
-    const code = await runCli(['census']);
+    // the old blanket exit 1). `census` is corpus-dependent (FR-014), so a
+    // corpus is selected here (T009) — without one the run would stop at the
+    // selection gate instead of reaching the parser.
+    const code = await runCli(['--corpus', 'port-breton', 'census']);
     expect(code).toBe(2);
     expect(errorSpy.mock.calls.map((c) => String(c[0])).join('\n')).toContain('census');
   });
 
   it('fails loud (exit 2) on an unknown verb', async () => {
-    const code = await runCli(['no-such-verb']);
+    // Unrecognized verbs are not corpus-gated: the usage error wins, and no
+    // command work happens either way (T009).
+    const code = await runCli(['no-such-verb'], { envCorpus: undefined });
     expect(code).toBe(2);
     expect(errorSpy.mock.calls.map((c) => String(c[0])).join('\n')).toContain('no-such-verb');
   });

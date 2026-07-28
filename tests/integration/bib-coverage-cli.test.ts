@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runBibliography } from '@/cli/bibliography';
 import { runCoverageCli } from '@/cli/bib-coverage';
+import { composeCorpus, resolveCorporaRoot } from '@/cli/composition-root';
 
 /**
  * CLI-level coverage for `bib coverage` (T006,
@@ -69,7 +70,14 @@ describe('bib coverage CLI', () => {
   });
 
   it('dispatches through runBibliography(["coverage", ...]) the same way', async () => {
-    const exitCode = await runBibliography(['coverage', '--json']);
+    // `coverage` is corpus-dependent (FR-014 table), so the composition root
+    // hands `runBibliography` a real composition. Built here the same way
+    // `runCli` builds it, with the production corpora root (T009).
+    const corpus = composeCorpus({
+      corporaRoot: resolveCorporaRoot(repoRoot()),
+      cliCorpus: 'port-breton',
+    });
+    const exitCode = await runBibliography(['coverage', '--json'], corpus);
     expect(exitCode).toBe(0);
     const printed = String(logSpy.mock.calls[0]?.[0]);
     expect(() => JSON.parse(printed)).not.toThrow();

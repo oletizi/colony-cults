@@ -12,6 +12,7 @@ import {
   runPromoteCli,
   runVerifyMemberCli,
 } from '@/cli/bib-sourcegroup';
+import type { CorpusComposition } from '@/cli/composition-root';
 import { runCoverageCli } from '@/cli/bib-coverage';
 import { runQuerySourceCli } from '@/cli/bib-query-source';
 import { runRightsAssessCli } from '@/cli/bib-rights-assess';
@@ -475,8 +476,20 @@ async function runRegenerate(rest: string[]): Promise<number> {
  * Dispatch a `bib <subaction> [args] [flags]` invocation (contracts/cli.md).
  * Returns a process exit code -- never throws -- so `src/index.ts` can wire
  * it in ahead of the existing flat `<command> <ark>` parser without disturbing it.
+ *
+ * `corpus` is the INJECTION POINT established by T009 (FR-003/FR-004): the
+ * composition root (`@/cli/dispatch`'s `runCli`) resolves the corpus ONCE and
+ * passes the derived narrow policies in here. It is `null` ONLY for the
+ * FR-014 exception subactions (`@/cli/corpus-exceptions`); a corpus-dependent
+ * subaction ALWAYS receives a real composition, because the root fails loud
+ * before reaching here otherwise. The hotspot tasks (T011-T013) thread the
+ * narrow policy they need from this parameter, guarding the `null` arm with
+ * `@/cli/composition-root`'s `requireCorpus`.
  */
-export async function runBibliography(argv: string[]): Promise<number> {
+export async function runBibliography(
+  argv: string[],
+  corpus: CorpusComposition | null,
+): Promise<number> {
   const [subaction, ...rest] = argv;
   if (subaction === undefined || !isBibSubaction(subaction)) {
     console.error(
