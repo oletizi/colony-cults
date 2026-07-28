@@ -219,3 +219,12 @@ Render source-group members (Papers Past NZ press articles PB-P060/PB-P061-P092)
 - design-approved: yes
 - design: docs/superpowers/specs/2026-07-21-asset-summaries-design.md
 - depends-on: impl:feature/corpus-browser
+
+## multi:feature/multi-corpus-generalization
+- status: planned
+
+## impl:feature/corpus-config-seam
+- status: in-flight
+- design-approved: yes
+- design: docs/superpowers/specs/2026-07-27-corpus-config-seam-design.md
+- part-of: multi:feature/multi-corpus-generalization
