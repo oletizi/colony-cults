@@ -9,6 +9,10 @@ import { runVerifyMember } from '@/sourcegroup/verify-member-command';
 import { runPromote } from '@/sourcegroup/promote';
 import { loadAllSources, loadSourceFile } from '@/bibliography/load';
 import type { ArkResolver, ExistingMemberRecord } from '@/sourcegroup/verify-member';
+import type { SourceIdPolicy } from '@/corpus/policies';
+
+/** The real, shipped Port Breton allocatable policy (`corpora/port-breton.yml`). */
+const PORT_BRETON_POLICY: SourceIdPolicy = { prefix: 'PB-P', padWidth: 3 };
 
 /**
  * T038 (SC-003/FR-023, reusability check): proves `inventory` / `verify-member`
@@ -113,6 +117,7 @@ describe('reusability (T038, SC-003/FR-023): inventory -> verify-member -> promo
       groupId: GROUP_ID,
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       resolveArk: inventoryResolverFor(secondGroupArkMetadata()),
     });
 
@@ -198,6 +203,7 @@ describe('reusability (T038, SC-003/FR-023): inventory -> verify-member -> promo
       groupId: GROUP_ID,
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       resolveArk: inventoryResolverFor(secondGroupArkMetadata()),
     });
 

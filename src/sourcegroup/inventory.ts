@@ -5,6 +5,7 @@ import type { AuthoredRepositoryRecord } from '@/bibliography/model';
 import { serializeSource } from '@/bibliography/migrate-serialize';
 import type { RightsStatus } from '@/bibliography/vocab';
 import { allocateMemberId } from '@/sourcegroup/id-alloc';
+import type { SourceIdPolicy } from '@/corpus/policies';
 import { writeSnapshot } from '@/sourcegroup/snapshot';
 import type { MetadataSnapshotRef } from '@/model/repository-record';
 import type { RepositoryRecord } from '@/model/repository-record';
@@ -113,6 +114,14 @@ export interface RunInventoryInput {
   baseDir: string;
   /** Injected ark resolver (no direct network access from this module). */
   resolveArk: ArkResolver;
+  /**
+   * The selected corpus's singular allocatable `SourceIdPolicy` (FR-004/
+   * FR-002b), derived at the composition root by `@/corpus/policies`'
+   * `deriveSourceIdPolicy` and threaded straight through to
+   * `allocateMemberId` -- this module names no corpus-specific prefix/pad
+   * itself.
+   */
+  sourceIdPolicy: SourceIdPolicy;
 }
 
 /** The outcome of one `runInventory` call. */
@@ -199,7 +208,7 @@ export function resolveSourceGroup(sourcesDir: string, groupId: string): LoadedS
  * (FR-003, US1 scenario 5).
  */
 export async function runInventory(input: RunInventoryInput): Promise<RunInventoryResult> {
-  const { ark, groupId, sourcesDir, baseDir, resolveArk } = input;
+  const { ark, groupId, sourcesDir, baseDir, resolveArk, sourceIdPolicy } = input;
   const kind = input.kind ?? 'monograph';
 
   // FR-005: validate the group BEFORE any allocation/write -- a failure here
@@ -233,7 +242,7 @@ export async function runInventory(input: RunInventoryInput): Promise<RunInvento
   let capturedAuthoredRecord: AuthoredRepositoryRecord | undefined;
   let capturedSnapshot: MetadataSnapshotRef | undefined;
 
-  const sourceId = await allocateMemberId(sourcesDir, async (candidateId) => {
+  const sourceId = await allocateMemberId(sourcesDir, sourceIdPolicy, async (candidateId) => {
     // The metadata snapshot's storage path is keyed by `sourceId`
     // (`@/sourcegroup/snapshot`), so it can only be written once the
     // candidate id is known. `allocateMemberId`'s content callback may be

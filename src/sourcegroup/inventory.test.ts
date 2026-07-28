@@ -6,6 +6,10 @@ import { join } from 'node:path';
 import { runInventory } from '@/sourcegroup/inventory';
 import type { ArkMetadata, ArkResolver } from '@/sourcegroup/inventory';
 import { loadSourceFile } from '@/bibliography/load';
+import type { SourceIdPolicy } from '@/corpus/policies';
+
+/** The real, shipped Port Breton allocatable policy (`corpora/port-breton.yml`). */
+const PORT_BRETON_POLICY: SourceIdPolicy = { prefix: 'PB-P', padWidth: 3 };
 
 /**
  * Tests for `runInventory` (T018, US1, FR-001-005): the MVP entry point that
@@ -82,6 +86,7 @@ describe('runInventory', () => {
       groupId: 'PB-S001',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       resolveArk: resolverFor(publicDomainMetadata()),
     });
 
@@ -127,6 +132,7 @@ describe('runInventory', () => {
       kind: 'periodical',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       resolveArk: resolverFor(publicDomainMetadata()),
     });
 
@@ -143,6 +149,7 @@ describe('runInventory', () => {
       archive: 'State Library of Queensland',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       resolveArk: resolverFor(publicDomainMetadata()),
     });
 
@@ -159,6 +166,7 @@ describe('runInventory', () => {
         groupId: 'PB-S999',
         sourcesDir,
         baseDir,
+        sourceIdPolicy: PORT_BRETON_POLICY,
         resolveArk: resolverFor(publicDomainMetadata()),
       }),
     ).rejects.toThrow(/PB-S999/);
@@ -176,6 +184,7 @@ describe('runInventory', () => {
         groupId: 'PB-001',
         sourcesDir,
         baseDir,
+        sourceIdPolicy: PORT_BRETON_POLICY,
         resolveArk: resolverFor(publicDomainMetadata()),
       }),
     ).rejects.toThrow(/not a source-group|kind "monograph"/i);
@@ -194,6 +203,7 @@ describe('runInventory', () => {
         groupId: 'PB-S001',
         sourcesDir,
         baseDir,
+        sourceIdPolicy: PORT_BRETON_POLICY,
         resolveArk: resolverFor(null),
       }),
     ).rejects.toThrow(/ark/i);
@@ -210,6 +220,7 @@ describe('runInventory', () => {
       groupId: 'PB-S001',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       resolveArk: resolverFor(
         publicDomainMetadata({ rightsRaw: 'Copyrighted -- access restricted' }),
       ),
@@ -231,6 +242,7 @@ describe('runInventory', () => {
       groupId: 'PB-S001',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       resolveArk: resolverFor(publicDomainMetadata()),
     });
 
@@ -239,6 +251,7 @@ describe('runInventory', () => {
       groupId: 'PB-S001',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       resolveArk: resolverFor(
         publicDomainMetadata({ retrievedAt: '2026-07-11T00:00:00.000Z' }),
       ),
@@ -262,6 +275,7 @@ describe('runInventory', () => {
       groupId: 'PB-S001',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       resolveArk: resolverFor(publicDomainMetadata({ language: undefined })),
     });
 
@@ -278,6 +292,7 @@ describe('runInventory', () => {
         groupId: 'PB-S001',
         sourcesDir,
         baseDir,
+        sourceIdPolicy: PORT_BRETON_POLICY,
         resolveArk: resolverFor(publicDomainMetadata({ archive: undefined })),
       }),
     ).rejects.toThrow(/archive/i);

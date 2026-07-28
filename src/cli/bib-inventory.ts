@@ -22,6 +22,7 @@
 import { parseArgs as nodeParseArgs } from 'node:util';
 
 import { describeError } from '@/bibliography/load-primitives';
+import type { CorpusComposition } from '@/cli/composition-root';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
 import { gallicaArkMetadataResolver } from '@/sourcegroup/gallica-ark-resolver';
@@ -155,8 +156,9 @@ async function runMuseumInventoryCli(args: {
   repository: RepositoryName;
   repoRoot: string;
   sourcesDir: string;
+  corpus: CorpusComposition;
 }): Promise<number> {
-  const { locator, group, archive, dryRun, repository, repoRoot, sourcesDir } = args;
+  const { locator, group, archive, dryRun, repository, repoRoot, sourcesDir, corpus } = args;
   try {
     const adapter = await buildResolveOnlyAdapter(repository);
     const registry = new RepositoryAdapterRegistry([adapter]);
@@ -184,6 +186,7 @@ async function runMuseumInventoryCli(args: {
       sourcesDir,
       baseDir: repoRoot,
       registry,
+      sourceIdPolicy: corpus.sourceIds,
     });
     console.log(`bib inventory: created ${result.sourceId} (status: discovered, record: wanted)`);
     console.log(`  sourceArchive: ${result.record.sourceArchive}`);
@@ -204,8 +207,16 @@ async function runMuseumInventoryCli(args: {
  * other registered repository name (`new-italy-museum`, `internet-archive`)
  * routes the RAW locator through {@link runMuseumInventoryCli} instead -- the
  * adapter/registry seam, never a locator-shape sniff (INV-D).
+ *
+ * `corpus` is the narrow-policy carrier threaded from the composition root
+ * (T009/T012, FR-004): `corpus.sourceIds` is the SINGULAR allocatable
+ * `SourceIdPolicy` passed straight through to `runInventory`/
+ * `runMuseumInventory` -- this module names no corpus-specific prefix/pad
+ * itself. Not consulted on the synchronous fail-loud branches below (missing
+ * `<locator>`/`--group`, parse-time `--repository`/`--kind` mismatches, and
+ * `--dry-run`), which return before any allocation would occur.
  */
-export async function runInventoryCli(rest: string[]): Promise<number> {
+export async function runInventoryCli(rest: string[], corpus: CorpusComposition): Promise<number> {
   let parsed: InventoryCliArgs;
   try {
     parsed = parseInventoryArgs(rest);
@@ -239,7 +250,7 @@ export async function runInventoryCli(rest: string[]): Promise<number> {
       );
       return 2;
     }
-    return runMuseumInventoryCli({ locator, group, archive, dryRun, repository, repoRoot, sourcesDir });
+    return runMuseumInventoryCli({ locator, group, archive, dryRun, repository, repoRoot, sourcesDir, corpus });
   }
 
   let kind: 'monograph' | 'periodical' | undefined;
@@ -284,6 +295,7 @@ export async function runInventoryCli(rest: string[]): Promise<number> {
       sourcesDir,
       baseDir: repoRoot,
       resolveArk,
+      sourceIdPolicy: corpus.sourceIds,
     });
     console.log(`bib inventory: created ${result.sourceId} (status: discovered, record: wanted)`);
     console.log(`  sourceArchive: ${result.record.sourceArchive}`);

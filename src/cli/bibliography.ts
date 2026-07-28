@@ -513,7 +513,7 @@ export async function runBibliography(
     case 'regenerate':
       return runRegenerate(rest);
     case 'inventory':
-      return runInventoryCli(rest);
+      return runInventoryCli(rest, requireCorpus(corpus, 'bib inventory'));
     case 'verify-member':
       return runVerifyMemberCli(rest);
     case 'promote':

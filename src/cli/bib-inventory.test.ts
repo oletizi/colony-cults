@@ -1,6 +1,8 @@
+import path from 'node:path';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
 import { parseInventoryArgs, runInventoryCli } from '@/cli/bib-inventory';
+import { composeCorpus, resolveCorporaRoot } from '@/cli/composition-root';
 
 /**
  * Tests for `bib inventory`'s CLI wiring (T017, specs/011-museum-
@@ -12,7 +14,26 @@ import { parseInventoryArgs, runInventoryCli } from '@/cli/bib-inventory';
  * `@/sourcegroup/museum-inventory.test`), mirroring how sibling CLI verbs in
  * `@/cli/bib-sourcegroup` are tested (`parseAcquireArgs`/`parseReconcileArgs`,
  * not the full `run*Cli`).
+ *
+ * `runInventoryCli` now also takes the composition-root-derived `corpus`
+ * (T012, FR-004: `corpus.sourceIds` threads into `runInventory`/
+ * `runMuseumInventory`'s allocation). Every fail-loud branch exercised below
+ * returns BEFORE any allocation would occur, so a real `port-breton`
+ * composition is threaded through purely to satisfy the (required) type --
+ * none of these assertions depend on its contents.
  */
+
+function repoRoot(): string {
+  return path.resolve(__dirname, '..', '..');
+}
+
+/** The real, committed `port-breton` composition -- threaded into every direct `runInventoryCli` call. */
+function portBretonCorpus() {
+  return composeCorpus({
+    corporaRoot: resolveCorporaRoot(repoRoot()),
+    cliCorpus: 'port-breton',
+  });
+}
 
 describe('parseInventoryArgs', () => {
   it('parses a bare Gallica-path invocation with no --repository', () => {
@@ -109,7 +130,7 @@ describe('runInventoryCli (synchronous fail-loud branches)', () => {
   });
 
   it('returns exit code 2 and prints a message when the locator is missing', async () => {
-    const code = await runInventoryCli(['--group', 'PB-S001']);
+    const code = await runInventoryCli(['--group', 'PB-S001'], portBretonCorpus());
     expect(code).toBe(2);
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('missing required argument <locator>'),
@@ -117,19 +138,22 @@ describe('runInventoryCli (synchronous fail-loud branches)', () => {
   });
 
   it('returns exit code 2 when --group is missing', async () => {
-    const code = await runInventoryCli(['ark:/12148/bpt6k1234567']);
+    const code = await runInventoryCli(['ark:/12148/bpt6k1234567'], portBretonCorpus());
     expect(code).toBe(2);
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('missing required flag --group'));
   });
 
   it('returns exit code 2 on an unknown --repository (parse-time fail loud)', async () => {
-    const code = await runInventoryCli([
-      'https://example.org/item/1',
-      '--group',
-      'PB-S006',
-      '--repository',
-      'not-a-real-repository',
-    ]);
+    const code = await runInventoryCli(
+      [
+        'https://example.org/item/1',
+        '--group',
+        'PB-S006',
+        '--repository',
+        'not-a-real-repository',
+      ],
+      portBretonCorpus(),
+    );
     expect(code).toBe(2);
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining(
@@ -142,15 +166,18 @@ describe('runInventoryCli (synchronous fail-loud branches)', () => {
     'returns exit code 2 when --kind is given but does not match "archival-item" for ' +
       '--repository internet-archive, WITHOUT ever constructing the IA adapter (no network)',
     async () => {
-      const code = await runInventoryCli([
-        'nouvellefrancec00groogoog',
-        '--group',
-        'PB-S006',
-        '--repository',
-        'internet-archive',
-        '--kind',
-        'monograph',
-      ]);
+      const code = await runInventoryCli(
+        [
+          'nouvellefrancec00groogoog',
+          '--group',
+          'PB-S006',
+          '--repository',
+          'internet-archive',
+          '--kind',
+          'monograph',
+        ],
+        portBretonCorpus(),
+      );
       expect(code).toBe(2);
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining('--kind must be "archival-item" for --repository "internet-archive"'),
@@ -162,15 +189,18 @@ describe('runInventoryCli (synchronous fail-loud branches)', () => {
     'returns exit code 2 when --kind is given but does not match "archival-item" for a museum ' +
       '--repository, WITHOUT ever constructing the engine-backed extractor',
     async () => {
-      const code = await runInventoryCli([
-        'https://example.org/item/1',
-        '--group',
-        'PB-S006',
-        '--repository',
-        'new-italy-museum',
-        '--kind',
-        'monograph',
-      ]);
+      const code = await runInventoryCli(
+        [
+          'https://example.org/item/1',
+          '--group',
+          'PB-S006',
+          '--repository',
+          'new-italy-museum',
+          '--kind',
+          'monograph',
+        ],
+        portBretonCorpus(),
+      );
       expect(code).toBe(2);
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining('--kind must be "archival-item" for --repository "new-italy-museum"'),

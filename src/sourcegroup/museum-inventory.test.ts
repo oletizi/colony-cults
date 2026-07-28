@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { runMuseumInventory } from '@/sourcegroup/museum-inventory';
 import type { RepositoryRegistry } from '@/sourcegroup/museum-inventory';
 import { loadSourceFile } from '@/bibliography/load';
+import type { SourceIdPolicy } from '@/corpus/policies';
 import type {
   RepositoryAdapter,
   RepositoryLocator,
@@ -17,6 +18,9 @@ import type {
 } from '@/repository/adapter';
 import type { RepositoryRecord } from '@/model/repository-record';
 import type { GroundedExtraction, MuseumItemFields } from '@/extraction/structured-extractor';
+
+/** The real, shipped Port Breton allocatable policy (`corpora/port-breton.yml`). */
+const PORT_BRETON_POLICY: SourceIdPolicy = { prefix: 'PB-P', padWidth: 3 };
 
 /**
  * Tests for `runMuseumInventory` (T017, specs/011-museum-acquisition-path,
@@ -158,6 +162,7 @@ describe('runMuseumInventory', () => {
       groupId: 'PB-S006',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       registry: fakeRegistry(adapter),
     });
 
@@ -210,6 +215,7 @@ describe('runMuseumInventory', () => {
       archive: 'New Italy Museum, Lismore',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       registry: fakeRegistry(adapter),
     });
 
@@ -245,6 +251,7 @@ describe('runMuseumInventory', () => {
       groupId: 'PB-S006',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       registry: fakeRegistry(adapter),
     });
 
@@ -263,6 +270,7 @@ describe('runMuseumInventory', () => {
         groupId: 'PB-S999',
         sourcesDir,
         baseDir,
+        sourceIdPolicy: PORT_BRETON_POLICY,
         registry: fakeRegistry(adapter),
       }),
     ).rejects.toThrow(/PB-S999/);
@@ -284,6 +292,7 @@ describe('runMuseumInventory', () => {
         groupId: 'PB-001',
         sourcesDir,
         baseDir,
+        sourceIdPolicy: PORT_BRETON_POLICY,
         registry: fakeRegistry(adapter),
       }),
     ).rejects.toThrow(/not a source-group|kind "monograph"/i);
@@ -302,6 +311,7 @@ describe('runMuseumInventory', () => {
         groupId: 'PB-S006',
         sourcesDir,
         baseDir,
+        sourceIdPolicy: PORT_BRETON_POLICY,
         // No adapter registered at all -- selectByName must throw.
         registry: fakeRegistry(undefined),
       }),
@@ -324,6 +334,7 @@ describe('runMuseumInventory', () => {
         groupId: 'PB-S006',
         sourcesDir,
         baseDir,
+        sourceIdPolicy: PORT_BRETON_POLICY,
         registry: fakeRegistry(adapter),
       }),
     ).rejects.toThrow(/objectaccession/);
@@ -345,6 +356,7 @@ describe('runMuseumInventory', () => {
         groupId: 'PB-S006',
         sourcesDir,
         baseDir,
+        sourceIdPolicy: PORT_BRETON_POLICY,
         registry: fakeRegistry(adapter),
       }),
     ).rejects.toThrow(/carries an empty deterministic title/);
@@ -369,6 +381,7 @@ describe('runMuseumInventory', () => {
       groupId: 'PB-S006',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       registry: fakeRegistry(adapter),
     });
 
@@ -406,6 +419,7 @@ describe('runMuseumInventory', () => {
       groupId: 'PB-S006',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       registry: fakeRegistry(adapter1),
     });
 
@@ -415,6 +429,7 @@ describe('runMuseumInventory', () => {
       groupId: 'PB-S006',
       sourcesDir,
       baseDir,
+      sourceIdPolicy: PORT_BRETON_POLICY,
       registry: fakeRegistry(adapter2),
     });
 

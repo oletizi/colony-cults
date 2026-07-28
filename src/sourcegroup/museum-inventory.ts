@@ -6,6 +6,7 @@ import type {
   ResolvedRepositoryItem,
 } from '@/repository/adapter';
 import { allocateMemberId } from '@/sourcegroup/id-alloc';
+import type { SourceIdPolicy } from '@/corpus/policies';
 import { resolveSourceGroup } from '@/sourcegroup/inventory';
 import { writeSnapshot } from '@/sourcegroup/snapshot';
 import type { MetadataSnapshotRef, RepositoryRecord } from '@/model/repository-record';
@@ -51,6 +52,12 @@ export interface RunMuseumInventoryInput {
   baseDir: string;
   /** Injected adapter registry (no adapter construction inside this module). */
   registry: RepositoryRegistry;
+  /**
+   * The selected corpus's singular allocatable `SourceIdPolicy` (FR-004/
+   * FR-002b), threaded straight through to `allocateMemberId` -- mirrors
+   * `RunInventoryInput.sourceIdPolicy` in `@/sourcegroup/inventory`.
+   */
+  sourceIdPolicy: SourceIdPolicy;
 }
 
 /** The outcome of one `runMuseumInventory` call. */
@@ -148,7 +155,7 @@ function titleFromResolvedItem(item: ResolvedRepositoryItem): Title[] {
 export async function runMuseumInventory(
   input: RunMuseumInventoryInput,
 ): Promise<RunMuseumInventoryResult> {
-  const { locator, repository, groupId, sourcesDir, baseDir, registry } = input;
+  const { locator, repository, groupId, sourcesDir, baseDir, registry, sourceIdPolicy } = input;
 
   // FR-005: validate the group BEFORE any resolve/allocation/write -- a
   // failure here must create nothing. Also the source of the new member's
@@ -178,7 +185,7 @@ export async function runMuseumInventory(
   let capturedAuthoredRecord: AuthoredRepositoryRecord | undefined;
   let capturedSnapshot: MetadataSnapshotRef | undefined;
 
-  const sourceId = await allocateMemberId(sourcesDir, async (candidateId) => {
+  const sourceId = await allocateMemberId(sourcesDir, sourceIdPolicy, async (candidateId) => {
     const snapshot = await writeSnapshot(baseDir, {
       sourceId: candidateId,
       ark: locator,
