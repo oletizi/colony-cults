@@ -1,0 +1,6 @@
+schemaVersion: 1
+id: bad-default-sources-entry
+corpus: alpha
+defaultSources:
+  - AL-001
+  - 42

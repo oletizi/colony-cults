@@ -1,0 +1,5 @@
+schemaVersion: 1
+id: unknown-top-level-key
+corpus: alpha
+defaultSources: []
+extraField: not-allowed

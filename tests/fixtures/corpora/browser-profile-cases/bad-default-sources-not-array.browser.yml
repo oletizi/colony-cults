@@ -1,0 +1,4 @@
+schemaVersion: 1
+id: bad-default-sources-not-array
+corpus: alpha
+defaultSources: AL-001
