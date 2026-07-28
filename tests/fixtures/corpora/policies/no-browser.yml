@@ -1,0 +1,12 @@
+schemaVersion: 1
+id: no-browser
+cases:
+  - alpha-case
+sourceIds:
+  - prefix: NB
+    padWidth: 3
+    allocatable: true
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null

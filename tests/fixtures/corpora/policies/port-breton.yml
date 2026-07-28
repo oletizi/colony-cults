@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: port-breton
+cases:
+  - port-breton
+sourceIds:
+  - prefix: PB-P
+    padWidth: 3
+    allocatable: true
+  - prefix: PB-S
+    padWidth: 3
+    allocatable: false
+requiredCapabilities:
+  repositories:
+    - gallica
+  sourceQueries:
+    - papers-past
+archiveLayoutOverrides:
+  PB-P099:
+    relativePath: cases/port-breton/books/legacy-override
+    reason: fixture override for deriveArchiveLayoutPolicy tests

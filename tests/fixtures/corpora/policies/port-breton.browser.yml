@@ -1,0 +1,6 @@
+schemaVersion: 1
+id: port-breton-browser
+corpus: port-breton
+defaultSources:
+  - PB-P001
+  - PB-P002
