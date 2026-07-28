@@ -1,0 +1,430 @@
+{
+  "perWorkBundle": [
+    {
+      "workBundle": "PB-P004",
+      "membersByLifecycleState": [
+        {
+          "state": "approved-for-acquisition",
+          "count": 6
+        },
+        {
+          "state": "discovered",
+          "count": 1
+        }
+      ],
+      "actualMemberCount": 7,
+      "adjacentMemberCount": 0,
+      "knownExtent": {
+        "state": "unexamined"
+      },
+      "gap": "unexamined"
+    },
+    {
+      "workBundle": "PB-P006",
+      "membersByLifecycleState": [
+        {
+          "state": "approved-for-acquisition",
+          "count": 4
+        }
+      ],
+      "actualMemberCount": 4,
+      "adjacentMemberCount": 37,
+      "knownExtent": {
+        "state": "irreducible",
+        "basis": "The New Italy Museum holding is a heterogeneous, changing collection of settler photographs and documents with no stable finite public-domain boundary; the identified public-domain acquisition candidates are named in the suspected[] leads, but the campaign's extent itself is unbounded."
+      },
+      "gap": "irreducible"
+    },
+    {
+      "workBundle": "PB-P060",
+      "membersByLifecycleState": [
+        {
+          "state": "approved-for-acquisition",
+          "count": 32
+        }
+      ],
+      "actualMemberCount": 32,
+      "adjacentMemberCount": 0,
+      "knownExtent": {
+        "state": "unexamined"
+      },
+      "gap": "unexamined"
+    }
+  ],
+  "evidenceClassDistribution": [
+    {
+      "class": "book",
+      "count": 5
+    },
+    {
+      "class": "pamphlet",
+      "count": 2
+    },
+    {
+      "class": "prospectus",
+      "count": 2
+    },
+    {
+      "class": "newspaper",
+      "count": 37
+    },
+    {
+      "class": "trial-record",
+      "count": 4
+    },
+    {
+      "class": "unclassified",
+      "count": 41
+    }
+  ],
+  "register": {
+    "byWorkBundle": [
+      {
+        "workBundle": "PB-P004",
+        "entries": [
+          {
+            "kind": "suspected",
+            "description": "The official French court decisions in the de Rays fraud prosecution: the first-instance jugement (tribunal correctionnel de la Seine, 8e chambre, 1884) and the Cour de Paris appeal arret (Chambre des appels de police correctionnelle, 14 May 1884), plus the Cour de cassation decision confirming conviction.",
+            "basis": "Distinct from the published PLEADINGS the bundle already holds/knows (PB-P008 Las Cases pleading; PB-P012 Vermont plaidoiries): these are the courts' own decisions. The chronology (Seine 1884 conviction -> Paris appeal rejected 14 May 1884 -> cassation) is attested in the secondary literature and press. Such decisions are recorded in the contemporary legal serials -- Gazette des Tribunaux, Gazette du Palais (jurisprudence et legislation), Recueil Dalloz, and the Bulletin des arrets de la Cour de cassation rendus en matiere criminelle (all digitized on Gallica) -- rather than as standalone monographs; locating the specific de Rays issues/entries within those serial runs is the open inventory step (SRCH-0002/SRCH-0004). Serial home confirmed: the Gazette des Tribunaux (Paris) is digitized on Gallica (ark cb34447990d, date-browsable); the appeal arret (14 May 1884) should sit in the ~15-16 May 1884 issue -- pinpointing the exact issue/folios is a shipped-fetcher/IIIF date-browse step.",
+            "owner": "PB-P004",
+            "resolution": {
+              "state": "inventoried",
+              "sourceId": "PB-P054",
+              "resolvedAt": "2026-07-16"
+            }
+          }
+        ]
+      },
+      {
+        "workBundle": "PB-P006",
+        "entries": [
+          {
+            "kind": "suspected",
+            "description": "Pioneers Group Photo 1890 (New Italy Museum, accession NIMI-0844) — a pre-1955 settlement photograph",
+            "basis": "Australian photograph, creation year 1890 (grounded from the object description). The pre-1969 photograph copyright term has expired (not revived by the 2005 extension), so it is public domain once digitized with provenance. Per PB-P006 settlement-photograph research.",
+            "owner": "PB-P006",
+            "resolution": {
+              "state": "inventoried",
+              "sourceId": "PB-P013",
+              "resolvedAt": "2026-07-15"
+            }
+          },
+          {
+            "kind": "suspected",
+            "description": "School Group Photo New Italy 1903 (New Italy Museum, accession NIMI-0845) — a pre-1955 settlement photograph",
+            "basis": "Australian photograph, creation year 1903 (grounded from the object description). The pre-1969 photograph term has expired — the correct public-domain rights profile. Per PB-P006 settlement-photograph research.",
+            "owner": "PB-P006",
+            "resolution": {
+              "state": "unavailable",
+              "reason": "Source master-image link is broken on the museum's Musarch page (image_anchor href truncated to './images/000845_', no filename/extension) — no retrievable full-res master to acquire.",
+              "resolvedAt": "2026-07-15"
+            }
+          },
+          {
+            "kind": "suspected",
+            "description": "Landing site of settlement at Port Breton (New Italy Museum, accession NIMI-0668)",
+            "basis": "Named as a settlement-history photograph candidate in earlier research; on live per-item inventory it proved to be an HTML-only catalogue record with no digital image.",
+            "owner": "PB-P006",
+            "resolution": {
+              "state": "unavailable",
+              "reason": "HTML-only catalogue record: no image_anchor (no downloadable master) and no creation date on the page (blank Object Date, no year in the description) — nothing to acquire and no basis to date.",
+              "resolvedAt": "2026-07-15"
+            }
+          },
+          {
+            "kind": "suspected",
+            "description": "'Survivors arrival in Sydney 1881' — an artists impression of the Italian immigrants (New Italy Museum, accession NIMI-0855)",
+            "basis": "Previously listed among the settlement-photograph candidates, but live per-item inventory shows it is an ARTIST'S IMPRESSION (an artwork), not a photograph. PB-P006's public-domain basis covers pre-1955 photographs, which does not apply to an artwork whose author and creation date are unestablished.",
+            "owner": "PB-P006",
+            "resolution": {
+              "state": "excluded",
+              "reason": "An artist's impression (artwork), not a photograph; the pre-1955-photograph public-domain basis does not apply, and the artwork's author/creation date are unestablished. Operator decision: do not acquire.",
+              "resolvedAt": "2026-07-15"
+            }
+          },
+          {
+            "kind": "suspected",
+            "description": "'Expedition Survivors Group Photo 1961' (New Italy Museum) — a post-1955 settlement photograph",
+            "basis": "A settlement photograph, but created 1961 — after the pre-1955 threshold, so still within the Australian photograph copyright term. Excluded from the public-domain acquisition set.",
+            "owner": "PB-P006",
+            "resolution": {
+              "state": "excluded",
+              "reason": "Created 1961 — post-1955, still in copyright under the Australian photograph term; not public domain.",
+              "resolvedAt": "2026-07-13"
+            }
+          },
+          {
+            "kind": "suspected",
+            "description": "Survivor accounts, letters, and personal writings of the de Rays expedition settlers",
+            "basis": "The museum's Documents category holds settler writings; a first-hand written account of the voyage/colony/collapse would be Port-Breton-CENTRAL primary source, unlike the settlement photographs. Rights are the literary-work regime (author's life + 70y), not the photograph term.",
+            "owner": "PB-P006",
+            "resolution": {
+              "state": "unavailable",
+              "reason": "The Documents category was examined via the shipped museum path: the potentially-central primary writings (diaries/letters/journals/passport/map) are physical-only -- NOT digitised, no image master to acquire. The digitised documents are corpus-adjacent settlement certificates + book artifacts, no first-hand Port Breton account. A physical-only residual; acquirable only out-of-band, not through the pipeline.",
+              "resolvedAt": "2026-07-15"
+            }
+          }
+        ]
+      },
+      {
+        "workBundle": "PB-P060",
+        "entries": []
+      }
+    ],
+    "ungrouped": []
+  },
+  "searchHistory": {
+    "matrix": [
+      {
+        "repository": "BnF Catalogue général (SRU + notices)",
+        "scope": "work PB-P002",
+        "lastSearched": "2026-07-15",
+        "openQuestions": [
+          "Discovery lead (not held): cb34944911d -- P. de Groote, 'Nouvelle-France, colonie libre de Port-Breton, Océanie: œuvre de colonisation agricole', Paris, 1880, 368 p. A major promotional book; central. Digitisation + rights check pending (needs Gallica). -- RESOLVED by SRCH-0012 (2026-07-16): NO Gallica digitisation (measured negative, two title queries). THEN VERIFIED real by SRCH-0013: digitised + public-domain on the Internet Archive (nouvellefrancec00groogoog, ~368 pp) -- a genuine acquisition target, just not via Gallica.",
+          "Discovery lead (not held): cb30067131v -- Dr A. Baudouin, 'L'aventure de Port-Breton : et la colonie libre dite Nouvelle-France', Paris, M. Dreyfous, 1883, 346 p. A contemporary CRITICAL account of the affair; central secondary source. Digitisation + rights check pending. -- CORRECTED by SRCH-0012 (2026-07-16): NOT a not-held lead -- this notice is the already-held PB-P003 (Baudouin 1883), Gallica document ark bpt6k58017546 (395 vues = PB-P003's archived masters). The 'not held' framing was a single-work-once slip; no separate acquisition.",
+          "Discovery lead (not held): cb34139874n -- 'Colonie libre de Port-Breton (Nouvelle France-Océanie), Bureau de Paris', Paris, Schiller, 1881; and cb33311782v -- 'La Colonie libre de Port-Breton. Nouvelle-France (Océanie). Exposé sommaire', Marseille, Blanc et Bernard, 1881. The colony's own promotional literature (de Rays-side); central primary. Digitisation + rights check pending. -- RESOLVED by SRCH-0012 (2026-07-16): neither is digitised on Gallica (measured negatives). Pursue non-Gallica repositories.",
+          "Discovery lead (not held): cb302225480 -- G. Charbonnier, 'Exploitation de la canne à sucre dans la colonie libre du Port-Breton', Paris, 1879, 7 p. (promotional/technical); and cb38797788d -- Maur d'Auxais, 'Carte de la Nouvelle France. Colonie libre de Port Breton', 1881 (the colony MAP). Central primary. Digitisation + rights check pending. -- RESOLVED by SRCH-0012 (2026-07-16): Charbonnier not digitised on Gallica (pursue non-Gallica); the MAP is digitised (btv1b10870266z) but Société-de-Géographie restricted-use -- known-but-restricted, not mirrorable."
+        ]
+      },
+      {
+        "repository": "Gallica / BnF",
+        "scope": "work PB-P001",
+        "lastSearched": "2026-07-13",
+        "openQuestions": [
+          "Classify the 8 crisis-month gaps (1880-81) as never-published vs BnF-physical-only (published but undigitized) -- needs the BnF PHYSICAL catalogue / a non-Gallica holdings check. An irreducible residual with respect to Gallica."
+        ]
+      },
+      {
+        "repository": "Gallica / BnF",
+        "scope": "work PB-P002",
+        "lastSearched": "2026-07-16",
+        "openQuestions": [
+          "The de Groote 1880 book (cb34944911d) is now VERIFIED real + digitised + public-domain on the Internet Archive (SRCH-0013, nouvellefrancec00groogoog) -- a genuine acquisition target, just not via Gallica. The other three undigitised-on-Gallica imprints (Schiller 1881 cb34139874n; Exposé sommaire 1881 cb33311782v; Charbonnier 1879 cb302225480) remain BnF-catalogue-notice-only, unverified on non-Gallica catalogues -- pursue on archive.org / Google Books / HathiTrust as forward-discovery leads.",
+          "The Auxais 1881 colony map (btv1b10870266z / cb38797788d) is digitised but Société-de-Géographie restricted-use and not streamable -- known-but-restricted, not mirrorable. Re-examine only if BnF rights terms change or a public-domain reproduction surfaces elsewhere."
+        ]
+      },
+      {
+        "repository": "Gallica / BnF",
+        "scope": "work-bundle PB-P004",
+        "lastSearched": "2026-07-16",
+        "openQuestions": [
+          "The standalone TEXTS of the Seine jugement (1884) and the Cour de Paris appeal arrêt (14 May 1884) remain out-of-band: not separately digitised (they would sit in the un-digitised Gazette des Tribunaux 1884, whose Gallica run skips 1878-1892). The acquired cassation arrêt incorporates and confirms both, so it stands as the reachable proxy; their separate acquisition is not pipeline-reachable. (carried forward from SRCH-0010)",
+          "Physical Cour de Paris appeal-court case dossier (Archives de Paris / Archives nationales) not searched -- may hold no separately publishable digitised work. (carried forward from SRCH-0004/SRCH-0010)"
+        ]
+      },
+      {
+        "repository": "Gallica / BnF + digital libraries (archive.org, HathiTrust, Google Books) + the local archive repo",
+        "scope": "work PB-P002",
+        "lastSearched": "2026-07-13",
+        "openQuestions": [
+          "PB-P002 date discrepancy: this record says 1879; BnF/Gallica date the imprint 1880 -- reconcile the year."
+        ]
+      },
+      {
+        "repository": "Internet Archive (archive.org)",
+        "scope": "case port-breton",
+        "lastSearched": "2026-07-17",
+        "openQuestions": [
+          "ACQUIRE the 3 confirmed press issues? They are discrete IA full-text public-domain items (pre-1955 colonial English-language papers), acquirable via the shipped spec-013 IA adapter -- a genuine THIRD contemporary-press thread (Asian-English) distinct from the Australian slice (PB-P005, Trove) and the French legal/press record (PB-P004). Weigh: each is a whole newspaper issue acquired for one affair article (heavier than a single-article anchor). Captured as a follow-up (TASK-37).",
+          "The rejected NPTG18940102 (HK Telegraph 1894) is dropped from the press-candidate set; recorded here so the boundary is legible rather than silently discarded."
+        ]
+      },
+      {
+        "repository": "Internet Archive (archive.org)",
+        "scope": "work PB-P002",
+        "lastSearched": "2026-07-16",
+        "openQuestions": [
+          "ACQUISITION target confirmed; shipped path now exists (RESOLVED 2026-07-16): the de Groote 1880 book (nouvellefrancec00groogoog) is public-domain + digitised on the Internet Archive. The archive.org acquisition adapter shipped as spec 013 (the third first-class RepositoryAdapter, ia-item copies), live-verified end-to-end against this very item (resolve + PDF download + fidelity median ratio 1.0 -> explode-PDF + lossless PNG page-masters). The book is now cataloged AND ACQUIRED as PB-P055 (2026-07-16/17): 419 lossless PNG page-masters (leaves 3-421; Google preamble leaves 1-2 excluded from the masters per operator review, retained in the preserved source PDF) + the source PDF mirrored to B2, reconcile verified 420/420 masters in the object store, RepositoryRecord -> archived with a durable qualityAssessment (sound, approved range 3-421). Fidelity measured 1.0 on the real item (PDF images == recorded scan dims) so the frugal explode-PDF path was used. A genuine corpus-growth win: the central de Groote imprint, unreachable via Gallica, now held via the new archive.org adapter."
+        ]
+      },
+      {
+        "repository": "Internet Archive (archive.org) + Italian-language web/repositories (Camera dei deputati Portale storico; Emeroteca Digitale Braidense/BNCR; Google Books)",
+        "scope": "case port-breton",
+        "lastSearched": "2026-07-17",
+        "openQuestions": [
+          "Camera dei deputati XIV-Legislatura (1880-82) acts (storia.camera.it): a warning circular / interrogazione on the de Rays emigration PLAUSIBLY exists (national scandal, ~300 Italian victims) but the portal is browser-verification-walled to headless fetch (persisted probe = the challenge page) -- pinpointing needs a REAL-BROWSER portal session (the SRCH-0016 web-first method that cleared Trove's wall), not general web fetch. Documented follow-up, not an acquisition yet. Captured as TASK-42.",
+          "Italian contemporary PRESS (Emeroteca Digitale Braidense/BNCR) is a PRESS RESIDUAL -- classify with PB-P005 (Trove) and the French press: irreducible, not a discrete acquirable work. A real-browser MEASUREMENT (counts, per SRCH-0016) could substantiate the residual if the corpus wants it, but no adapter is warranted.",
+          "'Nuova Antologia' (major Italian review, 1866+, digitised on archive.org) MAY carry a contemporary de Rays article -- a container-drilling task (like the French legal serials), not a title-level hit. Low priority; not chased this pass."
+        ]
+      },
+      {
+        "repository": "Multi-catalog holding search (Gallica, archive.org, HathiTrust, Google Books; union catalogs WorldCat / CCFr)",
+        "scope": "work PB-P012",
+        "lastSearched": "2026-07-13",
+        "openQuestions": [
+          "Physical holding location for the 1884 Marseille imprint not yet confirmed via WorldCat / CCFr; and no digitization exists to mirror -- acquisition blocked on availability, not on rights."
+        ]
+      },
+      {
+        "repository": "Papers Past / National Library of New Zealand",
+        "scope": "case port-breton",
+        "lastSearched": "2026-07-21",
+        "openQuestions": [
+          "Papers Past coverage of the case is harvested. Next axes (separate discovery, not this handle-space): Chronicling America / Trove (Australian press -- the colonists landed at Sydney/Noumea, so Australian coverage is likely richer) / the New Italy NSW settlement as its own topic (backlog TASK-34).",
+          "Acquire the 36-item PD shortlist (spec 015) after rights confirmation; 1923/1929/1936/1949 retrospectives are rights-blocked/pending.",
+          "Reset the NZ exit node when NZ-routed work is done."
+        ]
+      },
+      {
+        "repository": "Trove / National Library of Australia",
+        "scope": "work PB-P005",
+        "lastSearched": "2026-07-17",
+        "openQuestions": [
+          "PB-P005 stays `irreducible` -- now MEASURED (2,450 / 1,039 / 1,880), not merely asserted. If the corpus wants discrete evidentiary anchors, acquire the named SRCH-0007 exemplars (or the Sydney Mail 1880 'Marquis de Rays' Settlement') MANUALLY / out-of-band on their pre-1955 public-domain basis -- no adapter, no bulk acquisition, per the standing no-Trove-adapter decision."
+        ]
+      },
+      {
+        "repository": "WorldCat + CCFr + BnF Catalogue général",
+        "scope": "work PB-P012",
+        "lastSearched": "2026-07-15",
+        "openQuestions": [
+          "Physical holding for the 1884 Marseille Blanc-et-Bernard imprint still unlocated after WorldCat/CCFr/BnF-catalogue. Next radius would be Marseille-local catalogues (BM Marseille / Alcazar) or a specialist legal-history library -- out-of-band, no acquisition path."
+        ]
+      }
+    ],
+    "byScope": [
+      {
+        "scope": "case port-breton",
+        "lastSearched": "2026-07-21",
+        "openQuestions": [
+          "ACQUIRE the 3 confirmed press issues? They are discrete IA full-text public-domain items (pre-1955 colonial English-language papers), acquirable via the shipped spec-013 IA adapter -- a genuine THIRD contemporary-press thread (Asian-English) distinct from the Australian slice (PB-P005, Trove) and the French legal/press record (PB-P004). Weigh: each is a whole newspaper issue acquired for one affair article (heavier than a single-article anchor). Captured as a follow-up (TASK-37).",
+          "The rejected NPTG18940102 (HK Telegraph 1894) is dropped from the press-candidate set; recorded here so the boundary is legible rather than silently discarded.",
+          "Camera dei deputati XIV-Legislatura (1880-82) acts (storia.camera.it): a warning circular / interrogazione on the de Rays emigration PLAUSIBLY exists (national scandal, ~300 Italian victims) but the portal is browser-verification-walled to headless fetch (persisted probe = the challenge page) -- pinpointing needs a REAL-BROWSER portal session (the SRCH-0016 web-first method that cleared Trove's wall), not general web fetch. Documented follow-up, not an acquisition yet. Captured as TASK-42.",
+          "Italian contemporary PRESS (Emeroteca Digitale Braidense/BNCR) is a PRESS RESIDUAL -- classify with PB-P005 (Trove) and the French press: irreducible, not a discrete acquirable work. A real-browser MEASUREMENT (counts, per SRCH-0016) could substantiate the residual if the corpus wants it, but no adapter is warranted.",
+          "'Nuova Antologia' (major Italian review, 1866+, digitised on archive.org) MAY carry a contemporary de Rays article -- a container-drilling task (like the French legal serials), not a title-level hit. Low priority; not chased this pass.",
+          "Papers Past coverage of the case is harvested. Next axes (separate discovery, not this handle-space): Chronicling America / Trove (Australian press -- the colonists landed at Sydney/Noumea, so Australian coverage is likely richer) / the New Italy NSW settlement as its own topic (backlog TASK-34).",
+          "Acquire the 36-item PD shortlist (spec 015) after rights confirmation; 1923/1929/1936/1949 retrospectives are rights-blocked/pending.",
+          "Reset the NZ exit node when NZ-routed work is done."
+        ],
+        "measuredClosure": "open"
+      },
+      {
+        "scope": "work PB-P001",
+        "lastSearched": "2026-07-13",
+        "openQuestions": [
+          "Classify the 8 crisis-month gaps (1880-81) as never-published vs BnF-physical-only (published but undigitized) -- needs the BnF PHYSICAL catalogue / a non-Gallica holdings check. An irreducible residual with respect to Gallica."
+        ],
+        "measuredClosure": "open"
+      },
+      {
+        "scope": "work PB-P002",
+        "lastSearched": "2026-07-16",
+        "openQuestions": [
+          "Discovery lead (not held): cb34944911d -- P. de Groote, 'Nouvelle-France, colonie libre de Port-Breton, Océanie: œuvre de colonisation agricole', Paris, 1880, 368 p. A major promotional book; central. Digitisation + rights check pending (needs Gallica). -- RESOLVED by SRCH-0012 (2026-07-16): NO Gallica digitisation (measured negative, two title queries). THEN VERIFIED real by SRCH-0013: digitised + public-domain on the Internet Archive (nouvellefrancec00groogoog, ~368 pp) -- a genuine acquisition target, just not via Gallica.",
+          "Discovery lead (not held): cb30067131v -- Dr A. Baudouin, 'L'aventure de Port-Breton : et la colonie libre dite Nouvelle-France', Paris, M. Dreyfous, 1883, 346 p. A contemporary CRITICAL account of the affair; central secondary source. Digitisation + rights check pending. -- CORRECTED by SRCH-0012 (2026-07-16): NOT a not-held lead -- this notice is the already-held PB-P003 (Baudouin 1883), Gallica document ark bpt6k58017546 (395 vues = PB-P003's archived masters). The 'not held' framing was a single-work-once slip; no separate acquisition.",
+          "Discovery lead (not held): cb34139874n -- 'Colonie libre de Port-Breton (Nouvelle France-Océanie), Bureau de Paris', Paris, Schiller, 1881; and cb33311782v -- 'La Colonie libre de Port-Breton. Nouvelle-France (Océanie). Exposé sommaire', Marseille, Blanc et Bernard, 1881. The colony's own promotional literature (de Rays-side); central primary. Digitisation + rights check pending. -- RESOLVED by SRCH-0012 (2026-07-16): neither is digitised on Gallica (measured negatives). Pursue non-Gallica repositories.",
+          "Discovery lead (not held): cb302225480 -- G. Charbonnier, 'Exploitation de la canne à sucre dans la colonie libre du Port-Breton', Paris, 1879, 7 p. (promotional/technical); and cb38797788d -- Maur d'Auxais, 'Carte de la Nouvelle France. Colonie libre de Port Breton', 1881 (the colony MAP). Central primary. Digitisation + rights check pending. -- RESOLVED by SRCH-0012 (2026-07-16): Charbonnier not digitised on Gallica (pursue non-Gallica); the MAP is digitised (btv1b10870266z) but Société-de-Géographie restricted-use -- known-but-restricted, not mirrorable.",
+          "The de Groote 1880 book (cb34944911d) is now VERIFIED real + digitised + public-domain on the Internet Archive (SRCH-0013, nouvellefrancec00groogoog) -- a genuine acquisition target, just not via Gallica. The other three undigitised-on-Gallica imprints (Schiller 1881 cb34139874n; Exposé sommaire 1881 cb33311782v; Charbonnier 1879 cb302225480) remain BnF-catalogue-notice-only, unverified on non-Gallica catalogues -- pursue on archive.org / Google Books / HathiTrust as forward-discovery leads.",
+          "The Auxais 1881 colony map (btv1b10870266z / cb38797788d) is digitised but Société-de-Géographie restricted-use and not streamable -- known-but-restricted, not mirrorable. Re-examine only if BnF rights terms change or a public-domain reproduction surfaces elsewhere.",
+          "PB-P002 date discrepancy: this record says 1879; BnF/Gallica date the imprint 1880 -- reconcile the year.",
+          "ACQUISITION target confirmed; shipped path now exists (RESOLVED 2026-07-16): the de Groote 1880 book (nouvellefrancec00groogoog) is public-domain + digitised on the Internet Archive. The archive.org acquisition adapter shipped as spec 013 (the third first-class RepositoryAdapter, ia-item copies), live-verified end-to-end against this very item (resolve + PDF download + fidelity median ratio 1.0 -> explode-PDF + lossless PNG page-masters). The book is now cataloged AND ACQUIRED as PB-P055 (2026-07-16/17): 419 lossless PNG page-masters (leaves 3-421; Google preamble leaves 1-2 excluded from the masters per operator review, retained in the preserved source PDF) + the source PDF mirrored to B2, reconcile verified 420/420 masters in the object store, RepositoryRecord -> archived with a durable qualityAssessment (sound, approved range 3-421). Fidelity measured 1.0 on the real item (PDF images == recorded scan dims) so the frugal explode-PDF path was used. A genuine corpus-growth win: the central de Groote imprint, unreachable via Gallica, now held via the new archive.org adapter."
+        ],
+        "measuredClosure": "open"
+      },
+      {
+        "scope": "work PB-P005",
+        "lastSearched": "2026-07-17",
+        "openQuestions": [
+          "PB-P005 stays `irreducible` -- now MEASURED (2,450 / 1,039 / 1,880), not merely asserted. If the corpus wants discrete evidentiary anchors, acquire the named SRCH-0007 exemplars (or the Sydney Mail 1880 'Marquis de Rays' Settlement') MANUALLY / out-of-band on their pre-1955 public-domain basis -- no adapter, no bulk acquisition, per the standing no-Trove-adapter decision."
+        ],
+        "measuredClosure": "open"
+      },
+      {
+        "scope": "work PB-P012",
+        "lastSearched": "2026-07-15",
+        "openQuestions": [
+          "Physical holding location for the 1884 Marseille imprint not yet confirmed via WorldCat / CCFr; and no digitization exists to mirror -- acquisition blocked on availability, not on rights.",
+          "Physical holding for the 1884 Marseille Blanc-et-Bernard imprint still unlocated after WorldCat/CCFr/BnF-catalogue. Next radius would be Marseille-local catalogues (BM Marseille / Alcazar) or a specialist legal-history library -- out-of-band, no acquisition path."
+        ],
+        "measuredClosure": "open"
+      },
+      {
+        "scope": "work-bundle PB-P004",
+        "lastSearched": "2026-07-16",
+        "openQuestions": [
+          "The standalone TEXTS of the Seine jugement (1884) and the Cour de Paris appeal arrêt (14 May 1884) remain out-of-band: not separately digitised (they would sit in the un-digitised Gazette des Tribunaux 1884, whose Gallica run skips 1878-1892). The acquired cassation arrêt incorporates and confirms both, so it stands as the reachable proxy; their separate acquisition is not pipeline-reachable. (carried forward from SRCH-0010)",
+          "Physical Cour de Paris appeal-court case dossier (Archives de Paris / Archives nationales) not searched -- may hold no separately publishable digitised work. (carried forward from SRCH-0004/SRCH-0010)"
+        ],
+        "measuredClosure": "open"
+      }
+    ],
+    "byRepository": [
+      {
+        "repository": "BnF Catalogue général (SRU + notices)",
+        "lastSearched": "2026-07-15",
+        "openQuestions": [
+          "Discovery lead (not held): cb34944911d -- P. de Groote, 'Nouvelle-France, colonie libre de Port-Breton, Océanie: œuvre de colonisation agricole', Paris, 1880, 368 p. A major promotional book; central. Digitisation + rights check pending (needs Gallica). -- RESOLVED by SRCH-0012 (2026-07-16): NO Gallica digitisation (measured negative, two title queries). THEN VERIFIED real by SRCH-0013: digitised + public-domain on the Internet Archive (nouvellefrancec00groogoog, ~368 pp) -- a genuine acquisition target, just not via Gallica.",
+          "Discovery lead (not held): cb30067131v -- Dr A. Baudouin, 'L'aventure de Port-Breton : et la colonie libre dite Nouvelle-France', Paris, M. Dreyfous, 1883, 346 p. A contemporary CRITICAL account of the affair; central secondary source. Digitisation + rights check pending. -- CORRECTED by SRCH-0012 (2026-07-16): NOT a not-held lead -- this notice is the already-held PB-P003 (Baudouin 1883), Gallica document ark bpt6k58017546 (395 vues = PB-P003's archived masters). The 'not held' framing was a single-work-once slip; no separate acquisition.",
+          "Discovery lead (not held): cb34139874n -- 'Colonie libre de Port-Breton (Nouvelle France-Océanie), Bureau de Paris', Paris, Schiller, 1881; and cb33311782v -- 'La Colonie libre de Port-Breton. Nouvelle-France (Océanie). Exposé sommaire', Marseille, Blanc et Bernard, 1881. The colony's own promotional literature (de Rays-side); central primary. Digitisation + rights check pending. -- RESOLVED by SRCH-0012 (2026-07-16): neither is digitised on Gallica (measured negatives). Pursue non-Gallica repositories.",
+          "Discovery lead (not held): cb302225480 -- G. Charbonnier, 'Exploitation de la canne à sucre dans la colonie libre du Port-Breton', Paris, 1879, 7 p. (promotional/technical); and cb38797788d -- Maur d'Auxais, 'Carte de la Nouvelle France. Colonie libre de Port Breton', 1881 (the colony MAP). Central primary. Digitisation + rights check pending. -- RESOLVED by SRCH-0012 (2026-07-16): Charbonnier not digitised on Gallica (pursue non-Gallica); the MAP is digitised (btv1b10870266z) but Société-de-Géographie restricted-use -- known-but-restricted, not mirrorable."
+        ]
+      },
+      {
+        "repository": "Gallica / BnF",
+        "lastSearched": "2026-07-16",
+        "openQuestions": [
+          "Classify the 8 crisis-month gaps (1880-81) as never-published vs BnF-physical-only (published but undigitized) -- needs the BnF PHYSICAL catalogue / a non-Gallica holdings check. An irreducible residual with respect to Gallica.",
+          "The de Groote 1880 book (cb34944911d) is now VERIFIED real + digitised + public-domain on the Internet Archive (SRCH-0013, nouvellefrancec00groogoog) -- a genuine acquisition target, just not via Gallica. The other three undigitised-on-Gallica imprints (Schiller 1881 cb34139874n; Exposé sommaire 1881 cb33311782v; Charbonnier 1879 cb302225480) remain BnF-catalogue-notice-only, unverified on non-Gallica catalogues -- pursue on archive.org / Google Books / HathiTrust as forward-discovery leads.",
+          "The Auxais 1881 colony map (btv1b10870266z / cb38797788d) is digitised but Société-de-Géographie restricted-use and not streamable -- known-but-restricted, not mirrorable. Re-examine only if BnF rights terms change or a public-domain reproduction surfaces elsewhere.",
+          "The standalone TEXTS of the Seine jugement (1884) and the Cour de Paris appeal arrêt (14 May 1884) remain out-of-band: not separately digitised (they would sit in the un-digitised Gazette des Tribunaux 1884, whose Gallica run skips 1878-1892). The acquired cassation arrêt incorporates and confirms both, so it stands as the reachable proxy; their separate acquisition is not pipeline-reachable. (carried forward from SRCH-0010)",
+          "Physical Cour de Paris appeal-court case dossier (Archives de Paris / Archives nationales) not searched -- may hold no separately publishable digitised work. (carried forward from SRCH-0004/SRCH-0010)"
+        ]
+      },
+      {
+        "repository": "Gallica / BnF + digital libraries (archive.org, HathiTrust, Google Books) + the local archive repo",
+        "lastSearched": "2026-07-13",
+        "openQuestions": [
+          "PB-P002 date discrepancy: this record says 1879; BnF/Gallica date the imprint 1880 -- reconcile the year."
+        ]
+      },
+      {
+        "repository": "Internet Archive (archive.org)",
+        "lastSearched": "2026-07-17",
+        "openQuestions": [
+          "ACQUIRE the 3 confirmed press issues? They are discrete IA full-text public-domain items (pre-1955 colonial English-language papers), acquirable via the shipped spec-013 IA adapter -- a genuine THIRD contemporary-press thread (Asian-English) distinct from the Australian slice (PB-P005, Trove) and the French legal/press record (PB-P004). Weigh: each is a whole newspaper issue acquired for one affair article (heavier than a single-article anchor). Captured as a follow-up (TASK-37).",
+          "The rejected NPTG18940102 (HK Telegraph 1894) is dropped from the press-candidate set; recorded here so the boundary is legible rather than silently discarded.",
+          "ACQUISITION target confirmed; shipped path now exists (RESOLVED 2026-07-16): the de Groote 1880 book (nouvellefrancec00groogoog) is public-domain + digitised on the Internet Archive. The archive.org acquisition adapter shipped as spec 013 (the third first-class RepositoryAdapter, ia-item copies), live-verified end-to-end against this very item (resolve + PDF download + fidelity median ratio 1.0 -> explode-PDF + lossless PNG page-masters). The book is now cataloged AND ACQUIRED as PB-P055 (2026-07-16/17): 419 lossless PNG page-masters (leaves 3-421; Google preamble leaves 1-2 excluded from the masters per operator review, retained in the preserved source PDF) + the source PDF mirrored to B2, reconcile verified 420/420 masters in the object store, RepositoryRecord -> archived with a durable qualityAssessment (sound, approved range 3-421). Fidelity measured 1.0 on the real item (PDF images == recorded scan dims) so the frugal explode-PDF path was used. A genuine corpus-growth win: the central de Groote imprint, unreachable via Gallica, now held via the new archive.org adapter."
+        ]
+      },
+      {
+        "repository": "Internet Archive (archive.org) + Italian-language web/repositories (Camera dei deputati Portale storico; Emeroteca Digitale Braidense/BNCR; Google Books)",
+        "lastSearched": "2026-07-17",
+        "openQuestions": [
+          "Camera dei deputati XIV-Legislatura (1880-82) acts (storia.camera.it): a warning circular / interrogazione on the de Rays emigration PLAUSIBLY exists (national scandal, ~300 Italian victims) but the portal is browser-verification-walled to headless fetch (persisted probe = the challenge page) -- pinpointing needs a REAL-BROWSER portal session (the SRCH-0016 web-first method that cleared Trove's wall), not general web fetch. Documented follow-up, not an acquisition yet. Captured as TASK-42.",
+          "Italian contemporary PRESS (Emeroteca Digitale Braidense/BNCR) is a PRESS RESIDUAL -- classify with PB-P005 (Trove) and the French press: irreducible, not a discrete acquirable work. A real-browser MEASUREMENT (counts, per SRCH-0016) could substantiate the residual if the corpus wants it, but no adapter is warranted.",
+          "'Nuova Antologia' (major Italian review, 1866+, digitised on archive.org) MAY carry a contemporary de Rays article -- a container-drilling task (like the French legal serials), not a title-level hit. Low priority; not chased this pass."
+        ]
+      },
+      {
+        "repository": "Multi-catalog holding search (Gallica, archive.org, HathiTrust, Google Books; union catalogs WorldCat / CCFr)",
+        "lastSearched": "2026-07-13",
+        "openQuestions": [
+          "Physical holding location for the 1884 Marseille imprint not yet confirmed via WorldCat / CCFr; and no digitization exists to mirror -- acquisition blocked on availability, not on rights."
+        ]
+      },
+      {
+        "repository": "Papers Past / National Library of New Zealand",
+        "lastSearched": "2026-07-21",
+        "openQuestions": [
+          "Papers Past coverage of the case is harvested. Next axes (separate discovery, not this handle-space): Chronicling America / Trove (Australian press -- the colonists landed at Sydney/Noumea, so Australian coverage is likely richer) / the New Italy NSW settlement as its own topic (backlog TASK-34).",
+          "Acquire the 36-item PD shortlist (spec 015) after rights confirmation; 1923/1929/1936/1949 retrospectives are rights-blocked/pending.",
+          "Reset the NZ exit node when NZ-routed work is done."
+        ]
+      },
+      {
+        "repository": "Trove / National Library of Australia",
+        "lastSearched": "2026-07-17",
+        "openQuestions": [
+          "PB-P005 stays `irreducible` -- now MEASURED (2,450 / 1,039 / 1,880), not merely asserted. If the corpus wants discrete evidentiary anchors, acquire the named SRCH-0007 exemplars (or the Sydney Mail 1880 'Marquis de Rays' Settlement') MANUALLY / out-of-band on their pre-1955 public-domain basis -- no adapter, no bulk acquisition, per the standing no-Trove-adapter decision."
+        ]
+      },
+      {
+        "repository": "WorldCat + CCFr + BnF Catalogue général",
+        "lastSearched": "2026-07-15",
+        "openQuestions": [
+          "Physical holding for the 1884 Marseille Blanc-et-Bernard imprint still unlocated after WorldCat/CCFr/BnF-catalogue. Next radius would be Marseille-local catalogues (BM Marseille / Alcazar) or a specialist legal-history library -- out-of-band, no acquisition path."
+        ]
+      }
+    ]
+  }
+}
