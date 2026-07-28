@@ -1,0 +1,5 @@
+schemaVersion: 1
+id: zzz-custom-browser
+corpus: zzz-custom
+defaultSources:
+  - ZZ-00001

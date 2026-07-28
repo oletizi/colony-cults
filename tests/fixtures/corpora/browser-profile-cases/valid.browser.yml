@@ -1,0 +1,6 @@
+schemaVersion: 1
+id: valid
+corpus: alpha
+defaultSources:
+  - AL-001
+  - AL-002
