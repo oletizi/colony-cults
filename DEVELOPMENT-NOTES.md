@@ -1,3 +1,29 @@
+## 2026-07-28: <!-- session title -->
+
+**Goal:** <!-- compose: what we set out to do -->
+
+**Accomplished:**
+- <!-- compose -->
+
+**Didn't Work:**
+- <!-- compose -->
+
+**Course Corrections:**
+- <!-- compose -->
+
+**Insights:**
+- <!-- compose -->
+
+**Quantitative (auto-derived from git; verify before publishing):**
+- Commits: 5
+  - spec(corpus-config-seam): fold in third-party spec review
+  - define(corpus-config-seam): spec + plan + tasks (spec 1 of multi-corpus-generalization)
+  - design(corpus-config-seam): fold in third-party review
+  - design(corpus-config-seam): Corpus config seam via DI — spec 1 of multi-corpus-generalization
+  - workflow(close): asset-summaries validated -> closed
+- Files changed: 12
+- Backlog touched: (none)
+
 ## 2026-07-21: Merge main into edition-publishing + stand up companion archive; scope source-group PDF (spec 017) to runnable through the front door
 
 **Goal:** Get the latest from main into this repo and a companion archive clone, then build PDFs from the new Papers Past items. The build turned out blocked, so (operator's call) scope the fix as a proper feature through the stack-control front door instead.
