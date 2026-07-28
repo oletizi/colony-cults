@@ -110,6 +110,44 @@ function loadCorpora(corporaRoot: string): LoadedCorpora {
 }
 
 /**
+ * The rules decidable from the CONFIG ALONE — every committed manifest and
+ * profile under the root, plus the cross-artifact rules over them. No SSOT
+ * record is read.
+ *
+ * Factored out so {@link validateCorporaConfig} and {@link validateCorpora}
+ * share one definition of "config-only" rather than each listing rules.
+ */
+function configFindings(loaded: LoadedCorpora): CorpusValidationFinding[] {
+  return [...loaded.findings, ...validateRepositoryWide(loaded.manifests, loaded.profiles)];
+}
+
+/**
+ * CONFIG-ONLY validation of the whole corpora root — the STARTUP half of the
+ * seam (T018; contracts/corpus-seam.md § Config validator).
+ *
+ * Covers exactly the rules that read `corporaRoot` and nothing else: every
+ * committed manifest and profile loads (FR-015's strict policy — a malformed
+ * committed manifest blocks all corpora), corpus ids are unique, prefixes are
+ * disjoint across ALL policies of ALL corpora (FR-002a/FR-002b), case ids are
+ * unique, and every browser profile names a known corpus with a unique id.
+ *
+ * DELIBERATELY EXCLUDED: the existing-data rules and the archive-override
+ * rules, both of which require reading the bibliography SSOT. That is why
+ * this function takes no `sourcesDir` — it is not an omission a caller can
+ * fill in. Those rules belong to {@link validateCorpora} / `bib
+ * validate-config` only, because making every command read every Source at
+ * startup would (a) cost O(corpus size) on commands that touch no Source and
+ * (b) make a malformed *record* fail commands that never load one, which
+ * FR-010 forbids. Config is small, bounded by the number of corpora, and is
+ * what the selected corpus's policies are derived from — so its rules are the
+ * ones worth paying for on every invocation.
+ */
+export function validateCorporaConfig(corporaRoot: string): CorpusValidationResult {
+  const findings = configFindings(loadCorpora(corporaRoot));
+  return { ok: findings.length === 0, findings };
+}
+
+/**
  * `requiredCapabilities` ⊆ `installedCapabilities` (FR-008, INV-9).
  *
  * Exported on its own so the composition root can run exactly this check at
@@ -160,7 +198,11 @@ export function validateCapabilitySubset(
 }
 
 /**
- * Validate the ENTIRE corpora root against the existing bibliography SSOT.
+ * Validate the ENTIRE corpora root against the existing bibliography SSOT —
+ * the FULL sweep behind `bib validate-config`. It is a strict superset of
+ * {@link validateCorporaConfig}: same config rules, plus the archive-override
+ * and existing-data rules that require reading the SSOT, plus the capability
+ * subset for EVERY manifest rather than only the selected one.
  *
  * Returns every failure it finds, each with its own specific message
  * (SC-005) — see `@/corpus/validate-types` for why this returns a result
@@ -179,12 +221,12 @@ export function validateCorpora(
   sourcesDir: string,
   installedCapabilities: InstalledCapabilities,
 ): CorpusValidationResult {
-  const { manifests, profiles, findings: loadFindings } = loadCorpora(corporaRoot);
+  const loaded = loadCorpora(corporaRoot);
+  const { manifests } = loaded;
   const index = readSourceIdentityIndex(sourcesDir);
 
   const findings: CorpusValidationFinding[] = [
-    ...loadFindings,
-    ...validateRepositoryWide(manifests, profiles),
+    ...configFindings(loaded),
     ...validateArchiveOverrides(manifests, index.entries),
     ...validateExistingData(manifests, index),
     ...manifests.flatMap((manifest) => validateCapabilitySubset(manifest, installedCapabilities)),

@@ -12,7 +12,8 @@ import {
   runPromoteCli,
   runVerifyMemberCli,
 } from '@/cli/bib-sourcegroup';
-import { requireCorpus, type CorpusComposition } from '@/cli/composition-root';
+import { requireCorpus, type CliEnvironment, type CorpusComposition } from '@/cli/composition-root';
+import { runValidateConfigCli } from '@/cli/bib-validate-config';
 import { runCoverageCli } from '@/cli/bib-coverage';
 import { runQuerySourceCli } from '@/cli/bib-query-source';
 import { runRightsAssessCli } from '@/cli/bib-rights-assess';
@@ -34,8 +35,8 @@ import type { RepositoryRecord } from '@/model/repository-record';
 import type { Source } from '@/model/source';
 
 /** Subactions the `bib` verb group recognizes (contracts/cli.md). */
-type Subaction = 'migrate' | 'show' | 'validate' | 'regenerate' | 'inventory' | 'verify-member' | 'promote' | 'exclude-member' | 'acquire' | 'reconcile' | 'discover' | 'coverage' | 'rights-assess' | 'query-source';
-const SUBACTIONS: readonly Subaction[] = ['migrate', 'show', 'validate', 'regenerate', 'inventory', 'verify-member', 'promote', 'exclude-member', 'acquire', 'reconcile', 'discover', 'coverage', 'rights-assess', 'query-source'];
+type Subaction = 'migrate' | 'show' | 'validate' | 'validate-config' | 'regenerate' | 'inventory' | 'verify-member' | 'promote' | 'exclude-member' | 'acquire' | 'reconcile' | 'discover' | 'coverage' | 'rights-assess' | 'query-source';
+const SUBACTIONS: readonly Subaction[] = ['migrate', 'show', 'validate', 'validate-config', 'regenerate', 'inventory', 'verify-member', 'promote', 'exclude-member', 'acquire', 'reconcile', 'discover', 'coverage', 'rights-assess', 'query-source'];
 
 export function isBibSubaction(value: string): value is Subaction {
   return (SUBACTIONS as readonly string[]).includes(value);
@@ -501,10 +502,15 @@ async function runRegenerate(rest: string[], corpus: CorpusComposition): Promise
  * before reaching here otherwise. The hotspot tasks (T011-T013) thread the
  * narrow policy they need from this parameter, guarding the `null` arm with
  * `@/cli/composition-root`'s `requireCorpus`.
+ *
+ * `environment` carries the composition root's INJECTED ROOTS (FR-016) for the
+ * exception subactions, which get no `corpus` to read a root off. Only
+ * `validate-config` consumes it; corpus-dependent subactions are unchanged.
  */
 export async function runBibliography(
   argv: string[],
   corpus: CorpusComposition | null,
+  environment: CliEnvironment = {},
 ): Promise<number> {
   const [subaction, ...rest] = argv;
   if (subaction === undefined || !isBibSubaction(subaction)) {
@@ -520,6 +526,9 @@ export async function runBibliography(
       return runShow(rest, requireCorpus(corpus, 'bib show'));
     case 'validate':
       return runValidate(rest, requireCorpus(corpus, 'bib validate'));
+    // FR-014 exception: no corpus (it validates what selection depends on).
+    case 'validate-config':
+      return runValidateConfigCli(rest, environment);
     case 'regenerate':
       return runRegenerate(rest, requireCorpus(corpus, 'bib regenerate'));
     case 'inventory':

@@ -85,6 +85,9 @@ Bibliography / acquisition:
   coverage                                  Corpus coverage report
   discover                                  Discovery over configured sources
   migrate | show | validate | regenerate    Bibliography SSOT verbs
+  validate-config                           Validate every committed corpus
+                                            manifest/profile/override against
+                                            the SSOT (no corpus selection needed)
   inventory | verify-member | promote | exclude-member | reconcile | rights-assess
 
 Gallica mirroring:
@@ -101,7 +104,8 @@ Summarization (two-depth LLM):
 Options:
   --corpus <id>          Select the corpus to operate on (else COLONY_CORPUS).
                          Required by every command except help/version,
-                         discover, and query-source. There is no default.
+                         discover, query-source, and validate-config. There is
+                         no default.
   --help, -h             Show this help message
   --version, -v          Show version
   --dry-run              Report intended actions; write nothing
@@ -196,7 +200,7 @@ export async function runCli(argv: string[], environment: CliEnvironment = {}): 
         return 2;
       }
     }
-    return runBibliography(argvRest, corpus);
+    return runBibliography(argvRest, corpus, environment);
   }
 
   try {

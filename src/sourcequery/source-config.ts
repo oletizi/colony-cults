@@ -53,6 +53,20 @@ export function registerSource(config: SourceConfig): void {
 }
 
 /**
+ * Every source-query id currently registered in this process, sorted.
+ *
+ * The RUNTIME source of truth for the `sourceQueries` half of a corpus
+ * manifest's `requiredCapabilities` (spec 018 FR-008, INV-9): the composition
+ * root enumerates the registry through this function
+ * (`@/cli/installed-capabilities`) instead of keeping a second, drift-prone
+ * copy of the list. Whatever `registerSource` has been called with IS the
+ * installed set.
+ */
+export function registeredSourceQueryIds(): readonly string[] {
+  return Object.keys(sourceRegistry).sort();
+}
+
+/**
  * Looks up a registered SourceConfig by id.
  * Throws a clear error on an unknown id (fail-loud, Principle V) rather
  * than returning `undefined` or a fallback.

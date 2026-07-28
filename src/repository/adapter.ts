@@ -19,10 +19,29 @@ import type {
 } from '@/extraction/structured-extractor';
 
 /**
- * Name of a supported repository.
- * Extensible string-literal union.
+ * Every repository this build implements an adapter for — the RUNTIME source
+ * of truth for the `repositories` half of a corpus manifest's
+ * `requiredCapabilities` (spec 018 FR-008, INV-9).
+ *
+ * It is a value, not just a type, because a type is erased at runtime and the
+ * composition root has to *enumerate* the installed capability names rather
+ * than assert against a hand-maintained copy of them
+ * (`@/cli/installed-capabilities`). {@link RepositoryName} is derived FROM
+ * this list, so the two can never drift: adding a fifth adapter means adding
+ * its name here, and the capability set widens with it automatically.
  */
-export type RepositoryName = 'gallica' | 'new-italy-museum' | 'internet-archive' | 'papers-past';
+export const REPOSITORY_NAMES = [
+  'gallica',
+  'new-italy-museum',
+  'internet-archive',
+  'papers-past',
+] as const;
+
+/**
+ * Name of a supported repository.
+ * Extensible string-literal union, derived from {@link REPOSITORY_NAMES}.
+ */
+export type RepositoryName = (typeof REPOSITORY_NAMES)[number];
 
 /**
  * A raw locator the operator supplies to `resolve`.

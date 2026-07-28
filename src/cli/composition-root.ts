@@ -11,6 +11,7 @@ import {
 } from '@/corpus/policies';
 import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { selectCorpus, type SelectedCorpus } from '@/corpus/select';
+import { assertSelectedCorpusValid } from '@/cli/startup-validation';
 
 /**
  * THE CLI COMPOSITION ROOT (T009). See spec.md FR-003, FR-004, FR-009,
@@ -153,6 +154,13 @@ export function composeCorpus(options: ComposeCorpusOptions): CorpusComposition 
     envCorpus: requireNonBlank(options.envCorpus, 'COLONY_CORPUS'),
   });
 
+  // STARTUP VALIDATION (T018, FR-009): before ANY narrow policy is derived —
+  // and therefore before any command work — the config the policies come from
+  // must be coherent, and the selected corpus's required capabilities must be
+  // installed. See `@/cli/startup-validation` for exactly which rules run here
+  // and which are reserved for `bib validate-config`'s full sweep, and why.
+  assertSelectedCorpusValid(selected);
+
   return {
     selected,
     scope: deriveScopeContext(selected),
@@ -198,6 +206,17 @@ export interface CliEnvironment {
   readonly corporaRoot?: string;
   /** Override the `COLONY_CORPUS` value (production: `process.env.COLONY_CORPUS`). */
   readonly envCorpus?: string;
+  /**
+   * Override the bibliography sources directory (production:
+   * `<repoRoot>/bibliography/sources`).
+   *
+   * Read ONLY by the FR-014 exception verb `bib validate-config`, whose full
+   * sweep validates the config against the existing SSOT and therefore needs
+   * both injected roots (FR-016). No corpus-dependent command reads it: those
+   * resolve their own sources dir, and startup validation deliberately never
+   * touches the SSOT at all (`@/cli/startup-validation`).
+   */
+  readonly sourcesDir?: string;
 }
 
 /** The corpora root a bin should use: injected override, else production (FR-016). */
@@ -205,6 +224,21 @@ export function corporaRootFor(environment: CliEnvironment): string {
   return 'corporaRoot' in environment && environment.corporaRoot !== undefined
     ? environment.corporaRoot
     : resolveCorporaRoot(resolveRepoRootUpward());
+}
+
+/**
+ * The production bibliography sources directory name — resolved here, beside
+ * the corpora root, so `bib validate-config` names neither literal itself.
+ */
+export function resolveSourcesDir(repoRoot: string): string {
+  return join(repoRoot, 'bibliography', 'sources');
+}
+
+/** The sources dir a bin should use: injected override, else production (FR-016). */
+export function sourcesDirFor(environment: CliEnvironment): string {
+  return 'sourcesDir' in environment && environment.sourcesDir !== undefined
+    ? environment.sourcesDir
+    : resolveSourcesDir(resolveRepoRootUpward());
 }
 
 /** The `COLONY_CORPUS` value a bin should use: injected override, else the real env. */
