@@ -2,7 +2,7 @@
 
 New config layer + narrow policies. Existing SSOT types reused unchanged **(reused)**. Revised after the spec review (capability + override + browser-profile + collision modeling).
 
-## CorpusManifest (new — `corpora/<id>.yml`)
+## CorpusManifest (new — `<corporaRoot>/<id>.yml`; production `corpora/<id>.yml`)
 
 `basename == id`. Data, versioned.
 
@@ -28,7 +28,7 @@ archiveLayoutOverrides: null   # pending the characterization gate
 ```
 No `discoveryMechanism` / `dateNormalizer` (spec 2).
 
-## BrowserProfile (new — `corpora/<id>.browser.yml`)
+## BrowserProfile (new — `<corporaRoot>/<id>.browser.yml`)
 
 Deployment defaults, one conventional profile per corpus (separate from identity).
 
@@ -47,12 +47,36 @@ Absence is valid for non-browser commands; required only by browser-deploy / bro
 |---|---|---|
 | `ScopeResolutionContext` | `{ validCaseIds: ReadonlySet<string>, …existing }` | `bibliography/scope.ts` |
 | `SourceIdPolicy` | `{ prefix: string; padWidth: number }` | `sourcegroup/id-alloc.ts` |
-| `ArchiveLayoutPolicy` | generic derivation + `overrides: ReadonlyMap<SourceId, { relativePath, reason }>` | `archive/location.ts` |
+| `ArchiveLayoutPolicy` | `overrides: ReadonlyMap<SourceId, { relativePath, reason }>` + `derived: ReadonlyMap<SourceId, SourceLayout>` (**precomputed** at construction — see below) | `archive/location.ts` |
 | `BrowserProfile` | `{ corpus; defaultSources: ReadonlyArray<string> }` | `browser/config.ts` (deployment) |
 
 ## SelectedCorpus (new — composition-root value)
 
 Resolved once (`--corpus` → `COLONY_CORPUS` → fail loud). Not injected whole; used to derive the narrow policies + validated at startup.
+
+## `corporaRoot` (new — composition-root input, FR-016)
+
+The directory holding **both** manifests and browser profiles, under **one convention**:
+
+| Artifact | Path |
+|---|---|
+| manifest | `<corporaRoot>/<id>.yml` |
+| browser profile | `<corporaRoot>/<id>.browser.yml` |
+
+Resolved **once** at the composition root and injected — `<repoRoot>/corpora` in production, `tests/fixtures/corpora` under test. **Never a literal in a core module**: a hardcoded root makes SC-003 unsatisfiable, because adding a fixture corpus would then require a core edit. The loader/validator take it (plus `sourcesDir`, for existing-data validation) as parameters.
+
+## Archive-layout resolution order (FR-017)
+
+`sourceLayout(sourceId)` resolves in this **total** order:
+
+1. manifest `archiveLayoutOverrides` (validated, carries a `reason`)
+2. **runtime overlay** — `registerSourceLayout`, for source-group members created mid-run by `bib inventory` (semantics unchanged, including fail-loud conflict detection)
+3. **precomputed generic derivation** (`derived`, built at policy construction)
+4. **throw** — no default (Principle V)
+
+**Binding constraint**: `sourceLayout(sourceId)` is **sourceId-only and synchronous** (reached deep inside the fetcher via `resolveFetchedDir`), while `deriveSourceLayout(source, fallbackCase)` needs a full `Source`. The derivation is therefore **precomputed by sourceId when the policy is constructed** at the composition root — where the corpus's Sources are already loaded — never computed lazily inside `sourceLayout`.
+
+The exported API `registerSourceLayout` / `isSourceLayoutRegistered` / `deriveSourceLayout` is **retained unchanged**; `member-layout.ts` (`ensureMemberLayoutRegistered`) and the acquire pipeline depend on it. Only the static `SOURCE_LAYOUTS` map is retired.
 
 ## Validation rules (the config gate — strict policy)
 

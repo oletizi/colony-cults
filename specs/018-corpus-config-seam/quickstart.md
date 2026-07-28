@@ -31,8 +31,9 @@ npx tsx src/index.ts bib validate-config # validator over all manifests: pass/fa
 ```
 # Add ONLY (under tests/fixtures/, never corpora/ — see FR-015):
 #   tests/fixtures/corpora/synthetic.yml           (different id, case, prefix, browser policy)
-#   tests/fixtures/browser-profiles/synthetic.yml
+#   tests/fixtures/corpora/synthetic.browser.yml   (profile beside it — same convention as production)
 #   tests/fixtures/cases/<second-case>/…           (a small fixture Source)
+# ...then inject corporaRoot=tests/fixtures/corpora at the composition root (FR-016).
 npx tsx src/index.ts bib coverage --corpus synthetic   # operates on the synthetic corpus
 git diff --stat                                         # touches ONLY tests/fixtures/ — NO src/ core module
 ```

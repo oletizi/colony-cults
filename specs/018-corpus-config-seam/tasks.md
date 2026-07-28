@@ -13,30 +13,30 @@ A disciplined refactor + new config layer. **Behavior-preserving for Port Breton
 
 ## Phase 2: Foundational — the `corpus/` seam (blocking)
 
-- [ ] T003 [P] [tier:balanced] `CorpusManifest` type + typed loader in `src/corpus/manifest.ts` (discriminated `schemaVersion`; `basename==id`; fields incl. `requiredCapabilities`, `archiveLayoutOverrides`); tests: rejects unsupported version / malformed / id-mismatch.
-- [ ] T004 [P] [tier:balanced] `BrowserProfile` type + loader in `src/corpus/browser-profile.ts` (`corpora/<id>.browser.yml`); tests.
-- [ ] T005 [P] [tier:powerful] Config validator in `src/corpus/validate.ts` — per-manifest (schema, id/basename, ≥1 case, case-id grammar, prefix grammar, `padWidth ∈ 1..8`), **repository-wide** (unique corpus ids; **prefix disjointness** — none equal/leading-substring of another; unique case ids; browser-profile→known-corpus + unique profile ids; override→known Source/relative/no-escape/reason), **existing-data** (global Source-ID uniqueness, per-corpus conformance, next-ID non-collision), and **capability subset** at selection; tests for every failure (INV-2/7/9/10/11/12, SC-005). **Strict policy**: all committed manifests valid before any corpus runs.
+- [ ] T003 [P] [tier:balanced] `CorpusManifest` type + typed loader in `src/corpus/manifest.ts` — `loadCorpusManifest(corporaRoot, id)` + `listCorpusManifests(corporaRoot)` reading `<corporaRoot>/<id>.yml` (discriminated `schemaVersion`; `basename==id`; fields incl. `requiredCapabilities`, `archiveLayoutOverrides`). **`corporaRoot` is a parameter — never a module literal** (FR-016). Tests: rejects unsupported version / malformed / id-mismatch; loads from an arbitrary injected root.
+- [ ] T004 [P] [tier:balanced] `BrowserProfile` type + loader in `src/corpus/browser-profile.ts` — `loadBrowserProfile(corporaRoot, id)` reading `<corporaRoot>/<id>.browser.yml`, beside the manifest under the same injected root (FR-005/016); tests.
+- [ ] T005 [P] [tier:powerful] Config validator in `src/corpus/validate.ts` — `validateCorpora(corporaRoot, sourcesDir, installedCapabilities)`: per-manifest (schema, id/basename, ≥1 case, case-id grammar, prefix grammar, `padWidth ∈ 1..8`), **repository-wide** over every manifest enumerated under `corporaRoot` (unique corpus ids; **prefix disjointness** — none equal/leading-substring of another; unique case ids; browser-profile→known-corpus + unique profile ids; override→known Source/relative/no-escape/reason), **existing-data** from `sourcesDir` (global Source-ID uniqueness, per-corpus conformance, next-ID non-collision), and **capability subset** at selection; tests for every failure (INV-2/7/9/10/11/12, SC-005). **Strict policy**: all committed manifests valid before any corpus runs.
 - [ ] T006 [P] [tier:balanced] `selectCorpus({cliCorpus, envCorpus})` in `src/corpus/select.ts`: `--corpus` → `COLONY_CORPUS` → **throw**; unknown → throw; tests (INV-1/3).
-- [ ] T007 [P] [tier:balanced] Narrow policy derivation in `src/corpus/policies.ts` (`deriveScopeContext`/`deriveSourceIdPolicy`/`deriveArchiveLayoutPolicy`/`deriveBrowserProfile`) returning **immutable** collections; unit tests. No omnibus object exported.
+- [ ] T007 [P] [tier:balanced] Narrow policy derivation in `src/corpus/policies.ts` (`deriveScopeContext`/`deriveSourceIdPolicy`/`deriveArchiveLayoutPolicy`/`deriveBrowserProfile`) returning **immutable** collections; unit tests. No omnibus object exported. `deriveArchiveLayoutPolicy` **precomputes** `derived: ReadonlyMap<SourceId, SourceLayout>` from the corpus's loaded Sources alongside `overrides` — required because `sourceLayout(sourceId)` is sourceId-only + synchronous while `deriveSourceLayout` needs a full `Source` (FR-017).
 - [ ] T008 [tier:balanced] Author `corpora/port-breton.yml` (+ `requiredCapabilities`; `archiveLayoutOverrides: null` pending T013) and `corpora/port-breton.browser.yml`, from the current constants — instance #1.
 
 ## Phase 3: User Story 1 — Explicit corpus selection (P1)
 
-- [ ] T009 [US1] [tier:powerful] Wire `selectCorpus` at the CLI composition root; add `--corpus`; derive + inject narrow policies; exception commands bypass selection (T002 table).
+- [ ] T009 [US1] [tier:powerful] Wire `selectCorpus` at the CLI composition root; add `--corpus`; **resolve `corporaRoot` once here** (production `<repoRoot>/corpora`) and inject it into loader/validator (FR-016); derive + inject narrow policies; exception commands bypass selection (T002 table).
 - [ ] T010 [US1] [tier:balanced] Integration test: no/unknown corpus fail loud (non-zero, never partial, SC-002); `--corpus` overrides env; an exception command runs with no selection (US1.5).
 
 ## Phase 4: User Story 2 — Port Breton behavior-preserving (P1)
 
 - [ ] T011 [US2] [tier:balanced] `bibliography/scope.ts`: `PORT_BRETON_CASE_ID` → injected `validCaseIds`.
 - [ ] T012 [US2] [tier:balanced] `sourcegroup/id-alloc.ts`: module constants → injected `SourceIdPolicy`.
-- [ ] T013 [US2] [tier:powerful] `archive/location.ts`: retire `SOURCE_LAYOUTS` behind the characterization gate (T001) — generic derivation; add a **validated per-`Source` override (with reason)** ONLY where a path is not byte-reproducible; characterization test passes (SC-001, INV-4/10).
+- [ ] T013 [US2] [tier:powerful] `archive/location.ts`: retire **only** the static `SOURCE_LAYOUTS` map behind the characterization gate (T001). Implement the FR-017 total resolution order — manifest `archiveLayoutOverrides` → **runtime overlay** → **precomputed** generic derivation → **throw**. **Retain unchanged**: `registerSourceLayout` (incl. fail-loud conflict detection), `isSourceLayoutRegistered`, `deriveSourceLayout` — `member-layout.ts` (`ensureMemberLayoutRegistered`) and the acquire pipeline depend on them. Add a **validated per-`Source` override (with reason)** ONLY where a path is not byte-reproducible; characterization test passes; a mid-run member still resolves exactly as before (SC-001, INV-4/10/14).
 - [ ] T014 [US2] [tier:balanced] `browser/config.ts`: default list → injected `BrowserProfile` (`CORPUS_SOURCES` override preserved; absence OK for non-browser commands).
 - [ ] T015 [US2] [tier:powerful] Full regression under `--corpus port-breton`: suite green; `bib validate` clean; **structured coverage-snapshot comparison** (counts/statuses/leads/extents/holdings/ordering/ids/links) identical; no data migration (SC-001).
 
 ## Phase 5: User Story 3 — Second corpus as fixtures, zero core edits (P2) — load-bearing proof
 
-- [ ] T016 [US3] [tier:balanced] Add the **synthetic second corpus as FIXTURES**: `tests/fixtures/corpora/synthetic.yml` + `tests/fixtures/browser-profiles/synthetic.yml` + `tests/fixtures/cases/<second-case>/…` (different id, case id, source prefix, browser policy; no real content).
-- [ ] T017 [US3] [tier:powerful] Integration test: run the **same composition path** against the fixture root; scope/id/layout/browser all use its policies; a synthetic ID allocates with its (disjoint) prefix/pad and is globally unique; **enforced via the fixture layout, not git-diff** — adding the corpus touched only fixtures (SC-003, INV-5).
+- [ ] T016 [US3] [tier:balanced] Add the **synthetic second corpus as FIXTURES**, under the **same convention as production** (manifest + profile beside it, one root): `tests/fixtures/corpora/synthetic.yml` + `tests/fixtures/corpora/synthetic.browser.yml` + `tests/fixtures/cases/<second-case>/…` (different id, case id, source prefix, browser policy; no real content). NOT under `corpora/` — FR-015 would bind it into the production disjointness namespace.
+- [ ] T017 [US3] [tier:powerful] Integration test: run the **same composition path** with `corporaRoot` injected at `tests/fixtures/corpora` (FR-016); scope/id/layout/browser all use its policies; a synthetic ID allocates with its (disjoint) prefix/pad and is globally unique; **enforced via the fixture layout, not git-diff** — adding the corpus touched only fixtures (SC-003, INV-5/13).
 
 ## Phase 6: User Story 4 — Config validation gate (P2)
 
@@ -44,7 +44,7 @@ A disciplined refactor + new config layer. **Behavior-preserving for Port Breton
 
 ## Phase 7: Polish & guards
 
-- [ ] T019 [P] [tier:fast] Guard test: none of the four corpus-specific constants remain as literals in core modules (SC-004, INV-6).
+- [ ] T019 [P] [tier:fast] Guard test: none of the four corpus-specific constants remain as literals in core modules, **and no core module hardcodes the corpora root** (SC-004, INV-6/13).
 - [ ] T020 [P] [tier:fast] Guard test: no spec-2 field (`discoveryMechanism`/`dateNormalizer`) in spec-1 types (INV-8, FR-012).
 - [ ] T021 [P] [tier:balanced] Docs: `corpora/README.md` (manifest + browser profile + overrides + selection + validation + the strict policy). Commit + push per unit.
 

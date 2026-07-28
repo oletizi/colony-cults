@@ -14,7 +14,7 @@ A **composition-time configuration seam** that lets one shared core run varied r
 
 **Primary work**: a small, disciplined refactor + new config layer — no rewrite. Touches four hotspots (`archive/location.ts`, `bibliography/scope.ts`, `sourcegroup/id-alloc.ts`, `browser/config.ts`) + a new `corpus/` module (manifest type, typed loader, validator, composition-root selection) + narrow policy interfaces.
 
-**Storage**: `corpora/<id>.yml` manifests (git-tracked data); existing bibliography SSOT + `cases/<case>/…` archive layout unchanged.
+**Storage**: `<corporaRoot>/<id>.yml` manifests + `<corporaRoot>/<id>.browser.yml` profiles (git-tracked data; production root `corpora/`, injected per FR-016); existing bibliography SSOT + `cases/<case>/…` archive layout unchanged.
 
 **Testing**: `vitest` — **characterization tests** capturing current `location.ts` outputs for the 9 legacy sources (byte-identical gate), validator unit tests, a selection-precedence test, and a **synthetic-second-corpus integration test** that proves core modules are untouched. `@/` imports, no `any`, files ≤ 300–500.
 
@@ -65,8 +65,9 @@ corpora/
 
 tests/fixtures/
 ├── corpora/synthetic.yml            # NEW — test-only synthetic second corpus (proof of seam)
-├── browser-profiles/synthetic.yml   # NEW — its browser profile
+├── corpora/synthetic.browser.yml    # NEW — its browser profile, SAME convention as production
 └── cases/<second-case>/…            # NEW — its case fixtures
+                                     #   corporaRoot is injected here under test (FR-016)
 
 src/
 ├── corpus/                  # NEW — the seam

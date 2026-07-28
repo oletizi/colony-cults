@@ -5,9 +5,13 @@ The new seam. Everything else reuses shipped modules unchanged. Revised after th
 ## Manifest + browser-profile loaders
 
 ```
-loadCorpusManifest(path): CorpusManifest      // typed; throws on unsupported schemaVersion / malformed / basename != id
-loadBrowserProfile(path): BrowserProfile       // typed; throws on malformed / unknown corpus
+loadCorpusManifest(corporaRoot, id): CorpusManifest   // reads <corporaRoot>/<id>.yml
+                                                      // typed; throws on unsupported schemaVersion / malformed / basename != id
+loadBrowserProfile(corporaRoot, id): BrowserProfile   // reads <corporaRoot>/<id>.browser.yml
+                                                      // typed; throws on malformed / unknown corpus
+listCorpusManifests(corporaRoot): CorpusManifest[]    // enumerates ALL committed manifests under the root (FR-015)
 ```
+`corporaRoot` is an **injected parameter** (FR-016), resolved once at the composition root — `<repoRoot>/corpora` in production, `tests/fixtures/corpora` under test. Manifest and profile share one convention under it. No core module may hardcode it; **SC-003 depends on this**.
 
 ## Selection (composition root)
 
@@ -31,9 +35,25 @@ Each hotspot receives ONLY its policy; never the manifest, never a registry.
 ## Config validator (strict)
 
 ```
-validateCorpora(allCommittedManifests, allProfiles, installedCapabilities, existingSources): Result
+validateCorpora(corporaRoot, sourcesDir, installedCapabilities): Result
+   // enumerates every committed manifest + profile under corporaRoot (FR-015)
+   // and reads existing Sources from sourcesDir for existing-data validation
 ```
 Fail loud, specific message per failure — per-manifest, repository-wide, existing-data, browser-profile/override references, and (at selection) capability subset. **Every committed manifest must validate before any corpus runs.** Surfaced as `bib validate-config` (full) + startup validation (selected corpus + global identity index).
+
+## Archive-layout resolution order (FR-017)
+
+```
+sourceLayout(sourceId):
+  1. policy.overrides.get(sourceId)      // manifest archiveLayoutOverrides (validated, has a reason)
+  2. runtimeLayoutOverlay.get(sourceId)  // registerSourceLayout — members created mid-run; UNCHANGED
+  3. policy.derived.get(sourceId)        // PRECOMPUTED generic derivation (see constraint)
+  4. throw                                // no default (Principle V)
+```
+
+**Constraint that forces precomputation**: `sourceLayout(sourceId)` is sourceId-only and synchronous (reached deep inside the fetcher via `resolveFetchedDir`), while `deriveSourceLayout(source, fallbackCase)` needs a full `Source`. `policy.derived` is therefore built when the policy is constructed at the composition root, where the corpus's Sources are already loaded — never derived lazily inside `sourceLayout`.
+
+**Retained unchanged**: `registerSourceLayout` (including its fail-loud conflict detection), `isSourceLayoutRegistered`, `deriveSourceLayout` — `member-layout.ts` (`ensureMemberLayoutRegistered`) and the acquire pipeline call them. Only the static `SOURCE_LAYOUTS` map is retired.
 
 ## Characterization gate (SOURCE_LAYOUTS retirement)
 
@@ -61,3 +81,5 @@ Compare a **structured** snapshot, not rendered prose: Source/group counts, stat
 - **INV-10**: An archive override referencing an unknown Source (or a path escaping the archive root, or missing a reason) fails validation (FR-007).
 - **INV-11**: A browser profile referencing an unknown corpus, or a duplicate profile id, fails validation (FR-005/008).
 - **INV-12**: Existing-data validation catches a Source whose ID does not conform to its Corpus's policy (unless grandfathered) and a next-allocated ID that would collide (FR-002a).
+- **INV-13**: No core module hardcodes the corpora root — pointing `corporaRoot` at a fixture directory selects and operates a corpus there with zero `src/` edits (FR-016, SC-003).
+- **INV-14**: Layout resolution follows the total order overrides → runtime overlay → precomputed derivation → throw; `registerSourceLayout` still throws on a conflicting re-registration, and `ensureMemberLayoutRegistered` resolves a mid-run member exactly as before (FR-017, SC-001).
