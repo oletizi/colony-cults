@@ -39,6 +39,10 @@ A **composition-time configuration seam** that lets one shared core run varied r
 - **IX. Durable Work** — PASS. Committed + pushed per coherent unit.
 - **X. No Git Hooks** — PASS.
 - **XI. Design Through the Design Skill** — N/A. No UX/UI (the `BrowserProfile` is config, not a UI change); if the browser's *rendering* ever changes it routes through `/frontend-design`.
+- **XII. Respect the Source (Frugal, Polite Access)** — N/A. This feature makes no external source request; it touches only local config, layout derivation, and CLI wiring.
+- **XIII. No Agent Memory, Ever** — PASS. All durable knowledge for this feature lives in the repository (this spec dir, the design record, `corpora/README.md` per T021); no agent-memory store is read or written.
+- **XIV. The Operator Owns Scope** — PASS. Full scope is captured (spec Input: "Full scope, no YAGNI"); no agent-originated cut. The spec-2 deferral (`discoveryMechanism` / `dateNormalizer`, FR-012) is the **operator's recorded epic decision**, not an agent trim. Findings that suggest additional work are surfaced, never silently dropped.
+- **XV. Metadata Integrity (No Orphan Assets)** — N/A. Nothing here retrieves an object or writes an asset to the archive/object store. Archive *paths* are re-derived rather than re-written, under a byte-identical characterization gate (SC-001) with no canonical data migration, so no SSOT record can fall out of sync.
 
 ## Project Structure
 
@@ -55,8 +59,14 @@ specs/018-corpus-config-seam/
 
 ```text
 corpora/
-├── port-breton.yml          # NEW — instance #1 (authored from current constants)
-└── _fixtures/synthetic.yml  # NEW — test-only synthetic second corpus (proof of seam)
+└── port-breton.yml          # NEW — instance #1 (authored from current constants)
+                             #   NOTE: `corpora/` holds ONLY committed, production manifests —
+                             #   every one MUST validate before any corpus runs (FR-015).
+
+tests/fixtures/
+├── corpora/synthetic.yml            # NEW — test-only synthetic second corpus (proof of seam)
+├── browser-profiles/synthetic.yml   # NEW — its browser profile
+└── cases/<second-case>/…            # NEW — its case fixtures
 
 src/
 ├── corpus/                  # NEW — the seam

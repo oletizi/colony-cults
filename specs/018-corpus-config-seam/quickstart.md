@@ -29,11 +29,16 @@ npx tsx src/index.ts bib validate-config # validator over all manifests: pass/fa
 ## Proof 3 — a second corpus, zero core edits (US3 / SC-003 — the load-bearing proof)
 
 ```
-# Add ONLY: corpora/_fixtures/synthetic.yml (different id, case, prefix, browser policy) + a small fixture Source.
+# Add ONLY (under tests/fixtures/, never corpora/ — see FR-015):
+#   tests/fixtures/corpora/synthetic.yml           (different id, case, prefix, browser policy)
+#   tests/fixtures/browser-profiles/synthetic.yml
+#   tests/fixtures/cases/<second-case>/…           (a small fixture Source)
 npx tsx src/index.ts bib coverage --corpus synthetic   # operates on the synthetic corpus
-git diff --stat                                         # touches ONLY corpora/ + fixtures — NO src/ core module
+git diff --stat                                         # touches ONLY tests/fixtures/ — NO src/ core module
 ```
 Expect: scope resolution, ID allocation, archive layout, and browser defaults all use the synthetic corpus's policies; a synthetic ID allocates with its prefix/pad and is globally unique. If any core `src/` module had to change, the constants were relocated, not removed — **fail the feature.**
+
+The synthetic corpus lives under `tests/fixtures/`, **not** `corpora/`: under the strict policy (FR-015) every manifest committed to `corpora/` must validate before any corpus runs, so a test fixture placed there would bind synthetic case ids and source prefixes into the production disjointness namespace.
 
 ## Proof 4 — config validation catches collisions (US4 / SC-005)
 
