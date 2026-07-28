@@ -1,0 +1,11 @@
+schemaVersion: 1
+id: beta
+cases:
+  - beta-case
+sourceIds:
+  prefix: PB-P
+  padWidth: 4
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null

@@ -1,0 +1,14 @@
+schemaVersion: 1
+id: alpha
+cases:
+  - alpha-case
+sourceIds:
+  prefix: AL
+  padWidth: 3
+requiredCapabilities:
+  repositories:
+    - gallica
+    - unobtainium
+  sourceQueries:
+    - nonesuch
+archiveLayoutOverrides: null

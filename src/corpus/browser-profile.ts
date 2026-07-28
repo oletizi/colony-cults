@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, type Dirent } from 'node:fs';
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
@@ -192,4 +192,45 @@ export function tryLoadBrowserProfile(corporaRoot: string, id: string): BrowserP
     return null;
   }
   return loadBrowserProfile(corporaRoot, id);
+}
+
+/**
+ * Enumerate the FILE ids of every committed browser profile under
+ * `corporaRoot`, sorted — i.e. the `<id>` in `<corporaRoot>/<id>.browser.yml`,
+ * suitable for passing straight to {@link loadBrowserProfile}.
+ *
+ * These are FILE ids, NOT the profiles' declared `id` fields: a profile's
+ * `id` is deliberately not tied to its filename (see
+ * {@link validateBrowserProfile}'s note), which is why cross-profile `id`
+ * uniqueness is a repository-wide check owned by `@/corpus/validate` rather
+ * than something the filesystem guarantees.
+ *
+ * This is the single owner of the `<corporaRoot>/<id>.browser.yml` naming
+ * convention. Nothing is loaded here, so the config validator can put each
+ * profile under its own error boundary and report every invalid one in a
+ * single pass (FR-015).
+ *
+ * An empty directory yields `[]`; a missing `corporaRoot` is a hard failure,
+ * never conflated with "zero profiles committed".
+ */
+export function listBrowserProfileIds(corporaRoot: string): string[] {
+  if (!existsSync(corporaRoot)) {
+    throw new Error(`listBrowserProfileIds(${corporaRoot}): directory does not exist`);
+  }
+
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(corporaRoot, { withFileTypes: true });
+  } catch (error) {
+    throw new Error(
+      `listBrowserProfileIds(${corporaRoot}): cannot read directory: ${describeError(error)}`,
+    );
+  }
+
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .filter((name) => name.endsWith(BROWSER_PROFILE_SUFFIX))
+    .map((name) => name.slice(0, -BROWSER_PROFILE_SUFFIX.length))
+    .sort();
 }

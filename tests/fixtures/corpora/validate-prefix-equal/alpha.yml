@@ -1,0 +1,11 @@
+schemaVersion: 1
+id: alpha
+cases:
+  - alpha-case
+sourceIds:
+  prefix: PB-P
+  padWidth: 3
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null

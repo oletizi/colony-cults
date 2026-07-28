@@ -1,0 +1,16 @@
+schemaVersion: 1
+id: beta
+cases:
+  - beta-case
+sourceIds:
+  prefix: BE
+  padWidth: 3
+requiredCapabilities:
+  repositories:
+    - papers-past
+  sourceQueries:
+    - papers-past
+archiveLayoutOverrides:
+  BE001:
+    relativePath: cases/beta-case/BE001/legacy
+    reason: legacy path predates the generic layout rule

@@ -348,18 +348,25 @@ export function loadCorpusManifest(corporaRoot: string, id: string): CorpusManif
 }
 
 /**
- * Enumerate every committed manifest under `corporaRoot` and load/validate
- * each one (FR-015). Browser-profile files (`<id>.browser.yml`) are a
- * distinct artifact sharing the same directory convention and are excluded
- * here — see `@/corpus/browser-profile`.
+ * Enumerate the ids of every committed manifest under `corporaRoot`, sorted,
+ * WITHOUT loading any of them. Browser-profile files (`<id>.browser.yml`)
+ * are a distinct artifact sharing the same directory convention and are
+ * excluded here — see `@/corpus/browser-profile`.
+ *
+ * This is the single owner of the `<corporaRoot>/<id>.yml` naming
+ * convention. It exists separately from {@link listCorpusManifests} because
+ * that function throws on the FIRST invalid manifest, which is the wrong
+ * shape for the config validator: under the strict policy (FR-015) the
+ * validator must report EVERY invalid committed manifest in one pass, so it
+ * enumerates ids here and loads each one under its own error boundary.
  *
  * An empty (or not-yet-created-with-manifests) directory yields `[]`. A
  * missing `corporaRoot` itself is a hard failure — it is not conflated with
  * "zero manifests committed".
  */
-export function listCorpusManifests(corporaRoot: string): CorpusManifest[] {
+export function listCorpusManifestIds(corporaRoot: string): string[] {
   if (!existsSync(corporaRoot)) {
-    throw new Error(`listCorpusManifests(${corporaRoot}): directory does not exist`);
+    throw new Error(`listCorpusManifestIds(${corporaRoot}): directory does not exist`);
   }
 
   let entries: Dirent[];
@@ -367,16 +374,26 @@ export function listCorpusManifests(corporaRoot: string): CorpusManifest[] {
     entries = readdirSync(corporaRoot, { withFileTypes: true });
   } catch (error) {
     throw new Error(
-      `listCorpusManifests(${corporaRoot}): cannot read directory: ${describeError(error)}`,
+      `listCorpusManifestIds(${corporaRoot}): cannot read directory: ${describeError(error)}`,
     );
   }
 
-  const ids = entries
+  return entries
     .filter((entry) => entry.isFile())
     .map((entry) => entry.name)
     .filter((name) => name.endsWith(MANIFEST_SUFFIX) && !name.endsWith(BROWSER_PROFILE_SUFFIX))
     .map((name) => name.slice(0, -MANIFEST_SUFFIX.length))
     .sort();
+}
 
-  return ids.map((id) => loadCorpusManifest(corporaRoot, id));
+/**
+ * Enumerate every committed manifest under `corporaRoot` and load/validate
+ * each one (FR-015), failing loud on the first invalid one.
+ *
+ * An empty (or not-yet-created-with-manifests) directory yields `[]`. A
+ * missing `corporaRoot` itself is a hard failure — it is not conflated with
+ * "zero manifests committed".
+ */
+export function listCorpusManifests(corporaRoot: string): CorpusManifest[] {
+  return listCorpusManifestIds(corporaRoot).map((id) => loadCorpusManifest(corporaRoot, id));
 }

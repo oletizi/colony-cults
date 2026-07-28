@@ -1,0 +1,5 @@
+schemaVersion: 1
+id: alpha-browser
+corpus: alpha
+defaultSources:
+  - AL001
