@@ -179,6 +179,17 @@ export interface CoverageInput {
    * in-memory tests with no thread scopes omit it.
    */
   threadIds?: ReadonlySet<string>;
+  /**
+   * The selected corpus's valid case ids (`CorpusComposition.scope
+   * .validCaseIds`, `@/cli/composition-root`, derived by `@/corpus/policies`'
+   * `deriveScopeContext`), for every `{ kind: 'case' }` search scope. Absent
+   * means NO corpus was injected, i.e. no case id is valid -- a `case`-kind
+   * scope then correctly FAILS to resolve (fail loud, INV-SCOPE), the same
+   * absence contract `threadIds` documents above. The CLI always supplies
+   * this from the composed corpus; only in-memory tests with no case scopes
+   * omit it.
+   */
+  validCaseIds?: ReadonlySet<string>;
 }
 
 /** True for a loaded source that is a source-group (a work-bundle). */
@@ -269,6 +280,7 @@ function resolveSearchScopes(input: CoverageInput): void {
   const ctx: ScopeResolutionContext = {
     sources: input.sources.map((loaded) => loaded.source),
     threadIds: input.threadIds ?? new Set<string>(),
+    validCaseIds: input.validCaseIds ?? new Set<string>(),
   };
   for (const entry of input.searchLog) {
     resolveScopeRef(entry.scope, ctx);

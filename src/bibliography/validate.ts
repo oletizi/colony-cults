@@ -200,22 +200,33 @@ export function validatePublicationManifests(model: CanonicalModel, opts: ViewDr
 }
 
 /**
- * Options for {@link validate}. Both fields are optional and additive: omit
+ * Options for {@link validate}. Every field is optional and additive: omit
  * `repoRoot` to skip the disk-touching view-drift, thread-registry, and
  * search-log-scope checks (model-only callers / tests are unaffected);
  * supplying `repoRoot` alone runs `validateSourceThreads` against the
- * thread registry (`bibliography/scopes.yml`, spec 010 INV-5); supply BOTH
- * `searchLog` (the loaded `bibliography/search-log.yml` entries) AND
- * `repoRoot` to additionally run the search-log scope referential-integrity
- * check (spec 010) -- it needs `repoRoot` to load the SAME thread registry a
+ * thread registry (`bibliography/scopes.yml`, spec 010 INV-5); supply ALL
+ * THREE of `searchLog` (the loaded `bibliography/search-log.yml` entries),
+ * `repoRoot`, AND `validCaseIds` (the selected corpus's valid case ids) to
+ * additionally run the search-log scope referential-integrity check (spec
+ * 010) -- it needs `repoRoot` to load the SAME thread registry a
  * `{kind:'thread'}` scope resolves against, the same way the view-drift
- * check needs it to locate committed views.
+ * check needs it to locate committed views, and `validCaseIds` to resolve
+ * any `{kind:'case'}` scope.
  */
 export interface ValidateOptions {
   /** Public repo root for the view-drift + search-log-scope checks; when absent, both are skipped. */
   repoRoot?: string;
   /** Loaded search-log entries for the scope-resolution check; when absent, that check is skipped. */
   searchLog?: readonly SearchLogEntry[];
+  /**
+   * The selected corpus's valid case ids (`CorpusComposition.scope.validCaseIds`,
+   * `@/cli/composition-root`), for the search-log scope-resolution check's
+   * `{ kind: 'case' }` refs. Required alongside `searchLog`/`repoRoot` to run
+   * that check -- omitting it (like omitting either of the other two) simply
+   * skips the check rather than defaulting to any corpus's ids (FR-004, no
+   * fallback).
+   */
+  validCaseIds?: ReadonlySet<string>;
   /**
    * Committed archive companion records indexed by `object_store.key` (from
    * `archive/**\/*.yml`), for the cross-repo archive-reconciliation checks
@@ -266,8 +277,8 @@ export function validate(model: CanonicalModel, opts?: ValidateOptions): Validat
     const threadIds = threadIdSet(loadScopesRegistry(path.join(opts.repoRoot, 'bibliography', 'scopes.yml')));
     findings.push(...validateSourceThreads(model, threadIds));
   }
-  if (opts?.searchLog !== undefined && opts?.repoRoot !== undefined) {
-    const scopeContext = buildScopeResolutionContext(opts.repoRoot, model.sources);
+  if (opts?.searchLog !== undefined && opts?.repoRoot !== undefined && opts?.validCaseIds !== undefined) {
+    const scopeContext = buildScopeResolutionContext(opts.repoRoot, model.sources, opts.validCaseIds);
     findings.push(...validateSearchLogScopes(opts.searchLog, scopeContext));
   }
   if (opts?.repoRoot !== undefined) {

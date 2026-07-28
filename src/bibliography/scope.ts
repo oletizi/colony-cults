@@ -19,13 +19,6 @@ import type { Source } from '@/model/source';
 export type SourceId = string;
 
 /**
- * The stable case slug for the Port Breton case -- the only case id this build
- * recognizes. A `{ kind: 'case' }` ScopeRef whose id is anything else is
- * rejected loud.
- */
-export const PORT_BRETON_CASE_ID = 'port-breton';
-
-/**
  * True when a Source is a fetchable work (a `monograph`/`periodical`), false
  * when it is a work-bundle container (`kind: 'source-group'`). This is the
  * single predicate every approval/acquisition/counting consumer calls -- never
@@ -58,6 +51,14 @@ export interface ScopeResolutionContext {
   readonly sources: readonly Source[];
   /** The registered thread ids (from `bibliography/scopes.yml`) a `thread` id must be present in. */
   readonly threadIds: ReadonlySet<string>;
+  /**
+   * Every case id the SELECTED corpus declares (its manifest's `cases:`,
+   * derived by `@/corpus/policies`' `deriveScopeContext` and carried on
+   * `CorpusComposition.scope`, `@/cli/composition-root`). A `{ kind: 'case' }`
+   * ScopeRef whose id is not a member of this set is rejected loud (INV-1).
+   * Injected -- this module names no corpus-specific case id itself (FR-004).
+   */
+  readonly validCaseIds: ReadonlySet<string>;
 }
 
 /**
@@ -87,7 +88,7 @@ function requireSource(id: SourceId, kind: ScopeRef['kind'], ctx: ScopeResolutio
  * data-model resolution table, and returns a {@link ResolvedScope} on success.
  * Throws a descriptive Error on any kind/referent mismatch (INV-1):
  *
- * - `case`        -> id MUST equal `port-breton`.
+ * - `case`        -> id MUST be one of `ctx.validCaseIds`.
  * - `thread`      -> id MUST be a registered thread id.
  * - `work-bundle` -> id MUST resolve to a `kind: 'source-group'` Source.
  * - `work`        -> id MUST resolve to a fetchable (non-group) Source.
@@ -95,10 +96,11 @@ function requireSource(id: SourceId, kind: ScopeRef['kind'], ctx: ScopeResolutio
 export function resolveScopeRef(ref: ScopeRef, ctx: ScopeResolutionContext): ResolvedScope {
   switch (ref.kind) {
     case 'case': {
-      if (ref.id !== PORT_BRETON_CASE_ID) {
+      if (!ctx.validCaseIds.has(ref.id)) {
+        const validIds = [...ctx.validCaseIds].sort().join(', ') || '(none configured)';
         throw new Error(
-          `resolveScopeRef: case ref id "${ref.id}" is not the stable case slug ` +
-            `"${PORT_BRETON_CASE_ID}"`,
+          `resolveScopeRef: case ref id "${ref.id}" is not a valid case id for this corpus ` +
+            `(valid ids: ${validIds})`,
         );
       }
       return { ref };

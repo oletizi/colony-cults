@@ -12,7 +12,7 @@ import {
   runPromoteCli,
   runVerifyMemberCli,
 } from '@/cli/bib-sourcegroup';
-import type { CorpusComposition } from '@/cli/composition-root';
+import { requireCorpus, type CorpusComposition } from '@/cli/composition-root';
 import { runCoverageCli } from '@/cli/bib-coverage';
 import { runQuerySourceCli } from '@/cli/bib-query-source';
 import { runRightsAssessCli } from '@/cli/bib-rights-assess';
@@ -330,8 +330,13 @@ function formatFinding(finding: ValidationFinding): string {
  * Exit codes: `0` clean (no findings), `1` findings exist, `2` malformed /
  * unreadable SSOT or search-log (a thrown load error) -- findings themselves
  * never throw.
+ *
+ * `corpus` is the narrow-policy carrier threaded from the composition root
+ * (T009/T011, FR-004): `corpus.scope.validCaseIds` is passed to `validate()`
+ * so the search-log scope check can resolve `{ kind: 'case' }` refs without
+ * this module naming a corpus-specific case id itself.
  */
-async function runValidate(rest: string[]): Promise<number> {
+async function runValidate(rest: string[], corpus: CorpusComposition): Promise<number> {
   let args: BibArgs;
   try {
     args = parseBibArgs(rest);
@@ -367,6 +372,7 @@ async function runValidate(rest: string[]): Promise<number> {
       searchLog,
       archiveCompanions,
       archiveRoot,
+      validCaseIds: corpus.scope.validCaseIds,
     });
   } catch (error) {
     console.error(`bib validate: ${describeError(error)}`);
@@ -503,7 +509,7 @@ export async function runBibliography(
     case 'show':
       return runShow(rest);
     case 'validate':
-      return runValidate(rest);
+      return runValidate(rest, requireCorpus(corpus, 'bib validate'));
     case 'regenerate':
       return runRegenerate(rest);
     case 'inventory':
@@ -521,7 +527,7 @@ export async function runBibliography(
     case 'discover':
       return runDiscoverCli(rest);
     case 'coverage':
-      return runCoverageCli(rest);
+      return runCoverageCli(rest, requireCorpus(corpus, 'bib coverage'));
     case 'rights-assess':
       return runRightsAssessCli(rest);
     case 'query-source':

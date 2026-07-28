@@ -100,7 +100,7 @@ describe('loadSearchLog: accepts a well-formed scope: entry', () => {
 describe('validateSearchLogScopes: fails loud when a scope does not resolve', () => {
   it('reports a finding for { kind: work, id: <a source-group> }', () => {
     const group = makeSource({ sourceId: 'PB-P004', kind: 'source-group' });
-    const ctx: ScopeResolutionContext = { sources: [group], threadIds: new Set() };
+    const ctx: ScopeResolutionContext = { sources: [group], threadIds: new Set(), validCaseIds: new Set() };
     const entries = loadSearchLog(
       writeSearchLog(`
 - id: SRCH-0009
@@ -123,7 +123,7 @@ describe('validateSearchLogScopes: fails loud when a scope does not resolve', ()
 
   it('throws nothing directly -- resolveScopeRef itself throws on the same mismatch', () => {
     const group = makeSource({ sourceId: 'PB-P004', kind: 'source-group' });
-    const ctx: ScopeResolutionContext = { sources: [group], threadIds: new Set() };
+    const ctx: ScopeResolutionContext = { sources: [group], threadIds: new Set(), validCaseIds: new Set() };
     expect(() => resolveScopeRef({ kind: 'work', id: 'PB-P004' }, ctx)).toThrow();
   });
 });
@@ -131,7 +131,7 @@ describe('validateSearchLogScopes: fails loud when a scope does not resolve', ()
 describe('validateSearchLogScopes: passes for the rewritten SRCH-0001 shape', () => {
   it('reports no finding for { kind: work-bundle, id: PB-P004 } against a corpus holding PB-P004 as a source-group', () => {
     const group = makeSource({ sourceId: 'PB-P004', kind: 'source-group' });
-    const ctx: ScopeResolutionContext = { sources: [group], threadIds: new Set() };
+    const ctx: ScopeResolutionContext = { sources: [group], threadIds: new Set(), validCaseIds: new Set() };
     const entries = loadSearchLog(
       writeSearchLog(`
 - id: SRCH-0001

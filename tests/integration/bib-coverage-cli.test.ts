@@ -25,6 +25,14 @@ function repoRoot(): string {
   return path.resolve(__dirname, '..', '..');
 }
 
+/** The real, committed `port-breton` composition -- used to thread `corpus` into every direct `runCoverageCli` call. */
+function portBretonCorpus() {
+  return composeCorpus({
+    corporaRoot: resolveCorporaRoot(repoRoot()),
+    cliCorpus: 'port-breton',
+  });
+}
+
 function gitStatus(): string {
   return execFileSync('git', ['status', '--porcelain'], {
     cwd: repoRoot(),
@@ -47,7 +55,7 @@ describe('bib coverage CLI', () => {
   });
 
   it('prints a non-empty human-readable report and exits 0', async () => {
-    const exitCode = await runCoverageCli([]);
+    const exitCode = await runCoverageCli([], portBretonCorpus());
     expect(exitCode).toBe(0);
     expect(logSpy).toHaveBeenCalledTimes(1);
     const printed = String(logSpy.mock.calls[0]?.[0]);
@@ -56,7 +64,7 @@ describe('bib coverage CLI', () => {
   });
 
   it('prints valid, non-empty JSON with --json and exits 0', async () => {
-    const exitCode = await runCoverageCli(['--json']);
+    const exitCode = await runCoverageCli(['--json'], portBretonCorpus());
     expect(exitCode).toBe(0);
     expect(logSpy).toHaveBeenCalledTimes(1);
     const printed = String(logSpy.mock.calls[0]?.[0]);
@@ -84,14 +92,14 @@ describe('bib coverage CLI', () => {
   });
 
   it('fails loud (exit 2) on an unknown flag, without printing a report', async () => {
-    const exitCode = await runCoverageCli(['--bogus']);
+    const exitCode = await runCoverageCli(['--bogus'], portBretonCorpus());
     expect(exitCode).toBe(2);
     expect(logSpy).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalled();
   });
 
   it('surfaces an explicit unexamined state and never a headline percentage (INV-1/INV-2)', async () => {
-    const exitCode = await runCoverageCli([]);
+    const exitCode = await runCoverageCli([], portBretonCorpus());
     expect(exitCode).toBe(0);
     const printed = String(logSpy.mock.calls[0]?.[0]);
     // The real corpus work-bundle (PB-P004) has no authored knownExtent -> unexamined.
@@ -103,7 +111,7 @@ describe('bib coverage CLI', () => {
   });
 
   it('json carries the same section data with no percentage (INV-1/INV-5)', async () => {
-    const exitCode = await runCoverageCli(['--json']);
+    const exitCode = await runCoverageCli(['--json'], portBretonCorpus());
     expect(exitCode).toBe(0);
     const printed = String(logSpy.mock.calls[0]?.[0]);
     expect(printed).not.toContain('%');
@@ -125,8 +133,8 @@ describe('bib coverage CLI', () => {
 
   it('writes nothing to disk (INV-4: git status unchanged by the run)', async () => {
     const before = gitStatus();
-    await runCoverageCli([]);
-    await runCoverageCli(['--json']);
+    await runCoverageCli([], portBretonCorpus());
+    await runCoverageCli(['--json'], portBretonCorpus());
     const after = gitStatus();
     expect(after).toBe(before);
   });

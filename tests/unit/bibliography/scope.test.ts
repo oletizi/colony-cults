@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   isFetchableWork,
-  PORT_BRETON_CASE_ID,
   resolveScopeRef,
   type ScopeRef,
   type ScopeResolutionContext,
 } from '@/bibliography/scope';
 import type { Source } from '@/model/source';
+
+/** The stable case slug this fixture's context injects as its one valid case id. */
+const PORT_BRETON_CASE_ID = 'port-breton';
 
 /** Minimal well-formed Source fixture; `kind` is the field under test here. */
 function makeSource(sourceId: string, kind: Source['kind']): Source {
@@ -27,6 +29,7 @@ function makeContext(overrides?: Partial<ScopeResolutionContext>): ScopeResoluti
   return {
     sources: overrides?.sources ?? [MONOGRAPH, PERIODICAL, GROUP],
     threadIds: overrides?.threadIds ?? new Set(['de-rays-trial', 'colony-prospectuses']),
+    validCaseIds: overrides?.validCaseIds ?? new Set([PORT_BRETON_CASE_ID]),
   };
 }
 
@@ -107,5 +110,48 @@ describe('resolveScopeRef fail-loud cases (INV-1: kind/referent agreement is che
   it('throws when a work id resolves to no Source at all', () => {
     const ref: ScopeRef = { kind: 'work', id: 'PB-P999' };
     expect(() => resolveScopeRef(ref, makeContext())).toThrow(/PB-P999/);
+  });
+});
+
+/**
+ * T011 (spec 018-corpus-config-seam, FR-004/FR-010): `validCaseIds` is an
+ * INJECTED policy, not a module constant -- these tests exercise a SECOND,
+ * DIFFERENT injected set to prove the case id is genuinely gone from
+ * `scope.ts`, not merely relocated behind a same-shaped default.
+ */
+describe('resolveScopeRef case resolution: validCaseIds is injected, not hardcoded (FR-004)', () => {
+  it('accepts an id that IS in the injected validCaseIds set', () => {
+    const ctx = makeContext({ validCaseIds: new Set(['synthetic-case']) });
+    const ref: ScopeRef = { kind: 'case', id: 'synthetic-case' };
+    const resolved = resolveScopeRef(ref, ctx);
+    expect(resolved.ref).toEqual(ref);
+  });
+
+  it('rejects an id that is NOT in the injected validCaseIds set', () => {
+    const ctx = makeContext({ validCaseIds: new Set(['synthetic-case']) });
+    const ref: ScopeRef = { kind: 'case', id: 'some-other-case' };
+    expect(() => resolveScopeRef(ref, ctx)).toThrow(/some-other-case/);
+  });
+
+  it('a DIFFERENT injected set accepts its own case and rejects port-breton', () => {
+    const ctx = makeContext({ validCaseIds: new Set(['synthetic-case']) });
+    expect(() => resolveScopeRef({ kind: 'case', id: 'synthetic-case' }, ctx)).not.toThrow();
+    expect(() => resolveScopeRef({ kind: 'case', id: PORT_BRETON_CASE_ID }, ctx)).toThrow(
+      /port-breton/,
+    );
+  });
+
+  it('the rejection message names every valid id from the injected set', () => {
+    const ctx = makeContext({ validCaseIds: new Set(['case-b', 'case-a']) });
+    expect(() => resolveScopeRef({ kind: 'case', id: 'unknown-case' }, ctx)).toThrow(
+      /valid ids: case-a, case-b/,
+    );
+  });
+
+  it('names "(none configured)" when the injected set is empty', () => {
+    const ctx = makeContext({ validCaseIds: new Set() });
+    expect(() => resolveScopeRef({ kind: 'case', id: 'anything' }, ctx)).toThrow(
+      /\(none configured\)/,
+    );
   });
 });

@@ -41,17 +41,22 @@ export function loadSearchLogForValidate(repoRoot: string): SearchLogEntry[] {
  * every search-log `scope:` against, from the real corpus under `repoRoot`:
  * `sources` are the already-loaded corpus Sources (the caller's `CanonicalModel
  * .sources`, per `@/bibliography/scope`'s injected-context contract -- this
- * module does no Source loading of its own), and `threadIds` come from
+ * module does no Source loading of its own), `threadIds` come from
  * `bibliography/scopes.yml` (`@/bibliography/scopes-registry`'s
  * `loadScopesRegistry` + `threadIdSet`; a missing/empty registry yields an
- * empty set, per that loader's own fail-loud contract).
+ * empty set, per that loader's own fail-loud contract), and `validCaseIds` is
+ * the injected per-corpus policy (`@/corpus/policies`' `deriveScopeContext`,
+ * carried on `CorpusComposition.scope`) the caller (`runValidate`,
+ * `@/cli/bibliography`) resolved at the composition root -- this module names
+ * no corpus-specific case id itself (FR-004).
  */
 export function buildScopeResolutionContext(
   repoRoot: string,
   sources: readonly Source[],
+  validCaseIds: ReadonlySet<string>,
 ): ScopeResolutionContext {
   const registry = loadScopesRegistry(path.join(repoRoot, 'bibliography', 'scopes.yml'));
-  return { sources, threadIds: threadIdSet(registry) };
+  return { sources, threadIds: threadIdSet(registry), validCaseIds };
 }
 
 /**

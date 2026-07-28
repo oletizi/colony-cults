@@ -2,6 +2,7 @@ import path from 'node:path';
 import { parseArgs as nodeParseArgs } from 'node:util';
 
 import { resolveRepoRoot } from '@/cli/bib-sourcegroup';
+import type { CorpusComposition } from '@/cli/composition-root';
 import { buildCoverageReport } from '@/bibliography/coverage/coverage-model';
 import { renderCoverage } from '@/bibliography/coverage/coverage-render';
 import { loadAllSources } from '@/bibliography/load';
@@ -39,8 +40,13 @@ function parseCoverageArgs(rest: string[]): CoverageArgs {
  * fallback but the loader's own documented "no searches logged yet" case).
  * The builder (`buildCoverageReport`) and renderer (`renderCoverage`) are both
  * pure, so this function performs the only I/O: two reads, zero writes.
+ *
+ * `corpus` is the narrow-policy carrier threaded from the composition root
+ * (T009/T011, FR-004): `corpus.scope.validCaseIds` is the ONLY source this
+ * function consults for a `{ kind: 'case' }` search scope's valid ids -- it
+ * never names a corpus-specific case id itself.
  */
-export async function runCoverageCli(rest: string[]): Promise<number> {
+export async function runCoverageCli(rest: string[], corpus: CorpusComposition): Promise<number> {
   let args: CoverageArgs;
   try {
     args = parseCoverageArgs(rest);
@@ -58,7 +64,12 @@ export async function runCoverageCli(rest: string[]): Promise<number> {
     const sources = loadAllSources(sourcesDir);
     const searchLog = loadSearchLog(searchLogPath);
     const threadIds = threadIdSet(loadScopesRegistry(scopesPath));
-    const report = buildCoverageReport({ sources, searchLog, threadIds });
+    const report = buildCoverageReport({
+      sources,
+      searchLog,
+      threadIds,
+      validCaseIds: corpus.scope.validCaseIds,
+    });
     console.log(renderCoverage(report, { json: args.json }));
     return 0;
   } catch (error) {
