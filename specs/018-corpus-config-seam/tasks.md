@@ -47,7 +47,7 @@ A disciplined refactor + new config layer. **Behavior-preserving for Port Breton
 ## Phase 7: Polish & guards
 
 - [ ] T019 [P] [tier:fast] Guard test: none of the **five** corpus-specific constants remain as literals in core modules (incl. `SOURCE_FILE_PATTERN`, FR-018), **and no core module hardcodes the corpora root** (SC-004, INV-6/13/16).
-- [ ] T020 [P] [tier:fast] Guard test: no spec-2 field (`discoveryMechanism`/`dateNormalizer`) in spec-1 types (INV-8, FR-012).
+- [ ] T020 [P] [tier:fast] Guard test: no spec-2 field (`discoveryMechanism`/`dateNormalizer`) in spec-1 types (INV-8, FR-012). **Also mechanize FR-007's last clause** — an `archiveLayoutOverride` is present ONLY where the generic derivation differs from the characterized legacy output. T013 upheld this by hand (7 of 9 reproduce generically; only PB-P002/PB-P003 needed overrides); it is checkable against the T001 fixture and is currently enforced nowhere.
 - [ ] T021 [P] [tier:balanced] Docs: `corpora/README.md` (manifest + browser profile + overrides + selection + validation + the strict policy). Commit + push per unit.
 
 ## Dependencies & order
