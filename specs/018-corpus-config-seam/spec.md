@@ -2,134 +2,132 @@
 
 **Feature Branch**: `018-corpus-config-seam`
 
-**Created**: 2026-07-27
+**Created**: 2026-07-27 (revised after third-party spec review)
 
 **Status**: Draft
 
-**Input**: Design record `docs/superpowers/specs/2026-07-27-corpus-config-seam-design.md` (revised after third-party review). Spec 1 of the `multi:feature/multi-corpus-generalization` epic. Full scope, no YAGNI.
+**Input**: Design record `docs/superpowers/specs/2026-07-27-corpus-config-seam-design.md`. Spec 1 of the `multi:feature/multi-corpus-generalization` epic. Full scope, no YAGNI.
 
 ## Context
 
-The apparatus was built for a single research corpus (Port Breton). A coupling assessment found it is already ~80% corpus-neutral, with the real single-corpus coupling concentrated in **four localized spots**: the archive `SOURCE_LAYOUTS` map, the bibliography `PORT_BRETON_CASE_ID` constant, the `PB-P` source-ID allocator, and the browser default source list. This feature introduces a **composition-time configuration seam** so the same shared core runs varied research subjects: corpus identity/policy becomes **data** (a validated manifest), selected explicitly and injected as **narrow per-seam policies**. Port Breton becomes the first corpus-instance as a **behavior-preserving extraction** — no data changes, no rewrite, one repository. Domain-specific generalization (a pluggable discovery mechanism + date normalizer for non-French subjects) is **epic spec 2**, deliberately out of scope here.
+The apparatus was built for a single research corpus (Port Breton). A coupling assessment found it is already ~80% corpus-neutral, with the real single-corpus coupling in **four localized spots**: the archive `SOURCE_LAYOUTS` map, the bibliography `PORT_BRETON_CASE_ID` constant, the `PB-P` source-ID allocator, and the browser default source list. This feature introduces a **composition-time configuration seam** so the same shared core runs varied subjects: corpus identity/policy becomes validated **data manifests**, selected explicitly and injected as **narrow per-seam policies**. Port Breton becomes corpus-instance #1 as a **behavior-preserving extraction** — no data changes, no rewrite, one repository. Domain generalization (pluggable discovery + date normalizer) is **epic spec 2**, out of scope here.
+
+Model: `Repository └── Corpus ├── Case └── Source` + identity policies. Three distinct layers: the **corpus manifest** (dataset identity + naming policy), a **BrowserProfile** (deployment defaults), and the **capability registries** (installed repository/query implementations) — kept orthogonal.
+
+## Command scope (normative)
+
+A command is **corpus-dependent** when it reads or mutates canonical corpus data, allocates IDs, resolves scope, computes archive paths, produces coverage, or loads corpus-specific browser defaults — these require an explicitly selected corpus. **Exceptions** (do NOT require a selected corpus): `bib validate-config` (validates all manifests), generic help/version, and repository diagnostics that do not inspect corpus data. Ordinary `bib` commands that do not consume browser defaults do **not** require a `BrowserProfile`; only the browser deploy / browser-default-consuming commands do.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Select the active corpus explicitly (Priority: P1)
 
-An operator selects which corpus a corpus-dependent command operates on, explicitly, with no implicit default. Selection precedence is `--corpus` CLI argument, then `COLONY_CORPUS` environment variable, then fail loud. The corpus is resolved **once** and its policies flow down; commands do not re-derive it from a case operand.
+An operator selects which corpus a corpus-dependent command operates on, explicitly, with no implicit default: `--corpus` → `COLONY_CORPUS` → fail loud. Resolved **once** at the composition root; policies flow down; commands never re-derive it from a case operand.
 
-**Why this priority**: The selection seam is the load-bearing behavior — everything else depends on a single, unambiguous "which corpus is active."
-
-**Independent Test**: Run a corpus-dependent command with `--corpus port-breton`; it operates on Port Breton. Run it with no `--corpus` and no `COLONY_CORPUS`; it fails loud with a descriptive error. Run it with `--corpus does-not-exist`; it fails loud at the load boundary.
+**Independent Test**: `--corpus port-breton` operates on Port Breton; no selection fails loud; unknown corpus fails loud at the load boundary.
 
 **Acceptance Scenarios**:
-
-1. **Given** `--corpus port-breton`, **When** a corpus-dependent command runs, **Then** it operates on that corpus's cases/policies.
-2. **Given** neither `--corpus` nor `COLONY_CORPUS`, **When** a corpus-dependent command runs, **Then** it fails loud (non-zero exit, descriptive message) — **no implicit Port-Breton default**.
-3. **Given** `--corpus` and `COLONY_CORPUS` both set, **When** a command runs, **Then** the CLI argument wins.
+1. **Given** `--corpus port-breton`, **When** a corpus-dependent command runs, **Then** it uses that corpus's cases/policies.
+2. **Given** neither `--corpus` nor `COLONY_CORPUS`, **When** a corpus-dependent command runs, **Then** it fails loud — **no implicit Port-Breton default**.
+3. **Given** both set, **When** a command runs, **Then** the CLI argument wins.
 4. **Given** an unknown corpus id, **When** selected, **Then** it fails loud naming the missing manifest.
+5. **Given** a command in the exceptions list (`bib validate-config`, help/version), **When** run with no selected corpus, **Then** it runs normally.
 
 ---
 
 ### User Story 2 - Port Breton runs unchanged as corpus-instance #1 (Priority: P1)
 
-The existing Port Breton work operates identically after the extraction — its config is authored from the current constants into a manifest, with zero change to data, IDs, archive paths, or coverage output.
+The existing Port Breton work operates identically after the extraction; its manifest is authored from the current constants, with zero change to data, IDs, archive paths, or coverage.
 
-**Why this priority**: The extraction is worthless if it regresses the live corpus. Behavior preservation is the acceptance bar for the whole feature.
-
-**Independent Test**: With `--corpus port-breton`, the full existing test suite + `bib validate` + `bib coverage` produce the same results as before the change; the 9 legacy sources' archive locations are byte-identical.
+**Independent Test**: with `--corpus port-breton`, the suite + `bib validate` + `bib coverage` match pre-change; the 9 legacy archive locations are byte-identical.
 
 **Acceptance Scenarios**:
-
-1. **Given** the Port Breton manifest, **When** every existing Source is loaded/validated, **Then** all validate unchanged and their IDs are unchanged.
-2. **Given** a new Port Breton member is allocated, **When** its ID is generated, **Then** it uses the same prefix + pad width as before.
-3. **Given** the 9 legacy sources, **When** their archive locations are computed through the generic layout, **Then** every path string is **byte-identical** to the pre-change output (verified by a characterization comparison; a validated per-Source override is used only where a path is not generically reproducible).
-4. **Given** the Port Breton corpus, **When** `bib coverage` runs, **Then** its output is semantically identical to before; no canonical data migration was required.
+1. **Given** the Port Breton manifest, **When** every Source loads/validates, **Then** all validate unchanged; IDs unchanged.
+2. **Given** a new member allocation, **When** an ID is generated, **Then** same prefix + pad width.
+3. **Given** the 9 legacy sources, **When** layouts compute through the generic derivation, **Then** every path string is **byte-identical** to the characterized pre-change output (a validated per-`Source` override supplies only a path the generic rule cannot reproduce).
+4. **Given** the Port Breton corpus, **When** `bib coverage` runs, **Then** the **structured coverage snapshot** (§SC-001) is identical; no canonical data migration.
 
 ---
 
 ### User Story 3 - Add a second corpus without touching core code (Priority: P2)
 
-A new corpus is added by authoring a manifest + data, with **no modification to any core implementation module** — proving the corpus-specific constants were removed, not relocated into a Port-Breton loader.
+After the seam is implemented, a new corpus is added as **fixtures only** — a manifest + browser profile + case data under a fixture root — with **no modification to any core implementation module**, proving the constants were removed, not relocated.
 
-**Why this priority**: Port Breton passing alone does not prove a seam; a second corpus does. This is the feature's real success proof.
-
-**Independent Test**: Add a small **synthetic second corpus** (different corpus id, case id, source-ID prefix, and browser-default policy; no real research content) as a manifest + fixture; select it and run corpus-dependent commands successfully — with the diff touching only config/data/fixtures, not core `src/` modules.
+**Independent Test**: a synthetic second corpus lives under `tests/fixtures/corpora/…` (+ browser profile + case fixtures); running the same composition path against it succeeds, and adding it touched only fixtures — enforced by the fixture layout, not git-diff introspection.
 
 **Acceptance Scenarios**:
-
-1. **Given** a synthetic second-corpus manifest + fixture, **When** it is selected, **Then** scope resolution, ID allocation, archive layout, and browser defaults all use *its* policies — with no change to any core module.
-2. **Given** the second corpus, **When** an ID is allocated, **Then** it uses the second corpus's prefix/pad, and the ID is globally unique (its prefix differs from Port Breton's).
+1. **Given** the synthetic-corpus fixtures, **When** selected, **Then** scope resolution, ID allocation, archive layout, and browser defaults all use *its* policies — with no core-module change.
+2. **Given** the second corpus, **When** an ID allocates, **Then** it uses the second corpus's prefix/pad and is globally unique (disjoint prefix namespace).
 
 ---
 
 ### User Story 4 - Validate corpus configuration (Priority: P2)
 
-Corpus manifests are validated as a first-class gate — malformed or colliding config fails at the load boundary, and a command surfaces validation results.
+Corpus manifests, browser profiles, and archive-layout overrides are validated as a first-class gate; malformed/colliding config fails at the load boundary.
 
-**Why this priority**: Multiple manifests introduce collision risk (duplicate corpus ids, prefixes, case ids). Global source-ID uniqueness depends on this gate.
-
-**Independent Test**: Run the config validator against the manifests; a manifest with an unsupported schema version, a duplicate prefix, a zero pad width, or a case-id/prefix that collides with another manifest fails loud with a specific message; the valid set passes.
+**Independent Test**: `bib validate-config` rejects each failure condition with a specific message and accepts the valid set.
 
 **Acceptance Scenarios**:
-
-1. **Given** a manifest with an unsupported `schemaVersion`, **When** validated, **Then** it fails loud.
-2. **Given** two manifests sharing a source-ID prefix (or a case id), **When** validated repository-wide, **Then** the collision fails loud (protecting global source-ID uniqueness).
-3. **Given** a manifest with no cases, or a non-positive/oversized pad width, **When** validated, **Then** it fails loud.
-4. **Given** a selected corpus referencing an unavailable repository capability, **When** startup validation runs, **Then** it fails loud.
+1. **Given** an unsupported `schemaVersion`, **When** validated, **Then** fail loud.
+2. **Given** two manifests whose prefixes collide (equal, or one a prefix of another), **When** validated repo-wide, **Then** fail loud (global source-ID uniqueness).
+3. **Given** no cases, a case id colliding across manifests, or a pad width outside `1..8`, **When** validated, **Then** fail loud.
+4. **Given** a selected corpus whose `requiredCapabilities` are not all installed, **When** startup validation runs, **Then** fail loud.
+5. **Given** a browser profile referencing an unknown corpus, or an archive override referencing an unknown Source, **When** validated, **Then** fail loud.
 
 ### Edge Cases
 
-- A command that operates over the whole corpus (no single case operand) still resolves the corpus explicitly — never by case derivation.
-- A command that creates a new Source before its case is fully materialized still has the corpus in hand (resolved at the composition root).
-- The same case id appearing in two manifests is a validation error (case ids are repository-unique).
-- A legacy archive path that the generic layout cannot reproduce → a validated, data-driven per-`Source` override (never a hardcoded infrastructure map); overrides are exceptional.
-- Dev tooling setting `COLONY_CORPUS=port-breton` is explicit composition, not a code fallback.
+- Whole-corpus commands (no single case operand) still resolve the corpus explicitly.
+- A command creating a Source before its case exists still has the corpus in hand (composition root).
+- The same case id in two manifests is a validation error.
+- A legacy path the generic layout cannot reproduce → a validated per-`Source` override (with a reason), never a hardcoded map.
+- A committed but malformed *unrelated* manifest **blocks all corpora** (strict policy, FR-015); drafts live outside `corpora/` until valid.
+- Dev tooling setting `COLONY_CORPUS=port-breton` is explicit composition, not a fallback.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Corpus identity/policy MUST be expressed as **data** — a manifest at `corpora/<id>.yml` with an explicit `schemaVersion`, loaded by a typed, validating loader. No code-defined corpus instances; no arbitrary module execution as configuration.
-- **FR-002**: The system MUST implement the normative model: a **Corpus contains one or more Cases**; a `Source` belongs to **exactly one** Case; **Case IDs are unique across the repository**; **Source IDs are globally unique across all corpora**, guaranteed by unique per-corpus ID prefixes.
-- **FR-003**: Corpus selection MUST be explicit with precedence `--corpus` → `COLONY_CORPUS` → **fail loud**; it MUST NOT be derived from a case operand; it MUST be resolved **once at the application composition root** and injected downward.
-- **FR-004**: The four coupling points MUST consume **narrow per-seam policies** derived at the composition root — scope resolution gets `{ validCaseIds }`, ID allocation gets `SourceIdPolicy { prefix, padWidth }`, archive layout gets a layout policy, browser defaults get a **separate `BrowserProfile`** — NOT one omnibus corpus object threaded through modules.
-- **FR-005**: `defaultSources` MUST be modeled as **deployment** (a `BrowserProfile`), not corpus identity.
-- **FR-006**: The repository-adapter and source-query **registries MUST remain orthogonal** — a corpus MAY validate that its referenced repositories are a subset of installed capabilities, but MUST NOT own or become the registry (no service locator).
-- **FR-007**: The vestigial `SOURCE_LAYOUTS` map MUST be retired behind a **characterization gate**: enumerate the 9 legacy Source fixtures, record every relevant location output, route them through the generic derivation, and compare **exact strings**. A path that is not generically reproducible MUST fall back to a **validated, data-driven per-`Source` override**, never a hardcoded map.
-- **FR-008**: A **config validator** MUST exist (surfaced as `bib validate-config`, and run at startup for the selected corpus) checking: supported schema version; valid + unique corpus id; ≥1 case; unique case ids within a manifest; valid + unique source-ID prefix; positive bounded pad width; **repository-wide collisions across all manifests**; selected corpus exists and has its required capabilities.
+- **FR-001**: Corpus identity/policy MUST be **data** — a manifest `corpora/<id>.yml` with explicit `schemaVersion`, read by a typed validating loader; **`basename == manifest.id`**. No code-defined instances; no arbitrary module execution.
+- **FR-002**: The system MUST implement the normative model — a **Corpus contains ≥1 Cases**; a `Source` is in **exactly one** Case; **Case IDs unique across the repository** (grammar `^[a-z][a-z0-9-]*$`); **Source IDs globally unique across all corpora**.
+- **FR-002a (ID namespace disjointness)**: Source-ID prefixes MUST match a defined grammar (e.g. `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-$`, ending in a delimiter). **No configured prefix may equal, or be a leading substring of, another configured prefix** (namespaces must be provably disjoint). `padWidth` MUST satisfy `1 ≤ padWidth ≤ 8`. Validation MUST additionally verify against **existing data**: every existing Source ID is globally unique; every Source under a Corpus conforms to that Corpus's ID policy (unless explicitly grandfathered); the next allocated ID cannot collide with any existing ID or another Corpus's namespace.
+- **FR-003**: Corpus selection MUST be explicit — precedence `--corpus` → `COLONY_CORPUS` → **fail loud**; never derived from a case operand; resolved **once at the composition root** and injected downward.
+- **FR-004**: The four coupling points MUST consume **narrow per-seam policies** derived at the composition root — scope resolution `{ validCaseIds: ReadonlySet<string> }`, ID allocation `SourceIdPolicy { prefix, padWidth }`, archive layout a layout policy, browser defaults a **separate `BrowserProfile`** — NOT one omnibus corpus object. Injected policies expose **immutable** collections (`ReadonlySet`/`ReadonlyArray`).
+- **FR-005 (BrowserProfile)**: Browser default sources MUST be **deployment** config, stored as `corpora/<id>.browser.yml` (`schemaVersion`, `id`, `corpus`, `defaultSources`) — one conventional profile per corpus, selected with the corpus (`CORPUS_SOURCES` env override preserved). **A missing BrowserProfile MUST NOT fail non-browser commands**; only browser-deploy / browser-default-consuming commands require one.
+- **FR-006 (required capabilities)**: The manifest MUST declare `requiredCapabilities: { repositories: string[], sourceQueries: string[] }` — **names of** installed capabilities the corpus depends on. This names requirements only; the registries remain orthogonal (the corpus never owns them).
+- **FR-007 (archive-layout overrides)**: When the generic layout cannot reproduce a legacy path, the manifest MUST supply a **data-driven per-`Source` override** — `archiveLayoutOverrides: { <SourceId>: { relativePath, reason } }` (default `null`) — never a hardcoded map. The validator MUST enforce: the Source ID exists and belongs to a Case in that Corpus; the path is relative and cannot escape the archive root; two Sources cannot resolve to the same location; every override carries a `reason`; and an override is present **only** where the generic output differs from the characterized legacy output.
+- **FR-008 (config validator)**: A validator (surfaced as `bib validate-config`; run at startup for the selected corpus) MUST check, per manifest: schema version; corpus-id validity + `basename==id`; ≥1 case; case-id grammar + within-manifest uniqueness; source-ID prefix grammar; pad width `1..8`. And **repository-wide** across ALL committed manifests: unique corpus ids; **prefix disjointness** (FR-002a); unique case ids; existing-data uniqueness/conformance (FR-002a); browser-profile references a known corpus + unique profile ids; archive-override references a known Source. At selection: the corpus exists and its `requiredCapabilities` ⊆ installed capabilities.
 - **FR-009**: A corpus-dependent command with no selected corpus, an unknown corpus, or invalid/colliding config MUST **fail loud** — no fallback, no partial run.
-- **FR-010**: The extraction MUST be **behavior-preserving** for Port Breton: existing Sources validate unchanged, IDs unchanged, new IDs same prefix/pad, all 9 legacy archive locations byte-identical, `bib coverage` semantically identical, repository/source-query dispatch unchanged, **no canonical data migration**.
-- **FR-011**: A **second corpus MUST be addable without modifying any core implementation module** (manifest + data/fixture only).
+- **FR-010**: The extraction MUST be **behavior-preserving** for Port Breton: existing Sources validate unchanged, IDs unchanged, new IDs same prefix/pad, all 9 legacy archive locations byte-identical, the coverage snapshot (SC-001) identical, repository/source-query dispatch unchanged, **no canonical data migration**.
+- **FR-011**: After the seam exists, a **second corpus MUST be addable as fixtures/data only** (manifest + browser profile + case fixtures), with **no core implementation module changed**.
 - **FR-012**: Spec-1 types MUST NOT declare the spec-2 domain fields (`discoveryMechanism`, `dateNormalizer`); domain generalization is epic spec 2.
-- **FR-013**: The system MUST stay in **one repository** on the existing `cases/<case>/` grain — no repository restructure.
+- **FR-013**: The system MUST stay in **one repository** on the `cases/<case>/` grain — no restructure.
+- **FR-014 (command scope)**: The corpus-dependent boundary + its exceptions (§Command scope) MUST be established; the implementation plan MUST carry the command table.
+- **FR-015 (validation policy — strict)**: **Every committed manifest under `corpora/` MUST be valid before any corpus can run** (a malformed committed manifest blocks all corpora); draft/incomplete manifests live outside `corpora/` until valid. `bib validate-config` performs full validation of every manifest.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Corpus manifest** (`corpora/<id>.yml`): `schemaVersion`, `id`, `cases: string[]`, `sourceIds: { prefix, padWidth }`. The selected canonical dataset + config boundary.
-- **Case**: a subject grouping stored on each `Source` (`Source.case`) and used in archive paths; a Source is in exactly one Case.
-- **SourceIdPolicy**: `{ prefix, padWidth }` — the narrow input to the ID allocator.
-- **BrowserProfile**: `{ corpus, defaultSources }` — deployment policy, separate from corpus identity.
-- **ScopeResolutionContext**: carries `{ validCaseIds: ReadonlySet<string> }` (+ existing scope data).
-- **Archive-layout policy**: the generic derivation + optional validated per-`Source` overrides.
-- **Config validator / collision rules**: the repository-wide uniqueness gate.
+- **Corpus manifest** (`corpora/<id>.yml`): `schemaVersion`, `id` (== basename), `cases: string[]`, `sourceIds: { prefix, padWidth }`, `requiredCapabilities: { repositories, sourceQueries }`, `archiveLayoutOverrides: { <SourceId>: { relativePath, reason } } | null`.
+- **BrowserProfile** (`corpora/<id>.browser.yml`): `schemaVersion`, `id`, `corpus`, `defaultSources` — deployment, one per corpus.
+- **Case**: subject grouping on `Source.case` (grammar `^[a-z][a-z0-9-]*$`); a Source is in exactly one Case.
+- **Narrow policies**: `SourceIdPolicy { prefix, padWidth }`; `ScopeResolutionContext { validCaseIds: ReadonlySet<string> }`; archive-layout policy (generic + overrides); `BrowserProfile`.
+- **Config validator / collision index**: the repository-wide uniqueness + prefix-disjointness + existing-data gate.
 - **(Reused, unchanged)**: `Source`, `RepositoryRecord`, `RepositoryAdapterRegistry`, `SourceQueryRegistry`, coverage/search-log.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of existing Port Breton Sources validate unchanged; all 9 legacy archive locations are byte-identical; `bib coverage` output is semantically identical; zero canonical data migrations.
-- **SC-002**: A corpus-dependent command with no selected corpus, an unknown corpus, or invalid/colliding config exits non-zero with a descriptive error, and never runs partially.
-- **SC-003**: A synthetic second corpus (distinct corpus id, case id, source prefix, browser-default policy) is selected and operated successfully, with the change set touching **only** config/data/fixtures — **zero** core `src/` implementation modules modified.
-- **SC-004**: None of the four corpus-specific constants (the `port-breton` `SOURCE_LAYOUTS` entries, `PORT_BRETON_CASE_ID`, the `PB-P` allocator literal, the browser default source list) remain as literals in core modules; each seam reads an injected policy.
-- **SC-005**: The config validator rejects every malformed/colliding manifest condition enumerated in FR-008 with a specific message, and accepts the valid set — deterministically.
+- **SC-001**: 100% of existing Port Breton Sources validate unchanged; all 9 legacy archive locations byte-identical; the **structured coverage snapshot** is identical — comparing Source/group **counts, statuses, unresolved leads, extent reporting, repository holdings, ordering, and generated identifiers/links** (normalizing only an added selected-corpus label, if introduced); zero canonical data migrations.
+- **SC-002**: A corpus-dependent command with no/unknown/invalid corpus exits non-zero with a descriptive error and never runs partially; exception commands run without a selected corpus.
+- **SC-003**: A synthetic second corpus, added as **fixtures only** (`tests/fixtures/corpora/…` + browser profile + case fixtures), is selected and operated successfully through the same composition path — with **zero** core `src/` implementation modules modified when adding it.
+- **SC-004**: None of the four corpus-specific constants remain as literals in core modules; each seam reads an injected policy.
+- **SC-005**: The validator deterministically rejects every FR-008 / FR-002a / FR-007 failure condition with a specific message and accepts the valid set.
 
 ## Assumptions
 
-- One repository, `cases/<case>/` grain; **no** restructure (a later packaging split remains possible but is out of scope).
-- Port Breton is corpus-instance #1, a behavior-preserving extraction; its manifest is authored faithfully from the current constants.
-- Repository adapters and source-query configs self-register as installed capabilities; a corpus references a subset. The corpus never owns the registry.
-- Domain-specific generalization (pluggable discovery mechanism + date normalizer) is **epic spec 2**, triggered by the first non-French subject; its fields are deliberately absent here.
-- Dev tooling MAY set `COLONY_CORPUS=port-breton` for convenience — that is explicit composition, not a code fallback.
-- Global source-ID uniqueness is preserved because bare references (e.g. `PB-P061`) must stay unambiguous; corpus-relative uniqueness is explicitly rejected.
+- One repository, `cases/<case>/` grain; no restructure (later packaging split possible, out of scope).
+- Port Breton is corpus-instance #1, a behavior-preserving extraction authored from the current constants.
+- Registries self-register installed capabilities; the manifest **names** required capabilities (Model A) but never owns the registry.
+- **Strict validation policy** for committed manifests (FR-015); drafts live outside `corpora/`.
+- Domain generalization (discovery mechanism + date normalizer) is epic spec 2 — its fields deliberately absent.
+- Global source-ID uniqueness is preserved via disjoint prefix namespaces (FR-002a) + existing-data validation; corpus-relative uniqueness is rejected (bare references like `PB-P061` must stay unambiguous).
