@@ -1,0 +1,125 @@
+- paragraph: Top of page
+- banner:
+  - link "Skip to main content":
+    - /url: "#skip-to-content"
+  - link "Library of Congress":
+    - /url: /
+  - text: Search
+  - search "Global":
+    - combobox "Filter search by":
+      - option "Everything" [selected]
+      - option "Audio Recordings"
+      - option "Books/Printed Material"
+      - option "Films, Videos"
+      - option "Legislation"
+      - option "Manuscripts/Mixed Material"
+      - option "Maps"
+      - option "Notated Music"
+      - option "Newspapers"
+      - option "Periodicals"
+      - option "Personal Narratives"
+      - option "Photos, Prints, Drawings"
+      - option "Software, E-Resources"
+      - option "Web Archives"
+      - option "Web Pages"
+      - option "3D Objects"
+    - searchbox "Search"
+    - status: Suggestions enabled.
+    - button "Search "
+  - navigation "menu ":
+    - button "menu "
+- navigation " Share":
+  - button " Share"
+- heading "Sorry! We can't find what you're looking for." [level=1]
+- paragraph:
+  - text: The page you requested could not be found. If you've discovered a broken link please
+  - link "report it to us":
+    - /url: https://ask.loc.gov/comments-feedback/
+  - text: .
+- figure "MAYFLOWER, U.S.S. SAILOR LOOKING THROUGH TELESCOPE ON MAYFLOWER (1918) Harris & Ewing, photographer":
+  - img
+  - strong: MAYFLOWER, U.S.S. SAILOR LOOKING THROUGH TELESCOPE ON MAYFLOWER (1918)
+  - text: Harris & Ewing, photographer
+- contentinfo:
+  - link "Follow Us":
+    - /url: /connect/
+  - list:
+    - listitem:
+      - link "Library of Congress Facebook":
+        - /url: https://www.facebook.com/libraryofcongress/
+        - img "Library of Congress Facebook"
+    - listitem:
+      - link "Library of Congress X":
+        - /url: https://x.com/librarycongress
+        - img "Library of Congress X"
+    - listitem:
+      - link "Library of Congress Youtube":
+        - /url: https://www.youtube.com/libraryofcongress/
+        - img "Library of Congress Youtube"
+    - listitem:
+      - link "Library of Congress Pinterest":
+        - /url: https://www.pinterest.com/LibraryCongress/
+        - img "Library of Congress Pinterest"
+    - listitem:
+      - link "Library of Congress Flickr":
+        - /url: https://www.flickr.com/photos/library_of_congress/
+        - img "Library of Congress Flickr"
+    - listitem:
+      - link "Library of Congress Instagram":
+        - /url: https://instagram.com/librarycongress/
+        - img "Library of Congress Instagram"
+    - listitem:
+      - link "Library of Congress iTunesU":
+        - /url: https://itunes.apple.com/us/artist/library-of-congress/id1280713133?mt=2
+        - img "Library of Congress iTunesU"
+    - listitem:
+      - link "Library of Congress LinkedIn":
+        - /url: https://www.linkedin.com/company/library-of-congress
+        - img "Library of Congress LinkedIn"
+    - listitem:
+      - link "Email":
+        - /url: https://loc.gov/subscribe/
+        - img "Email"
+    - listitem:
+      - link "Take our survey  External":
+        - /url: https://www.research.net/r/libraryofcongress
+  - list:
+    - listitem:
+      - link "Accessibility":
+        - /url: /accessibility/
+    - listitem:
+      - link "Legal":
+        - /url: /legal/
+    - listitem:
+      - link "Inspector General":
+        - /url: /about/office-of-the-inspector-general/
+    - listitem:
+      - link "External Link Disclaimer":
+        - /url: /legal/standard-disclaimer-for-external-links/
+    - listitem:
+      - link "USA.gov":
+        - /url: https:////www.usa.gov/
+    - listitem:
+      - link "Careers":
+        - /url: /careers/
+    - listitem:
+      - link "Contact":
+        - /url: /contact/
+    - listitem:
+      - link "Media":
+        - /url: https://newsroom.loc.gov
+    - listitem:
+      - link "Donate":
+        - /url: /programs/support-the-library-of-congress/
+    - listitem:
+      - link "Shop":
+        - /url: https://library-of-congress-shop.myshopify.com/
+  - list:
+    - listitem:
+      - link "Congress.gov":
+        - /url: https://www.congress.gov/
+        - img "Congress.gov"
+    - listitem:
+      - link "United States Copyright Office":
+        - /url: https://copyright.gov
+        - img "United States Copyright Office"

@@ -42,6 +42,11 @@ import { chromium } from 'playwright';
 import { defaultBrowserProfileDir } from '@/sourcequery/browser-profile';
 import type { BrowserSession } from '@/sourcequery/browser-session';
 import type { PageResult } from '@/sourcequery/types';
+import { realClock, realSleep, type Clock, type Sleep } from '@/sourcequery/clock';
+import {
+  looksLikeCloudflareChallenge,
+  cloudflareChallengeCleared,
+} from '@/sourcequery/cloudflare-challenge';
 
 /** Minimal subset of Playwright's `Response` this module reads. */
 export interface InjectedGotoResponse {
@@ -89,11 +94,24 @@ export interface PlaywrightBrowserSessionOptions {
   headless?: boolean | 'new';
   /** Injected launch function (default: the real `chromium.launchPersistentContext`). */
   launch?: LaunchFn;
+  /** Monotonic clock for the challenge settle loop (default: `realClock`). */
+  clock?: Clock;
+  /** Sleep for the challenge settle loop (default: `realSleep`). */
+  sleep?: Sleep;
+  /** Max wall-clock to dwell on a Cloudflare challenge before giving up (default 20000). */
+  maxSettleMs?: number;
+  /** Poll interval while dwelling on a Cloudflare challenge (default 500). */
+  pollIntervalMs?: number;
 }
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
+
+/** Default max wall-clock dwell on a Cloudflare managed challenge. */
+const DEFAULT_MAX_SETTLE_MS = 20000;
+/** Default poll interval while dwelling on a Cloudflare managed challenge. */
+const DEFAULT_POLL_INTERVAL_MS = 500;
 
 // The default persistent-profile dir (stable across runs, under the OS tmp dir)
 // is defined once in `@/sourcequery/browser-profile` so diagnostics elsewhere
@@ -124,6 +142,10 @@ export class PlaywrightBrowserSession implements BrowserSession {
   private readonly userDataDir: string;
   private readonly forcedHeadless: boolean | 'new' | undefined;
   private readonly launch: LaunchFn;
+  private readonly clock: Clock;
+  private readonly sleep: Sleep;
+  private readonly maxSettleMs: number;
+  private readonly pollIntervalMs: number;
   private context: InjectedContext | undefined;
   private page: InjectedPage | undefined;
 
@@ -131,6 +153,10 @@ export class PlaywrightBrowserSession implements BrowserSession {
     this.userDataDir = options.userDataDir ?? defaultBrowserProfileDir();
     this.forcedHeadless = options.headless;
     this.launch = options.launch ?? realLaunch;
+    this.clock = options.clock ?? realClock;
+    this.sleep = options.sleep ?? realSleep;
+    this.maxSettleMs = options.maxSettleMs ?? DEFAULT_MAX_SETTLE_MS;
+    this.pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
   }
 
   /**
@@ -178,19 +204,54 @@ export class PlaywrightBrowserSession implements BrowserSession {
         'PlaywrightBrowserSession: navigate() called before a successful open()',
       );
     }
+    // Local const so TS keeps the non-undefined narrowing across awaits and the
+    // private helper (no non-null assertions — Global Constraints).
+    const page = this.page;
     try {
-      const response = await this.page.goto(url, { waitUntil: 'domcontentloaded' });
-      const html = await this.page.content();
-      const snapshotMarkdown = await this.page.ariaSnapshot();
-      return {
-        status: response === null ? null : response.status(),
-        html,
-        snapshotMarkdown,
-        errored: false,
-      };
+      const response = await page.goto(url, { waitUntil: 'domcontentloaded' });
+      let status = response === null ? null : response.status();
+      let html = await page.content();
+
+      // Cloudflare managed challenge: dwell until it self-clears, then re-goto
+      // ONCE for an honest post-challenge status (the cf_clearance cookie is now
+      // set). A challenge that never clears falls through with its original 403
+      // so the client hard-blocks exactly as before (honest stop).
+      if (looksLikeCloudflareChallenge(html, status)) {
+        html = await this.settleCloudflareChallenge(page, html);
+        if (cloudflareChallengeCleared(html)) {
+          const reload = await page.goto(url, { waitUntil: 'domcontentloaded' });
+          status = reload === null ? null : reload.status();
+          html = await page.content();
+        }
+      }
+
+      const snapshotMarkdown = await page.ariaSnapshot();
+      return { status, html, snapshotMarkdown, errored: false };
     } catch {
       return { status: null, html: '', snapshotMarkdown: '', errored: true };
     }
+  }
+
+  /**
+   * Dwell on a Cloudflare managed-challenge interstitial, polling the page
+   * content every `pollIntervalMs` until the challenge clears (the managed
+   * challenge self-solves and auto-reloads to real content) or `maxSettleMs`
+   * of wall-clock elapses. Returns the final HTML — the cleared page on
+   * success, or the still-challenged interstitial on timeout (the caller then
+   * reports an honest block). Uses the injected clock/sleep so tests never
+   * wait real time.
+   */
+  private async settleCloudflareChallenge(
+    page: InjectedPage,
+    initialHtml: string,
+  ): Promise<string> {
+    let html = initialHtml;
+    const deadline = this.clock() + this.maxSettleMs;
+    while (!cloudflareChallengeCleared(html) && this.clock() < deadline) {
+      await this.sleep(this.pollIntervalMs);
+      html = await page.content();
+    }
+    return html;
   }
 
   /**
