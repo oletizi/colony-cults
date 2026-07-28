@@ -1,0 +1,10 @@
+schemaVersion: 1
+id: port-breton
+cases: [port-breton]
+sourceIds:
+  - { prefix: PB-P, padWidth: 3, allocatable: true }    # 92 primary sources, machine-allocated (src/sourcegroup/id-alloc.ts)
+  - { prefix: PB-S, padWidth: 3, allocatable: false }   # PB-S001/PB-S002, hand-authored secondary works
+requiredCapabilities:
+  repositories: [gallica, new-italy-museum, internet-archive, papers-past]
+  sourceQueries: [papers-past, papers-past-article]
+archiveLayoutOverrides: null   # pending the characterization gate (T013)
