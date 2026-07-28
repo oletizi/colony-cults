@@ -17,7 +17,7 @@ describe('loadCorpusManifest', () => {
       schemaVersion: 1,
       id: 'valid',
       cases: ['alpha-case'],
-      sourceIds: { prefix: 'AL', padWidth: 3 },
+      sourceIds: [{ prefix: 'AL', padWidth: 3, allocatable: true }],
       requiredCapabilities: { repositories: ['gallica'], sourceQueries: [] },
       archiveLayoutOverrides: null,
     });
@@ -38,7 +38,7 @@ describe('loadCorpusManifest', () => {
     const manifest = loadCorpusManifest(ARBITRARY_ROOT, 'zzz-custom');
 
     expect(manifest.id).toBe('zzz-custom');
-    expect(manifest.sourceIds).toEqual({ prefix: 'ZZ', padWidth: 5 });
+    expect(manifest.sourceIds).toEqual([{ prefix: 'ZZ', padWidth: 5, allocatable: true }]);
   });
 
   it('rejects an unsupported schemaVersion', () => {
@@ -77,36 +77,36 @@ describe('loadCorpusManifest', () => {
 
   it('rejects a bad source-id prefix (lowercase start)', () => {
     expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'bad-prefix')).toThrow(
-      /"sourceIds\.prefix".*must match/,
+      /"sourceIds\[0\]"\.prefix.*must match/,
     );
   });
 
   it('rejects a bad source-id prefix (leading digit)', () => {
     expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'bad-prefix-leading-digit')).toThrow(
-      /"sourceIds\.prefix".*must match/,
+      /"sourceIds\[0\]"\.prefix.*must match/,
     );
   });
 
   it('rejects a bad source-id prefix (illegal character)', () => {
     expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'bad-prefix-illegal-char')).toThrow(
-      /"sourceIds\.prefix".*must match/,
+      /"sourceIds\[0\]"\.prefix.*must match/,
     );
   });
 
   it('rejects a bad source-id prefix (empty string)', () => {
     expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'bad-prefix-empty')).toThrow(
-      /"sourceIds\.prefix".*must match/,
+      /"sourceIds\[0\]"\.prefix.*must match/,
     );
   });
 
   it('accepts the shipped Port Breton prefix "PB-P" with no trailing delimiter (regression guard, FR-002a)', () => {
     const manifest = loadCorpusManifest(MANIFEST_CASES_ROOT, 'shipped-prefix');
-    expect(manifest.sourceIds).toEqual({ prefix: 'PB-P', padWidth: 3 });
+    expect(manifest.sourceIds).toEqual([{ prefix: 'PB-P', padWidth: 3, allocatable: true }]);
   });
 
   it('rejects a padWidth outside 1..8', () => {
     expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'bad-padwidth')).toThrow(
-      /"sourceIds\.padWidth".*must be an integer between 1 and 8/,
+      /"sourceIds\[0\]"\.padWidth.*must be an integer between 1 and 8/,
     );
   });
 
@@ -132,6 +132,53 @@ describe('loadCorpusManifest', () => {
     const manifest = loadCorpusManifest(MANIFEST_CASES_ROOT, 'valid');
     expect(manifest).not.toHaveProperty('discoveryMechanism');
     expect(manifest).not.toHaveProperty('dateNormalizer');
+  });
+});
+
+describe('loadCorpusManifest — multiple source-ID policies (FR-002b, INV-15)', () => {
+  it('accepts a corpus declaring TWO policies, one allocatable (the Port Breton shape)', () => {
+    const manifest = loadCorpusManifest(MANIFEST_CASES_ROOT, 'two-policies');
+
+    expect(manifest.sourceIds).toEqual([
+      { prefix: 'PB-P', padWidth: 3, allocatable: true },
+      { prefix: 'PB-S', padWidth: 3, allocatable: false },
+    ]);
+  });
+
+  it('rejects an EMPTY sourceIds list', () => {
+    expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'empty-source-ids')).toThrow(
+      /"sourceIds" must declare at least one ID policy/,
+    );
+  });
+
+  it('rejects ZERO allocatable policies', () => {
+    expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'zero-allocatable')).toThrow(
+      /"sourceIds" declares 0 policies with "allocatable: true".*EXACTLY ONE/s,
+    );
+  });
+
+  it('rejects TWO allocatable policies', () => {
+    expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'two-allocatable')).toThrow(
+      /"sourceIds" declares 2 policies with "allocatable: true".*EXACTLY ONE/s,
+    );
+  });
+
+  it('names the offending prefixes when the allocatable count is wrong', () => {
+    expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'two-allocatable')).toThrow(
+      /"AL-P", "AL-S"/,
+    );
+  });
+
+  it('rejects a policy entry with no "allocatable" field (no defaulting)', () => {
+    expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'missing-allocatable')).toThrow(
+      /"sourceIds\[0\]"\.allocatable undefined must be a boolean/,
+    );
+  });
+
+  it('rejects the RETIRED singular object shape rather than coercing it', () => {
+    expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'source-ids-retired-object')).toThrow(
+      /"sourceIds" must be a non-empty list.*retired schema shape/s,
+    );
   });
 });
 

@@ -1,8 +1,9 @@
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import type { CorpusManifest } from '@/corpus/manifest';
+import { loadCorpusManifest, type CorpusManifest } from '@/corpus/manifest';
 import { readSourceIdentityIndex } from '@/corpus/source-index';
+import { validateExistingData } from '@/corpus/validate-existing-data';
 import { validateRepositoryWide } from '@/corpus/validate-repository';
 import {
   validateCapabilitySubset,
@@ -117,7 +118,7 @@ describe('validateCorpora — repository-wide rules (INV-7, INV-11)', () => {
       schemaVersion: 1,
       id: 'alpha',
       cases: [`case-${prefix.toLowerCase()}`],
-      sourceIds: { prefix, padWidth: 3 },
+      sourceIds: [{ prefix, padWidth: 3, allocatable: true }],
       requiredCapabilities: { repositories: [], sourceQueries: [] },
       archiveLayoutOverrides: null,
     });
@@ -276,6 +277,108 @@ describe('validateCorpora — existing data (INV-12, FR-002a)', () => {
   });
 });
 
+describe('validateCorpora — multiple ID policies per corpus (FR-002b, INV-15)', () => {
+  it('accepts a corpus whose Sources conform via the SECOND, non-allocatable policy', () => {
+    const result = validateCorpora(
+      join(CORPORA, 'validate-second-policy'),
+      join(SOURCES, 'validate-second-policy'),
+      INSTALLED,
+    );
+
+    expect(result.findings).toEqual([]);
+    expect(result.ok).toBe(true);
+  });
+
+  it('rejects TWO prefixes within ONE corpus that are not disjoint', () => {
+    const result = validateCorpora(
+      join(CORPORA, 'validate-intra-corpus-prefix'),
+      join(SOURCES, 'empty'),
+      INSTALLED,
+    );
+
+    const finding = findingFor(result, 'prefix-not-disjoint');
+    expect(finding.message).toContain('PB-P');
+    expect(finding.message).toContain('PB-PX');
+    expect(finding.message).toMatch(/leading substring/i);
+    expect(finding.message).toContain('alpha');
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects an empty sourceIds list (delegated to the manifest loader)', () => {
+    const manifests = [
+      { id: 'empty-source-ids', file: 'empty-source-ids', match: /at least one ID policy/ },
+      { id: 'zero-allocatable', file: 'zero-allocatable', match: /declares 0 policies/ },
+      { id: 'two-allocatable', file: 'two-allocatable', match: /declares 2 policies/ },
+    ];
+
+    for (const { file, match } of manifests) {
+      expect(() => loadCorpusManifest(join(CORPORA, 'manifest-cases'), file)).toThrow(match);
+    }
+  });
+
+  it('names every policy that was tried in a source-id-nonconforming message', () => {
+    const result = validateCorpora(
+      join(CORPORA, 'validate-existing-data'),
+      join(SOURCES, 'validate-nonconforming'),
+      INSTALLED,
+    );
+
+    const finding = findingFor(result, 'source-id-nonconforming', 'AL0099');
+    expect(finding.message).toMatch(/conforms to NONE/);
+    expect(finding.message).toMatch(/all of which were tried/);
+    expect(finding.message).toContain('prefix "AL" + padWidth 3 (allocatable) (e.g. AL001)');
+  });
+
+  it('draws the next allocated ID from the ALLOCATABLE policy only', () => {
+    const manifest: CorpusManifest = {
+      schemaVersion: 1,
+      id: 'alpha',
+      cases: ['alpha-case'],
+      sourceIds: [
+        { prefix: 'AL-P', padWidth: 3, allocatable: true },
+        { prefix: 'AL-S', padWidth: 3, allocatable: false },
+      ],
+      requiredCapabilities: { repositories: [], sourceQueries: [] },
+      archiveLayoutOverrides: null,
+    };
+
+    // AL-S009 carries the highest numeric suffix in the corpus, but it sits
+    // in the NON-allocatable namespace. Drawing from the allocatable policy
+    // gives max=2 -> next id AL-P003, which is already taken (by a Source in
+    // a case this corpus does not own) and must be reported. Drawing from
+    // AL-S would give AL-S010 / AL-P010 and miss the collision entirely.
+    const findings = validateExistingData([manifest], {
+      entries: [
+        { sourceId: 'AL-P001', caseId: 'alpha-case', filePath: '/fixture/AL-P001.yml' },
+        { sourceId: 'AL-P002', caseId: 'alpha-case', filePath: '/fixture/AL-P002.yml' },
+        { sourceId: 'AL-S009', caseId: 'alpha-case', filePath: '/fixture/AL-S009.yml' },
+        { sourceId: 'AL-P003', caseId: 'elsewhere-case', filePath: '/fixture/AL-P003.yml' },
+      ],
+      problems: [],
+    });
+
+    const collision = findings.find((f) => f.rule === 'next-source-id-collision');
+    expect(collision).toBeDefined();
+    expect(collision?.message).toContain('AL-P003');
+    expect(collision?.message).not.toContain('AL-S');
+  });
+
+  it('throws rather than guessing when a hand-built manifest has no allocatable policy', () => {
+    const manifest: CorpusManifest = {
+      schemaVersion: 1,
+      id: 'alpha',
+      cases: ['alpha-case'],
+      sourceIds: [{ prefix: 'AL', padWidth: 3, allocatable: false }],
+      requiredCapabilities: { repositories: [], sourceQueries: [] },
+      archiveLayoutOverrides: null,
+    };
+
+    expect(() => validateExistingData([manifest], { entries: [], problems: [] })).toThrow(
+      /declares 0 allocatable source-ID policies/,
+    );
+  });
+});
+
 describe('validateCorpora — capability subset (INV-9, FR-008)', () => {
   it('rejects requiredCapabilities that are not a subset of installed', () => {
     const result = validateCorpora(
@@ -297,7 +400,7 @@ describe('validateCorpora — capability subset (INV-9, FR-008)', () => {
       schemaVersion: 1,
       id: 'alpha',
       cases: ['alpha-case'],
-      sourceIds: { prefix: 'AL', padWidth: 3 },
+      sourceIds: [{ prefix: 'AL', padWidth: 3, allocatable: true }],
       requiredCapabilities: { repositories: ['gallica'], sourceQueries: ['missing-query'] },
       archiveLayoutOverrides: null,
     };

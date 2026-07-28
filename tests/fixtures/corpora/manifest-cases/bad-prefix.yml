@@ -3,8 +3,9 @@ id: bad-prefix
 cases:
   - alpha-case
 sourceIds:
-  prefix: al-
-  padWidth: 3
+  - prefix: al-
+    padWidth: 3
+    allocatable: true
 requiredCapabilities:
   repositories: []
   sourceQueries: []

@@ -1,9 +1,12 @@
 schemaVersion: 1
-id: beta
+id: two-allocatable
 cases:
-  - beta-case
+  - alpha-case
 sourceIds:
-  - prefix: BE
+  - prefix: AL-P
+    padWidth: 3
+    allocatable: true
+  - prefix: AL-S
     padWidth: 3
     allocatable: true
 requiredCapabilities:

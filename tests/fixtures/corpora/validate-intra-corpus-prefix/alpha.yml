@@ -1,11 +1,14 @@
 schemaVersion: 1
-id: beta
+id: alpha
 cases:
-  - beta-case
+  - alpha-case
 sourceIds:
-  - prefix: BE
+  - prefix: PB-P
     padWidth: 3
     allocatable: true
+  - prefix: PB-PX
+    padWidth: 3
+    allocatable: false
 requiredCapabilities:
   repositories: []
   sourceQueries: []

@@ -1,4 +1,4 @@
 schemaVersion: 1
 id: malformed
 cases: [alpha-case
-sourceIds: { prefix: AL-, padWidth: 3 }
+sourceIds: [{ prefix: AL-, padWidth: 3, allocatable: true }]

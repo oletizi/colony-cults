@@ -3,8 +3,9 @@ id: alpha
 cases:
   - alpha-case
 sourceIds:
-  prefix: AL
-  padWidth: 3
+  - prefix: AL
+    padWidth: 3
+    allocatable: true
 requiredCapabilities:
   repositories: []
   sourceQueries: []

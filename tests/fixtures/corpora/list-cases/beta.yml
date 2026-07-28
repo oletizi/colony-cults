@@ -3,8 +3,9 @@ id: beta
 cases:
   - beta-case
 sourceIds:
-  prefix: BE
-  padWidth: 4
+  - prefix: BE
+    padWidth: 4
+    allocatable: true
 requiredCapabilities:
   repositories: []
   sourceQueries: []

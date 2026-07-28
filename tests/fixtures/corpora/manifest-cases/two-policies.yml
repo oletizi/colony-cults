@@ -1,11 +1,14 @@
 schemaVersion: 1
-id: beta
+id: two-policies
 cases:
-  - beta-case
+  - alpha-case
 sourceIds:
-  - prefix: BE
+  - prefix: PB-P
     padWidth: 3
     allocatable: true
+  - prefix: PB-S
+    padWidth: 3
+    allocatable: false
 requiredCapabilities:
   repositories: []
   sourceQueries: []

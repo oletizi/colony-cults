@@ -2,8 +2,9 @@ schemaVersion: 1
 id: zero-cases
 cases: []
 sourceIds:
-  prefix: AL
-  padWidth: 3
+  - prefix: AL
+    padWidth: 3
+    allocatable: true
 requiredCapabilities:
   repositories: []
   sourceQueries: []

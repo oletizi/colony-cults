@@ -3,6 +3,16 @@ import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
 import { describeError } from '@/bibliography/load-primitives';
+import {
+  assertKnownKeys,
+  fail,
+  isPlainObject,
+  requireStringArray,
+} from '@/corpus/manifest-primitives';
+import {
+  validateSourceIdPolicies,
+  type CorpusSourceIdPolicy,
+} from '@/corpus/manifest-source-ids';
 
 /**
  * Corpus config seam — the `CorpusManifest` type + a typed validating
@@ -19,11 +29,16 @@ import { describeError } from '@/bibliography/load-primitives';
  *
  * SCOPE: this module validates the STRUCTURE/TYPES of a single manifest
  * during load (schema version, id/basename match, case-id grammar,
- * source-id prefix grammar, pad width range, within-manifest case-id
- * uniqueness). It deliberately does NOT implement repository-wide
- * validation (cross-manifest unique corpus ids, prefix disjointness,
- * existing-data checks against `sourcesDir`) — that is `@/corpus/validate`
- * (T005).
+ * source-id prefix grammar, pad width range, exactly-one-allocatable-policy,
+ * within-manifest case-id uniqueness). It deliberately does NOT implement
+ * repository-wide validation (cross-manifest unique corpus ids, prefix
+ * disjointness, existing-data checks against `sourcesDir`) — that is
+ * `@/corpus/validate` (T005).
+ *
+ * The `sourceIds` rules live in `@/corpus/manifest-source-ids` and the shape
+ * primitives both modules share in `@/corpus/manifest-primitives`; FR-002b
+ * (a non-empty LIST of policies with a cross-entry invariant) is enough rule
+ * surface that keeping it inline would push this file past the size limit.
  *
  * Does NOT declare the epic-spec-2 fields `discoveryMechanism` /
  * `dateNormalizer` (FR-012) — their absence is asserted by a later guard
@@ -33,18 +48,7 @@ import { describeError } from '@/bibliography/load-primitives';
 /** The only schema version this loader accepts. */
 export const CORPUS_MANIFEST_SCHEMA_VERSION = 1;
 
-/** `sourceIds` policy: how member Source IDs are allocated for this corpus. */
-export interface CorpusSourceIdPolicy {
-  /**
-   * The literal prefix every allocated Source ID under this corpus starts
-   * with. Grammar: `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$` (no trailing
-   * delimiter required -- e.g. the shipped Port Breton prefix `PB-P` is
-   * valid).
-   */
-  prefix: string;
-  /** Zero-pad width for the numeric suffix. `1 <= padWidth <= 8`. */
-  padWidth: number;
-}
+export type { CorpusSourceIdPolicy } from '@/corpus/manifest-source-ids';
 
 /** Names of installed capabilities this corpus depends on (Model A). */
 export interface CorpusRequiredCapabilities {
@@ -69,7 +73,13 @@ export interface CorpusManifest {
   id: string;
   /** At least one case id, grammar `^[a-z][a-z0-9-]*$`. */
   cases: string[];
-  sourceIds: CorpusSourceIdPolicy;
+  /**
+   * A NON-EMPTY list of source-ID policies, EXACTLY ONE of which is
+   * `allocatable` (FR-002b). A corpus legitimately carries more than one
+   * namespace — Port Breton ships `PB-P###` primary sources alongside
+   * `PB-S###` hand-authored secondary works.
+   */
+  sourceIds: CorpusSourceIdPolicy[];
   requiredCapabilities: CorpusRequiredCapabilities;
   /** `null` when the generic archive layout needs no per-Source override. */
   archiveLayoutOverrides: Record<string, CorpusArchiveLayoutOverride> | null;
@@ -84,33 +94,14 @@ const MANIFEST_KEYS = new Set([
   'archiveLayoutOverrides',
 ]);
 
-const SOURCE_IDS_KEYS = new Set(['prefix', 'padWidth']);
 const REQUIRED_CAPABILITIES_KEYS = new Set(['repositories', 'sourceQueries']);
 const ARCHIVE_OVERRIDE_KEYS = new Set(['relativePath', 'reason']);
 
 /** `^[a-z][a-z0-9-]*$` (data-model.md § CorpusManifest, FR-002). */
 const CASE_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 
-/**
- * `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$` (contracts/corpus-seam.md, FR-002a).
- * No trailing delimiter is required -- e.g. the shipped Port Breton prefix
- * `PB-P` is valid. Namespace disjointness (no configured prefix equal to,
- * or a leading substring of, another) is a repository-wide check enforced
- * by `@/corpus/validate` (T005), not here.
- */
-const SOURCE_PREFIX_PATTERN = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$/;
-
 const MANIFEST_SUFFIX = '.yml';
 const BROWSER_PROFILE_SUFFIX = '.browser.yml';
-
-/** Throw a locating, descriptive error naming the file and what is wrong. */
-function fail(filePath: string, message: string): never {
-  throw new Error(`loadCorpusManifest(${filePath}): ${message}`);
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function readFileText(filePath: string): string {
   try {
@@ -126,56 +117,6 @@ function parseYamlOrFail(text: string, filePath: string): unknown {
   } catch (error) {
     fail(filePath, `malformed YAML: ${describeError(error)}`);
   }
-}
-
-function assertKnownKeys(
-  obj: Record<string, unknown>,
-  allowed: Set<string>,
-  filePath: string,
-  where: string,
-): void {
-  for (const key of Object.keys(obj)) {
-    if (!allowed.has(key)) {
-      fail(filePath, `${where} has unknown key "${key}" (no silent drop)`);
-    }
-  }
-}
-
-function requireStringArray(value: unknown, filePath: string, where: string): string[] {
-  if (!Array.isArray(value)) {
-    fail(filePath, `${where} must be an array`);
-  }
-  return value.map((entry, index) => {
-    if (typeof entry !== 'string' || entry.trim().length === 0) {
-      fail(filePath, `${where}[${index}] must be a non-empty string`);
-    }
-    return entry;
-  });
-}
-
-function validateSourceIds(value: unknown, filePath: string): CorpusSourceIdPolicy {
-  if (!isPlainObject(value)) {
-    fail(filePath, '"sourceIds" must be an object with "prefix" and "padWidth"');
-  }
-  assertKnownKeys(value, SOURCE_IDS_KEYS, filePath, '"sourceIds"');
-
-  const prefix = value.prefix;
-  if (typeof prefix !== 'string' || !SOURCE_PREFIX_PATTERN.test(prefix)) {
-    fail(
-      filePath,
-      `"sourceIds.prefix" ${JSON.stringify(prefix)} must match ${SOURCE_PREFIX_PATTERN} (an uppercase-alphanumeric prefix, optionally hyphen-delimited)`,
-    );
-  }
-
-  const padWidth = value.padWidth;
-  if (typeof padWidth !== 'number' || !Number.isInteger(padWidth) || padWidth < 1 || padWidth > 8) {
-    fail(
-      filePath,
-      `"sourceIds.padWidth" ${JSON.stringify(padWidth)} must be an integer between 1 and 8 inclusive`,
-    );
-  }
-
-  return { prefix, padWidth };
 }
 
 function validateRequiredCapabilities(
@@ -314,7 +255,7 @@ function validateManifest(
   }
 
   const cases = validateCases(parsed.cases, filePath);
-  const sourceIds = validateSourceIds(parsed.sourceIds, filePath);
+  const sourceIds = validateSourceIdPolicies(parsed.sourceIds, filePath);
   const requiredCapabilities = validateRequiredCapabilities(parsed.requiredCapabilities, filePath);
   const archiveLayoutOverrides = validateArchiveLayoutOverrides(
     parsed.archiveLayoutOverrides,

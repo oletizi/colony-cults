@@ -15,18 +15,21 @@ import { finding, type CorpusValidationFinding } from '@/corpus/validate-types';
  * be taken. Those are the failures that corrupt the archive, so they are
  * checked against `@/corpus/source-index`'s global identity index.
  *
- * ON GRANDFATHERING — A KNOWN, DELIBERATELY UNPAPERED-OVER SPEC GAP
+ * ON GRANDFATHERING — A SPEC GAP THAT FR-002b CLOSED
  *
  * FR-002a and INV-12 both qualify Source conformance with "unless explicitly
  * grandfathered", but NO grandfathering mechanism is defined anywhere in the
  * spec: there is no manifest field for it, and no rule describing how a
  * Source would be marked. This module therefore implements STRICT
- * conformance with no exemption path, and no bypass flag. Inventing a
- * mechanism would be guessing at an operator decision; silently relaxing the
- * check would be the fallback Principle V forbids. If real committed data
- * fails this rule, the strict policy (FR-015) blocks the whole repository —
- * which is the intended forcing function, and an operator decision to make
- * explicitly, not a bug to route around here.
+ * conformance with no exemption path, and no bypass flag.
+ *
+ * The case that appeared to need one — Port Breton's hand-authored `PB-S001`
+ * / `PB-S002` sitting beside 92 machine-allocated `PB-P###` records — is
+ * resolved instead by FR-002b: a corpus declares a LIST of ID policies and a
+ * Source conforms if it matches ANY of them. That is a modeling fix, not an
+ * exemption, so the rule below stays absolute. If real committed data fails
+ * it, the strict policy (FR-015) blocks the whole repository — the intended
+ * forcing function, and an operator decision to make explicitly.
  *
  * These functions are PURE: manifests + identity index in, findings out.
  */
@@ -41,6 +44,55 @@ export function conformsToIdPolicy(sourceId: string, policy: CorpusSourceIdPolic
   }
   const suffix = sourceId.slice(policy.prefix.length);
   return suffix.length === policy.padWidth && /^\d+$/.test(suffix);
+}
+
+/**
+ * Does `sourceId` conform to ANY of a corpus's ID policies (FR-002b)?
+ *
+ * "Any", not "the one", is the whole substance of FR-002b: one corpus
+ * legitimately carries more than one namespace, so `PB-S001` conforms via
+ * Port Breton's second, non-allocatable policy even though nothing will ever
+ * be allocated into it.
+ */
+export function conformsToAnyIdPolicy(
+  sourceId: string,
+  policies: readonly CorpusSourceIdPolicy[],
+): boolean {
+  return policies.some((policy) => conformsToIdPolicy(sourceId, policy));
+}
+
+/**
+ * The ONE policy new IDs are allocated from (FR-002b).
+ *
+ * `loadCorpusManifest` rejects any manifest whose allocatable count is not
+ * exactly one, so reaching this with a different count means a manifest was
+ * constructed in code without going through the loader. That is a
+ * programming error, and it throws rather than picking a policy: silently
+ * choosing "the first allocatable one" would decide where the next Source ID
+ * lands, which is precisely the ambiguity FR-002b exists to forbid.
+ */
+function allocatablePolicy(manifest: CorpusManifest): CorpusSourceIdPolicy {
+  const allocatable = manifest.sourceIds.filter((policy) => policy.allocatable);
+  if (allocatable.length !== 1) {
+    throw new Error(
+      `validateExistingData: corpus ${JSON.stringify(manifest.id)} declares ` +
+        `${allocatable.length} allocatable source-ID policies; exactly one is required ` +
+        '(FR-002b). A manifest in this state did not come through loadCorpusManifest, ' +
+        'which enforces the invariant.',
+    );
+  }
+  return allocatable[0];
+}
+
+/** Render a corpus's policies for an error message, naming each namespace. */
+function describePolicies(policies: readonly CorpusSourceIdPolicy[]): string {
+  return policies
+    .map(
+      (policy) =>
+        `prefix ${JSON.stringify(policy.prefix)} + padWidth ${policy.padWidth}` +
+        `${policy.allocatable ? ' (allocatable)' : ''} (e.g. ${formatId(1, policy)})`,
+    )
+    .join('; ');
 }
 
 /**
@@ -107,7 +159,8 @@ function duplicateSourceIdFindings(
 
 /**
  * Every Source belongs to exactly one Case, that Case belongs to exactly one
- * committed Corpus, and the Source's ID conforms to that Corpus's policy.
+ * committed Corpus, and the Source's ID conforms to at least ONE of that
+ * Corpus's ID policies (FR-002b).
  *
  * A Source whose Case no manifest declares is a finding rather than a skip:
  * its owning Corpus — and therefore its ID policy — is undeterminable, and
@@ -156,15 +209,16 @@ function conformanceFindings(
       continue;
     }
 
-    if (!conformsToIdPolicy(entry.sourceId, owner.sourceIds)) {
+    if (!conformsToAnyIdPolicy(entry.sourceId, owner.sourceIds)) {
       findings.push(
         finding(
           'source-id-nonconforming',
           entry.sourceId,
           `Source ${JSON.stringify(entry.sourceId)} is in case ${JSON.stringify(entry.caseId)}, ` +
-            `owned by corpus ${JSON.stringify(owner.id)}, whose ID policy is prefix ` +
-            `${JSON.stringify(owner.sourceIds.prefix)} + padWidth ${owner.sourceIds.padWidth} ` +
-            `(e.g. ${formatId(1, owner.sourceIds)}); the id does not conform`,
+            `owned by corpus ${JSON.stringify(owner.id)}; the id conforms to NONE of that ` +
+            `corpus's ${owner.sourceIds.length} ID ` +
+            `${owner.sourceIds.length === 1 ? 'policy' : 'policies'}, all of which were tried: ` +
+            `${describePolicies(owner.sourceIds)}`,
         ),
       );
     }
@@ -174,12 +228,15 @@ function conformanceFindings(
 }
 
 /**
- * The next id each corpus would allocate must be free (FR-002a).
+ * The next id each corpus would allocate must be free (FR-002a/FR-002b).
  *
- * The next id is predicted the way the allocator picks it — highest numeric
- * suffix already used IN THIS CORPUS's namespace by a Source THIS CORPUS
- * owns, plus one — and then checked against every existing id and every
- * other corpus's namespace.
+ * The next id is drawn from the corpus's ONE ALLOCATABLE policy — the other
+ * policies are conformance-only namespaces for hand-authored records and
+ * nothing is ever allocated into them. It is predicted the way the allocator
+ * picks it (highest numeric suffix already used in the ALLOCATABLE namespace
+ * by a Source THIS CORPUS owns, plus one) and then checked against every
+ * existing id and every OTHER corpus's namespaces — every policy of each, not
+ * one per corpus.
  *
  * KNOWN GAP, not silently handled: when the highest used suffix reaches
  * `10^padWidth - 1`, the next id overflows its own pad width
@@ -196,19 +253,20 @@ function nextIdFindings(
   const findings: CorpusValidationFinding[] = [];
 
   for (const manifest of manifests) {
+    const policy = allocatablePolicy(manifest);
     const ownCases = new Set(manifest.cases);
     let max = 0;
     for (const entry of entries) {
       if (entry.caseId === undefined || !ownCases.has(entry.caseId)) {
         continue;
       }
-      const suffix = namespaceSuffix(entry.sourceId, manifest.sourceIds.prefix);
+      const suffix = namespaceSuffix(entry.sourceId, policy.prefix);
       if (suffix !== null && suffix > max) {
         max = suffix;
       }
     }
 
-    const nextId = formatId(max + 1, manifest.sourceIds);
+    const nextId = formatId(max + 1, policy);
 
     if (allIds.has(nextId)) {
       const holder = entries.find((entry) => entry.sourceId === nextId);
@@ -228,17 +286,19 @@ function nextIdFindings(
       if (other.id === manifest.id) {
         continue;
       }
-      if (nextId.startsWith(other.sourceIds.prefix)) {
-        findings.push(
-          finding(
-            'next-source-id-collision',
-            manifest.id,
-            `the next allocated Source ID for corpus ${JSON.stringify(manifest.id)} is ` +
-              `${JSON.stringify(nextId)}, which falls inside corpus ` +
-              `${JSON.stringify(other.id)}'s namespace ` +
-              `(prefix ${JSON.stringify(other.sourceIds.prefix)})`,
-          ),
-        );
+      for (const otherPolicy of other.sourceIds) {
+        if (nextId.startsWith(otherPolicy.prefix)) {
+          findings.push(
+            finding(
+              'next-source-id-collision',
+              manifest.id,
+              `the next allocated Source ID for corpus ${JSON.stringify(manifest.id)} is ` +
+                `${JSON.stringify(nextId)}, which falls inside corpus ` +
+                `${JSON.stringify(other.id)}'s namespace ` +
+                `(prefix ${JSON.stringify(otherPolicy.prefix)})`,
+            ),
+          );
+        }
       }
     }
   }

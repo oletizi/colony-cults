@@ -1,11 +1,14 @@
 schemaVersion: 1
-id: beta
+id: zero-allocatable
 cases:
-  - beta-case
+  - alpha-case
 sourceIds:
-  - prefix: BE
+  - prefix: AL-P
     padWidth: 3
-    allocatable: true
+    allocatable: false
+  - prefix: AL-S
+    padWidth: 3
+    allocatable: false
 requiredCapabilities:
   repositories: []
   sourceQueries: []

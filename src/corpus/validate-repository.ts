@@ -62,47 +62,74 @@ export function validateUniqueCorpusIds(
   return findings;
 }
 
+/** One configured prefix, tagged with the corpus that declared it. */
+interface ConfiguredPrefix {
+  readonly corpusId: string;
+  readonly prefix: string;
+}
+
 /**
- * Source-ID namespace disjointness (FR-002a) — the real invariant.
+ * Every policy of every corpus, flattened into ONE list (FR-002b, INV-15).
+ *
+ * Flattening before the pairwise comparison is the whole point: a corpus now
+ * declares a LIST of `sourceIds` policies, so disjointness has to hold across
+ * all policies of all corpora — including a corpus's own two prefixes against
+ * each other. Comparing one representative prefix per corpus (the pre-FR-002b
+ * shape) would leave an intra-corpus overlap like `PB-P` vs `PB-PX` entirely
+ * unchecked.
+ */
+function allConfiguredPrefixes(manifests: readonly CorpusManifest[]): ConfiguredPrefix[] {
+  return manifests.flatMap((manifest) =>
+    manifest.sourceIds.map((policy) => ({ corpusId: manifest.id, prefix: policy.prefix })),
+  );
+}
+
+/**
+ * Source-ID namespace disjointness (FR-002a/FR-002b) — the real invariant.
  *
  * No configured prefix may EQUAL, or be a LEADING SUBSTRING of, another
- * configured prefix. There is deliberately NO trailing-delimiter rule: the
- * shipped Port Breton namespace is literally `PB-P` + a 3-digit pad
- * (`PB-P007`), so requiring a trailing delimiter would make the existing
- * namespace inexpressible and FR-010 (IDs unchanged) unsatisfiable. The
- * leading-substring rule is sufficient on its own — if neither prefix
- * prefixes the other, no id string can belong to both namespaces.
+ * configured prefix, compared across ALL policies of ALL corpora. There is
+ * deliberately NO trailing-delimiter rule: the shipped Port Breton namespaces
+ * are literally `PB-P` / `PB-S` + a 3-digit pad (`PB-P007`), so requiring a
+ * trailing delimiter would make the existing namespaces inexpressible and
+ * FR-010 (IDs unchanged) unsatisfiable. The leading-substring rule is
+ * sufficient on its own — if neither prefix prefixes the other, no id string
+ * can belong to both namespaces. `PB-P` and `PB-S` pass it; `PB-P` and
+ * `PB-PX` do not, whether they sit in one manifest or two.
  */
 export function validatePrefixDisjointness(
   manifests: readonly CorpusManifest[],
 ): CorpusValidationFinding[] {
+  const configured = allConfiguredPrefixes(manifests);
   const findings: CorpusValidationFinding[] = [];
 
-  for (let i = 0; i < manifests.length; i++) {
-    for (let j = i + 1; j < manifests.length; j++) {
-      const left = manifests[i];
-      const right = manifests[j];
-      const leftPrefix = left.sourceIds.prefix;
-      const rightPrefix = right.sourceIds.prefix;
-      const subject = `${left.id}/${right.id}`;
+  for (let i = 0; i < configured.length; i++) {
+    for (let j = i + 1; j < configured.length; j++) {
+      const left = configured[i];
+      const right = configured[j];
+      const subject = `${left.corpusId}:${left.prefix}/${right.corpusId}:${right.prefix}`;
 
-      if (leftPrefix === rightPrefix) {
+      if (left.prefix === right.prefix) {
+        const who =
+          left.corpusId === right.corpusId
+            ? `corpus ${JSON.stringify(left.corpusId)} declares two policies that both`
+            : `corpus ${JSON.stringify(left.corpusId)} and corpus ` +
+              `${JSON.stringify(right.corpusId)} both`;
         findings.push(
           finding(
             'prefix-not-disjoint',
             subject,
-            `corpus ${JSON.stringify(left.id)} and corpus ${JSON.stringify(right.id)} both ` +
-              `configure the source-ID prefix ${JSON.stringify(leftPrefix)}; ` +
+            `${who} configure the source-ID prefix ${JSON.stringify(left.prefix)}; ` +
               'namespaces must be provably disjoint (FR-002a)',
           ),
         );
         continue;
       }
 
-      const contained = rightPrefix.startsWith(leftPrefix)
-        ? { outer: right, outerPrefix: rightPrefix, inner: left, innerPrefix: leftPrefix }
-        : leftPrefix.startsWith(rightPrefix)
-          ? { outer: left, outerPrefix: leftPrefix, inner: right, innerPrefix: rightPrefix }
+      const contained = right.prefix.startsWith(left.prefix)
+        ? { outer: right, inner: left }
+        : left.prefix.startsWith(right.prefix)
+          ? { outer: left, inner: right }
           : undefined;
 
       if (contained !== undefined) {
@@ -110,10 +137,10 @@ export function validatePrefixDisjointness(
           finding(
             'prefix-not-disjoint',
             subject,
-            `source-ID prefix ${JSON.stringify(contained.innerPrefix)} (corpus ` +
-              `${JSON.stringify(contained.inner.id)}) is a leading substring of prefix ` +
-              `${JSON.stringify(contained.outerPrefix)} (corpus ` +
-              `${JSON.stringify(contained.outer.id)}); namespaces must be provably ` +
+            `source-ID prefix ${JSON.stringify(contained.inner.prefix)} (corpus ` +
+              `${JSON.stringify(contained.inner.corpusId)}) is a leading substring of prefix ` +
+              `${JSON.stringify(contained.outer.prefix)} (corpus ` +
+              `${JSON.stringify(contained.outer.corpusId)}); namespaces must be provably ` +
               'disjoint (FR-002a)',
           ),
         );

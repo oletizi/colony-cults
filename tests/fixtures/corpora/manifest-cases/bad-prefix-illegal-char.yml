@@ -3,8 +3,9 @@ id: bad-prefix-illegal-char
 cases:
   - alpha-case
 sourceIds:
-  prefix: AB_CD
-  padWidth: 3
+  - prefix: AB_CD
+    padWidth: 3
+    allocatable: true
 requiredCapabilities:
   repositories: []
   sourceQueries: []

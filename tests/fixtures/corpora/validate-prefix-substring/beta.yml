@@ -3,8 +3,9 @@ id: beta
 cases:
   - beta-case
 sourceIds:
-  prefix: PB-PX
-  padWidth: 3
+  - prefix: PB-PX
+    padWidth: 3
+    allocatable: true
 requiredCapabilities:
   repositories: []
   sourceQueries: []

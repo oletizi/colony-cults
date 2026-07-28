@@ -3,8 +3,9 @@ id: shipped-prefix
 cases:
   - alpha-case
 sourceIds:
-  prefix: PB-P
-  padWidth: 3
+  - prefix: PB-P
+    padWidth: 3
+    allocatable: true
 requiredCapabilities:
   repositories: []
   sourceQueries: []

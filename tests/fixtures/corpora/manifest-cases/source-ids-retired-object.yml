@@ -1,11 +1,10 @@
 schemaVersion: 1
-id: beta
+id: source-ids-retired-object
 cases:
-  - beta-case
+  - alpha-case
 sourceIds:
-  - prefix: BE
-    padWidth: 3
-    allocatable: true
+  prefix: AL
+  padWidth: 3
 requiredCapabilities:
   repositories: []
   sourceQueries: []
