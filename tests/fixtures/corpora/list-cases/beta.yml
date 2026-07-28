@@ -3,7 +3,7 @@ id: beta
 cases:
   - beta-case
 sourceIds:
-  prefix: BE-
+  prefix: BE
   padWidth: 4
 requiredCapabilities:
   repositories: []

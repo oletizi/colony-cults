@@ -37,7 +37,9 @@ export const CORPUS_MANIFEST_SCHEMA_VERSION = 1;
 export interface CorpusSourceIdPolicy {
   /**
    * The literal prefix every allocated Source ID under this corpus starts
-   * with. Grammar: `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-$` (ends in a delimiter).
+   * with. Grammar: `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$` (no trailing
+   * delimiter required -- e.g. the shipped Port Breton prefix `PB-P` is
+   * valid).
    */
   prefix: string;
   /** Zero-pad width for the numeric suffix. `1 <= padWidth <= 8`. */
@@ -90,10 +92,13 @@ const ARCHIVE_OVERRIDE_KEYS = new Set(['relativePath', 'reason']);
 const CASE_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 
 /**
- * `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-$`, ending in a delimiter
- * (contracts/corpus-seam.md, FR-002a).
+ * `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$` (contracts/corpus-seam.md, FR-002a).
+ * No trailing delimiter is required -- e.g. the shipped Port Breton prefix
+ * `PB-P` is valid. Namespace disjointness (no configured prefix equal to,
+ * or a leading substring of, another) is a repository-wide check enforced
+ * by `@/corpus/validate` (T005), not here.
  */
-const SOURCE_PREFIX_PATTERN = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-$/;
+const SOURCE_PREFIX_PATTERN = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$/;
 
 const MANIFEST_SUFFIX = '.yml';
 const BROWSER_PROFILE_SUFFIX = '.browser.yml';
@@ -158,7 +163,7 @@ function validateSourceIds(value: unknown, filePath: string): CorpusSourceIdPoli
   if (typeof prefix !== 'string' || !SOURCE_PREFIX_PATTERN.test(prefix)) {
     fail(
       filePath,
-      `"sourceIds.prefix" ${JSON.stringify(prefix)} must match ${SOURCE_PREFIX_PATTERN} (an uppercase-alphanumeric prefix ending in a delimiter)`,
+      `"sourceIds.prefix" ${JSON.stringify(prefix)} must match ${SOURCE_PREFIX_PATTERN} (an uppercase-alphanumeric prefix, optionally hyphen-delimited)`,
     );
   }
 

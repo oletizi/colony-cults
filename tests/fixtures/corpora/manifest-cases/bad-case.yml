@@ -3,7 +3,7 @@ id: bad-case
 cases:
   - Alpha_Case
 sourceIds:
-  prefix: AL-
+  prefix: AL
   padWidth: 3
 requiredCapabilities:
   repositories: []

@@ -3,7 +3,7 @@ id: bad-padwidth
 cases:
   - alpha-case
 sourceIds:
-  prefix: AL-
+  prefix: AL
   padWidth: 9
 requiredCapabilities:
   repositories: []

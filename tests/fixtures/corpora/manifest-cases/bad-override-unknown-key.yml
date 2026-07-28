@@ -3,7 +3,7 @@ id: bad-override-unknown-key
 cases:
   - alpha-case
 sourceIds:
-  prefix: AL-
+  prefix: AL
   padWidth: 3
 requiredCapabilities:
   repositories: []

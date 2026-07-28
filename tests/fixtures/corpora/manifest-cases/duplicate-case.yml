@@ -4,7 +4,7 @@ cases:
   - alpha-case
   - alpha-case
 sourceIds:
-  prefix: AL-
+  prefix: AL
   padWidth: 3
 requiredCapabilities:
   repositories: []

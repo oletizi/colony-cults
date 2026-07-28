@@ -1,9 +1,9 @@
-schemaVersion: 2
-id: unsupported-version
+schemaVersion: 1
+id: bad-prefix-illegal-char
 cases:
   - alpha-case
 sourceIds:
-  prefix: AL
+  prefix: AB_CD
   padWidth: 3
 requiredCapabilities:
   repositories: []

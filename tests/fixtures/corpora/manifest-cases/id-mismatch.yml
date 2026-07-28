@@ -3,7 +3,7 @@ id: some-other-id
 cases:
   - alpha-case
 sourceIds:
-  prefix: AL-
+  prefix: AL
   padWidth: 3
 requiredCapabilities:
   repositories: []

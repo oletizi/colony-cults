@@ -17,7 +17,7 @@ describe('loadCorpusManifest', () => {
       schemaVersion: 1,
       id: 'valid',
       cases: ['alpha-case'],
-      sourceIds: { prefix: 'AL-', padWidth: 3 },
+      sourceIds: { prefix: 'AL', padWidth: 3 },
       requiredCapabilities: { repositories: ['gallica'], sourceQueries: [] },
       archiveLayoutOverrides: null,
     });
@@ -38,7 +38,7 @@ describe('loadCorpusManifest', () => {
     const manifest = loadCorpusManifest(ARBITRARY_ROOT, 'zzz-custom');
 
     expect(manifest.id).toBe('zzz-custom');
-    expect(manifest.sourceIds).toEqual({ prefix: 'ZZ-', padWidth: 5 });
+    expect(manifest.sourceIds).toEqual({ prefix: 'ZZ', padWidth: 5 });
   });
 
   it('rejects an unsupported schemaVersion', () => {
@@ -75,10 +75,33 @@ describe('loadCorpusManifest', () => {
     );
   });
 
-  it('rejects a bad source-id prefix', () => {
+  it('rejects a bad source-id prefix (lowercase start)', () => {
     expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'bad-prefix')).toThrow(
       /"sourceIds\.prefix".*must match/,
     );
+  });
+
+  it('rejects a bad source-id prefix (leading digit)', () => {
+    expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'bad-prefix-leading-digit')).toThrow(
+      /"sourceIds\.prefix".*must match/,
+    );
+  });
+
+  it('rejects a bad source-id prefix (illegal character)', () => {
+    expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'bad-prefix-illegal-char')).toThrow(
+      /"sourceIds\.prefix".*must match/,
+    );
+  });
+
+  it('rejects a bad source-id prefix (empty string)', () => {
+    expect(() => loadCorpusManifest(MANIFEST_CASES_ROOT, 'bad-prefix-empty')).toThrow(
+      /"sourceIds\.prefix".*must match/,
+    );
+  });
+
+  it('accepts the shipped Port Breton prefix "PB-P" with no trailing delimiter (regression guard, FR-002a)', () => {
+    const manifest = loadCorpusManifest(MANIFEST_CASES_ROOT, 'shipped-prefix');
+    expect(manifest.sourceIds).toEqual({ prefix: 'PB-P', padWidth: 3 });
   });
 
   it('rejects a padWidth outside 1..8', () => {

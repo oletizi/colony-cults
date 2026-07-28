@@ -1,9 +1,9 @@
-schemaVersion: 2
-id: unsupported-version
+schemaVersion: 1
+id: shipped-prefix
 cases:
   - alpha-case
 sourceIds:
-  prefix: AL
+  prefix: PB-P
   padWidth: 3
 requiredCapabilities:
   repositories: []

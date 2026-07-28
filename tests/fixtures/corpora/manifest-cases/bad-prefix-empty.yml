@@ -1,9 +1,9 @@
-schemaVersion: 2
-id: unsupported-version
+schemaVersion: 1
+id: bad-prefix-empty
 cases:
   - alpha-case
 sourceIds:
-  prefix: AL
+  prefix: ""
   padWidth: 3
 requiredCapabilities:
   repositories: []
