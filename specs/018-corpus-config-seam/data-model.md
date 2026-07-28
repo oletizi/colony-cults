@@ -53,6 +53,7 @@ Absence is valid for non-browser commands; required only by browser-deploy / bro
 | `SourceIdPolicy` | `{ prefix: string; padWidth: number }` — **singular**, derived from the corpus's ONE `allocatable: true` policy (FR-002b), so the allocation seam is unchanged | `sourcegroup/id-alloc.ts` |
 | `ArchiveLayoutPolicy` | `overrides: ReadonlyMap<SourceId, { relativePath, reason }>` + `derived: ReadonlyMap<SourceId, SourceLayout>` (**precomputed** at construction — see below) | `archive/location.ts` |
 | `BrowserProfile` | `{ corpus; defaultSources: ReadonlyArray<string> }` | `browser/config.ts` (deployment) |
+| `SourceFilenamePolicy` | `{ isSourceFile(filename): boolean }` — built from the corpus's `sourceIds` policies; **required, never defaulted** (FR-018) | `bibliography/load.ts` (`loadAllSources`) |
 
 ## SelectedCorpus (new — composition-root value)
 
