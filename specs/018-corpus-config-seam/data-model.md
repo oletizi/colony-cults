@@ -11,7 +11,7 @@ New config layer + narrow policies. Existing SSOT types reused unchanged **(reus
 | `schemaVersion` | `1` (discriminant) | loader rejects unsupported versions |
 | `id` | string | == filename basename; unique across the repository |
 | `cases` | `string[]` | ≥1; grammar `^[a-z][a-z0-9-]*$`; unique within + across manifests |
-| `sourceIds` | `{ prefix: string; padWidth: number }` | prefix grammar `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-$` (ends in delimiter); `1 ≤ padWidth ≤ 8` |
+| `sourceIds` | `{ prefix: string; padWidth: number }` | prefix grammar `^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*$` — **no trailing delimiter** (Port Breton ships `PB-P` + pad 3 → `PB-P007`); `1 ≤ padWidth ≤ 8`; disjointness comes from the leading-substring rule (FR-002a) |
 | `requiredCapabilities` | `{ repositories: string[]; sourceQueries: string[] }` | **names** of installed capabilities the corpus depends on (Model A); orthogonal to the registries |
 | `archiveLayoutOverrides` | `{ [SourceId]: { relativePath, reason } } | null` | default `null`; used ONLY where generic layout differs from characterized legacy output |
 
@@ -80,7 +80,7 @@ The exported API `registerSourceLayout` / `isSourceLayoutRegistered` / `deriveSo
 
 ## Validation rules (the config gate — strict policy)
 
-**Per manifest**: supported schema version; corpus-id validity + `basename==id`; ≥1 case; case-id grammar + within-manifest uniqueness; source-ID prefix grammar; `padWidth ∈ 1..8`.
+**Per manifest**: supported schema version; corpus-id validity + `basename==id`; ≥1 case; case-id grammar + within-manifest uniqueness; source-ID prefix grammar (no trailing delimiter); `padWidth ∈ 1..8`.
 **Repository-wide (ALL committed manifests)**: unique corpus ids; **prefix disjointness** — no configured prefix equals or is a leading substring of another; unique case ids; browser-profile `corpus` references a known corpus + unique profile ids; archive-override references a known Source in a Case of that corpus, relative path, no archive-root escape, no two Sources to one location, every override has a `reason`.
 **Existing-data**: every existing Source ID globally unique; every Source under a Corpus conforms to its ID policy (unless grandfathered); the next allocated ID cannot collide with any existing ID or another Corpus's namespace.
 **At selection**: selected corpus exists; `requiredCapabilities` ⊆ installed capabilities.
