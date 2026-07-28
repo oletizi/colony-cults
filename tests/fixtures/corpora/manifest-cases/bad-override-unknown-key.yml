@@ -1,0 +1,15 @@
+schemaVersion: 1
+id: bad-override-unknown-key
+cases:
+  - alpha-case
+sourceIds:
+  prefix: AL-
+  padWidth: 3
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides:
+  AL-001:
+    relativePath: cases/alpha-case/AL-001/legacy
+    reason: legacy path predates the generic layout rule
+    extraField: not-allowed

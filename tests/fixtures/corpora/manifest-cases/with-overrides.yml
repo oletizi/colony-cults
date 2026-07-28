@@ -1,0 +1,16 @@
+schemaVersion: 1
+id: with-overrides
+cases:
+  - alpha-case
+sourceIds:
+  prefix: AL-
+  padWidth: 3
+requiredCapabilities:
+  repositories:
+    - gallica
+  sourceQueries:
+    - papers-past
+archiveLayoutOverrides:
+  AL-001:
+    relativePath: cases/alpha-case/AL-001/legacy
+    reason: legacy path predates the generic layout rule

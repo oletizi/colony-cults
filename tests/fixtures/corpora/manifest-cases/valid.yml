@@ -1,0 +1,12 @@
+schemaVersion: 1
+id: valid
+cases:
+  - alpha-case
+sourceIds:
+  prefix: AL-
+  padWidth: 3
+requiredCapabilities:
+  repositories:
+    - gallica
+  sourceQueries: []
+archiveLayoutOverrides: null

@@ -1,0 +1,12 @@
+schemaVersion: 1
+id: duplicate-case
+cases:
+  - alpha-case
+  - alpha-case
+sourceIds:
+  prefix: AL-
+  padWidth: 3
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null

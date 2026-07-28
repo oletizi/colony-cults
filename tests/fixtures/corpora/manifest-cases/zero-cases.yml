@@ -1,0 +1,10 @@
+schemaVersion: 1
+id: zero-cases
+cases: []
+sourceIds:
+  prefix: AL-
+  padWidth: 3
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null

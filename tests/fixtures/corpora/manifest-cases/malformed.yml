@@ -1,0 +1,4 @@
+schemaVersion: 1
+id: malformed
+cases: [alpha-case
+sourceIds: { prefix: AL-, padWidth: 3 }

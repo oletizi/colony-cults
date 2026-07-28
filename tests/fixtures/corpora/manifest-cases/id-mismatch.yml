@@ -1,0 +1,11 @@
+schemaVersion: 1
+id: some-other-id
+cases:
+  - alpha-case
+sourceIds:
+  prefix: AL-
+  padWidth: 3
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null

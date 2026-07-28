@@ -1,0 +1,12 @@
+schemaVersion: 1
+id: zzz-custom
+cases:
+  - custom-case
+sourceIds:
+  prefix: ZZ-
+  padWidth: 5
+requiredCapabilities:
+  repositories:
+    - internet-archive
+  sourceQueries: []
+archiveLayoutOverrides: null

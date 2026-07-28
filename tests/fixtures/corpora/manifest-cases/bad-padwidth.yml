@@ -1,0 +1,11 @@
+schemaVersion: 1
+id: bad-padwidth
+cases:
+  - alpha-case
+sourceIds:
+  prefix: AL-
+  padWidth: 9
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null

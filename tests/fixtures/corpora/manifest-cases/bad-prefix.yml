@@ -1,0 +1,11 @@
+schemaVersion: 1
+id: bad-prefix
+cases:
+  - alpha-case
+sourceIds:
+  prefix: al-
+  padWidth: 3
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null
