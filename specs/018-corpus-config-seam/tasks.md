@@ -46,7 +46,7 @@ A disciplined refactor + new config layer. **Behavior-preserving for Port Breton
 
 ## Phase 7: Polish & guards
 
-- [ ] T019 [P] [tier:fast] Guard test: none of the four corpus-specific constants remain as literals in core modules, **and no core module hardcodes the corpora root** (SC-004, INV-6/13).
+- [ ] T019 [P] [tier:fast] Guard test: none of the **five** corpus-specific constants remain as literals in core modules (incl. `SOURCE_FILE_PATTERN`, FR-018), **and no core module hardcodes the corpora root** (SC-004, INV-6/13/16).
 - [ ] T020 [P] [tier:fast] Guard test: no spec-2 field (`discoveryMechanism`/`dateNormalizer`) in spec-1 types (INV-8, FR-012).
 - [ ] T021 [P] [tier:balanced] Docs: `corpora/README.md` (manifest + browser profile + overrides + selection + validation + the strict policy). Commit + push per unit.
 
