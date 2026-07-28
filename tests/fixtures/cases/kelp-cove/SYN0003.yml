@@ -1,0 +1,17 @@
+# Synthetic fixture Source (specs/018-corpus-config-seam, T016) -- the
+# second-corpus proof for User Story 3 / SC-003. Wholly invented: no real
+# title, catalogue URL, or archival record. Do not treat as bibliographic
+# data. Deliberately NOT in synthetic.browser.yml's defaultSources, so the
+# fixture also covers a Source that belongs to the corpus but is not a
+# browser default.
+sourceId: SYN0003
+kind: archival-item
+case: kelp-cove
+titles:
+  - text: Invented Correspondence Regarding the Kelp Cove Settlement
+    role: canonical
+creator: Unknown (fictional)
+language: English
+notes: >-
+  Synthetic fixture Source for the corpus-config-seam second-corpus proof
+  (spec 018, T016). Invented content; not a real archival record.

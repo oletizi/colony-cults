@@ -1,0 +1,15 @@
+# Synthetic fixture Source (specs/018-corpus-config-seam, T016) -- the
+# second-corpus proof for User Story 3 / SC-003. Wholly invented: no real
+# title, catalogue URL, or archival record. Do not treat as bibliographic
+# data.
+sourceId: SYN0001
+kind: monograph
+case: kelp-cove
+titles:
+  - text: A Wholly Invented Treatise on the Kelp Cove Settlement
+    role: canonical
+creator: Fictional Author One
+language: English
+notes: >-
+  Synthetic fixture Source for the corpus-config-seam second-corpus proof
+  (spec 018, T016). Invented content; not a real archival record.

@@ -1,0 +1,25 @@
+schemaVersion: 1
+id: synthetic
+# T016 (specs/018-corpus-config-seam, User Story 3): the synthetic SECOND
+# corpus, committed as FIXTURES ONLY -- proof that the seam needs zero core
+# src/ edits to add a corpus (FR-011, SC-003). Deliberately differs from
+# port-breton.yml in every dimension the seam makes configurable: a
+# different id, a different (invented) case, a disjoint source-ID prefix,
+# a different padWidth, and its own browser profile/defaults.
+#
+# NOT under corpora/ -- FR-015's strict policy would bind this fixture's
+# case id and source prefix into the production disjointness namespace.
+cases: [kelp-cove]
+sourceIds:
+  # PB-P/PB-S (Port Breton) use padWidth 3; SYN uses 4, so the proof also
+  # covers pad width, not just the prefix. "SYN" is disjoint from "PB-P"
+  # and "PB-S" under the leading-substring rule (FR-002a) -- neither is a
+  # prefix of the other.
+  - { prefix: SYN, padWidth: 4, allocatable: true }
+requiredCapabilities:
+  # Deliberately empty: the synthetic corpus depends on no repository or
+  # source-query capability, so this is satisfied by any installed set
+  # (never a fabricated dependency on a real adapter like Gallica).
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null

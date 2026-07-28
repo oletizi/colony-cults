@@ -1,0 +1,8 @@
+schemaVersion: 1
+id: synthetic
+corpus: synthetic
+# A different defaultSources list than port-breton.browser.yml, drawn from
+# the synthetic case's own (disjoint, differently-padded) SYN#### namespace.
+defaultSources:
+  - SYN0001
+  - SYN0002
