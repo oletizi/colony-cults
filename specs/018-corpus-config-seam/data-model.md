@@ -25,9 +25,10 @@ sourceIds:
   - { prefix: PB-S, padWidth: 3, allocatable: false }   # PB-S001/PB-S002, hand-authored secondary works
 requiredCapabilities:
   repositories: [gallica, new-italy-museum, internet-archive, papers-past]
-  sourceQueries: [papers-past]
+  sourceQueries: [papers-past, papers-past-article]
 archiveLayoutOverrides: null   # pending the characterization gate
 ```
+`sourceQueries` names **both** registered SourceConfigs the corpus actually exercises — verified: `papers-past-article` is referenced by `metadataSnapshot.path` in 32 committed Source records, and the search-log records both against `scope: {kind: case, id: port-breton}`. `requiredCapabilities` names what the corpus *depends on*, not just its discovery entry point.
 Two policies because the corpus genuinely carries two namespaces (verified against the SSOT: 92 `PB-P###` + 2 `PB-S###`, all `case: port-breton`). `PB-P` and `PB-S` are disjoint under the leading-substring rule. Only `PB-P` is allocatable — `src/sourcegroup/id-alloc.ts` allocates nowhere else.
 No `discoveryMechanism` / `dateNormalizer` (spec 2).
 
