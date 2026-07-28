@@ -1,5 +1,5 @@
 {
-  "description": "Characterization fixture (T001, spec 018-corpus-config-seam): byte-identical snapshot of every src/archive/location.ts function whose output depends on the static SOURCE_LAYOUTS map, for the 9 legacy Port Breton source ids. Captured BEFORE SOURCE_LAYOUTS was touched by T013. Protects SC-001/INV-4: the 9 legacy archive paths must stay byte-identical after the retirement of the static registry in favor of generic derivation + validated overrides.",
+  "description": "Characterization fixture (T001, spec 018-corpus-config-seam): byte-identical snapshot of every src/archive/location.ts function whose output depends on the static SOURCE_LAYOUTS map, for the 9 legacy Port Breton source ids. Captured BEFORE SOURCE_LAYOUTS was touched by T013. Protects SC-001/INV-4: the 9 legacy archive paths must stay byte-identical after the retirement of the static registry in favor of generic derivation + validated overrides. EXTENDED (T024): also pins the fail-loud THROW for the 3 source-group CONTAINER ids (PB-P004, PB-P006, PB-P060), which have no archive location of their own and must never resolve a layout -- a regression introduced by the unfiltered `deriveArchiveLayoutPolicy` precomputation and fixed by filtering on Source.kind === 'source-group'.",
   "fixtureInputs": {
     "archiveRoot": "/fixture-archive-root",
     "issueArk": "bpt6k0000001",
@@ -301,6 +301,90 @@
       "resolveFetchedDir": {
         "ok": false,
         "error": "resolveFetchedDir: no fetched document found for monograph source \"PB-P059\" (missing /fixture-archive-root/archive/cases/port-breton/books/the-hong-kong-daily-press-16-july-1883-trial-of-the-marquis-de-rays-paris-12) -- run fetch-source first"
+      }
+    },
+    {
+      "sourceId": "PB-P004",
+      "sourceLayout": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P004\""
+      },
+      "isSourceLayoutRegistered": false,
+      "sourceRootDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P004\""
+      },
+      "monographDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P004\""
+      },
+      "issueDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P004\""
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P004\""
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P004\""
+      }
+    },
+    {
+      "sourceId": "PB-P006",
+      "sourceLayout": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P006\""
+      },
+      "isSourceLayoutRegistered": false,
+      "sourceRootDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P006\""
+      },
+      "monographDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P006\""
+      },
+      "issueDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P006\""
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P006\""
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P006\""
+      }
+    },
+    {
+      "sourceId": "PB-P060",
+      "sourceLayout": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P060\""
+      },
+      "isSourceLayoutRegistered": false,
+      "sourceRootDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P060\""
+      },
+      "monographDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P060\""
+      },
+      "issueDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P060\""
+      },
+      "findIssueDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P060\""
+      },
+      "resolveFetchedDir": {
+        "ok": false,
+        "error": "sourceLayout: no archive layout registered for source \"PB-P060\""
       }
     }
   ]

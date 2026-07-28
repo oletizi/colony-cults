@@ -182,6 +182,17 @@ export interface ArchiveLayoutPolicy {
  * — such a member is created/discovered mid-run and resolves instead via
  * the runtime overlay (`registerSourceLayout`, step 2 of the FR-017 order,
  * unchanged by this seam).
+ *
+ * ALSO EXCLUDED (T024 regression fix): any Source whose OWN `kind` is
+ * `source-group`. A source-group is a CONTAINER, not a fetchable work — it
+ * has no archive location of its own, only its members do. Precomputing a
+ * generic layout for it would fabricate a phantom directory that nothing
+ * ever writes to, and would silence `sourceLayout`'s terminal throw (FR-017
+ * step 4: "no default") for a group id, which is the fail-loud guard every
+ * caller of `hasArchiveLayout`-style code relies on. This mirrors
+ * `@/archive/member-layout`'s `ensureMemberLayoutRegistered`, which
+ * deliberately early-returns on `member.kind === 'source-group'` for the
+ * same reason: containers are layout-less by design, not by omission.
  */
 export function deriveArchiveLayoutPolicy(
   corpus: SelectedCorpus,
@@ -195,6 +206,9 @@ export function deriveArchiveLayoutPolicy(
   const derived = new Map<string, SourceLayout>();
   for (const source of sources) {
     if (source.case === undefined || !caseIds.has(source.case)) {
+      continue;
+    }
+    if (source.kind === 'source-group') {
       continue;
     }
     derived.set(source.sourceId, deriveSourceLayout(source));

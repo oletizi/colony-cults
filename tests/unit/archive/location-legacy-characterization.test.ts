@@ -43,6 +43,20 @@
  * guaranteed-absent `archiveRoot` ("/fixture-archive-root") makes their
  * throw path fully deterministic while still exercising -- and pinning --
  * the layout-derived path that is spliced into the error message.
+ *
+ * EXTENDED (T024, regression fix): the fixture/gate also covers the 3
+ * source-group CONTAINER ids (`PB-P004`, `PB-P006`, `PB-P060`). None of the 9
+ * legacy ids above is a container, which is exactly how a regression slipped
+ * past this gate -- `deriveArchiveLayoutPolicy` briefly precomputed a generic
+ * layout for every in-scope Source with no filter on `Source.kind`, so the
+ * three containers (which have no archive location of their own -- only
+ * their members do) resolved a phantom layout instead of throwing. Every
+ * function under test here must still THROW `sourceLayout: no archive layout
+ * registered for source "<id>"` for all three, exactly as it did before the
+ * corpus-config-seam feature touched `SOURCE_LAYOUTS`, and
+ * `isSourceLayoutRegistered` must still return `false`. The existing 9 legacy
+ * entries and their expected values are UNCHANGED by this extension -- they
+ * still pin FR-010 byte-identity exactly as originally captured.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -101,6 +115,14 @@ const LEGACY_SOURCE_IDS = [
   'PB-P059',
 ] as const;
 
+/**
+ * The 3 `kind: source-group` CONTAINER ids (T024): they must resolve NO
+ * layout at all (see the module doc comment's "EXTENDED" note).
+ */
+const GROUP_CONTAINER_SOURCE_IDS = ['PB-P004', 'PB-P006', 'PB-P060'] as const;
+
+const ALL_FIXTURE_SOURCE_IDS = [...LEGACY_SOURCE_IDS, ...GROUP_CONTAINER_SOURCE_IDS];
+
 function capture<T>(fn: () => T): Outcome<T> {
   try {
     return { ok: true, value: fn() };
@@ -110,10 +132,19 @@ function capture<T>(fn: () => T): Outcome<T> {
 }
 
 describe('archive/location characterization gate (T001, spec 018-corpus-config-seam)', () => {
-  it('the fixture covers exactly the 9 legacy source ids, no more, no fewer', () => {
+  it('the fixture covers exactly the 9 legacy source ids plus the 3 group-container ids, no more, no fewer', () => {
     expect(FIXTURE.sources.map((entry) => entry.sourceId).sort()).toEqual(
-      [...LEGACY_SOURCE_IDS].sort(),
+      [...ALL_FIXTURE_SOURCE_IDS].sort(),
     );
+  });
+
+  it('every group-container id is pinned to throw, with isSourceLayoutRegistered false', () => {
+    for (const sourceId of GROUP_CONTAINER_SOURCE_IDS) {
+      const entry = FIXTURE.sources.find((candidate) => candidate.sourceId === sourceId);
+      expect(entry, `fixture is missing group-container id ${sourceId}`).toBeDefined();
+      expect(entry?.isSourceLayoutRegistered, `${sourceId} must not be registered`).toBe(false);
+      expect(entry?.sourceLayout.ok, `${sourceId}'s sourceLayout must throw`).toBe(false);
+    }
   });
 
   const { archiveRoot, issueArk, issueDate } = FIXTURE.fixtureInputs;

@@ -126,6 +126,28 @@ describe('deriveArchiveLayoutPolicy', () => {
       kind: 'periodical',
     });
   });
+
+  it('excludes source-group CONTAINERS from derived -- they have no archive location of their own (T024)', () => {
+    const selected = selectCorpus({ corporaRoot: POLICIES_ROOT, cliCorpus: 'port-breton' });
+    const group = source({
+      sourceId: 'PB-P004',
+      kind: 'source-group',
+      case: 'port-breton',
+      titles: [{ text: 'A Source Group', role: 'canonical' }],
+    });
+    const member = source({
+      sourceId: 'PB-P901',
+      kind: 'monograph',
+      partOf: 'PB-P004',
+      case: 'port-breton',
+      titles: [{ text: 'A Group Member', role: 'canonical' }],
+    });
+
+    const policy = deriveArchiveLayoutPolicy(selected, [group, member]);
+
+    expect(policy.derived.has('PB-P004')).toBe(false);
+    expect(policy.derived.has('PB-P901')).toBe(true);
+  });
 });
 
 describe('deriveBrowserProfile', () => {
