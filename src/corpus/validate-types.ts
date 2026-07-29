@@ -59,13 +59,28 @@ export type CorpusValidationRule =
   | 'override-path-not-relative'
   /** An override `relativePath` traverses out of the archive root. */
   | 'override-path-escapes-archive-root'
-  /** Two Sources' overrides resolve to one archive location. */
+  /** An override `relativePath` is not of the form `archive/cases/<case>/<type>/<slug>` (AUDIT-05). */
+  | 'override-path-malformed'
+  /**
+   * Two Sources resolve to one archive location — override vs override, OR an
+   * override aimed at another Source's rule-DERIVED location (AUDIT-05). Both
+   * shapes are the same violation of FR-007's "does not collide with another
+   * Source's location", so they share one rule.
+   */
   | 'override-duplicate-location'
   // --- Existing data, read from the injected sources dir ---
   /** A file under the sources dir could not be read as an identity record. */
   | 'source-identity-unreadable'
   /** Two SSOT files declare the same `sourceId` (global uniqueness, FR-002). */
   | 'duplicate-source-id'
+  /**
+   * An SSOT file's basename is not `<its declared sourceId>.yml` (AUDIT-04).
+   * The allocator picks the next free id by scanning FILENAMES while the
+   * next-id prediction scans DECLARED ids; the two agree only while this
+   * holds, so a divergence lets the allocator mint an id another record
+   * already declares.
+   */
+  | 'source-filename-id-mismatch'
   /** A Source declares no `case`, so no corpus owns it (FR-002: exactly one Case). */
   | 'source-missing-case'
   /** A Source's `case` is declared by no committed manifest, so its ID policy is undeterminable. */

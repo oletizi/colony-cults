@@ -120,6 +120,9 @@ function formatId(n: number, policy: CorpusSourceIdPolicy): string {
   return `${policy.prefix}${String(n).padStart(policy.padWidth, '0')}`;
 }
 
+/** The one filename suffix an SSOT record is stored under. */
+const SOURCE_FILE_SUFFIX = '.yml';
+
 /** Every SSOT file that could not yield an identity is its own finding. */
 function identityProblemFindings(index: SourceIdentityIndex): CorpusValidationFinding[] {
   return index.problems.map((problem) =>
@@ -150,6 +153,48 @@ function duplicateSourceIdFindings(
           sourceId,
           `${filePaths.length} SSOT records declare the Source ID ${JSON.stringify(sourceId)} ` +
             `(${filePaths.join(', ')}); Source IDs must be globally unique`,
+        ),
+      );
+    }
+  }
+  return findings;
+}
+
+/**
+ * An SSOT file's basename MUST be `<its declared sourceId>.yml` (AUDIT-04).
+ *
+ * WHY THIS RULE EXISTS — the allocator and this validator read DIFFERENT
+ * things. `@/sourcegroup/id-alloc`'s `nextCandidate` scans FILENAMES
+ * (`^<prefix>(\d+)\.yml$`) for the highest used suffix; {@link nextIdFindings}
+ * below predicts the same number from the DECLARED `sourceId`s. Those two
+ * views agree only while every basename equals its declared id.
+ *
+ * When they diverge the failure is silent AND destructive: a `PB-P002.yml`
+ * declaring `PB-P003` leaves the declared set {…, PB-P003} — so the next-id
+ * prediction sees PB-P003 taken and moves on — while the allocator counts
+ * filenames, computes max = 2, and mints PB-P003. Its `wx` exclusive-create
+ * SUCCEEDS, because no file by that NAME existed; only after those bytes have
+ * landed does `duplicate-source-id` fire. The claim is atomic against
+ * concurrent allocation but not against a lying filename, so the divergence
+ * itself has to be the gate.
+ */
+function filenameMismatchFindings(
+  entries: readonly SourceIdentity[],
+): CorpusValidationFinding[] {
+  const findings: CorpusValidationFinding[] = [];
+  for (const entry of entries) {
+    const actual = basename(entry.filePath);
+    const expected = `${entry.sourceId}${SOURCE_FILE_SUFFIX}`;
+    if (actual !== expected) {
+      findings.push(
+        finding(
+          'source-filename-id-mismatch',
+          entry.sourceId,
+          `SSOT file ${JSON.stringify(actual)} (${entry.filePath}) declares sourceId ` +
+            `${JSON.stringify(entry.sourceId)}, so its basename must be ` +
+            `${JSON.stringify(expected)}; the id allocator picks the next free id by scanning ` +
+            'FILENAMES, so a file whose name disagrees with its declared id lets it mint an id ' +
+            'another record already holds',
         ),
       );
     }
@@ -314,6 +359,7 @@ export function validateExistingData(
   return [
     ...identityProblemFindings(index),
     ...duplicateSourceIdFindings(index.entries),
+    ...filenameMismatchFindings(index.entries),
     ...conformanceFindings(manifests, index.entries),
     ...nextIdFindings(manifests, index.entries),
   ];

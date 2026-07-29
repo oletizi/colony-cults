@@ -200,7 +200,7 @@ describe('validateCorpora — archive-layout overrides (INV-10, FR-007)', () => 
 
   it('rejects two Sources resolving to the same archive location', () => {
     const finding = findingFor(result, 'override-duplicate-location');
-    expect(finding.message).toContain('cases/alpha-case/shared-location');
+    expect(finding.message).toContain('archive/cases/alpha-case/books/shared-location');
     expect(finding.message).toContain('AL003');
     expect(finding.message).toContain('AL004');
   });
@@ -349,10 +349,10 @@ describe('validateCorpora — multiple ID policies per corpus (FR-002b, INV-15)'
     // AL-S would give AL-S010 / AL-P010 and miss the collision entirely.
     const findings = validateExistingData([manifest], {
       entries: [
-        { sourceId: 'AL-P001', caseId: 'alpha-case', filePath: '/fixture/AL-P001.yml' },
-        { sourceId: 'AL-P002', caseId: 'alpha-case', filePath: '/fixture/AL-P002.yml' },
-        { sourceId: 'AL-S009', caseId: 'alpha-case', filePath: '/fixture/AL-S009.yml' },
-        { sourceId: 'AL-P003', caseId: 'elsewhere-case', filePath: '/fixture/AL-P003.yml' },
+        { sourceId: 'AL-P001', caseId: 'alpha-case', filePath: '/fixture/AL-P001.yml', genericLocation: undefined },
+        { sourceId: 'AL-P002', caseId: 'alpha-case', filePath: '/fixture/AL-P002.yml', genericLocation: undefined },
+        { sourceId: 'AL-S009', caseId: 'alpha-case', filePath: '/fixture/AL-S009.yml', genericLocation: undefined },
+        { sourceId: 'AL-P003', caseId: 'elsewhere-case', filePath: '/fixture/AL-P003.yml', genericLocation: undefined },
       ],
       problems: [],
     });

@@ -13,5 +13,5 @@ requiredCapabilities:
     - papers-past
 archiveLayoutOverrides:
   BE001:
-    relativePath: cases/beta-case/BE001/legacy
+    relativePath: archive/cases/beta-case/books/be001-legacy
     reason: legacy path predates the generic layout rule

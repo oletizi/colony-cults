@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: alpha
+cases:
+  - alpha-case
+sourceIds:
+  - prefix: AL
+    padWidth: 3
+    allocatable: true
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides:
+  AL002:
+    relativePath: archive/cases/alpha-case/books/alpha-one
+    reason: >-
+      Aimed squarely at AL001's rule-DERIVED archive location. Nothing else in
+      this fixture declares that path as an override, so an override-vs-override
+      collision check cannot see it (AUDIT-05).
+  AL003:
+    relativePath: totally/wrong/shape
+    reason: >-
+      Not of the required "archive/cases/<case>/<type>/<slug>" form. Before
+      AUDIT-05 this passed validation and threw only later, inside
+      layoutFromOverride, at resolve time.

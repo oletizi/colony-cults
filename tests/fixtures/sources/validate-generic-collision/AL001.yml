@@ -1,0 +1,6 @@
+sourceId: AL001
+case: alpha-case
+kind: monograph
+titles:
+  - text: Alpha One
+    role: canonical

@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync, type Dirent } from 'node:fs';
-import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
 import { describeError } from '@/bibliography/load-primitives';
+import { corpusArtifactPath } from '@/corpus/corpus-id';
 import {
   assertKnownKeys,
   fail,
@@ -282,7 +282,12 @@ function validateManifest(
  * `corporaRoot` is caller-injected (FR-016) — see the module doc comment.
  */
 export function loadCorpusManifest(corporaRoot: string, id: string): CorpusManifest {
-  const filePath = join(corporaRoot, `${id}${MANIFEST_SUFFIX}`);
+  // AUDIT-29: the id is validated as a NAME, and the resolved path asserted
+  // to sit directly inside the injected root, BEFORE anything is read. This
+  // used to be a bare `join()`, so `--corpus ../outside` loaded a real
+  // manifest from outside the root — one `listCorpusManifestIds` never
+  // enumerates and `bib validate-config` therefore never sees.
+  const filePath = corpusArtifactPath(corporaRoot, id, MANIFEST_SUFFIX, 'loadCorpusManifest');
   const text = readFileText(filePath);
   const parsed = parseYamlOrFail(text, filePath);
   return validateManifest(parsed, filePath, id);

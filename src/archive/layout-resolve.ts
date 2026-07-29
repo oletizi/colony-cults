@@ -4,7 +4,7 @@ import {
   productionArchiveLayoutInputs,
 } from '@/archive/layout-bootstrap';
 import type { ArchiveLayoutOverride, ArchiveLayoutPolicy } from '@/corpus/policies';
-import { normalizeOverridePath } from '@/corpus/validate-overrides';
+import { OVERRIDE_PATH_SHAPE, parseOverridePath } from '@/corpus/validate-overrides';
 
 /**
  * ARCHIVE-LAYOUT RESOLUTION (T013, spec 018-corpus-config-seam; FR-007,
@@ -103,11 +103,6 @@ export function isSourceLayoutRegistered(sourceId: string): boolean {
   );
 }
 
-/** The archive-root-relative prefix every override path must carry. */
-const OVERRIDE_PATH_PREFIX = ['archive', 'cases'];
-/** `archive` / `cases` / `<case>` / `<type>` / `<slug>`. */
-const OVERRIDE_PATH_SEGMENTS = OVERRIDE_PATH_PREFIX.length + 3;
-
 /**
  * Turn a validated manifest override into a {@link SourceLayout}.
  *
@@ -131,19 +126,16 @@ function layoutFromOverride(
   override: ArchiveLayoutOverride,
   policy: ArchiveLayoutPolicy,
 ): SourceLayout {
-  const segments = normalizeOverridePath(override.relativePath).split('/');
-  const prefixMatches = OVERRIDE_PATH_PREFIX.every(
-    (expected, index) => segments[index] === expected,
-  );
-  if (
-    segments.length !== OVERRIDE_PATH_SEGMENTS ||
-    !prefixMatches ||
-    segments.some((segment) => segment.length === 0)
-  ) {
+  // The shape parse is SHARED with the config validator (AUDIT-05): since
+  // `override-path-malformed` now rejects a bad shape at validation time, this
+  // throw is the last line of defense for a hand-built policy that never went
+  // through `bib validate-config`, not the first place the problem is seen.
+  const parsed = parseOverridePath(override.relativePath);
+  if (parsed === null) {
     throw new Error(
       `sourceLayout: archiveLayoutOverride for source "${sourceId}" has relativePath ` +
         `${JSON.stringify(override.relativePath)}, which is not of the required form ` +
-        '"archive/cases/<case>/<type>/<slug>"',
+        `"${OVERRIDE_PATH_SHAPE}"`,
     );
   }
   const derived = policy.derived.get(sourceId);
@@ -154,8 +146,7 @@ function layoutFromOverride(
         'derivation to take its layout kind from',
     );
   }
-  const [, , caseId, type, slug] = segments;
-  return { case: caseId, type, slug, kind: derived.kind };
+  return { case: parsed.caseId, type: parsed.type, slug: parsed.slug, kind: derived.kind };
 }
 
 /**

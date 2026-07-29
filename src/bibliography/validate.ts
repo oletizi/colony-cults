@@ -200,33 +200,48 @@ export function validatePublicationManifests(model: CanonicalModel, opts: ViewDr
 }
 
 /**
- * Options for {@link validate}. Every field is optional and additive: omit
+ * The two inputs the search-log scope referential-integrity check (spec 010)
+ * needs BEYOND `repoRoot`. They are grouped into one required-fields object
+ * so that a PARTIAL supply is unrepresentable -- see {@link ValidateOptions}.
+ */
+export interface SearchLogScopeCheck {
+  /** The loaded `bibliography/search-log.yml` entries. */
+  readonly searchLog: readonly SearchLogEntry[];
+  /**
+   * The selected corpus's valid case ids
+   * (`CorpusComposition.scope.validCaseIds`, `@/cli/composition-root`), for
+   * resolving `{ kind: 'case' }` scope refs. Injected rather than defaulted:
+   * this module names no corpus's case ids (FR-004, no fallback).
+   */
+  readonly validCaseIds: ReadonlySet<string>;
+}
+
+/**
+ * Options for {@link validate}. Fields are optional and additive: omit
  * `repoRoot` to skip the disk-touching view-drift, thread-registry, and
  * search-log-scope checks (model-only callers / tests are unaffected);
- * supplying `repoRoot` alone runs `validateSourceThreads` against the
- * thread registry (`bibliography/scopes.yml`, spec 010 INV-5); supply ALL
- * THREE of `searchLog` (the loaded `bibliography/search-log.yml` entries),
- * `repoRoot`, AND `validCaseIds` (the selected corpus's valid case ids) to
- * additionally run the search-log scope referential-integrity check (spec
- * 010) -- it needs `repoRoot` to load the SAME thread registry a
- * `{kind:'thread'}` scope resolves against, the same way the view-drift
- * check needs it to locate committed views, and `validCaseIds` to resolve
- * any `{kind:'case'}` scope.
+ * supplying `repoRoot` alone runs `validateSourceThreads` against the thread
+ * registry (`bibliography/scopes.yml`, spec 010 INV-5); add `scopeCheck` to
+ * additionally run the search-log scope referential-integrity check.
+ *
+ * WHY THIS IS A UNION AND `scopeCheck` IS A SUB-OBJECT (AUDIT-06). The scope
+ * check needs THREE values -- the search log, `repoRoot` (to load the SAME
+ * thread registry a `{kind:'thread'}` scope resolves against), and the
+ * corpus's valid case ids. Those used to be three INDEPENDENT optional fields
+ * gated by `searchLog !== undefined && repoRoot !== undefined &&
+ * validCaseIds !== undefined`, so a caller supplying any TWO of the three
+ * compiled cleanly and silently skipped a check that had run unconditionally
+ * before `validCaseIds` was threaded through it. No shipped caller did that,
+ * which is precisely what made it a latent trap rather than a live bug: a
+ * runtime guard would only have caught it once someone fell in.
+ *
+ * So the fix is TYPE-LEVEL, not a thrown error. `searchLog` and
+ * `validCaseIds` travel together in {@link SearchLogScopeCheck} (both
+ * required), and the union makes `scopeCheck` reachable ONLY on the branch
+ * that also carries `repoRoot`. Every proper subset of the three is now a
+ * compile error; `tests/typecheck/partial-scope-check.ts` pins that.
  */
-export interface ValidateOptions {
-  /** Public repo root for the view-drift + search-log-scope checks; when absent, both are skipped. */
-  repoRoot?: string;
-  /** Loaded search-log entries for the scope-resolution check; when absent, that check is skipped. */
-  searchLog?: readonly SearchLogEntry[];
-  /**
-   * The selected corpus's valid case ids (`CorpusComposition.scope.validCaseIds`,
-   * `@/cli/composition-root`), for the search-log scope-resolution check's
-   * `{ kind: 'case' }` refs. Required alongside `searchLog`/`repoRoot` to run
-   * that check -- omitting it (like omitting either of the other two) simply
-   * skips the check rather than defaulting to any corpus's ids (FR-004, no
-   * fallback).
-   */
-  validCaseIds?: ReadonlySet<string>;
+interface ValidateOptionsBase {
   /**
    * Committed archive companion records indexed by `object_store.key` (from
    * `archive/**\/*.yml`), for the cross-repo archive-reconciliation checks
@@ -246,6 +261,25 @@ export interface ValidateOptions {
 }
 
 /**
+ * The `repoRoot`-dependent half of {@link ValidateOptions}, split into a
+ * union so `scopeCheck` cannot be supplied without the `repoRoot` its
+ * thread-registry load requires.
+ */
+export type ValidateOptions =
+  | (ValidateOptionsBase & {
+      /** No repo root: view-drift, thread-registry and scope checks are all skipped. */
+      repoRoot?: undefined;
+      /** Unreachable without `repoRoot` -- the whole point of the union. */
+      scopeCheck?: undefined;
+    })
+  | (ValidateOptionsBase & {
+      /** Public repo root for the view-drift, thread-registry and scope checks. */
+      repoRoot: string;
+      /** Present ⇒ run the search-log scope check; absent ⇒ do not. Never partial. */
+      scopeCheck?: SearchLogScopeCheck;
+    });
+
+/**
  * Run every implemented validation check over `model` and concatenate their
  * findings: identifier leaks (US2), referential integrity / vocab /
  * required-core / uniqueness / manifest-shape (US5, `@/bibliography/
@@ -253,7 +287,7 @@ export interface ValidateOptions {
  * validate-coverage-checks`), and -- when the matching `opts` fields are
  * supplied -- the thread-membership check (spec 010 INV-5, needs
  * `opts.repoRoot` to load `bibliography/scopes.yml`), the search-log
- * scope-resolution check (spec 010, needs BOTH `opts.searchLog` and
+ * scope-resolution check (spec 010, needs `opts.scopeCheck` alongside
  * `opts.repoRoot`), and view drift (US4, needs `opts.repoRoot`, the one
  * check that also touches disk). Omitting `opts` leaves existing model-only
  * callers/tests unaffected. Never throws on content findings (throwing is
@@ -277,9 +311,13 @@ export function validate(model: CanonicalModel, opts?: ValidateOptions): Validat
     const threadIds = threadIdSet(loadScopesRegistry(path.join(opts.repoRoot, 'bibliography', 'scopes.yml')));
     findings.push(...validateSourceThreads(model, threadIds));
   }
-  if (opts?.searchLog !== undefined && opts?.repoRoot !== undefined && opts?.validCaseIds !== undefined) {
-    const scopeContext = buildScopeResolutionContext(opts.repoRoot, model.sources, opts.validCaseIds);
-    findings.push(...validateSearchLogScopes(opts.searchLog, scopeContext));
+  // One condition, not three ANDed optionals (AUDIT-06): `scopeCheck` carries
+  // both of its own inputs as required fields, and the union guarantees
+  // `repoRoot` is present whenever it is. There is no partial supply to guard.
+  if (opts?.repoRoot !== undefined && opts.scopeCheck !== undefined) {
+    const { searchLog, validCaseIds } = opts.scopeCheck;
+    const scopeContext = buildScopeResolutionContext(opts.repoRoot, model.sources, validCaseIds);
+    findings.push(...validateSearchLogScopes(searchLog, scopeContext));
   }
   if (opts?.repoRoot !== undefined) {
     findings.push(...validateViewDrift(model, { repoRoot: opts.repoRoot }));

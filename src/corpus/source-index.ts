@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, type Dirent } from 'node:fs';
 import { basename, join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
+import { deriveSourceLayout, type LayoutDerivationSource } from '@/archive/derive-layout';
 import { describeError } from '@/bibliography/load-primitives';
 
 /**
@@ -14,12 +15,19 @@ import { describeError } from '@/bibliography/load-primitives';
  * `<repoRoot>/bibliography/sources` at the CLI composition root; tests inject
  * a fixture directory.
  *
- * SCOPE: this reads ONLY the identity projection of each SSOT record —
- * `sourceId` and `case`. That is exactly what FR-002/FR-002a validation
- * needs (global ID uniqueness, per-corpus ID-policy conformance, next-ID
- * non-collision, and resolving which Corpus owns a Source). It is NOT a
- * Source loader and must not grow into one: full record validation stays in
- * `@/bibliography/load` (`loadSourceFile` / `loadAllSources`).
+ * SCOPE: this reads the identity projection of each SSOT record — `sourceId`
+ * and `case` — plus (AUDIT-05) exactly the fields the GENERIC archive-layout
+ * derivation reads: `kind`, `partOf` and `titles`. The first group is what
+ * FR-002/FR-002a validation needs (global ID uniqueness, per-corpus ID-policy
+ * conformance, next-ID non-collision, and resolving which Corpus owns a
+ * Source); the second exists so every record can answer "where would the
+ * generic rule put me?" — see {@link SourceIdentity.genericLocation}.
+ *
+ * It is still NOT a Source loader and must not grow into one: full record
+ * validation — vocabulary, required-core fields, referential integrity —
+ * stays in `@/bibliography/load` (`loadSourceFile` / `loadAllSources`).
+ * Nothing is read here that the two rule families above do not consume, and
+ * nothing read here is re-validated against a vocabulary.
  *
  * WHY NOT REUSE `loadAllSources` HERE
  *
@@ -57,6 +65,26 @@ export interface SourceIdentity {
   readonly caseId: string | undefined;
   /** The file the identity was read from, for locating error messages. */
   readonly filePath: string;
+  /**
+   * Where the GENERIC layout rule (`@/archive/derive-layout`'s
+   * `deriveSourceLayout`) would place this record, as an archive-root-relative
+   * path — `archive/cases/<case>/<type>/<slug>` — or `undefined` when the
+   * record HAS no generic location (AUDIT-05).
+   *
+   * `undefined` means one of exactly two things, both of them already
+   * reported or by design, never a quiet failure to compute:
+   *   - the record declares no `case`, so no location can be derived at all
+   *     (surfaced as `source-missing-case` by
+   *     `@/corpus/validate-existing-data`);
+   *   - the record is a `source-group`, a CONTAINER that has no archive
+   *     location of its own — mirroring `@/corpus/policies`'
+   *     `deriveArchiveLayoutPolicy`, which excludes groups from `derived` for
+   *     the same reason.
+   *
+   * It is REQUIRED (not optional) on this interface so that every construction
+   * site has to decide it explicitly rather than omit it into a silent skip.
+   */
+  readonly genericLocation: string | undefined;
 }
 
 /** A file under `sourcesDir` that could not yield an identity. */
@@ -97,6 +125,63 @@ function listSourceFiles(sourcesDir: string): string[] {
     .filter((name) => name.endsWith(SOURCE_SUFFIX))
     .sort()
     .map((name) => join(sourcesDir, name));
+}
+
+/** The archive-root-relative prefix every derived location carries. */
+const ARCHIVE_CASES_PREFIX = 'archive/cases';
+
+/** A `source-group` is a container; it has no archive location of its own. */
+const CONTAINER_KIND = 'source-group';
+
+/**
+ * Read the `titles` projection: every entry's `text` and `role`, as strings.
+ *
+ * Returns a message (not a list) when the field is present but not a list of
+ * `{ text, role }` objects. Absence is legitimate — `deriveSlug` documents a
+ * titleless Source as slugifying its `sourceId` — so an ABSENT `titles` reads
+ * as the empty list, while a MALFORMED one is loud: silently treating it as
+ * empty would change the derived slug, and therefore the derived archive
+ * location, without saying so.
+ */
+function readTitles(
+  value: unknown,
+  where: string,
+): readonly { readonly text: string; readonly role: string }[] | string {
+  if (value === undefined || value === null) {
+    return [];
+  }
+  if (!Array.isArray(value)) {
+    return `${where}: "titles" must be a list when present, got ${JSON.stringify(value)}`;
+  }
+
+  const titles: { text: string; role: string }[] = [];
+  for (const [index, entry] of value.entries()) {
+    if (!isPlainObject(entry)) {
+      return `${where}: "titles[${index}]" must be an object with "text" and "role"`;
+    }
+    const { text, role } = entry;
+    if (typeof text !== 'string' || typeof role !== 'string') {
+      return (
+        `${where}: "titles[${index}]" must carry string "text" and "role", got ` +
+        `${JSON.stringify({ text, role })}`
+      );
+    }
+    titles.push({ text, role });
+  }
+  return titles;
+}
+
+/**
+ * Where the generic rule would place `source`, archive-root-relative, or
+ * `undefined` for a caseless record or a `source-group` container — see
+ * {@link SourceIdentity.genericLocation}.
+ */
+function genericLocationOf(source: LayoutDerivationSource): string | undefined {
+  if (source.case === undefined || source.kind === CONTAINER_KIND) {
+    return undefined;
+  }
+  const layout = deriveSourceLayout(source);
+  return `${ARCHIVE_CASES_PREFIX}/${layout.case}/${layout.type}/${layout.slug}`;
 }
 
 /**
@@ -140,10 +225,43 @@ function readIdentity(filePath: string): SourceIdentity | SourceIdentityProblem 
         message: `${where}: "case" must be a non-empty string when present, got ${JSON.stringify(rawCase)}`,
       };
     }
-    return { sourceId, caseId: rawCase, filePath };
+  }
+  const caseId = typeof rawCase === 'string' ? rawCase : undefined;
+
+  // `kind` is REQUIRED, not defaulted (AUDIT-05). It selects the material-type
+  // directory (`newspapers` vs `books`) the generic location is built from, so
+  // treating an absent `kind` as "not a periodical" would quietly invent an
+  // archive location for the record — exactly the guess Principle V forbids.
+  const kind = parsed.kind;
+  if (typeof kind !== 'string' || kind.trim().length === 0) {
+    return {
+      filePath,
+      message:
+        `${where}: "kind" must be a non-empty string, got ${JSON.stringify(kind)} — it selects ` +
+        'the archive material-type directory, so it cannot be defaulted',
+    };
   }
 
-  return { sourceId, caseId: undefined, filePath };
+  const rawPartOf = parsed.partOf;
+  if (rawPartOf !== undefined && rawPartOf !== null && typeof rawPartOf !== 'string') {
+    return {
+      filePath,
+      message: `${where}: "partOf" must be a string when present, got ${JSON.stringify(rawPartOf)}`,
+    };
+  }
+  const partOf = typeof rawPartOf === 'string' ? rawPartOf : undefined;
+
+  const titles = readTitles(parsed.titles, where);
+  if (typeof titles === 'string') {
+    return { filePath, message: titles };
+  }
+
+  return {
+    sourceId,
+    caseId,
+    filePath,
+    genericLocation: genericLocationOf({ sourceId, case: caseId, kind, partOf, titles }),
+  };
 }
 
 function isProblem(value: SourceIdentity | SourceIdentityProblem): value is SourceIdentityProblem {

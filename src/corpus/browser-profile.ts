@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync, type Dirent } from 'node:fs';
-import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
 import { describeError } from '@/bibliography/load-primitives';
+import { corpusArtifactPath } from '@/corpus/corpus-id';
 
 /**
  * Corpus config seam — the `BrowserProfile` type + a typed validating
@@ -152,8 +152,21 @@ function validateBrowserProfile(parsed: unknown, filePath: string): BrowserProfi
   };
 }
 
-function profilePath(corporaRoot: string, id: string): string {
-  return join(corporaRoot, `${id}${BROWSER_PROFILE_SUFFIX}`);
+/**
+ * `<corporaRoot>/<id>.browser.yml`, with the corpus-id grammar and the
+ * root-containment guard applied first (AUDIT-29, `@/corpus/corpus-id`).
+ *
+ * The escape was CHEAPER to reach here than on the manifest loader: a
+ * profile's `id` field is deliberately not tied to its filename (see
+ * {@link validateBrowserProfile}), so an out-of-root profile needed no
+ * crafted `id:` at all to load successfully.
+ *
+ * Both `loadBrowserProfile` and `tryLoadBrowserProfile` go through this, so
+ * the absence-tolerant path cannot turn a rejected id into a quiet `null`:
+ * FR-005 tolerates a MISSING profile, never a malformed request for one.
+ */
+function profilePath(corporaRoot: string, id: string, where: string): string {
+  return corpusArtifactPath(corporaRoot, id, BROWSER_PROFILE_SUFFIX, where);
 }
 
 /**
@@ -170,7 +183,7 @@ function profilePath(corporaRoot: string, id: string): string {
  * `corporaRoot` is caller-injected (FR-016) — see the module doc comment.
  */
 export function loadBrowserProfile(corporaRoot: string, id: string): BrowserProfile {
-  const filePath = profilePath(corporaRoot, id);
+  const filePath = profilePath(corporaRoot, id, 'loadBrowserProfile');
   const text = readFileText(filePath);
   const parsed = parseYamlOrFail(text, filePath);
   return validateBrowserProfile(parsed, filePath);
@@ -187,7 +200,7 @@ export function loadBrowserProfile(corporaRoot: string, id: string): BrowserProf
  * `corporaRoot` is caller-injected (FR-016) — see the module doc comment.
  */
 export function tryLoadBrowserProfile(corporaRoot: string, id: string): BrowserProfile | null {
-  const filePath = profilePath(corporaRoot, id);
+  const filePath = profilePath(corporaRoot, id, 'tryLoadBrowserProfile');
   if (!existsSync(filePath)) {
     return null;
   }

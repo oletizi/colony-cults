@@ -12,8 +12,16 @@ import { finding, type CorpusValidationFinding } from '@/corpus/validate-types';
  * layout rule cannot reproduce. Because it is an escape hatch, it is the
  * most dangerous field in the manifest: it names a filesystem location by
  * hand. Every one must therefore prove that it (a) points at a real Source,
- * (b) points at a Source THIS corpus owns, (c) stays inside the archive
- * root, and (d) does not collide with another Source's location.
+ * (b) points at a Source THIS corpus owns, (c) stays inside the archive root
+ * AND is of the one resolvable shape `archive/cases/<case>/<type>/<slug>`,
+ * and (d) does not collide with another Source's location.
+ *
+ * CLAUSE (d) MEANS ANOTHER SOURCE'S LOCATION, NOT ANOTHER OVERRIDE (AUDIT-05).
+ * Most Sources carry no override and sit at the location the generic rule
+ * derives, so a check that only compared overrides to other overrides could
+ * not see the common case at all. {@link seedDerivedClaimants} therefore seeds
+ * the claimant map with every non-overridden Source's derived location before
+ * a single override is walked.
  *
  * ON THE `reason` REQUIREMENT (FR-007's fourth clause): it is enforced, but
  * NOT here. `loadCorpusManifest` already rejects an override whose `reason`
@@ -51,6 +59,108 @@ function escapesArchiveRoot(relativePath: string): boolean {
   return normalized === '..' || normalized.startsWith('../');
 }
 
+/** The one shape an override path may take. */
+export const OVERRIDE_PATH_SHAPE = 'archive/cases/<case>/<type>/<slug>';
+
+/** The archive-root-relative prefix every override path must carry. */
+const OVERRIDE_PATH_PREFIX = ['archive', 'cases'] as const;
+/** `archive` / `cases` / `<case>` / `<type>` / `<slug>`. */
+const OVERRIDE_PATH_SEGMENTS = OVERRIDE_PATH_PREFIX.length + 3;
+
+/** The three components an override path encodes. */
+export interface OverrideLocation {
+  readonly caseId: string;
+  readonly type: string;
+  readonly slug: string;
+}
+
+/**
+ * Parse a validated-as-relative override path into its three components, or
+ * `null` when it is not of {@link OVERRIDE_PATH_SHAPE}.
+ *
+ * SINGLE OWNER OF THE SHAPE (AUDIT-05). `@/archive/layout-resolve`'s
+ * `layoutFromOverride` used to hold its own copy of this parse and THREW on a
+ * malformed path — at RESOLVE time, long after the config gate had passed the
+ * manifest. A validator that green-lights a manifest which cannot resolve is
+ * the same silent-until-too-late failure as the override-collision gap below,
+ * so the shape is now checked here, at validation time, and the resolver
+ * consumes this function rather than re-deriving it.
+ */
+export function parseOverridePath(relativePath: string): OverrideLocation | null {
+  const segments = normalizeOverridePath(relativePath).split('/');
+  if (segments.length !== OVERRIDE_PATH_SEGMENTS) {
+    return null;
+  }
+  if (!OVERRIDE_PATH_PREFIX.every((expected, index) => segments[index] === expected)) {
+    return null;
+  }
+  if (segments.some((segment) => segment.length === 0)) {
+    return null;
+  }
+  return { caseId: segments[2], type: segments[3], slug: segments[4] };
+}
+
+/**
+ * Seed the location-claimant map with the GENERICALLY DERIVED location of
+ * every Source that does NOT carry an override (AUDIT-05).
+ *
+ * THE BUG THIS CLOSES. `claimants` used to be populated exclusively from
+ * override `relativePath`s, so the only collision it could ever see was
+ * override-vs-override. But this file's own header states that an override
+ * must prove it "(d) does not collide with another Source's location" — and
+ * the overwhelming majority of Sources have no override at all, sitting
+ * instead at the location the generic rule derives. An override aimed
+ * squarely at one of those was reported as clean.
+ *
+ * Sources that DO carry an override are excluded: their location is the
+ * override, not the derivation, so seeding the derivation as well would
+ * manufacture a phantom claim on a directory nothing writes to.
+ *
+ * A Source with no `genericLocation` contributes nothing, and that is not a
+ * silent skip: `undefined` there means either "declares no case" (already
+ * reported as `source-missing-case`) or "is a source-group container", which
+ * has no archive location by design.
+ */
+function seedDerivedClaimants(
+  entries: readonly SourceIdentity[],
+  overridden: ReadonlySet<string>,
+  claimants: Map<string, string[]>,
+): void {
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    // A duplicated sourceId is its own finding (`duplicate-source-id`); it
+    // must not also present as two Sources colliding on one location.
+    if (seen.has(entry.sourceId) || overridden.has(entry.sourceId)) {
+      continue;
+    }
+    seen.add(entry.sourceId);
+    if (entry.genericLocation === undefined) {
+      continue;
+    }
+    const subject = `${entry.sourceId} (generic layout)`;
+    const existing = claimants.get(entry.genericLocation);
+    if (existing === undefined) {
+      claimants.set(entry.genericLocation, [subject]);
+    } else {
+      existing.push(subject);
+    }
+  }
+}
+
+/** Every Source ID any manifest declares an override for. */
+function overriddenSourceIds(manifests: readonly CorpusManifest[]): Set<string> {
+  const ids = new Set<string>();
+  for (const manifest of manifests) {
+    if (manifest.archiveLayoutOverrides === null) {
+      continue;
+    }
+    for (const sourceId of Object.keys(manifest.archiveLayoutOverrides)) {
+      ids.add(sourceId);
+    }
+  }
+  return ids;
+}
+
 /**
  * Validate every override across every manifest.
  *
@@ -71,8 +181,12 @@ export function validateArchiveOverrides(
   }
 
   const findings: CorpusValidationFinding[] = [];
-  /** normalized location -> the `<corpus>/<sourceId>` overrides claiming it. */
+  /**
+   * normalized location -> everything claiming it: `<corpus>/<sourceId>` for
+   * an override, `<sourceId> (generic layout)` for a rule-derived location.
+   */
   const claimants = new Map<string, string[]>();
+  seedDerivedClaimants(entries, overriddenSourceIds(manifests), claimants);
 
   for (const manifest of manifests) {
     if (manifest.archiveLayoutOverrides === null) {
@@ -139,6 +253,23 @@ export function validateArchiveOverrides(
             subject,
             `archiveLayoutOverride relativePath ${JSON.stringify(relativePath)} for Source ` +
               `${JSON.stringify(sourceId)} escapes the archive root via ".." traversal`,
+          ),
+        );
+        continue;
+      }
+
+      // The SHAPE, checked here rather than left to blow up inside
+      // `@/archive/layout-resolve`'s `layoutFromOverride` at resolve time.
+      if (parseOverridePath(relativePath) === null) {
+        findings.push(
+          finding(
+            'override-path-malformed',
+            subject,
+            `archiveLayoutOverride relativePath ${JSON.stringify(relativePath)} for Source ` +
+              `${JSON.stringify(sourceId)} is not of the required form ` +
+              `${JSON.stringify(OVERRIDE_PATH_SHAPE)}; every consumer of a resolved layout ` +
+              'builds <archiveRoot>/archive/cases/<case>/<type>/<slug>, so a path of any other ' +
+              'shape cannot be resolved at all',
           ),
         );
         continue;

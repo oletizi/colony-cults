@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 
 import { describeError } from '@/bibliography/load-primitives';
+import { assertCorpusId } from '@/corpus/corpus-id';
 import { loadCorpusManifest, type CorpusManifest } from '@/corpus/manifest';
 
 /**
@@ -87,6 +88,14 @@ export function selectCorpus(options: SelectCorpusOptions): SelectedCorpus {
         'environment variable to <id>; there is no implicit default (see FR-003)',
     );
   }
+
+  // AUDIT-29: `--corpus` / `COLONY_CORPUS` are OPERATOR INPUT, and this is
+  // where they first become a path. The grammar is asserted here, OUTSIDE the
+  // try/catch, so a traversal id reports what is actually wrong with the id
+  // rather than being wrapped as "unknown corpus — no manifest at ...".
+  // `loadCorpusManifest` re-asserts it; the duplication is deliberate, since
+  // that loader has callers other than this one.
+  assertCorpusId(id, 'selectCorpus');
 
   let manifest: CorpusManifest;
   try {

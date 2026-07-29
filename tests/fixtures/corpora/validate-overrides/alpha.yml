@@ -11,10 +11,10 @@ requiredCapabilities:
   sourceQueries: []
 archiveLayoutOverrides:
   AL999:
-    relativePath: cases/alpha-case/AL999/legacy
+    relativePath: archive/cases/alpha-case/books/al999-legacy
     reason: references a Source that does not exist
   BE001:
-    relativePath: cases/alpha-case/BE001/legacy
+    relativePath: archive/cases/alpha-case/books/be001-legacy
     reason: references a Source belonging to another corpus
   AL001:
     relativePath: /absolute/escape/hatch
@@ -23,8 +23,8 @@ archiveLayoutOverrides:
     relativePath: ../../outside-the-archive
     reason: traversal escapes the archive root
   AL003:
-    relativePath: cases/alpha-case/shared-location
+    relativePath: archive/cases/alpha-case/books/shared-location
     reason: first of two overrides colliding on one location
   AL004:
-    relativePath: cases/alpha-case/./shared-location
+    relativePath: archive/cases/alpha-case/books/./shared-location
     reason: second of two overrides colliding on one location

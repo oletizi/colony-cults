@@ -1,5 +1,3 @@
-import type { Source } from '@/model/source';
-
 /**
  * The GENERIC archive-layout derivation (spec 018-corpus-config-seam, FR-017
  * step 3) plus the {@link SourceLayout} shape it produces.
@@ -40,6 +38,31 @@ export function layoutsEqual(a: SourceLayout, b: SourceLayout): boolean {
   return a.case === b.case && a.type === b.type && a.slug === b.slug && a.kind === b.kind;
 }
 
+/**
+ * The PROJECTION of a `Source` that {@link deriveSourceLayout} actually
+ * reads. A full `Source` satisfies it structurally, so every existing caller
+ * is unaffected and no call site changed.
+ *
+ * It exists because the generic derivation has a SECOND consumer that has no
+ * `Source` to hand: `@/corpus/source-index`, which reads the bibliography SSOT
+ * for the config validator and must be able to answer "where would the generic
+ * rule put this record?" without becoming a Source loader (AUDIT-05 — the
+ * override-collision rule has to compare an override against every OTHER
+ * Source's rule-derived location, not just against other overrides).
+ *
+ * `kind` and `role` are widened to `string` deliberately: this is the shape as
+ * READ FROM YAML, and vocabulary enforcement belongs to `@/bibliography/load`,
+ * not to a projection. The derivation only ever asks whether `kind` is exactly
+ * `'periodical'` and whether a title's `role` is exactly `'canonical'`.
+ */
+export interface LayoutDerivationSource {
+  readonly sourceId: string;
+  readonly case?: string;
+  readonly kind: string;
+  readonly partOf?: string;
+  readonly titles: readonly { readonly text: string; readonly role: string }[];
+}
+
 /** Maximum length of a derived slug (see {@link deriveSourceLayout}). */
 const MAX_DERIVED_SLUG_LENGTH = 80;
 
@@ -74,7 +97,7 @@ function slugify(text: string): string {
  * lowercased `sourceId` when the source has no titles at all (or its titles
  * slugify to an empty string, e.g. a title that is pure punctuation).
  */
-function deriveSlug(source: Source): string {
+function deriveSlug(source: LayoutDerivationSource): string {
   const canonical = source.titles.find((title) => title.role === 'canonical');
   const chosenTitle = canonical ?? source.titles[0];
   const fromTitle = chosenTitle !== undefined ? slugify(chosenTitle.text) : '';
@@ -114,7 +137,10 @@ function deriveSlug(source: Source): string {
  *   ONLY that shape is actually enumerated by a census into dated issue
  *   directories.
  */
-export function deriveSourceLayout(source: Source, fallbackCase?: string): SourceLayout {
+export function deriveSourceLayout(
+  source: LayoutDerivationSource,
+  fallbackCase?: string,
+): SourceLayout {
   const resolvedCase = source.case ?? fallbackCase;
   if (resolvedCase === undefined || resolvedCase.trim().length === 0) {
     throw new Error(

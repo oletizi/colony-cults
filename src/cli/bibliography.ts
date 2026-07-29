@@ -376,10 +376,12 @@ async function runValidate(rest: string[], corpus: CorpusComposition): Promise<n
     const archiveCompanions = collectCompanions(archiveRoot);
     findings = validate(model, {
       repoRoot,
-      searchLog,
       archiveCompanions,
       archiveRoot,
-      validCaseIds: corpus.scope.validCaseIds,
+      // The search log and the corpus's case ids travel together (AUDIT-06):
+      // supplying one without the other no longer compiles, so this call site
+      // cannot regress into silently skipping the scope check.
+      scopeCheck: { searchLog, validCaseIds: corpus.scope.validCaseIds },
     });
   } catch (error) {
     console.error(`bib validate: ${describeError(error)}`);
