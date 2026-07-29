@@ -536,15 +536,15 @@ export async function runBibliography(
     case 'inventory':
       return runInventoryCli(rest, requireCorpus(corpus, 'bib inventory'));
     case 'verify-member':
-      return runVerifyMemberCli(rest);
+      return runVerifyMemberCli(rest, requireCorpus(corpus, 'bib verify-member'));
     case 'promote':
-      return runPromoteCli(rest);
+      return runPromoteCli(rest, requireCorpus(corpus, 'bib promote'));
     case 'exclude-member':
       return runExcludeMemberCli(rest);
     case 'acquire':
-      return runAcquireCli(rest);
+      return runAcquireCli(rest, requireCorpus(corpus, 'bib acquire'));
     case 'reconcile':
-      return runReconcileCli(rest);
+      return runReconcileCli(rest, requireCorpus(corpus, 'bib reconcile'));
     case 'discover':
       return runDiscoverCli(rest);
     case 'coverage':

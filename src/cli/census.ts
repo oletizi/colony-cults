@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
+import { resolveRepoRootUpward } from '@/cli/composition-root';
 import type { GallicaClient } from '@/gallica/gallica-client';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
@@ -37,7 +38,11 @@ export function defaultCensusDeps(): CensusDeps {
       console.log(message);
     },
     builtAt: new Date().toISOString().slice(0, 10),
-    repoRoot: process.cwd(),
+    // Repo-root-anchored, not cwd-anchored (AUDIT-22, same class as
+    // `@/cli/translate`): `censusPath` resolves `data/census/` under this,
+    // a fixed location in the repository that does not move with the
+    // operator's shell. Tests inject their own `repoRoot`.
+    repoRoot: resolveRepoRootUpward(),
   };
 }
 

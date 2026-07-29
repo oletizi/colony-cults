@@ -10,6 +10,7 @@ import { companionYamlPath } from '@/archive/store';
 import { sourceRootDir } from '@/archive/location';
 import { parse } from '@/cli/parse';
 import { runSummarizeSource, type SummarizeSourceCliDeps } from '@/cli/summarize';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { summarizeIssue, type SummarizeIssueCtx } from '@/summarize/issue';
 import { summarizeSource, type SummarizeSourceCtx } from '@/summarize/source-rollup';
 import {
@@ -186,7 +187,7 @@ describe('runSummarizeSource (T028, US4 per-source rollup end-to-end)', () => {
 
     // Partial coverage (2 of 3 issues summarized) must NOT throw.
     await expect(
-      runSummarizeSource(parse(['summarize-source', 'PB-P001']), deps),
+      runSummarizeSource(parse(['summarize-source', 'PB-P001']), committedSourceFilenamePolicy(), deps),
     ).resolves.toBeUndefined();
 
     expect(calls).toHaveLength(1);

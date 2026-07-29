@@ -3,7 +3,7 @@ import { requireOption } from '@/cli/fetch';
 import { resolveRepoRootUpward, resolveSourcesDir } from '@/cli/composition-root';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
-import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import {
   commitAndPushIssueCheckpoint,
   buildMonographPageCheckpointHook,
@@ -112,8 +112,18 @@ function dryRunLabel(outcome: IssueOutcome): string {
 export async function buildTranslateCliDeps(
   args: ParsedArgs,
 ): Promise<TranslateCliDeps> {
-  const repoRoot = process.cwd();
-  const config = await loadEngineConfig(repoRoot);
+  // TWO DIFFERENT ROOTS, DELIBERATELY (AUDIT-22, second instance). The
+  // ENGINE CONFIG is legitimately caller-relative: `translate.config.json` is
+  // an operator-supplied file that travels with the working directory, so it
+  // keeps reading from `process.cwd()`. The ARCHIVE ROOT is not: it names
+  // durable canonical data that does not move with the operator's shell, so it
+  // resolves from the repo root walked up from THIS module — the same root
+  // `translateSourcesDir` already uses. (In practice `resolveArchiveRoot`
+  // reads the root from `--archive-root`/`COLONY_ARCHIVE_ROOT` and uses
+  // `repoRoot` only as a non-empty guard, so this is honesty rather than a
+  // behavior change; the argument now means what its name says.)
+  const config = await loadEngineConfig(process.cwd());
+  const repoRoot = resolveRepoRootUpward();
   const engineName = resolveEngine(args.options.engine, config);
   const model = resolveModel(args.options.model, engineName, config);
   const { engine, preflight } = createEngine(engineName);
@@ -148,9 +158,16 @@ export async function buildTranslateCliDeps(
  * rights status, then returns normally (exit 0) -- it never throws on
  * `refused`/`failed`, since dry-run only reports. The `!dryRun` fail-loud
  * behavior below is unchanged from before dry-run existed.
+ *
+ * `sourceFilenames` is REQUIRED and comes from the composition root
+ * (`@/cli/translate-dispatch` passes `corpus.sourceFilenames`): the SSOT
+ * enumeration below must see the SELECTED corpus's Source files, not an
+ * ambient union over every installed manifest. There is deliberately no
+ * default.
  */
 export async function runTranslate(
   args: ParsedArgs,
+  sourceFilenames: SourceFilenamePolicy,
   deps?: TranslateCliDeps,
 ): Promise<void> {
   const d = deps ?? (await buildTranslateCliDeps(args));
@@ -162,11 +179,7 @@ export async function runTranslate(
   const sourceId = requireOption(args.options.sourceId, 'source-id', 'translate');
   // Register a source-group member's derived archive layout so translateIssue's
   // internal resolveFetchedDir can locate it (no-op for static sources).
-  ensureMemberLayoutRegistered(
-    sourceId,
-    translateSourcesDir(),
-    committedSourceFilenamePolicy(),
-  );
+  ensureMemberLayoutRegistered(sourceId, translateSourcesDir(), sourceFilenames);
   const dryRun = args.flags.dryRun;
 
   // Per-page checkpoint cadence (`--checkpoint` [+ `--checkpoint-every N`]),
@@ -274,9 +287,17 @@ export async function runTranslate(
  * printed with would-translate/would-skip/would-refuse labels plus a closing
  * "(dry-run) wrote nothing" note, and the function returns normally (exit 0)
  * without reaching the abort throw below.
+ *
+ * `sourceFilenames` is REQUIRED and comes from the composition root
+ * (`@/cli/translate-dispatch` passes `corpus.sourceFilenames`): BOTH the
+ * Source Group guardrail and the member-layout registration below enumerate
+ * the SSOT, and both must see the SELECTED corpus's Source files rather than
+ * an ambient union over every installed manifest. There is deliberately no
+ * default.
  */
 export async function runTranslateSource(
   args: ParsedArgs,
+  sourceFilenames: SourceFilenamePolicy,
   deps?: TranslateCliDeps,
 ): Promise<void> {
   const d = deps ?? (await buildTranslateCliDeps(args));
@@ -291,7 +312,7 @@ export async function runTranslateSource(
   // consults `sourceLayout` (which would otherwise surface an opaque layout
   // error), mirroring `fetch-source`'s guard.
   const sourcesDir = translateSourcesDir();
-  if (sourceKind(sourceId, sourcesDir, committedSourceFilenamePolicy()) === 'source-group') {
+  if (sourceKind(sourceId, sourcesDir, sourceFilenames) === 'source-group') {
     throw new Error(
       `translate-source: "${sourceId}" is a Source Group — it has no archival object to translate. ` +
         `Translate its concrete member Sources instead.`,
@@ -299,7 +320,7 @@ export async function runTranslateSource(
   }
 
   // Register a member's derived archive layout so discovery/resolution resolve it.
-  ensureMemberLayoutRegistered(sourceId, sourcesDir, committedSourceFilenamePolicy());
+  ensureMemberLayoutRegistered(sourceId, sourcesDir, sourceFilenames);
 
   const dryRun = args.flags.dryRun;
 

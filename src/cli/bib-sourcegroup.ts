@@ -16,12 +16,38 @@
  * `src/sourcegroup/`, and maps the outcome to a process exit code + printed
  * output. Fail loud: a tooling/precondition failure prints to stderr and
  * returns a non-zero code; no fallbacks.
+ *
+ * DUPLICATE-DETECTION SCOPE: AN OPEN QUESTION, DELIBERATELY NOT DECIDED HERE.
+ *
+ * `verify-member` and `promote` both feed their SSOT enumeration into
+ * `buildExistingMembers` (`@/sourcegroup/verify-member-command`), which
+ * ITERATES every loaded Source to build the duplicate-detection set behind
+ * `checkHardDuplicate` (`@/sourcegroup/verify-member`) -- a hard pass/fail
+ * check that `promote` re-runs and aborts on. This is the ONE genuine SCOPE
+ * use of the source-filename policy in the whole `bib` surface: every other
+ * consumer does an id-keyed `find` or a `partOf` filter, where a superset
+ * predicate provably cannot misroute. The WIDTH of the policy therefore
+ * determines a verdict.
+ *
+ * Both wrappers now take the INJECTED `corpus.sourceFilenames` rather than
+ * calling the ambient `committedSourceFilenamePolicy()` -- the seam is honest,
+ * and on the shipped single-corpus configuration the two are byte-identical,
+ * so nothing observable changed. What is NOT decided here is what SHOULD
+ * happen once a second corpus is committed: narrowing to the selected corpus
+ * turns duplicate detection from repository-wide into within-corpus, while
+ * FR-010 states `bibliography/sources` is deliberately unscoped -- which
+ * arguably makes cross-corpus detection the WANTED behavior (two corpora
+ * claiming the same Gallica ark is exactly the collision worth catching).
+ * Threading the injected policy does not answer that; it only makes the choice
+ * visible and changeable at ONE site instead of hidden in an ambient call. If
+ * the answer is "stay repository-wide", the fix is a deliberately widened
+ * policy passed from the composition root, NOT a re-hidden ambient read here.
  */
 
 import { parseArgs as nodeParseArgs } from 'node:util';
 
 import { loadAllSources } from '@/bibliography/load';
-import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
+import type { CorpusComposition } from '@/cli/composition-root';
 import { describeError } from '@/bibliography/load-primitives';
 import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
@@ -78,8 +104,19 @@ function parseLimit(raw: string | undefined): number | undefined {
   return n;
 }
 
-/** `bib verify-member <id> [--archive] [--json]`. */
-export async function runVerifyMemberCli(rest: string[]): Promise<number> {
+/**
+ * `bib verify-member <id> [--archive] [--json]`.
+ *
+ * `corpus` is the composition threaded from the CLI composition root
+ * (`@/cli/bibliography`), matching its sibling `runInventoryCli`. It is what
+ * scopes the member enumeration below — see this module's header note on the
+ * duplicate-detection scope for why that enumeration is the one genuine SCOPE
+ * use of the policy in the whole `bib` surface.
+ */
+export async function runVerifyMemberCli(
+  rest: string[],
+  corpus: CorpusComposition,
+): Promise<number> {
   let id: string | undefined;
   let archive: string | undefined;
   let json = false;
@@ -112,15 +149,25 @@ export async function runVerifyMemberCli(rest: string[]): Promise<number> {
     archive,
     json,
     sourcesDir: sourcesDirOf(repoRoot),
-    loadMembers: (dir) => loadAllSources(dir, committedSourceFilenamePolicy()),
+    loadMembers: (dir) => loadAllSources(dir, corpus.sourceFilenames),
     resolveArk: gallicaArkIdentifierResolver(new GallicaHttpClient(new HttpClient())),
   });
   // A verdict (pass or fail) is data -> exit 0; a tooling error -> non-zero.
   return result.exitCode;
 }
 
-/** `bib promote <id> [--archive] [--group]`. */
-export async function runPromoteCli(rest: string[]): Promise<number> {
+/**
+ * `bib promote <id> [--archive] [--group]`.
+ *
+ * `corpus` is the composition threaded from the CLI composition root
+ * (`@/cli/bibliography`). Promotion RE-RUNS verification and aborts on a hard
+ * failure, so the enumeration it scopes below feeds the same pass/fail
+ * duplicate check `verify-member` does — see this module's header note.
+ */
+export async function runPromoteCli(
+  rest: string[],
+  corpus: CorpusComposition,
+): Promise<number> {
   let id: string | undefined;
   let archive: string | undefined;
   let group: string | undefined;
@@ -151,7 +198,7 @@ export async function runPromoteCli(rest: string[]): Promise<number> {
   const sourcesDir = sourcesDirOf(repoRoot);
   try {
     const existingMembers = buildExistingMembers(
-      loadAllSources(sourcesDir, committedSourceFilenamePolicy()),
+      loadAllSources(sourcesDir, corpus.sourceFilenames),
       id,
     );
     const result = await runPromote({

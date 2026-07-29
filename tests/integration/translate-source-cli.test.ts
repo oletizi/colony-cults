@@ -7,6 +7,7 @@ import {
   runTranslateSource,
 } from '@/cli/translate';
 import type { TranslationEngine } from '@/engine/types';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { CONSECUTIVE_FAILURE_ABORT } from '@/translate/source';
 import {
   buildFetchedIssue,
@@ -63,7 +64,7 @@ describe('runTranslateSource (T024)', () => {
     };
 
     await expect(
-      runTranslateSource(baseArgs(source.sourceId), deps),
+      runTranslateSource(baseArgs(source.sourceId), committedSourceFilenamePolicy(), deps),
     ).resolves.toBeUndefined();
 
     // One per-issue outcome line for every discovered issue.
@@ -103,7 +104,7 @@ describe('runTranslateSource (T024)', () => {
     };
 
     await expect(
-      runTranslateSource(baseArgs(source.sourceId), deps),
+      runTranslateSource(baseArgs(source.sourceId), committedSourceFilenamePolicy(), deps),
     ).rejects.toThrow(
       new RegExp(
         `aborted after ${CONSECUTIVE_FAILURE_ABORT} consecutive issue failures`,
@@ -135,7 +136,7 @@ describe('runTranslateSource (T024)', () => {
       options: {},
     };
 
-    await expect(runTranslateSource(args, deps)).rejects.toThrow(
+    await expect(runTranslateSource(args, committedSourceFilenamePolicy(), deps)).rejects.toThrow(
       /missing required argument <sourceId>/,
     );
   });
@@ -199,7 +200,7 @@ describe('CLI review fixes', () => {
       options: {},
     };
 
-    await expect(runTranslateSource(args, deps)).rejects.toThrow(
+    await expect(runTranslateSource(args, committedSourceFilenamePolicy(), deps)).rejects.toThrow(
       /Source Group/i,
     );
   });
@@ -236,7 +237,9 @@ describe('CLI review fixes', () => {
         options: { sourceId: fetched.sourceId },
       };
 
-      await expect(runTranslate(args, deps)).rejects.toThrow(/incomplete/i);
+      await expect(runTranslate(args, committedSourceFilenamePolicy(), deps)).rejects.toThrow(
+        /incomplete/i,
+      );
     } finally {
       fetched.cleanup();
     }

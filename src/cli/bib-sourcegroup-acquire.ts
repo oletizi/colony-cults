@@ -23,7 +23,7 @@ import { deriveSourceLayout, registerSourceLayout, resolveArchiveRoot } from '@/
 import { runFetchSource } from '@/cli/fetch';
 import { parseCheckpointEvery } from '@/cli/parse';
 import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
-import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
+import type { CorpusComposition } from '@/cli/composition-root';
 import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { runAcquire } from '@/sourcegroup/acquire';
 import { buildMuseumAdapterForMember } from '@/cli/bib-acquire-museum';
@@ -174,8 +174,19 @@ export function parseAcquireArgs(rest: string[]): AcquireCliArgs {
  * `bib acquire <id> [--archive] [--object-store] [--dry-run] [--checkpoint]
  * [--checkpoint-every <N>] [--approved-range <start-end>] [--reject]
  * [--notes <text>]`.
+ *
+ * `corpus` is the composition threaded from the CLI composition root
+ * (`@/cli/bibliography`), matching its sibling `runInventoryCli`: this wrapper
+ * sits ABOVE the FR-018 exception boundary -- the corpus is already resolved at
+ * the dispatch site -- so it injects `corpus.sourceFilenames` rather than
+ * reaching for the ambient deferred composition. The deeper `runAcquire`
+ * pipeline, which takes a plain input record with no corpus on it, keeps its
+ * FR-018-authorized ambient call.
  */
-export async function runAcquireCli(rest: string[]): Promise<number> {
+export async function runAcquireCli(
+  rest: string[],
+  corpus: CorpusComposition,
+): Promise<number> {
   let parsed: AcquireCliArgs;
   try {
     parsed = parseAcquireArgs(rest);
@@ -193,9 +204,12 @@ export async function runAcquireCli(rest: string[]): Promise<number> {
 
   const repoRoot = resolveRepoRoot();
   const sourcesDir = sourcesDirOf(repoRoot);
-  // The committed corpora's Source-filename policy (T023, FR-018), composed
-  // ONCE here and threaded into every helper below that enumerates the SSOT.
-  const sourceFilenames = committedSourceFilenamePolicy();
+  // The SELECTED corpus's Source-filename policy (T023, FR-018), injected by
+  // the composition root and threaded into every helper below that enumerates
+  // the SSOT (AUDIT-02/16/27: this used to be an ambient
+  // `committedSourceFilenamePolicy()` read even though the corpus was already
+  // in hand one frame up).
+  const sourceFilenames = corpus.sourceFilenames;
   try {
     // Auto-register this member's archive layout BEFORE the fetcher (below)
     // resolves it -- see `registerMemberArchiveLayout`'s doc comment.
@@ -396,7 +410,10 @@ function selectedCopyHasRecordedAssets(
  * store but `to-collect` status, from before the acquire-completion weld) and
  * recovery -- not as a routine post-acquire step.
  */
-export async function runReconcileCli(rest: string[]): Promise<number> {
+export async function runReconcileCli(
+  rest: string[],
+  corpus: CorpusComposition,
+): Promise<number> {
   let parsed: ReconcileCliArgs;
   try {
     parsed = parseReconcileArgs(rest);
@@ -413,7 +430,9 @@ export async function runReconcileCli(rest: string[]): Promise<number> {
 
   const repoRoot = resolveRepoRoot();
   const sourcesDir = sourcesDirOf(repoRoot);
-  const sourceFilenames = committedSourceFilenamePolicy();
+  // Injected by the composition root, not read ambiently (AUDIT-02/16/27) --
+  // see `runAcquireCli`'s note.
+  const sourceFilenames = corpus.sourceFilenames;
   const isMuseumCopy = selectedCopyHasRecordedAssets(sourcesDir, id, archive, sourceFilenames);
   try {
     let result: ReconcileResult;

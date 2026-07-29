@@ -7,6 +7,7 @@ import { readProvenance, writeProvenance, type ProvenanceFields } from '@/archiv
 import { companionYamlPath } from '@/archive/store';
 import { parse } from '@/cli/parse';
 import { runSummarize, type SummarizeCliDeps } from '@/cli/summarize';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { writeSourceFile } from '@/bibliography/source-writer';
 import type { SummarizationRunner, SummaryResult } from '@/summarize/types';
 import type { Source } from '@/model/source';
@@ -133,7 +134,7 @@ describe('runSummarize --dry-run: preflight is never invoked (AUDIT-20260722-04 
 
     const args = parse(['summarize', 'PB-P001', 'bpt6k5603637g', '--dry-run']);
 
-    await expect(runSummarize(args, deps)).resolves.toBeUndefined();
+    await expect(runSummarize(args, committedSourceFilenamePolicy(), deps)).resolves.toBeUndefined();
     expect(calls).toHaveLength(0);
   });
 
@@ -154,7 +155,7 @@ describe('runSummarize --dry-run: preflight is never invoked (AUDIT-20260722-04 
 
     const args = parse(['summarize', 'PB-P001', '--dry-run']);
 
-    await expect(runSummarize(args, deps)).resolves.toBeUndefined();
+    await expect(runSummarize(args, committedSourceFilenamePolicy(), deps)).resolves.toBeUndefined();
     expect(calls).toHaveLength(0);
   });
 });

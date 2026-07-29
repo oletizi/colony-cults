@@ -1,9 +1,9 @@
-import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
-import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
+import { resolveRepoRootUpward, resolveSourcesDir } from '@/cli/composition-root';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import {
   assertOcrToolchain,
   defaultOcrPreflightDeps,
@@ -52,7 +52,10 @@ export interface OcrCliDeps {
 
 /** Build the default (real preflight + disk) dependencies. */
 export function defaultOcrCliDeps(): OcrCliDeps {
-  const repoRoot = process.cwd();
+  // Repo-root-anchored, not cwd-anchored (AUDIT-22, same class as
+  // `@/cli/summarize`): the archive root and the SSOT directory name durable
+  // canonical data that does not move with the operator's shell.
+  const repoRoot = resolveRepoRootUpward();
   return {
     archiveRoot: resolveArchiveRoot(repoRoot),
     clock: () => new Date(),
@@ -78,9 +81,15 @@ export function defaultOcrCliDeps(): OcrCliDeps {
  * from the PUBLIC B2 cache (`deps.restoreImages`) -- never re-fetched from
  * Gallica. The preflight (T029) runs before any OCR work; `--dry-run` reports
  * the resolved target directory and does nothing else.
+ *
+ * `sourceFilenames` is REQUIRED and comes from the composition root
+ * (`@/cli/dispatch` passes `corpus.sourceFilenames`): the SSOT enumeration
+ * below must see the SELECTED corpus's Source files, not an ambient union
+ * over every installed manifest. There is deliberately no default.
  */
 export async function runOcr(
   args: ParsedArgs,
+  sourceFilenames: SourceFilenamePolicy,
   deps: OcrCliDeps = defaultOcrCliDeps(),
 ): Promise<void> {
   const issueArk = args.positional[0];
@@ -92,8 +101,8 @@ export async function runOcr(
   // their layout (same slug `bib acquire` fetched into) before locating the dir.
   ensureMemberLayoutRegistered(
     sourceId,
-    path.join(process.cwd(), 'bibliography', 'sources'),
-    committedSourceFilenamePolicy(),
+    resolveSourcesDir(resolveRepoRootUpward()),
+    sourceFilenames,
   );
   const dir = resolveFetchedDir(sourceId, issueArk, deps.archiveRoot);
 

@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import type { ParsedArgs, ParsedFlags } from '@/cli/parse';
+import { resolveRepoRootUpward } from '@/cli/composition-root';
 import type { GallicaClient, IssueMetaClient } from '@/gallica/gallica-client';
 import { GallicaHttpClient } from '@/gallica/gallica-client';
 import { HttpClient } from '@/gallica/http-client';
@@ -126,7 +127,17 @@ export { buildMonographPageCheckpointHook, type CommitCheckpointFn };
  * failing mid-run on the first page.
  */
 export function defaultFetchDeps(args: ParsedArgs): FetchDeps {
-  const repoRoot = process.cwd();
+  // Repo-root-anchored, not cwd-anchored (AUDIT-22, same class as
+  // `@/cli/translate`). `repoRoot` here names TWO fixed locations in the
+  // repository -- `data/census/` and, via `runFetchSource`'s Source Group
+  // guardrail, `bibliography/sources` -- neither of which moves with the
+  // operator's shell. Built from `process.cwd()`, `bib fetch-source` run from
+  // anywhere but the repo root pointed the guardrail at a directory that does
+  // not exist, and `sourceKind` documents an ABSENT directory as a lookup MISS
+  // rather than an error: the "a Source Group has no archival object to fetch"
+  // redirect silently never fired. Tests that want a temp root keep injecting
+  // `repoRoot` explicitly; only this production default changed.
+  const repoRoot = resolveRepoRootUpward();
   const archiveRoot = resolveArchiveRoot(repoRoot, args.options.archiveRoot);
   const http = new HttpClient({
     maxConcurrent: IMAGE_FETCH_CONCURRENCY,

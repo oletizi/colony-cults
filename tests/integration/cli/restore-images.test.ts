@@ -9,6 +9,7 @@ import {
   type RestoreImagesCliDeps,
 } from '@/cli/restore-images';
 import { runOcr, type OcrCliDeps } from '@/cli/ocr';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import type { OcrCommandRunner } from '@/ocr/types';
 import type { RestoreImagesResult } from '@/archive/public-cache';
 
@@ -107,7 +108,7 @@ describe('runRestoreImages (verb)', () => {
     };
     const logs: string[] = [];
 
-    await runRestoreImages(restoreArgs(), deps);
+    await runRestoreImages(restoreArgs(), committedSourceFilenamePolicy(), deps);
 
     // The verb resolved the monograph's FLAT slug dir (not a _ark child).
     expect(seenDir).toBe(dir);
@@ -129,6 +130,7 @@ describe('runRestoreImages (verb)', () => {
 
     await runRestoreImages(
       restoreArgs({ flags: { ...ALL_FLAGS, dryRun: true } }),
+      committedSourceFilenamePolicy(),
       deps,
     );
 
@@ -145,7 +147,7 @@ describe('runRestoreImages (verb)', () => {
     };
 
     await expect(
-      runRestoreImages(restoreArgs({ options: {} }), deps),
+      runRestoreImages(restoreArgs({ options: {} }), committedSourceFilenamePolicy(), deps),
     ).rejects.toThrow(/source-id/);
   });
 });
@@ -191,7 +193,7 @@ describe('runOcr auto-restore', () => {
     // Images are absent at the start (migrated); companions are present.
     expect(existsSync(path.join(dir, 'f001.jpg'))).toBe(false);
 
-    await runOcr(restoreArgs({ command: 'ocr' }), deps);
+    await runOcr(restoreArgs({ command: 'ocr' }), committedSourceFilenamePolicy(), deps);
 
     // Restore ran against the monograph dir, and OCR then produced issue.txt.
     expect(restoreCalledWith).toBe(dir);

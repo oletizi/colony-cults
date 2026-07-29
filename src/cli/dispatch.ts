@@ -27,11 +27,10 @@ import { describeError } from '@/bibliography/load-primitives';
  *
  * The `corpus` parameter is the INJECTION POINT established by T009 (FR-004):
  * every verb in `HANDLERS` is corpus-dependent per the FR-014 table, so it is
- * always a real composition here — never `null`, never optional. Today's
- * handlers ignore it; the hotspot tasks (T011 `bibliography/scope.ts`, T012
- * `sourcegroup/id-alloc.ts`, T013 `archive/location.ts`) thread the narrow
- * policy they need down from here, rather than re-resolving a corpus deeper in
- * the call stack.
+ * always a real composition here — never `null`, never optional. Each handler
+ * threads the NARROW policy its command needs down from here (FR-004: a
+ * hotspot receives only its own field, never this record), rather than
+ * re-resolving a corpus deeper in the call stack.
  */
 type Handler = (args: ParsedArgs, corpus: CorpusComposition) => Promise<void>;
 
@@ -42,14 +41,26 @@ type Handler = (args: ParsedArgs, corpus: CorpusComposition) => Promise<void>;
 //
 // `summarize` (the per-issue generation flow, US1, T019) and `summarize-source`
 // (the per-source rollup, US4, T030) are both wired here.
+//
+// EVERY handler whose command enumerates the SSOT threads
+// `corpus.sourceFilenames` (AUDIT-02/16/27): these lambdas used to DROP the
+// injected composition, leaving each command to reach for the ambient
+// deferred composition (`committedSourceFilenamePolicy`) instead. FR-018
+// authorizes that reach only on chains with no composition-root parameter
+// available; a dispatch handler is not one of them — the corpus is right
+// here. `census`/`fetch-issue` take no policy: neither enumerates the SSOT.
+//
+// `fetch-source` is called with an explicit `undefined` for `deps` so its own
+// production default (`defaultFetchDeps(args)`) still applies — the policy is
+// its THIRD parameter because it doubles as an injected `FetchSourceFn`.
 const HANDLERS: Partial<Record<Command, Handler>> = {
   census: (args) => runCensus(args),
   'fetch-issue': (args) => runFetchIssue(args),
-  'fetch-source': (args) => runFetchSource(args),
-  ocr: (args) => runOcr(args),
-  'restore-images': (args) => runRestoreImages(args),
-  summarize: (args) => runSummarize(args),
-  'summarize-source': (args) => runSummarizeSource(args),
+  'fetch-source': (args, corpus) => runFetchSource(args, undefined, corpus.sourceFilenames),
+  ocr: (args, corpus) => runOcr(args, corpus.sourceFilenames),
+  'restore-images': (args, corpus) => runRestoreImages(args, corpus.sourceFilenames),
+  summarize: (args, corpus) => runSummarize(args, corpus.sourceFilenames),
+  'summarize-source': (args, corpus) => runSummarizeSource(args, corpus.sourceFilenames),
 };
 
 /**

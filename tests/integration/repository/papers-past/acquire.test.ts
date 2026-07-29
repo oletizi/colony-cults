@@ -45,6 +45,7 @@ import { parseArticle } from '@/repository/papers-past/parse';
 import { PlaywrightBrowserSession } from '@/sourcequery/browser-session-playwright';
 import { runAcquireCli } from '@/cli/bib-sourcegroup-acquire';
 import { resolveRepoRoot, sourcesDirOf } from '@/cli/bib-sourcegroup-paths';
+import { composeCorpus, resolveCorporaRoot } from '@/cli/composition-root';
 import { loadAllSources } from '@/bibliography/load';
 import { resolveObjectStoreConfig } from '@/archive/b2-config';
 import type { AcquiredAsset } from '@/model/acquired-asset';
@@ -59,6 +60,19 @@ const PB_FILENAMES = buildSourceFilenamePolicy([
   { prefix: 'PB-P', padWidth: 3 },
   { prefix: 'PB-S', padWidth: 3 },
 ]);
+
+/**
+ * The real, committed `port-breton` composition -- `runAcquireCli` now takes
+ * the corpus from its caller (AUDIT-02/16/27) rather than reaching for the
+ * ambient deferred composition, so the CLI-level scenario below must supply
+ * the same composition `bib acquire --corpus port-breton` would.
+ */
+function portBretonCorpus() {
+  return composeCorpus({
+    corporaRoot: resolveCorporaRoot(resolveRepoRoot()),
+    cliCorpus: 'port-breton',
+  });
+}
 
 
 /** Env gate: skip cleanly (0 network calls) unless a live run is explicitly requested. */
@@ -161,7 +175,7 @@ describe.skipIf(!RUN_PAPERS_PAST_ACQUIRE)('Papers Past adapter (live, operator-r
       const repoRoot = resolveRepoRoot();
       const sourcesDir = sourcesDirOf(repoRoot);
 
-      const exitFirst = await runAcquireCli([DE_RAYS_SOURCE_ID]);
+      const exitFirst = await runAcquireCli([DE_RAYS_SOURCE_ID], portBretonCorpus());
       expect(exitFirst).toBe(0);
 
       const afterFirst = loadAllSources(sourcesDir, PB_FILENAMES).find(
@@ -187,7 +201,7 @@ describe.skipIf(!RUN_PAPERS_PAST_ACQUIRE)('Papers Past adapter (live, operator-r
       // head-then-put skips the PUT when the checksum is already present at
       // the key, and the record's recorded assets must stay byte-for-byte
       // identical across runs, never grow/duplicate.
-      const exitSecond = await runAcquireCli([DE_RAYS_SOURCE_ID]);
+      const exitSecond = await runAcquireCli([DE_RAYS_SOURCE_ID], portBretonCorpus());
       expect(exitSecond).toBe(0);
 
       const afterSecond = loadAllSources(sourcesDir, PB_FILENAMES).find(

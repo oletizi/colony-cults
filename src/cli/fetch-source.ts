@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { sourceKind } from '@/bibliography/load';
 import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { issueDir, monographDir, sourceLayout } from '@/archive/location';
 import { buildCensus } from '@/census/build';
 import { serializeCensus } from '@/census/serialize';
@@ -33,10 +34,21 @@ import {
  * runFetchSourcePeriodical}; a `monograph` source (e.g. `PB-P002`/`PB-P003`)
  * has no census -- it fetches its single document directly (see {@link
  * runFetchSourceMonograph}).
+ *
+ * `sourceFilenames` is the SELECTED corpus's Source-filename policy, injected
+ * by the composition root (`@/cli/dispatch` passes `corpus.sourceFilenames`).
+ * It is OPTIONAL here -- and ONLY here among the `bib` verb handlers -- because
+ * this function is ALSO injected as `FetchSourceFn` (`@/sourcegroup/acquire`,
+ * `@/cli/bib-rights-assess`), a deliberately narrow `(args) => Promise<void>`
+ * boundary on chains that carry no composition-root parameter. Those are
+ * exactly the chains FR-018 names as authorized to reach for the deferred
+ * composition, which is what the default below does. A caller that HAS a
+ * corpus must pass it.
  */
 export async function runFetchSource(
   args: ParsedArgs,
   deps: FetchDeps = defaultFetchDeps(args),
+  sourceFilenames: SourceFilenamePolicy = committedSourceFilenamePolicy(),
 ): Promise<void> {
   const ark = args.positional[0];
   if (ark === undefined) {
@@ -50,7 +62,7 @@ export async function runFetchSource(
   // otherwise surface the opaque "no archive layout registered" error instead
   // of this actionable redirect. Must run BEFORE `sourceLayout` is consulted.
   const sourcesDir = path.join(deps.repoRoot, 'bibliography', 'sources');
-  if (sourceKind(sourceId, sourcesDir, committedSourceFilenamePolicy()) === 'source-group') {
+  if (sourceKind(sourceId, sourcesDir, sourceFilenames) === 'source-group') {
     throw new Error(
       `fetch-source: "${sourceId}" is a Source Group — it has no archival object to fetch. ` +
         `Discover and inventory its members, then fetch the members.`,

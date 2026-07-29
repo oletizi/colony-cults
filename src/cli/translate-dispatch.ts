@@ -30,14 +30,20 @@ import { runTranslate, runTranslateSource } from '@/cli/translate';
 /**
  * A command handler: given the parsed invocation AND the corpus composed at
  * the composition root. The `corpus` parameter is the T009 injection point
- * (FR-004); today's handlers ignore it, and T013 threads the archive-layout
- * policy down from here.
+ * (FR-004); each handler threads the NARROW policy its command needs down from
+ * here, never the record itself.
  */
 type Handler = (args: ParsedArgs, corpus: CorpusComposition) => Promise<void>;
 
+// Both handlers thread `corpus.sourceFilenames` (AUDIT-02/16/27): these
+// lambdas used to DROP the injected composition, leaving `runTranslate`/
+// `runTranslateSource` to reach for the ambient deferred composition
+// (`committedSourceFilenamePolicy`) instead. FR-018 authorizes that reach only
+// on chains with no composition-root parameter available; a dispatch handler
+// is not one of them — the corpus is right here.
 const HANDLERS: Partial<Record<Command, Handler>> = {
-  translate: (args) => runTranslate(args),
-  'translate-source': (args) => runTranslateSource(args),
+  translate: (args, corpus) => runTranslate(args, corpus.sourceFilenames),
+  'translate-source': (args, corpus) => runTranslateSource(args, corpus.sourceFilenames),
 };
 
 /**

@@ -21,6 +21,7 @@ import {
 import type { SummarizationRunner, SummaryResult } from '@/summarize/types';
 import { writeSourceFile } from '@/bibliography/source-writer';
 import { loadSourceFile } from '@/bibliography/load';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { validateSummaryRef } from '@/bibliography/summary-reference';
 import type { Source } from '@/model/source';
 
@@ -185,7 +186,7 @@ describe('AUDIT-live-01: bib summarize <monograph> with no issueArk', () => {
 
     // NOTE: no issueArk positional arg -- exactly the reported bug shape.
     await expect(
-      runSummarize(parse(['summarize', MONO_SOURCE_ID]), deps),
+      runSummarize(parse(['summarize', MONO_SOURCE_ID]), committedSourceFilenamePolicy(), deps),
     ).resolves.toBeUndefined();
 
     // The bug: this call used to make ZERO engine calls and write ZERO
@@ -206,7 +207,7 @@ describe('AUDIT-live-01: bib summarize <monograph> with no issueArk', () => {
     // Seed the per-issue summary first (mirrors the real two-step workflow:
     // `bib summarize <id>` then `bib summarize-source <id>`).
     const issueRun = fakeRunner(ISSUE_RESULT);
-    await runSummarize(parse(['summarize', MONO_SOURCE_ID]), {
+    await runSummarize(parse(['summarize', MONO_SOURCE_ID]), committedSourceFilenamePolicy(), {
       archiveRoot: built.archiveRoot,
       sourcesDir: built.sourcesDir,
       clock: () => new Date(FIXED_DATE),
@@ -242,7 +243,11 @@ describe('AUDIT-live-01: bib summarize <monograph> with no issueArk', () => {
     };
 
     await expect(
-      runSummarizeSource(parse(['summarize-source', MONO_SOURCE_ID]), sourceDeps),
+      runSummarizeSource(
+        parse(['summarize-source', MONO_SOURCE_ID]),
+        committedSourceFilenamePolicy(),
+        sourceDeps,
+      ),
     ).resolves.toBeUndefined();
 
     expect(rollupRun.calls).toHaveLength(1);

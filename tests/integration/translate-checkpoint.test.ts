@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { translateIssue } from '@/translate/issue';
 import { runTranslate, type TranslateCliDeps } from '@/cli/translate';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import { writeProvenance, type ProvenanceFields } from '@/archive/provenance';
 import type { ParsedArgs } from '@/cli/parse';
 import type {
@@ -151,7 +152,7 @@ describe('runTranslate --checkpoint wiring', () => {
       commits.push({ c, push: opts.push });
     };
 
-    await runTranslate(args(), deps(archiveRoot, checkpoint));
+    await runTranslate(args(), committedSourceFilenamePolicy(), deps(archiveRoot, checkpoint));
 
     // 3 pages, checkpoint-every=2 -> one cadence commit at page 2, then a
     // final flush for the trailing page + whole-document artifacts.
@@ -171,7 +172,7 @@ describe('runTranslate --checkpoint wiring', () => {
     const dryArgs = args();
     dryArgs.flags.dryRun = true;
 
-    await runTranslate(dryArgs, deps(archiveRoot, checkpoint));
+    await runTranslate(dryArgs, committedSourceFilenamePolicy(), deps(archiveRoot, checkpoint));
     expect(called).toBe(false);
   });
 });

@@ -1,9 +1,9 @@
-import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
-import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
+import { resolveRepoRootUpward, resolveSourcesDir } from '@/cli/composition-root';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import {
   restoreIssueImages,
   type RestoreImagesResult,
@@ -25,7 +25,10 @@ export interface RestoreImagesCliDeps {
 
 /** Build the default (real disk + anonymous public GET) dependencies. */
 export function defaultRestoreImagesCliDeps(): RestoreImagesCliDeps {
-  const repoRoot = process.cwd();
+  // Repo-root-anchored, not cwd-anchored (AUDIT-22, same class as
+  // `@/cli/summarize`): the archive root names durable canonical data that
+  // does not move with the operator's shell.
+  const repoRoot = resolveRepoRootUpward();
   return {
     archiveRoot: resolveArchiveRoot(repoRoot),
     log: (message) => {
@@ -48,9 +51,15 @@ export function defaultRestoreImagesCliDeps(): RestoreImagesCliDeps {
  *
  * `--force` re-downloads and overwrites images already present locally.
  * `--dry-run` reports the resolved target directory and does nothing else.
+ *
+ * `sourceFilenames` is REQUIRED and comes from the composition root
+ * (`@/cli/dispatch` passes `corpus.sourceFilenames`): the SSOT enumeration
+ * below must see the SELECTED corpus's Source files, not an ambient union
+ * over every installed manifest. There is deliberately no default.
  */
 export async function runRestoreImages(
   args: ParsedArgs,
+  sourceFilenames: SourceFilenamePolicy,
   deps: RestoreImagesCliDeps = defaultRestoreImagesCliDeps(),
 ): Promise<void> {
   const issueArk = args.positional[0];
@@ -64,8 +73,8 @@ export async function runRestoreImages(
   );
   ensureMemberLayoutRegistered(
     sourceId,
-    path.join(process.cwd(), 'bibliography', 'sources'),
-    committedSourceFilenamePolicy(),
+    resolveSourcesDir(resolveRepoRootUpward()),
+    sourceFilenames,
   );
   const dir = resolveFetchedDir(sourceId, issueArk, deps.archiveRoot);
 

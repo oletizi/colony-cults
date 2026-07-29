@@ -10,6 +10,7 @@ import {
   type TranslateCliDeps,
 } from '@/cli/translate';
 import type { TranslationEngine } from '@/engine/types';
+import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 
 /**
  * AUDIT-22: `translate` / `translate-source` MUST RESOLVE THE SSOT
@@ -95,7 +96,11 @@ describe('translate SSOT resolution is cwd-independent (AUDIT-22)', () => {
 
   it('translate-source still refuses a Source Group when run from another directory', async () => {
     await expect(
-      runTranslateSource(args(GROUP_SOURCE_ID), deps(path.join(elsewhere, 'archive-root'))),
+      runTranslateSource(
+        args(GROUP_SOURCE_ID),
+        committedSourceFilenamePolicy(),
+        deps(path.join(elsewhere, 'archive-root')),
+      ),
     ).rejects.toThrow(/is a Source Group/i);
   });
 });

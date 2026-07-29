@@ -2,7 +2,8 @@ import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { resolveArchiveRoot, resolveFetchedDir, sourceLayout } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
-import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
+import { resolveRepoRootUpward, resolveSourcesDir } from '@/cli/composition-root';
+import type { SourceFilenamePolicy } from '@/corpus/source-filename-policy';
 import { createCdnObjectStore } from '@/archive/cdn-object-store';
 import type { ObjectStore } from '@/archive/object-store';
 import { discoverIssueArks, CONSECUTIVE_FAILURE_ABORT } from '@/translate/source';
@@ -57,6 +58,39 @@ function makeCdnObjectStore(): ObjectStore {
   return createCdnObjectStore(resolveCdnBase());
 }
 
+/**
+ * TWO DIFFERENT ROOTS, DELIBERATELY (AUDIT-22, second instance).
+ *
+ * Both dep builders below used a single `const repoRoot = process.cwd()` for
+ * three unrelated jobs. Only ONE of them is legitimately caller-relative:
+ *
+ *  - THE CONFIG ROOT stays `process.cwd()`. `summarize.config.json` is an
+ *    operator-supplied file that travels with the working directory, and
+ *    `tests/integration/summarize-cli-config.test.ts` deliberately `chdir`s
+ *    into a temp root to prove `loadSummaryConfig` reads relative to cwd.
+ *    That behavior is intended and is NOT changed here.
+ *  - THE REPO ROOT ({@link summarizeRepoRoot}) is walked up from THIS module's
+ *    own location. `bibliography/sources` names durable canonical data at a
+ *    fixed location in the repository; it does not move with the operator's
+ *    shell. Built from `process.cwd()`, `bib summarize` run from anywhere but
+ *    the repo root pointed `sourcesDir` at a directory that does not exist,
+ *    and the two consumers both fail QUIETLY there:
+ *    `ensureMemberLayoutRegistered` documents an absent member as "not a
+ *    member" and returns, leaving a source-group member's archive layout
+ *    unregistered with no diagnostic. (`loadSourceFile` on the missing
+ *    `<sourceId>.yml` does throw, so the failure was loud for a Gallica
+ *    source but silent for the layout registration.)
+ *
+ * `resolveArchiveRoot` is passed the repo root for the same reason, though it
+ * is a no-op in practice: that function reads the archive root from
+ * `--archive-root`/`COLONY_ARCHIVE_ROOT` and uses `repoRoot` ONLY as a
+ * non-empty guard. Passing the real repo root keeps the argument honest rather
+ * than relying on that.
+ */
+function summarizeRepoRoot(): string {
+  return resolveRepoRootUpward();
+}
+
 /** Injectable side effects for the `summarize` command (real preflight + disk by default). */
 export interface SummarizeCliDeps {
   /** Absolute private-archive root (`../colony-cults-archive`). */
@@ -99,14 +133,16 @@ export interface SummarizeCliDeps {
  * own).
  */
 export async function buildSummarizeCliDeps(args: ParsedArgs): Promise<SummarizeCliDeps> {
-  const repoRoot = process.cwd();
-  const config = await loadSummaryConfig(repoRoot);
+  // See summarizeRepoRoot: the config is cwd-relative on purpose; the SSOT and
+  // archive roots are not.
+  const config = await loadSummaryConfig(process.cwd());
+  const repoRoot = summarizeRepoRoot();
   const engineName = resolveSummarizerName(args.options.engine, config);
   const model = resolveSummaryModel(args.options.model, config);
   const { runner, preflight } = createSummarizer(engineName);
   return {
     archiveRoot: resolveArchiveRoot(repoRoot),
-    sourcesDir: path.join(repoRoot, 'bibliography', 'sources'),
+    sourcesDir: resolveSourcesDir(repoRoot),
     clock: () => new Date(),
     log: (message) => {
       console.log(message);
@@ -141,9 +177,15 @@ export async function buildSummarizeCliDeps(args: ParsedArgs): Promise<Summarize
  * `--dry-run` resolves inputs and reports the intended work (forwarded into
  * `SummarizeIssueCtx.dryRun`); zero artifacts are written and neither the
  * preflight nor the engine ever runs.
+ *
+ * `sourceFilenames` is REQUIRED and comes from the composition root
+ * (`@/cli/dispatch` passes `corpus.sourceFilenames`): the SSOT enumeration
+ * below must see the SELECTED corpus's Source files, not an ambient union
+ * over every installed manifest. There is deliberately no default.
  */
 export async function runSummarize(
   args: ParsedArgs,
+  sourceFilenames: SourceFilenamePolicy,
   deps?: SummarizeCliDeps,
 ): Promise<void> {
   const d = deps ?? (await buildSummarizeCliDeps(args));
@@ -155,7 +197,7 @@ export async function runSummarize(
   const issueArk = args.positional[1];
   const dryRun = args.flags.dryRun;
 
-  ensureMemberLayoutRegistered(sourceId, d.sourcesDir, committedSourceFilenamePolicy());
+  ensureMemberLayoutRegistered(sourceId, d.sourcesDir, sourceFilenames);
 
   // FR-018: load the source's SSOT record ONCE and thread it into the ctx, so
   // input resolution is source-aware (Papers Past vs Gallica, language) for
@@ -273,14 +315,16 @@ export interface SummarizeSourceCliDeps {
 export async function buildSummarizeSourceCliDeps(
   args: ParsedArgs,
 ): Promise<SummarizeSourceCliDeps> {
-  const repoRoot = process.cwd();
-  const config = await loadSummaryConfig(repoRoot);
+  // See summarizeRepoRoot: the config is cwd-relative on purpose; the SSOT and
+  // archive roots are not.
+  const config = await loadSummaryConfig(process.cwd());
+  const repoRoot = summarizeRepoRoot();
   const engineName = resolveSummarizerName(args.options.engine, config);
   const model = resolveSummaryModel(args.options.model, config);
   const { runner, preflight } = createSummarizer(engineName);
   return {
     archiveRoot: resolveArchiveRoot(repoRoot),
-    sourcesDir: path.join(repoRoot, 'bibliography', 'sources'),
+    sourcesDir: resolveSourcesDir(repoRoot),
     clock: () => new Date(),
     log: (message) => {
       console.log(message);
@@ -311,9 +355,15 @@ export async function buildSummarizeSourceCliDeps(
  * covered/missing set was unchanged): a prior run could have written the
  * rollup artifact but been interrupted before the SSOT write, so re-asserting
  * the ref here is what keeps the weld actually welded across a resumed run.
+ *
+ * `sourceFilenames` is REQUIRED and comes from the composition root
+ * (`@/cli/dispatch` passes `corpus.sourceFilenames`): the SSOT enumeration
+ * below must see the SELECTED corpus's Source files, not an ambient union
+ * over every installed manifest. There is deliberately no default.
  */
 export async function runSummarizeSource(
   args: ParsedArgs,
+  sourceFilenames: SourceFilenamePolicy,
   deps?: SummarizeSourceCliDeps,
 ): Promise<void> {
   const d = deps ?? (await buildSummarizeSourceCliDeps(args));
@@ -324,7 +374,7 @@ export async function runSummarizeSource(
   }
   const dryRun = args.flags.dryRun;
 
-  ensureMemberLayoutRegistered(sourceId, d.sourcesDir, committedSourceFilenamePolicy());
+  ensureMemberLayoutRegistered(sourceId, d.sourcesDir, sourceFilenames);
 
   // AUDIT-20260722-04: preflight is NOT fired eagerly here -- it is passed
   // through into `SummarizeSourceCtx.preflight` below and fires lazily,

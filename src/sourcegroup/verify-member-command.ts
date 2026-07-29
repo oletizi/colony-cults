@@ -80,6 +80,16 @@ function arkOf(record: AuthoredRepositoryRecord): string | undefined {
  * in either duplicate check, and `ExistingMemberRecord.ark` is mandatory).
  * The member being verified is excluded up front so it can never collide
  * with its own copies.
+ *
+ * SCOPE WARNING (AUDIT-02/16/27). This function ITERATES `members` -- it does
+ * not look anything up by id -- so whatever enumerated that list defines the
+ * SCOPE of `checkHardDuplicate`'s pass/fail verdict (`@/sourcegroup/
+ * verify-member`), which `promote` re-runs and aborts on. It is the one place
+ * in the `bib` surface where the width of the caller's `SourceFilenamePolicy`
+ * changes an answer rather than merely widening a superset a `find` would
+ * ignore. Callers must therefore pass the enumeration they MEAN, not whichever
+ * one is nearest to hand; `@/cli/bib-sourcegroup`'s module header records the
+ * still-open cross-corpus-vs-within-corpus question this raises.
  */
 export function buildExistingMembers(
   members: readonly LoadedSource[],
