@@ -36,12 +36,39 @@ let composedPolicy: ArchiveLayoutPolicy | null = null;
  * layout resolution at a fixture corpus with zero core edits (SC-003).
  *
  * Call it BEFORE any layout is resolved. A later call replaces the policy and
- * discards any memoized composition -- resolution always reflects the most
- * recently installed policy rather than silently keeping a stale one.
+ * discards any memoized composition AND the runtime overlay -- resolution
+ * always reflects the most recently installed policy rather than silently
+ * keeping a stale one.
+ *
+ * WHY THE OVERLAY IS CLEARED TOO (AUDIT-33). The overlay is step 2 of the
+ * resolution order and therefore OUTRANKS `policy.derived` (step 3). It holds
+ * layouts derived from ONE corpus's Sources mid-run; those entries are
+ * meaningless -- worse, actively wrong -- once a DIFFERENT policy is in force,
+ * because the same Source ID may be placed elsewhere (or not exist at all)
+ * under the new corpus. Leaving them behind let a stale entry from corpus A
+ * out-rank corpus B's own derivation, so a fetch would mkdir under A's slug
+ * while B's record pointed elsewhere -- an orphan-asset defect (Principle XV).
+ * The overlay is per-corpus-run state, so it shares the policy's lifetime.
  */
 export function installArchiveLayoutPolicy(policy: ArchiveLayoutPolicy): void {
   installedPolicy = policy;
   composedPolicy = null;
+  runtimeLayoutOverlay.clear();
+}
+
+/**
+ * Drop ALL archive-layout resolution state -- the installed policy, the
+ * memoized deferred composition, and the runtime overlay -- returning the
+ * module to the state it has at process start (the next resolution re-composes
+ * from the committed manifests + SSOT).
+ *
+ * The single reset point, so a caller never has to know that three separate
+ * pieces of module state exist and never has to clear them one by one.
+ */
+export function resetArchiveLayoutResolution(): void {
+  installedPolicy = null;
+  composedPolicy = null;
+  runtimeLayoutOverlay.clear();
 }
 
 /** The policy in force: the installed one, else the memoized deferred composition. */

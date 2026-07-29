@@ -11,6 +11,7 @@ import {
 } from '@/corpus/policies';
 import { unionSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
 import type { SourceLayout } from '@/archive/derive-layout';
+import { assertRecordedPlacementsHonored } from '@/archive/layout-placement-invariant';
 
 /**
  * THE DEFERRED COMPOSITION ROOT for the archive-layout seam (T013, spec
@@ -150,6 +151,14 @@ export function composeArchiveLayoutPolicy(
       derived.set(sourceId, layout);
     }
   }
+
+  // THE COMPOSITION-TIME PLACEMENT INVARIANT (AUDIT-32). Until this ran, a
+  // missing override did not fail -- it silently DERIVED a different slug, and
+  // the first write would mkdir a parallel directory the SSOT record does not
+  // reflect. See `@/archive/layout-placement-invariant` for what it compares,
+  // why it is anchored in the record rather than the filesystem, and why it
+  // cannot fire on a source that has simply not been fetched yet.
+  assertRecordedPlacementsHonored({ sources, overrides, derived });
 
   return { overrides, derived };
 }

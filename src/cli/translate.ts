@@ -1,6 +1,6 @@
-import path from 'node:path';
 import type { ParsedArgs } from '@/cli/parse';
 import { requireOption } from '@/cli/fetch';
+import { resolveRepoRootUpward, resolveSourcesDir } from '@/cli/composition-root';
 import { resolveArchiveRoot, resolveFetchedDir } from '@/archive/location';
 import { ensureMemberLayoutRegistered } from '@/archive/member-layout';
 import { committedSourceFilenamePolicy } from '@/corpus/source-filename-bootstrap';
@@ -31,6 +31,25 @@ import {
  * the `claude` CLI back-to-back across many issues.
  */
 export const PACE_MS = 250;
+
+/**
+ * The bibliography SSOT directory, resolved from this module's OWN location
+ * rather than from `process.cwd()` (AUDIT-22).
+ *
+ * `bibliography/sources` is a fixed location in the repository, not a
+ * caller-relative one, so reading it through `process.cwd()` made
+ * `translate`/`translate-source` silently wrong whenever they were invoked
+ * from anywhere but the repo root: the directory did not exist, and
+ * `sourceKind` documents an ABSENT directory as a lookup MISS rather than an
+ * error. So the Source Group guardrail never fired and
+ * `ensureMemberLayoutRegistered` found no member to register -- the member's
+ * archive layout went unregistered, with no diagnostic at all. Every sibling
+ * (`@/cli/bib-sourcegroup-paths`, `@/archive/layout-bootstrap`) already
+ * resolves upward from its own module URL; this joins them.
+ */
+export function translateSourcesDir(): string {
+  return resolveSourcesDir(resolveRepoRootUpward());
+}
 
 /** Injectable side effects for the `translate`/`translate-source` commands (real preflight + disk by default). */
 export interface TranslateCliDeps {
@@ -145,7 +164,7 @@ export async function runTranslate(
   // internal resolveFetchedDir can locate it (no-op for static sources).
   ensureMemberLayoutRegistered(
     sourceId,
-    path.join(process.cwd(), 'bibliography', 'sources'),
+    translateSourcesDir(),
     committedSourceFilenamePolicy(),
   );
   const dryRun = args.flags.dryRun;
@@ -271,7 +290,7 @@ export async function runTranslateSource(
   // issues to translate. Key on the SSOT canonical `kind` BEFORE `translateSource`
   // consults `sourceLayout` (which would otherwise surface an opaque layout
   // error), mirroring `fetch-source`'s guard.
-  const sourcesDir = path.join(process.cwd(), 'bibliography', 'sources');
+  const sourcesDir = translateSourcesDir();
   if (sourceKind(sourceId, sourcesDir, committedSourceFilenamePolicy()) === 'source-group') {
     throw new Error(
       `translate-source: "${sourceId}" is a Source Group — it has no archival object to translate. ` +

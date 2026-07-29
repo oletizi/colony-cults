@@ -67,6 +67,58 @@ function walk(dir: string, out: string[]): void {
   }
 }
 
+/** True for a scanner token that is trivia (whitespace / newline / comment / shebang). */
+function isTriviaToken(token: ts.SyntaxKind): boolean {
+  return token >= ts.SyntaxKind.FirstTriviaToken && token <= ts.SyntaxKind.LastTriviaToken;
+}
+
+/**
+ * Whether a `/` following `previous` starts a REGEX LITERAL rather than being
+ * a division operator -- the ambiguity `ts.createScanner` cannot resolve on
+ * its own (it emits `SlashToken` and waits for the parser to ask for a
+ * re-scan via `reScanSlashToken()`).
+ *
+ * The rule is the standard one: `/` is division only after a token that can
+ * END an expression -- an identifier, a literal, a closing bracket/paren/brace,
+ * a postfix `++`/`--`, or one of the value keywords. After ANY other token
+ * (an operator, a comma, an open paren, `return`, `typeof`, `=>`, the start of
+ * the file, ...) an expression is expected, so `/` opens a regex.
+ *
+ * `}` is listed as division-context because the far more common `}` in this
+ * codebase closes an object literal; a regex opening a statement immediately
+ * after a block `}` does not occur here, and the
+ * `strip-comments-fidelity` test proves character-for-character that this
+ * classification matches the TypeScript parser across the whole `src/` tree.
+ */
+function slashStartsRegex(previous: ts.SyntaxKind | undefined): boolean {
+  if (previous === undefined) {
+    return true;
+  }
+  switch (previous) {
+    case ts.SyntaxKind.Identifier:
+    case ts.SyntaxKind.PrivateIdentifier:
+    case ts.SyntaxKind.NumericLiteral:
+    case ts.SyntaxKind.BigIntLiteral:
+    case ts.SyntaxKind.StringLiteral:
+    case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
+    case ts.SyntaxKind.TemplateTail:
+    case ts.SyntaxKind.RegularExpressionLiteral:
+    case ts.SyntaxKind.CloseParenToken:
+    case ts.SyntaxKind.CloseBracketToken:
+    case ts.SyntaxKind.CloseBraceToken:
+    case ts.SyntaxKind.PlusPlusToken:
+    case ts.SyntaxKind.MinusMinusToken:
+    case ts.SyntaxKind.ThisKeyword:
+    case ts.SyntaxKind.SuperKeyword:
+    case ts.SyntaxKind.TrueKeyword:
+    case ts.SyntaxKind.FalseKeyword:
+    case ts.SyntaxKind.NullKeyword:
+      return false;
+    default:
+      return true;
+  }
+}
+
 /**
  * Blank every comment token's text (replacing each character with a space,
  * preserving newlines) using the TS compiler's own scanner, so string/regex
@@ -96,6 +148,16 @@ export function stripComments(sourceText: string): string {
   // block/object (not the template) still falls through to normal handling.
   const templateSubstitutionDepths: number[] = [];
   let braceDepth = 0;
+
+  // The SECOND thing plain `scanner.scan()` cannot do on its own (AUDIT-12):
+  // tell a REGEX LITERAL from a division `/`. It emits `SlashToken` and waits
+  // for `reScanSlashToken()`. Without that, `/^ark:\/12148\//` scans as a
+  // slash, a backslash, then `//` -- read as a LINE COMMENT, blanking the rest
+  // of a line of live code; and the `"` inside `/[",\n\r]/` opens a phantom
+  // string that swallows ~200 lines. Both make the constant guards go GREEN
+  // WHILE BLIND. Resolving the ambiguity needs the previous non-trivia token,
+  // tracked here -- see {@link slashStartsRegex}.
+  let previousToken: ts.SyntaxKind | undefined;
 
   let token = scanner.scan();
   while (token !== ts.SyntaxKind.EndOfFileToken) {
@@ -129,6 +191,19 @@ export function stripComments(sourceText: string): string {
       } else {
         braceDepth--;
       }
+    } else if (
+      (token === ts.SyntaxKind.SlashToken ||
+        token === ts.SyntaxKind.SlashEqualsToken) &&
+      slashStartsRegex(previousToken)
+    ) {
+      // `reScanSlashToken` re-reads from the `/` as a regex literal, consuming
+      // the whole literal (character class, escapes and all) as ONE token, so
+      // nothing inside it can be mistaken for a comment or a string opener. It
+      // returns the original token unchanged if no regex can be scanned there.
+      token = scanner.reScanSlashToken();
+    }
+    if (!isTriviaToken(token)) {
+      previousToken = token;
     }
     token = scanner.scan();
   }

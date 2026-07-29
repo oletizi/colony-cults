@@ -84,16 +84,41 @@ function realResolve(target: string): string {
   }
 }
 
+/** True when `p` contains a `..` PATH SEGMENT (not merely the characters `..`). */
+function hasParentSegment(p: string): boolean {
+  return p.split(/[\\/]+/).includes('..');
+}
+
 /**
  * NON-OVERRIDABLE write-guard (FR-006): throw unless `absPath` resolves to a
  * location STRICTLY inside `archiveRoot`. Guards against `../` escapes and
  * absolute paths outside the archive by resolving both operands to their real
- * absolute forms (collapsing `..` and following symlinks) and requiring the
- * target to be a proper descendant.
+ * absolute forms (following symlinks) and requiring the target to be a proper
+ * descendant.
+ *
+ * A `..` SEGMENT IS REFUSED OUTRIGHT rather than resolved (AUDIT-31). `..` is
+ * not a lexical operation on the filesystem: `<root>/link/../x` where `link`
+ * is a symlink out of the archive really resolves to `<link-target>/../x`,
+ * NOT to `<root>/x`. Any normalization that folds `..` before following the
+ * symlinks -- which is exactly what `path.resolve` does -- therefore measures a
+ * path the kernel would never produce, and can report "inside" for a write
+ * that lands outside. Rather than reimplement the kernel's interleaved
+ * resolution, the guard declines to judge such a path at all. This costs
+ * nothing: every caller builds its path with `path.join` (which normalizes
+ * `..` away against real directory names), and `@/bibliography/
+ * summary-reference` already rejects `..` before it calls in here.
  *
  * There is no bypass parameter, by design.
  */
 export function assertInsideArchive(absPath: string, archiveRoot: string): void {
+  if (hasParentSegment(absPath)) {
+    throw new Error(
+      `archive guard: refusing to write "${absPath}" -- it contains a parent-directory ` +
+        '(`..`) segment, whose meaning depends on symlinks that have not been followed yet, ' +
+        'so it cannot be proven to stay inside the private archive root ' +
+        `"${archiveRoot}". Pass an already-normalized path (no override exists)`,
+    );
+  }
   const realRoot = realResolve(archiveRoot);
   const realTarget = realResolve(absPath);
   const rel = path.relative(realRoot, realTarget);

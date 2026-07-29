@@ -30,6 +30,7 @@ export {
   installArchiveLayoutPolicy,
   isSourceLayoutRegistered,
   registerSourceLayout,
+  resetArchiveLayoutResolution,
   sourceLayout,
 } from '@/archive/layout-resolve';
 export { assertInsideArchive, resolveArchiveRoot } from '@/archive/archive-root';
