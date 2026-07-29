@@ -1,0 +1,13 @@
+{
+  "handle": "2026-07-28T23-57-30-196Z-gsxe",
+  "governArgs": [
+    "--mode",
+    "implement",
+    "--item",
+    "impl:feature/corpus-config-seam"
+  ],
+  "cwd": "/Users/orion/work/colony-cults-work/corpus-config-seam",
+  "startedAt": "2026-07-28T23:57:30.196Z",
+  "pid": 99748,
+  "logPath": "/Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/govern/background/2026-07-28T23-57-30-196Z-gsxe/govern.log"
+}

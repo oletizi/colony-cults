@@ -1,0 +1,312 @@
+govern clone-step: 62 clone group(s) in this codebase; 62 NEW (no baseline yet).
+  NEW clone 2463b8d2e193 (17 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/tests/unit/repository/papers-past/fakes.ts:83:99
+    /Users/orion/work/colony-cults-work/corpus-config-seam/tests/unit/sourcequery/fakes.ts:55:71
+  NEW clone 0e22fb297afc (14 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/tests/unit/pdf/archive-fixture.ts:223:236
+    /Users/orion/work/colony-cults-work/corpus-config-seam/tests/unit/pdf/member-fixture.ts:213:226
+  NEW clone 166e51083ecc (12 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/tests/unit/pdf/archive-fixture.ts:249:260
+    /Users/orion/work/colony-cults-work/corpus-config-seam/tests/unit/pdf/member-fixture.ts:235:246
+  NEW clone 24dd73da3921 (7 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/render/group-edition.ts:314:320
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/render/member-build.ts:343:349
+  NEW clone ef236f6b916a (7 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/render/build.ts:293:299
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/render/member-build.ts:307:313
+  NEW clone 7caa589f31ef (10 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/publish/modes.ts:205:214
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/publish/modes.ts:359:368
+  NEW clone 5d74692bd429 (11 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/publish/modes.ts:248:258
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/publish/modes.ts:382:392
+  NEW clone 45b547b0dc1d (13 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/load/archive-ocr-disclosure.ts:21:33
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/render/member-edition.ts:99:107
+  NEW clone 306843193527 (12 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/load/archive-edition.ts:80:91
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/render/member-edition.ts:96:107
+  NEW clone 18337b2b7982 (10 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/summary.ts:131:140
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/translation.ts:157:166
+  NEW clone 322e96371bbc (12 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/summary.ts:137:148
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/translation.ts:167:178
+  NEW clone 05c968d172a8 (17 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/snapshot.ts:114:130
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/render/typst-input.ts:201:217
+  NEW clone cbe68a263245 (13 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/snapshot.ts:134:146
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/pdf/render/typst-input.ts:221:233
+  NEW clone f2a81547471f (11 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/pages.ts:178:188
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/papers-past.ts:269:279
+  NEW clone a4d995b79601 (9 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/pages.ts:202:210
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/pages.ts:246:254
+  NEW clone 79c613c33d97 (12 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/pages.ts:380:391
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/browser/load/papers-past.ts:300:310
+  NEW clone de0628b66260 (11 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/translate/issue.ts:197:207
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/translate/issue.ts:302:312
+  NEW clone e353f722a17f (15 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/summarize/issue.ts:217:231
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/summarize/source-rollup.ts:371:386
+  NEW clone 438d1424f8a6 (17 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/sourcegroup/inventory.ts:312:328
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/sourcegroup/museum-inventory.ts:223:239
+  NEW clone 7f962a4e4a84 (16 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/sourcegroup/acquire.ts:197:212
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/sourcegroup/verify-member.ts:184:199
+  NEW clone 8a2208014a68 (19 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/sourcegroup/acquire.ts:214:232
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/sourcegroup/verify-member.ts:195:211
+  NEW clone bd273baaa5ea (11 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/sourcegroup/acquire.ts:324:334
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/sourcegroup/reconcile.ts:316:326
+  NEW clone 05fefbecc873 (9 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/sourcegroup/acquire-fixtures.ts:172:180
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/sourcegroup/acquire-fixtures.ts:230:238
+  NEW clone 8a174d2794ec (7 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/gallica/gallica-client.ts:193:199
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/gallica/gallica-client.ts:220:226
+  NEW clone dd37346cb69c (13 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/engine/config.ts:131:143
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/summarize/config.ts:123:135
+  NEW clone e56bdad24f56 (8 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/manifest.ts:318:325
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/source-index.ts:90:97
+  NEW clone fc27acf712a2 (17 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/browser-profile.ts:73:89
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/manifest.ts:106:122
+  NEW clone 3f0c771fbafa (14 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/browser-profile.ts:89:102
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/manifest-primitives.ts:32:45
+  NEW clone f8b3bd136892 (8 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/browser-profile.ts:226:233
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/manifest.ts:318:97
+  NEW clone bbbb487fb2ed (12 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/translate-dispatch.ts:51:62
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/gallica/http-client.ts:77:89
+  NEW clone 360356df97a0 (17 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/summarize.ts:101:117
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/summarize.ts:275:291
+  NEW clone a58b111c1ae3 (9 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/ocr.ts:93:101
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/restore-images.ts:65:73
+  NEW clone 1858576c19fb (14 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/fetch-shared.ts:295:312
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/fetch-shared.ts:334:347
+  NEW clone ea60709e3bbf (15 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/dispatch.ts:60:74
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/translate-dispatch.ts:48:89
+  NEW clone d0a3b6595d06 (7 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/bib-sourcegroup.ts:70:76
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/parse.ts:43:50
+  NEW clone 00ce0f075711 (8 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/bib-inventory.ts:188:195
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/bib-inventory.ts:298:305
+  NEW clone f0a2ea89efb1 (23 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/bib-acquire-museum.ts:35:57
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/bib-acquire-papers-past.ts:36:58
+  NEW clone b5a5585e3b93 (19 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/bib-acquire-internet-archive.ts:136:154
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/bib-acquire-papers-past.ts:40:58
+  NEW clone 5cd6cae4fd7f (11 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/cli/archive-checkpoint.ts:94:104
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/ocr/exec.ts:40:50
+  NEW clone 86cff0f4c431 (9 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/validate-companion-coverage.ts:118:126
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/validate-companion-coverage.ts:75:83
+  NEW clone f0d9d7701c7e (12 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/search-log.ts:68:79
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/browser-profile.ts:66:77
+  NEW clone cc7abd6d50d9 (12 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/scopes-registry.ts:30:41
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/browser-profile.ts:66:79
+  NEW clone 1eb355d30e78 (14 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/scopes-registry.ts:58:71
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/search-log.ts:97:110
+  NEW clone e5476e614d9d (8 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/scopes-registry.ts:82:89
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/search-log.ts:229:236
+  NEW clone 3b06de28a253 (13 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/scopes-registry.ts:112:124
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/search-log.ts:272:284
+  NEW clone 19a52e3129ec (9 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/scopes-registry.ts:124:132
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/search-log.ts:284:292
+  NEW clone 8cf82c527ed8 (8 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/load-primitives.ts:31:38
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/browser-profile.ts:102:109
+  NEW clone 8bd94404cedc (9 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/load-primitives.ts:63:71
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/manifest-primitives.ts:32:40
+  NEW clone 5d2bab47b58d (7 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/load-fields.ts:192:198
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/load-fields.ts:212:218
+  NEW clone 81d8e907b037 (9 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/load-coverage-fields.ts:287:295
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/corpus/manifest-primitives.ts:47:55
+  NEW clone 72ff5715bfae (16 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/archive/provenance.ts:345:360
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/provenance-read.ts:149:164
+  NEW clone 36555d983f08 (27 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/archive/provenance-scalars.ts:20:46
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/provenance-read.ts:51:72
+  NEW clone c4ed74ccda4f (12 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/archive/provenance-blocks.ts:68:79
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/provenance-read.ts:73:80
+  NEW clone 22fa60cc634b (10 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/archive/provenance-blocks.ts:218:227
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/provenance-read.ts:100:109
+  NEW clone d7a0005620e9 (17 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/archive/provenance-blocks.ts:253:269
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/provenance-read.ts:101:235
+  NEW clone c61e103e8583 (9 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/archive/provenance-blocks.ts:358:366
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/bibliography/provenance-read.ts:101:109
+  NEW clone 7f6294d61235 (7 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/build-pdf.ts:356:362
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/publish-pdf.ts:253:259
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/render-sample-pdf.ts:215:221
+  NEW clone e0af98e58f07 (15 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/backfill-ocr-quality.ts:57:71
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/backfill-translation-labels.ts:22:36
+  NEW clone 617e1c2ffa33 (11 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/backfill-acquired-ocr-quality.ts:23:33
+    /Users/orion/work/colony-cults-work/corpus-config-seam/src/archive/write-record-companions.ts:36:47
+  NEW clone eb40a2c929b8 (12 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/backfill-acquired-ocr-quality.ts:42:53
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/backfill-ocr-quality.ts:47:58
+  NEW clone 94782c69431b (6 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/backfill-acquired-ocr-quality.ts:89:94
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/backfill-ocr-quality.ts:69:75
+  NEW clone 2e4749f03d9a (9 lines)
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/backfill-acquired-ocr-quality.ts:94:102
+    /Users/orion/work/colony-cults-work/corpus-config-seam/scripts/backfill-ocr-quality.ts:76:84
+govern: code-only scoping active — excluded 10 documentation file(s) from the audit payload.
+govern: chunk 0c434a1dcbc8d6d4 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260728T235735411Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 0c96c6263ff2d5cb barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T000048284Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 190ff594c244b066 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T000354093Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 1c8909a568ed692b barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T000702360Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 266a24c4260b019d barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T001014008Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 33c09f07a76d3032 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T001257365Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 3594cc339ca7ad69 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T001724722Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 3596d2799a71be80 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T002054770Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 38124fbd7898f282 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T002440620Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 3963b24beadb348c barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T002939137Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 42c5848e9761f72a barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T003301090Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 471310497a58e1c6 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T003639710Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 4bb0a62ae8e0e184 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T003912300Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 5f7ec7a45c763abc barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T004333996Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 608d3982f7e71600 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T004629596Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 6b34ca219049bf45 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T005141731Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 750211fe3a39e6b7 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T005503843Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 798b3a0a613e0870 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T005704027Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 7ec5854f5925f88e barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T005922266Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 89bad1ac1821312e barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T010006906Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk 961ea85af2246c54 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T010345932Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk a449de0cfb48f2d5 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T010714473Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk a7e5f4849e495cc5 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T011103209Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk b4b882f97371e813 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T011350684Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk b5fdf705e6ddde59 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T011709458Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk bc338dd6db5e3dc9 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T012001623Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk cf30eb4b15b4807c barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T012214765Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk e4aa8b5207999e81 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T012605087Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk f8ce209f493fe715 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T012924183Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: chunk f9333e269870ea31 barrage run-dir = /Users/orion/work/colony-cults-work/corpus-config-seam/.stack-control/audit-runs/20260729T013400110Z-018-corpus-config-seam-after_implement
+govern: fleet — configured 2, produced 2
+govern:   claude: completed [enforced, monitored]
+govern:   codex: completed [enforced, monitored]
+govern: lift-once — recorded 34 finding(s) as ONE section in /Users/orion/work/colony-cults-work/corpus-config-seam/specs/018-corpus-config-seam/audit-log.md (FR-026).
+govern: implementation NOT done — end-govern reconciled to 'override-eligible' (34 open finding(s) over 30 chunk(s), 1 round(s)). Plus 15 cross-chunk seam break(s): changed-arity 'resolveSourceGroup' (consumed across a chunk boundary); changed-arity 'runInventoryCli' (consumed across a chunk boundary); changed-arity 'registerMemberArchiveLayout' (consumed across a chunk boundary); changed-arity 'loadAllSources' (consumed across a chunk boundary); changed-arity 'sourceKind' (consumed across a chunk boundary); removed-export 'PORT_BRETON_CASE_ID' (consumed across a chunk boundary); changed-arity 'runCoverageCli' (consumed across a chunk boundary); changed-arity 'runBibliography' (consumed across a chunk boundary); removed-export 'SourceLayout' (consumed across a chunk boundary); removed-export 'registerSourceLayout' (consumed across a chunk boundary); removed-export 'isSourceLayoutRegistered' (consumed across a chunk boundary); removed-export 'sourceLayout' (consumed across a chunk boundary); removed-export 'deriveSourceLayout' (consumed across a chunk boundary); removed-export 'resolveArchiveRoot' (consumed across a chunk boundary); removed-export 'assertInsideArchive' (consumed across a chunk boundary). Fix the surfaced findings & re-govern, or record --override.
+govern: terminal-outcome=blocked

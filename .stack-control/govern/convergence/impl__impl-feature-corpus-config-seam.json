@@ -1,0 +1,2055 @@
+{
+  "version": 1,
+  "mode": "impl",
+  "item": "impl:feature/corpus-config-seam",
+  "governedShaBase": "e93bc5faffb8d38eae2143b1becf3c8696c16a2d",
+  "headSha": "4fa06120a66109d8fde2fb7526b35524088ead04",
+  "chunkIds": [
+    "0c434a1dcbc8d6d4",
+    "0c96c6263ff2d5cb",
+    "190ff594c244b066",
+    "1c8909a568ed692b",
+    "266a24c4260b019d",
+    "33c09f07a76d3032",
+    "3594cc339ca7ad69",
+    "3596d2799a71be80",
+    "38124fbd7898f282",
+    "3963b24beadb348c",
+    "42c5848e9761f72a",
+    "471310497a58e1c6",
+    "4bb0a62ae8e0e184",
+    "5f7ec7a45c763abc",
+    "608d3982f7e71600",
+    "6b34ca219049bf45",
+    "750211fe3a39e6b7",
+    "798b3a0a613e0870",
+    "7ec5854f5925f88e",
+    "89bad1ac1821312e",
+    "961ea85af2246c54",
+    "a449de0cfb48f2d5",
+    "a7e5f4849e495cc5",
+    "b4b882f97371e813",
+    "b5fdf705e6ddde59",
+    "bc338dd6db5e3dc9",
+    "cf30eb4b15b4807c",
+    "e4aa8b5207999e81",
+    "f8ce209f493fe715",
+    "f9333e269870ea31"
+  ],
+  "rounds": 1,
+  "liftedFindings": [
+    {
+      "id": "0c434a1dcbc8d6d4::AUDIT-BARRAGE-claude-01",
+      "title": "Snapshot side-effect fires BEFORE the atomic claim, so an EEXIST retry can overwrite the winner's metadata snapshot",
+      "severity": "high"
+    },
+    {
+      "id": "0c96c6263ff2d5cb::AUDIT-BARRAGE-claude-01+AUDIT-BARRAGE-codex-01",
+      "title": "The corpus seam is only half-wired: acquire / reconcile / verify-member / promote self-compose a committed-corpus policy instead of receiving the injected `CorpusComposition`",
+      "severity": "high"
+    },
+    {
+      "id": "0c96c6263ff2d5cb::AUDIT-BARRAGE-claude-02",
+      "title": "`selectedCopyHasRecordedAssets` converts a new config-driven throw into a silent reconcile misroute",
+      "severity": "high"
+    },
+    {
+      "id": "190ff594c244b066::AUDIT-BARRAGE-claude-01+AUDIT-BARRAGE-claude-06+AUDIT-BARRAGE-codex-01+AUDIT-BARRAGE-codex-02",
+      "title": "Next-ID prediction reads declared `sourceId`s while the allocator reads filenames — a real collision passes validation silently",
+      "severity": "high"
+    },
+    {
+      "id": "1c8909a568ed692b::AUDIT-BARRAGE-claude-01+AUDIT-BARRAGE-codex-01",
+      "title": "Override collision detection only compares override-against-override, so an override aimed at another Source's *generic* location passes validation",
+      "severity": "high"
+    },
+    {
+      "id": "266a24c4260b019d::AUDIT-BARRAGE-claude-01+AUDIT-BARRAGE-codex-01",
+      "title": "`validate()` silently skips the search-log scope check when `validCaseIds` is omitted — a check that used to run unconditionally",
+      "severity": "high"
+    },
+    {
+      "id": "266a24c4260b019d::AUDIT-BARRAGE-claude-02",
+      "title": "Coverage report unions Sources across all corpora but narrows case ids to the selected corpus — over a *global* search log",
+      "severity": "high"
+    },
+    {
+      "id": "33c09f07a76d3032::AUDIT-BARRAGE-claude-01",
+      "title": "The coverage page mixes two corpus scopes in one render, and needs a core edit the moment a second corpus lands",
+      "severity": "high"
+    },
+    {
+      "id": "33c09f07a76d3032::AUDIT-BARRAGE-claude-02",
+      "title": "`committedSourceFilenamePolicy()` is used to justify second-corpus safety, but a \"committed\"/bootstrap policy is exactly what cannot see a second corpus",
+      "severity": "high"
+    },
+    {
+      "id": "3594cc339ca7ad69::AUDIT-BARRAGE-claude-01",
+      "title": "Browser-profile `defaultSources` are type-checked but never checked against the corpus's own source-id policies — and the new fixtures encode ids no policy can allocate",
+      "severity": "high"
+    },
+    {
+      "id": "3596d2799a71be80::AUDIT-BARRAGE-claude-01",
+      "title": "The deferred source-filename composition root unions *every* committed corpus, so the moment a second corpus is committed ~half the call sites silently enumerate both corpora's Sources",
+      "severity": "high"
+    },
+    {
+      "id": "38124fbd7898f282::AUDIT-BARRAGE-claude-01",
+      "title": "`stripComments` desyncs on regex literals — the doc certifies a property the scanner does not have",
+      "severity": "high"
+    },
+    {
+      "id": "3963b24beadb348c::AUDIT-BARRAGE-claude-01",
+      "title": "The INV-16 silent-empty channel is still open: a policy that matches zero files still enumerates zero Sources with no error",
+      "severity": "high"
+    },
+    {
+      "id": "3963b24beadb348c::AUDIT-BARRAGE-claude-02",
+      "title": "\"Behavior preservation\" assertion is one-directional; the new two-prefix policy is strictly narrower than the retired pattern and the guard cannot see the narrowing",
+      "severity": "high"
+    },
+    {
+      "id": "3963b24beadb348c::AUDIT-BARRAGE-claude-03",
+      "title": "The unselected `loadCoverageReport` path silently unions across every corpus, and this diff pins that fallback as expected behavior",
+      "severity": "high"
+    },
+    {
+      "id": "42c5848e9761f72a::AUDIT-BARRAGE-claude-01+AUDIT-BARRAGE-codex-01",
+      "title": "Handlers receive an injected `CorpusComposition` and then discard it in favour of a module-global `committedSourceFilenamePolicy()`",
+      "severity": "high"
+    },
+    {
+      "id": "42c5848e9761f72a::AUDIT-BARRAGE-claude-02",
+      "title": "`installedCapabilities()` reads a side-effect-populated registry with no guaranteed import, so `bib validate-config` can compute an empty capability set",
+      "severity": "high"
+    },
+    {
+      "id": "4bb0a62ae8e0e184::AUDIT-BARRAGE-claude-01",
+      "title": "`--corpus` is accepted, validated, and then thrown away by the `translate` bin's handlers",
+      "severity": "high"
+    },
+    {
+      "id": "4bb0a62ae8e0e184::AUDIT-BARRAGE-claude-02",
+      "title": "`committedSourceFilenamePolicy()` is an ambient global read that bypasses the injected corpora root",
+      "severity": "high"
+    },
+    {
+      "id": "4bb0a62ae8e0e184::AUDIT-BARRAGE-claude-03",
+      "title": "A browser profile's `corpus` field is never checked against the corpus whose file it is — and the test canonizes the mismatch",
+      "severity": "high"
+    },
+    {
+      "id": "4bb0a62ae8e0e184::AUDIT-BARRAGE-claude-04",
+      "title": "The contract is left contradicting the implementation, with the resolution recorded only in a source comment",
+      "severity": "high"
+    },
+    {
+      "id": "4bb0a62ae8e0e184::AUDIT-BARRAGE-codex-01",
+      "title": "Translate/summarize discard the selected corpus filename policy",
+      "severity": "high"
+    },
+    {
+      "id": "5f7ec7a45c763abc::AUDIT-BARRAGE-claude-01",
+      "title": "The characterization gate is enumerated, not exhaustive — the T024 regression class can recur for any id not in the hardcoded list",
+      "severity": "high"
+    },
+    {
+      "id": "608d3982f7e71600::AUDIT-BARRAGE-claude-01",
+      "title": "`CORPUS_SOURCES` is accepted verbatim for *any* selected corpus — a stale env var silently builds one corpus's site from another corpus's source ids",
+      "severity": "high"
+    },
+    {
+      "id": "608d3982f7e71600::AUDIT-BARRAGE-claude-02",
+      "title": "`CORPUS_SOURCES` alone no longer produces a build — yet the docblocks claim \"unchanged operator-visible behavior\" twice",
+      "severity": "high"
+    },
+    {
+      "id": "6b34ca219049bf45::AUDIT-BARRAGE-claude-01",
+      "title": "Cased source-group MEMBERS are precomputed into `derived`, giving the same object class two different layout-resolution paths depending on an optional field",
+      "severity": "high"
+    },
+    {
+      "id": "750211fe3a39e6b7::AUDIT-BARRAGE-claude-01+AUDIT-BARRAGE-claude-02+AUDIT-BARRAGE-codex-01",
+      "title": "Ambient `committedSourceFilenamePolicy()` re-closes the seam T023 just opened — production paths resolve the corpora root implicitly while `sourcesDir` stays injected",
+      "severity": "high"
+    },
+    {
+      "id": "a449de0cfb48f2d5::AUDIT-BARRAGE-claude-01",
+      "title": "FR-016 proof tests reference a fixture root (`tests/fixtures/corpora/an-arbitrary-place/`) that does not appear anywhere in the change",
+      "severity": "high"
+    },
+    {
+      "id": "a449de0cfb48f2d5::AUDIT-BARRAGE-codex-01",
+      "title": "Manifest IDs Can Escape The Corpora Root",
+      "severity": "high"
+    },
+    {
+      "id": "a7e5f4849e495cc5::AUDIT-BARRAGE-claude-01",
+      "title": "Slug truncation can drop the distinguishing tail of two long titles, silently filing two Sources into one archive directory",
+      "severity": "high"
+    },
+    {
+      "id": "a7e5f4849e495cc5::AUDIT-BARRAGE-claude-02",
+      "title": "`realResolve` collapses `..` lexically before consulting the filesystem, so a `../` escape through a symlink passes the non-overridable guard",
+      "severity": "high"
+    },
+    {
+      "id": "b4b882f97371e813::AUDIT-BARRAGE-claude-01",
+      "title": "Retiring `SOURCE_LAYOUTS` makes a missing `archiveLayoutOverrides` entry degrade into a silently-derived wrong archive path instead of a throw",
+      "severity": "high"
+    },
+    {
+      "id": "b5fdf705e6ddde59::AUDIT-BARRAGE-claude-01",
+      "title": "`installArchiveLayoutPolicy` swaps the policy but never clears the runtime overlay, so stale layouts outrank the newly-installed corpus",
+      "severity": "high"
+    },
+    {
+      "id": "e4aa8b5207999e81::AUDIT-BARRAGE-claude-01",
+      "title": "The one seam with a module-global fallback is the one seam never proven through the shipped composition path",
+      "severity": "high"
+    }
+  ],
+  "closedInLoopFindings": [],
+  "seamResult": {
+    "boundaryPairs": [
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "0c96c6263ff2d5cb"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "190ff594c244b066"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "1c8909a568ed692b"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "266a24c4260b019d"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "33c09f07a76d3032"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "3594cc339ca7ad69"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "3596d2799a71be80"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "38124fbd7898f282"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "3963b24beadb348c"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "42c5848e9761f72a"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "0c434a1dcbc8d6d4",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "190ff594c244b066"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "1c8909a568ed692b"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "266a24c4260b019d"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "33c09f07a76d3032"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "3594cc339ca7ad69"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "3596d2799a71be80"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "38124fbd7898f282"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "3963b24beadb348c"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "42c5848e9761f72a"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "0c96c6263ff2d5cb",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "1c8909a568ed692b"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "266a24c4260b019d"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "33c09f07a76d3032"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "3594cc339ca7ad69"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "3596d2799a71be80"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "38124fbd7898f282"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "3963b24beadb348c"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "42c5848e9761f72a"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "190ff594c244b066",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "266a24c4260b019d"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "33c09f07a76d3032"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "3594cc339ca7ad69"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "3596d2799a71be80"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "38124fbd7898f282"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "3963b24beadb348c"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "42c5848e9761f72a"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "1c8909a568ed692b",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "33c09f07a76d3032"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "3594cc339ca7ad69"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "3596d2799a71be80"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "38124fbd7898f282"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "3963b24beadb348c"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "42c5848e9761f72a"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "266a24c4260b019d",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "3594cc339ca7ad69"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "3596d2799a71be80"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "38124fbd7898f282"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "3963b24beadb348c"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "42c5848e9761f72a"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "33c09f07a76d3032",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "3596d2799a71be80"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "38124fbd7898f282"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "3963b24beadb348c"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "42c5848e9761f72a"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "3594cc339ca7ad69",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "38124fbd7898f282"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "3963b24beadb348c"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "42c5848e9761f72a"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "3596d2799a71be80",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "3963b24beadb348c"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "42c5848e9761f72a"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "38124fbd7898f282",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "42c5848e9761f72a"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "3963b24beadb348c",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "471310497a58e1c6"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "42c5848e9761f72a",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "4bb0a62ae8e0e184"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "471310497a58e1c6",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "5f7ec7a45c763abc"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "4bb0a62ae8e0e184",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "608d3982f7e71600"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "5f7ec7a45c763abc",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "6b34ca219049bf45"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "608d3982f7e71600",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "750211fe3a39e6b7"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "6b34ca219049bf45",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "798b3a0a613e0870"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "750211fe3a39e6b7",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "7ec5854f5925f88e"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "798b3a0a613e0870",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "89bad1ac1821312e"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "7ec5854f5925f88e",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "89bad1ac1821312e",
+        "b": "961ea85af2246c54"
+      },
+      {
+        "a": "89bad1ac1821312e",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "89bad1ac1821312e",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "89bad1ac1821312e",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "89bad1ac1821312e",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "89bad1ac1821312e",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "89bad1ac1821312e",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "89bad1ac1821312e",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "89bad1ac1821312e",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "89bad1ac1821312e",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "961ea85af2246c54",
+        "b": "a449de0cfb48f2d5"
+      },
+      {
+        "a": "961ea85af2246c54",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "961ea85af2246c54",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "961ea85af2246c54",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "961ea85af2246c54",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "961ea85af2246c54",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "961ea85af2246c54",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "961ea85af2246c54",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "961ea85af2246c54",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "a449de0cfb48f2d5",
+        "b": "a7e5f4849e495cc5"
+      },
+      {
+        "a": "a449de0cfb48f2d5",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "a449de0cfb48f2d5",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "a449de0cfb48f2d5",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "a449de0cfb48f2d5",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "a449de0cfb48f2d5",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "a449de0cfb48f2d5",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "a449de0cfb48f2d5",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "a7e5f4849e495cc5",
+        "b": "b4b882f97371e813"
+      },
+      {
+        "a": "a7e5f4849e495cc5",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "a7e5f4849e495cc5",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "a7e5f4849e495cc5",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "a7e5f4849e495cc5",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "a7e5f4849e495cc5",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "a7e5f4849e495cc5",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "b4b882f97371e813",
+        "b": "b5fdf705e6ddde59"
+      },
+      {
+        "a": "b4b882f97371e813",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "b4b882f97371e813",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "b4b882f97371e813",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "b4b882f97371e813",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "b4b882f97371e813",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "b5fdf705e6ddde59",
+        "b": "bc338dd6db5e3dc9"
+      },
+      {
+        "a": "b5fdf705e6ddde59",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "b5fdf705e6ddde59",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "b5fdf705e6ddde59",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "b5fdf705e6ddde59",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "bc338dd6db5e3dc9",
+        "b": "cf30eb4b15b4807c"
+      },
+      {
+        "a": "bc338dd6db5e3dc9",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "bc338dd6db5e3dc9",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "bc338dd6db5e3dc9",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "cf30eb4b15b4807c",
+        "b": "e4aa8b5207999e81"
+      },
+      {
+        "a": "cf30eb4b15b4807c",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "cf30eb4b15b4807c",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "e4aa8b5207999e81",
+        "b": "f8ce209f493fe715"
+      },
+      {
+        "a": "e4aa8b5207999e81",
+        "b": "f9333e269870ea31"
+      },
+      {
+        "a": "f8ce209f493fe715",
+        "b": "f9333e269870ea31"
+      }
+    ],
+    "findings": [
+      {
+        "kind": "changed-arity",
+        "symbol": "resolveSourceGroup",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "changed-arity",
+        "symbol": "runInventoryCli",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "changed-arity",
+        "symbol": "registerMemberArchiveLayout",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "changed-arity",
+        "symbol": "loadAllSources",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "changed-arity",
+        "symbol": "sourceKind",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "removed-export",
+        "symbol": "PORT_BRETON_CASE_ID",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "changed-arity",
+        "symbol": "runCoverageCli",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "changed-arity",
+        "symbol": "runBibliography",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "removed-export",
+        "symbol": "SourceLayout",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "removed-export",
+        "symbol": "registerSourceLayout",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "removed-export",
+        "symbol": "isSourceLayoutRegistered",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "removed-export",
+        "symbol": "sourceLayout",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "removed-export",
+        "symbol": "deriveSourceLayout",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "removed-export",
+        "symbol": "resolveArchiveRoot",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      },
+      {
+        "kind": "removed-export",
+        "symbol": "assertInsideArchive",
+        "consumedAcross": true,
+        "severity": "HIGH"
+      }
+    ],
+    "suppressedCompatible": 3
+  },
+  "splitClusterRefs": [
+    "b00ffd96ca7eadd0"
+  ],
+  "outcome": "override-eligible",
+  "anchorRoot": "/Users/orion/work/colony-cults-work/corpus-config-seam"
+}
