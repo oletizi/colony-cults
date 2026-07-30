@@ -1,5 +1,12 @@
+# PRE-EXISTING INCONSISTENCY, fixed rather than accommodated: this listed
+# `ZZ-00001` while zzz-custom.yml declares `prefix: ZZ, padWidth: 5`, whose
+# namespace is `ZZ` + five digits — `ZZ00001`, no hyphen. Nothing checked the
+# two against each other until AUDIT-10's rules landed, at which point the
+# fixture was self-contradictory: a default the corpus could never own.
+#
+# The id is corrected here; the rule is NOT weakened to admit the old spelling.
 schemaVersion: 1
 id: zzz-custom-browser
 corpus: zzz-custom
 defaultSources:
-  - ZZ-00001
+  - ZZ00001

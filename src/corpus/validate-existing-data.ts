@@ -84,8 +84,15 @@ function allocatablePolicy(manifest: CorpusManifest): CorpusSourceIdPolicy {
   return allocatable[0];
 }
 
-/** Render a corpus's policies for an error message, naming each namespace. */
-function describePolicies(policies: readonly CorpusSourceIdPolicy[]): string {
+/**
+ * Render a corpus's policies for an error message, naming each namespace.
+ *
+ * EXPORTED so `@/corpus/validate-browser-defaults` produces the same
+ * "all of which were tried" prose for a nonconforming browser DEFAULT as this
+ * module does for a nonconforming SOURCE. Two copies of this formatting would
+ * drift, and SC-005 grades the specificity of the message.
+ */
+export function describePolicies(policies: readonly CorpusSourceIdPolicy[]): string {
   return policies
     .map(
       (policy) =>

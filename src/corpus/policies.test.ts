@@ -177,9 +177,25 @@ describe('deriveBrowserProfile', () => {
   it('applies the env override even when no BrowserProfile file exists at all', () => {
     const selected = selectCorpus({ corporaRoot: POLICIES_ROOT, cliCorpus: 'no-browser' });
 
-    const policy = deriveBrowserProfile(selected, ['NB-001']);
+    // `NB001`, not `NB-001`: no-browser.yml declares `prefix: NB, padWidth: 3`,
+    // so its namespace carries no delimiter. The id was arbitrary test data
+    // that happened to conform to no policy, which the AUDIT-24 check now
+    // rejects — see `deriveBrowserProfile`'s doc comment.
+    const policy = deriveBrowserProfile(selected, ['NB001']);
 
-    expect(policy).toEqual({ corpus: 'no-browser', defaultSources: ['NB-001'] });
+    expect(policy).toEqual({ corpus: 'no-browser', defaultSources: ['NB001'] });
+  });
+
+  it('REJECTS an env override naming ids the selected corpus could never own (AUDIT-24)', () => {
+    const selected = selectCorpus({ corporaRoot: POLICIES_ROOT, cliCorpus: 'port-breton' });
+
+    expect(() => deriveBrowserProfile(selected, ['ZZ-99999', 'QQ-1'])).toThrow(
+      /CORPUS_SOURCES override names 2 browser default Source ID\(s\)/,
+    );
+    expect(() => deriveBrowserProfile(selected, ['ZZ-99999', 'QQ-1'])).toThrow(/"ZZ-99999", "QQ-1"/);
+    // The hatch stays open for anything the corpus CAN own, including ids the
+    // committed profile does not list.
+    expect(deriveBrowserProfile(selected, ['PB-S001'])?.defaultSources).toEqual(['PB-S001']);
   });
 
   it('returns a fresh array each call -- mutating one result does not affect the next', () => {
@@ -201,17 +217,20 @@ describe('narrow policy derivation against an ARBITRARY injected corporaRoot (FR
     expect(deriveSourceIdPolicy(selected)).toEqual({ prefix: 'ZZ', padWidth: 5 });
     expect(deriveBrowserProfile(selected)).toEqual({
       corpus: 'zzz-custom',
-      defaultSources: ['ZZ-00001'],
+      // `ZZ00001`, not `ZZ-00001`: the fixture's `prefix: ZZ, padWidth: 5`
+      // namespace is five digits with NO delimiter, and `deriveBrowserProfile`
+      // now cross-checks the defaults against it (AUDIT-10/24).
+      defaultSources: ['ZZ00001'],
     });
 
     const custom = source({
-      sourceId: 'ZZ-00001',
+      sourceId: 'ZZ00001',
       kind: 'monograph',
       case: 'custom-case',
       titles: [{ text: 'A Custom Title', role: 'canonical' }],
     });
     const layoutPolicy = deriveArchiveLayoutPolicy(selected, [custom]);
-    expect(layoutPolicy.derived.get('ZZ-00001')).toEqual(deriveSourceLayout(custom));
+    expect(layoutPolicy.derived.get('ZZ00001')).toEqual(deriveSourceLayout(custom));
     expect(layoutPolicy.overrides.size).toBe(0);
   });
 });

@@ -1,0 +1,12 @@
+schemaVersion: 1
+id: alpha
+cases:
+  - alpha-case
+sourceIds:
+  - prefix: AL
+    padWidth: 3
+    allocatable: true
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null

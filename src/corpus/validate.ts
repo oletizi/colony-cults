@@ -4,6 +4,7 @@ import { describeError } from '@/bibliography/load-primitives';
 import { listBrowserProfileIds, loadBrowserProfile } from '@/corpus/browser-profile';
 import { listCorpusManifestIds, loadCorpusManifest, type CorpusManifest } from '@/corpus/manifest';
 import { readSourceIdentityIndex } from '@/corpus/source-index';
+import { validateProfileDefaultSourcesExist } from '@/corpus/validate-browser-defaults';
 import { validateExistingData } from '@/corpus/validate-existing-data';
 import { validateArchiveOverrides } from '@/corpus/validate-overrides';
 import { validateRepositoryWide, type LoadedBrowserProfile } from '@/corpus/validate-repository';
@@ -49,6 +50,7 @@ import {
  *   - `@/corpus/validate-types`         — Result/Finding vocabulary
  *   - `@/corpus/source-index`           — the global Source identity index
  *   - `@/corpus/validate-repository`    — repository-wide rules
+ *   - `@/corpus/validate-browser-defaults` — browser-profile CONTENTS rules
  *   - `@/corpus/validate-overrides`     — archive-layout override rules
  *   - `@/corpus/validate-existing-data` — existing-data rules
  * This file is the ORCHESTRATOR: it owns the I/O and the error boundaries,
@@ -99,6 +101,10 @@ function loadCorpora(corporaRoot: string): LoadedCorpora {
     try {
       profiles.push({
         profile: loadBrowserProfile(corporaRoot, fileId),
+        // Carried, not re-derived from `filePath` (AUDIT-20): `fileId` is the
+        // corpus whose file this is, and it is the id we just loaded BY. It is
+        // what `profile-corpus-filename-mismatch` compares `corpus:` against.
+        fileId,
         filePath: join(corporaRoot, `${fileId}.browser.yml`),
       });
     } catch (error) {
@@ -129,10 +135,13 @@ function configFindings(loaded: LoadedCorpora): CorpusValidationFinding[] {
  * committed manifest and profile loads (FR-015's strict policy — a malformed
  * committed manifest blocks all corpora), corpus ids are unique, prefixes are
  * disjoint across ALL policies of ALL corpora (FR-002a/FR-002b), case ids are
- * unique, and every browser profile names a known corpus with a unique id.
+ * unique, every browser profile names a known corpus with a unique id, is the
+ * profile of the corpus whose FILE it is (AUDIT-20), and lists only
+ * `defaultSources` that conform to that corpus's ID policies (AUDIT-10).
  *
- * DELIBERATELY EXCLUDED: the existing-data rules and the archive-override
- * rules, both of which require reading the bibliography SSOT. That is why
+ * DELIBERATELY EXCLUDED: the existing-data rules, the archive-override rules,
+ * and the browser-defaults EXISTENCE rule, all of which require reading the
+ * bibliography SSOT. That is why
  * this function takes no `sourcesDir` — it is not an omission a caller can
  * fill in. Those rules belong to {@link validateCorpora} / `bib
  * validate-config` only, because making every command read every Source at
@@ -229,6 +238,11 @@ export function validateCorpora(
     ...configFindings(loaded),
     ...validateArchiveOverrides(manifests, index.entries),
     ...validateExistingData(manifests, index),
+    // The one BROWSER-DEFAULTS rule that reads the SSOT (AUDIT-10). Its
+    // config-only siblings already ran inside `configFindings`; this one is
+    // here for the same reason the override and existing-data rules are —
+    // startup must not enumerate every Source (FR-010).
+    ...validateProfileDefaultSourcesExist(loaded.profiles, index.entries),
     ...manifests.flatMap((manifest) => validateCapabilitySubset(manifest, installedCapabilities)),
   ];
 

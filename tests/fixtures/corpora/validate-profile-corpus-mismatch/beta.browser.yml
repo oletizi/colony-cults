@@ -1,0 +1,13 @@
+# AUDIT-20 reproduction: `alpha.browser.yml` copied to `beta.browser.yml`
+# WITHOUT editing its `corpus:` field. `loadBrowserProfile(root, id)` keys on
+# the FILENAME, so this file IS beta's profile — but it hands out alpha's
+# corpus. `profile-unknown-corpus` cannot see it: `alpha` is a perfectly
+# well-known committed corpus.
+#
+# `defaultSources` is deliberately EMPTY so this fixture isolates exactly one
+# rule; the defaults rules have their own fixture
+# (validate-profile-default-sources/).
+schemaVersion: 1
+id: alpha-browser
+corpus: alpha
+defaultSources: []

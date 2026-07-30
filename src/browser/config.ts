@@ -66,14 +66,27 @@ export interface LoadConfig {
  * (module doc comment above), via {@link resolveBrowserSources}: `--corpus`
  * has no site-build equivalent, so `COLONY_CORPUS` selects the corpus, whose
  * `<corporaRoot>/<id>.browser.yml` `defaultSources` apply UNLESS
- * `CORPUS_SOURCES` is set, in which case it wins outright (FR-005,
- * unchanged operator-visible behavior).
+ * `CORPUS_SOURCES` is set, in which case it wins outright (FR-005).
+ *
+ * OPERATOR-VISIBLE CHANGE, stated rather than glossed (AUDIT-25): `COLONY_CORPUS`
+ * is now REQUIRED for every site build, including one that sets
+ * `CORPUS_SOURCES`. `CORPUS_SOURCES` alone no longer produces a build, because
+ * {@link resolveBrowserSources} selects a corpus UNCONDITIONALLY before applying
+ * the override. This is INTENDED (FR-003, no implicit default): what previously
+ * made `CORPUS_SOURCES`-alone work was the hardcoded 44-id Port Breton literal
+ * standing in as an implicit default corpus, and retiring that literal is the
+ * point of the seam. An override still needs a corpus to be an override OF —
+ * `deriveBrowserProfile` checks the ids against the selected corpus's own ID
+ * policies (AUDIT-24).
  *
  * @param env - Environment variables (defaults to process.env)
  * @returns LoadConfig ready for corpus loading
- * @throws Error if no corpus is selected (neither `COLONY_CORPUS` is set)
+ * @throws Error if no corpus is selected (`COLONY_CORPUS` is unset) — including
+ *   when `CORPUS_SOURCES` IS set
  * @throws Error if the selected corpus has no browser-defaults policy (no
  *   `CORPUS_SOURCES` override and no committed `<id>.browser.yml`)
+ * @throws Error if `CORPUS_SOURCES` names an id conforming to none of the
+ *   selected corpus's `sourceIds` policies (AUDIT-24)
  * @throws Error if CORPUS_IMAGE_PROVIDER is set to an unknown value
  * @throws Error if CORPUS_IMAGE_PROVIDER is 'b2-cdn' but CORPUS_CDN_BASE is missing
  */
@@ -164,8 +177,17 @@ export interface ResolveBrowserSourcesOptions {
  * comma-separated-string CLI/env-input concern, not something a policy
  * derivation should own (see `deriveBrowserProfile`'s own doc comment) — and
  * handed down as the already-parsed `envOverride`, which wins outright over
- * the corpus's committed `defaultSources` when supplied (FR-005, unchanged
- * operator-visible behavior).
+ * the corpus's committed `defaultSources` when supplied (FR-005).
+ *
+ * SELECTION IS UNCONDITIONAL, AND THAT IS A DELIBERATE BEHAVIOR CHANGE
+ * (AUDIT-25). `selectCorpus` runs on the line below whether or not
+ * `CORPUS_SOURCES` is set, so an unset `COLONY_CORPUS` fails loud even for an
+ * override-only build. Before this seam, `CORPUS_SOURCES` alone DID produce a
+ * build — but only because the retired hardcoded 44-id Port Breton literal was
+ * acting as an implicit default corpus, which is exactly what FR-003 forbids.
+ * The ordering is therefore load-bearing, not incidental: the override's ids are
+ * checked against the selected corpus's ID policies (AUDIT-24), which requires
+ * knowing the corpus first.
  *
  * ABSENCE IS FATAL HERE (unlike most of the codebase, FR-005): a site build
  * IS a browser-default-CONSUMING path — its only job is producing default

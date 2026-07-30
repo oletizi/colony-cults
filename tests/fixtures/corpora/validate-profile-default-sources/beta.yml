@@ -1,0 +1,12 @@
+schemaVersion: 1
+id: beta
+cases:
+  - beta-case
+sourceIds:
+  - prefix: BE
+    padWidth: 3
+    allocatable: true
+requiredCapabilities:
+  repositories: []
+  sourceQueries: []
+archiveLayoutOverrides: null

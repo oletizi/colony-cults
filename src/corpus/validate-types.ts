@@ -48,8 +48,31 @@ export type CorpusValidationRule =
   | 'duplicate-case-id'
   /** A browser profile's `corpus` names no committed manifest. */
   | 'profile-unknown-corpus'
+  /**
+   * A browser profile's `corpus` is not the corpus whose FILE it is — the
+   * `<stem>` of `<stem>.browser.yml` (AUDIT-20). `loadBrowserProfile(root, id)`
+   * keys on the FILENAME, so the stem decides which corpus gets these
+   * defaults while `corpus:` only claims to; a divergence means the profile
+   * hands one corpus's defaults to another. `profile-unknown-corpus` cannot
+   * see it, because the claimed corpus is typically perfectly well-known.
+   */
+  | 'profile-corpus-filename-mismatch'
   /** Two browser profiles declare the same `id`. */
   | 'duplicate-profile-id'
+  // --- Browser defaults vs. the corpus they belong to (FR-005, AUDIT-10) ---
+  /**
+   * A `defaultSources` id conforms to NONE of its corpus's `sourceIds`
+   * policies (FR-002b) — i.e. the corpus could never allocate it, so it names
+   * a Source of some OTHER corpus, or of none at all.
+   */
+  | 'profile-default-source-nonconforming'
+  /**
+   * A `defaultSources` id conforms to its corpus's policies but names no SSOT
+   * record. Distinct from the rule above and neither implies the other: a
+   * conforming-but-absent id passes conformance, and an existing id belonging
+   * to another corpus passes existence.
+   */
+  | 'profile-unknown-default-source'
   // --- Archive-layout overrides (FR-007) ---
   /** An override keys a Source ID that exists in no SSOT record. */
   | 'override-unknown-source'

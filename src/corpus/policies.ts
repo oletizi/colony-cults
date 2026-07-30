@@ -4,6 +4,8 @@ import {
   buildSourceFilenamePolicy,
   type SourceFilenamePolicy,
 } from '@/corpus/source-filename-policy';
+import { nonconformingSourceIds } from '@/corpus/validate-browser-defaults';
+import { describePolicies } from '@/corpus/validate-existing-data';
 import { deriveSourceLayout, type SourceLayout } from '@/archive/derive-layout';
 import type { Source } from '@/model/source';
 
@@ -126,16 +128,23 @@ export interface ArchiveLayoutOverride {
 }
 
 /**
- * The narrow policy `archive/location.ts` consumes (FR-004, FR-017). Holds
- * BOTH halves of the resolution order that precede the runtime overlay and
- * the final throw:
+ * The narrow policy `archive/location.ts` consumes (FR-004, FR-017). Holds the
+ * FIRST and THIRD steps of the four-step resolution order — the runtime overlay
+ * sits BETWEEN them, and the terminal throw follows:
  *
  *   1. `overrides` — the manifest's validated `archiveLayoutOverrides`,
- *      keyed by Source ID.
- *   2. `derived`   — the GENERIC derivation (`deriveSourceLayout`),
+ *      keyed by Source ID. Step 1: highest precedence.
+ *   2. (runtime overlay — NOT part of this policy, see below.)
+ *   3. `derived`   — the GENERIC derivation (`deriveSourceLayout`),
  *      PRECOMPUTED per Source ID at construction time (see
  *      {@link deriveArchiveLayoutPolicy}'s doc comment for why this cannot
- *      be computed lazily inside `sourceLayout`).
+ *      be computed lazily inside `sourceLayout`). Step 3: consulted only after
+ *      the overlay misses, NOT before it — the generic rule is the LAST answer
+ *      before the throw, so a member registered mid-run by
+ *      `registerSourceLayout` outranks it. (Contract: overrides → runtime
+ *      overlay → derived → throw, FR-017; asserted by name in
+ *      `tests/unit/archive/layout-resolution-order.test.ts`.)
+ *   4. throw — no default (Principle V).
  *
  * (The runtime overlay itself — `registerSourceLayout` — is NOT part of
  * this policy: it is mid-run, mutable state owned by `archive/location.ts`
@@ -257,12 +266,60 @@ export interface BrowserDefaultsPolicy {
  * profile was ever authored: an operator can run a browser build for ANY
  * selected corpus purely via `CORPUS_SOURCES`, with no `<id>.browser.yml`
  * required.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ * WHY THE `CORPUS_SOURCES` OVERRIDE IS VALIDATED (AUDIT-24)
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ * This function used to return `{ defaultSources: [...envOverride] }` with ZERO
+ * checks, so `CORPUS_SOURCES=ZZ-99999,QQ-1` against Port Breton resolved to
+ * exactly those two ids and the browser build went on to produce a page set
+ * from nothing.
+ *
+ * The decision taken, DELIBERATELY, is to VALIDATE it — override ids must
+ * conform to at least one of the SELECTED corpus's `sourceIds` policies
+ * (FR-002b), and a violation throws loud naming every offending id.
+ *
+ * The case for leaving it unchecked was that `CORPUS_SOURCES` is an OPERATOR
+ * ESCAPE HATCH, and a validated escape hatch is a smaller hatch. That is
+ * outweighed, on two grounds:
+ *
+ *   1. IT IS NOT AN OVERRIDE OF WHAT AN ID MEANS, only of WHICH ids to build.
+ *      An id conforming to no policy of the selected corpus cannot name a
+ *      Source of that corpus at all, so there is no legitimate operator intent
+ *      the check refuses. The realistic reachable case is precisely the one
+ *      worth catching: a `CORPUS_SOURCES` exported for corpus A, left in the
+ *      shell or in CI, and then used with corpus B selected. Unchecked, that
+ *      does not fail — it produces a plausible-looking build of the wrong
+ *      thing, which is the quiet-wrong-answer failure Principle V exists to
+ *      forbid.
+ *   2. THE HATCH IS UNNARROWED IN THE DIMENSION THAT MATTERS. Any subset,
+ *      superset, reordering or hand-picked selection of the corpus's own
+ *      namespaces still passes, including ids that are not in the committed
+ *      `<id>.browser.yml` and ids for which no record exists yet. What is
+ *      refused is only "ids this corpus could never own".
+ *
+ * SCOPE OF THE CHECK — CONFORMANCE ONLY, NOT EXISTENCE. This module is a pure
+ * derivation over typed data (see the module doc comment); it holds no
+ * bibliography index and must not grow one. Conformance is decidable from the
+ * manifest alone, so it is decided here. "Does this id name a real record" is
+ * the config validator's `profile-unknown-default-source` rule, which has the
+ * global identity index — see `@/corpus/validate-browser-defaults`.
+ *
+ * THE FILE-LOADED DEFAULTS GET THE SAME CHECK, on purpose: an escape hatch
+ * that is STRICTER than the committed config would be backwards, and the
+ * browser/site-build entrypoint (`@/browser/config`) does not run startup
+ * validation, so without it AUDIT-10's committed-profile hole would stay open
+ * on the one path that actually consumes the defaults. Both go through
+ * `nonconformingSourceIds`, so there is one definition of conformance shared
+ * with the validator rather than a second copy to drift.
  */
 export function deriveBrowserProfile(
   corpus: SelectedCorpus,
   envOverride?: readonly string[],
 ): BrowserDefaultsPolicy | null {
   if (envOverride !== undefined) {
+    assertDefaultSourcesConform(corpus, envOverride, 'the CORPUS_SOURCES override');
     return { corpus: corpus.manifest.id, defaultSources: [...envOverride] };
   }
 
@@ -271,5 +328,42 @@ export function deriveBrowserProfile(
     return null;
   }
 
+  assertDefaultSourcesConform(
+    corpus,
+    profile.defaultSources,
+    `${corpus.manifest.id}.browser.yml`,
+  );
   return { corpus: corpus.manifest.id, defaultSources: [...profile.defaultSources] };
+}
+
+/**
+ * Throw naming EVERY offending id when `defaultSources` contains an id that
+ * conforms to none of `corpus`'s `sourceIds` policies (AUDIT-24).
+ *
+ * One id per line would send the operator through N fix-and-rerun cycles, so
+ * all of them are listed, alongside the namespaces that were actually tried —
+ * the message has to be enough to fix the env var or the file without reading
+ * the manifest.
+ */
+function assertDefaultSourcesConform(
+  corpus: SelectedCorpus,
+  defaultSources: readonly string[],
+  origin: string,
+): void {
+  const offending = nonconformingSourceIds(defaultSources, corpus.manifest.sourceIds);
+  if (offending.length === 0) {
+    return;
+  }
+
+  const policies = corpus.manifest.sourceIds.length;
+  throw new Error(
+    `deriveBrowserProfile(${corpus.manifest.id}): ${origin} names ${offending.length} browser ` +
+      `default Source ID(s) that conform to NONE of corpus ` +
+      `${JSON.stringify(corpus.manifest.id)}'s ${policies} ID ` +
+      `${policies === 1 ? 'policy' : 'policies'}: ` +
+      `${offending.map((id) => JSON.stringify(id)).join(', ')}. ` +
+      `Policies tried: ${describePolicies(corpus.manifest.sourceIds)}. ` +
+      'An id this corpus could never own names no Source of it, so a build from these defaults ' +
+      'would silently produce the wrong page set (FR-002b, FR-005).',
+  );
 }

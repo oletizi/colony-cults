@@ -29,7 +29,7 @@ describe('loadBrowserProfile', () => {
 
     expect(profile.id).toBe('zzz-custom-browser');
     expect(profile.corpus).toBe('zzz-custom');
-    expect(profile.defaultSources).toEqual(['ZZ-00001']);
+    expect(profile.defaultSources).toEqual(['ZZ00001']);
   });
 
   it('rejects an unsupported schemaVersion', () => {

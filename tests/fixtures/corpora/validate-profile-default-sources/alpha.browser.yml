@@ -1,0 +1,18 @@
+# AUDIT-10 reproduction: `defaultSources` was type-checked (non-empty strings)
+# but never cross-checked against the corpus it belongs to. Validated against
+# tests/fixtures/sources/validate-valid (AL001, AL002, BE001), each entry below
+# exercises exactly one outcome:
+#
+#   AL001  conforms to alpha's AL/pad-3 policy AND exists  -> clean
+#   BE001  exists, but sits in BETA's namespace            -> nonconforming
+#   AL999  conforms to alpha's policy, but no such record  -> unknown
+#
+# BE001 is the load-bearing case: a plain existence check would pass it, and a
+# plain conformance check would pass AL999. Both rules are needed.
+schemaVersion: 1
+id: alpha-browser
+corpus: alpha
+defaultSources:
+  - AL001
+  - BE001
+  - AL999

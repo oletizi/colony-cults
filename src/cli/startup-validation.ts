@@ -66,11 +66,16 @@ import {
  * operator run. Startup validation guarantees the CONFIG is coherent; the
  * full sweep guarantees the config and the DATA agree.
  *
- * RECORDED AMBIGUITY: contracts/corpus-seam.md describes startup validation
- * as "selected corpus + global identity index", which read literally would
- * pull `readSourceIdentityIndex` (the whole-SSOT read) into every command and
- * contradict FR-010 and T009's own stated reasoning. The FR-010-preserving
- * reading is taken here, and the identity index runs in the full sweep only.
+ * RESOLVED AMBIGUITY (was recorded here as open; AUDIT-21). An EARLIER DRAFT of
+ * contracts/corpus-seam.md described startup validation as "selected corpus +
+ * global identity index", which read literally would have pulled
+ * `readSourceIdentityIndex` (the whole-SSOT read) into every command and
+ * contradicted FR-010 and T009's own stated reasoning. The FR-010-preserving
+ * reading was taken here, and the contract has since been updated to document
+ * the split explicitly — see its paragraph headed "Startup deliberately
+ * EXCLUDES the global identity index", which states the same conclusion and the
+ * same reasoning. The two no longer disagree; the identity index runs in the
+ * full sweep only.
  */
 
 /**

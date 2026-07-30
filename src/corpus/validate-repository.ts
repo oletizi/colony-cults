@@ -1,5 +1,8 @@
-import type { BrowserProfile } from '@/corpus/browser-profile';
 import type { CorpusManifest } from '@/corpus/manifest';
+import {
+  validateBrowserDefaultsConfig,
+  type LoadedBrowserProfile,
+} from '@/corpus/validate-browser-defaults';
 import { finding, type CorpusValidationFinding } from '@/corpus/validate-types';
 
 /**
@@ -20,11 +23,14 @@ import { finding, type CorpusValidationFinding } from '@/corpus/validate-types';
  * path cannot currently produce (see {@link validateUniqueCorpusIds}).
  */
 
-/** A loaded browser profile plus the file it came from, for locating errors. */
-export interface LoadedBrowserProfile {
-  readonly profile: BrowserProfile;
-  readonly filePath: string;
-}
+/**
+ * A loaded browser profile plus the file it came from, for locating errors.
+ *
+ * DEFINED in `@/corpus/validate-browser-defaults` (which needs its `fileId` to
+ * decide AUDIT-20's filename-agreement rule) and re-exported here, so the
+ * orchestrator and the existing tests keep one import path for it.
+ */
+export type { LoadedBrowserProfile };
 
 /**
  * Two manifests declaring the same corpus id.
@@ -190,11 +196,16 @@ export function validateUniqueCaseIds(
 }
 
 /**
- * Browser-profile references (FR-005/FR-008, INV-11): every profile's
+ * Browser-profile REFERENCES (FR-005/FR-008, INV-11): every profile's
  * `corpus` must name a committed manifest, and no two profiles may declare
  * the same `id`. A profile's `id` is deliberately NOT tied to its filename
  * (see `@/corpus/browser-profile`), which is exactly why cross-profile id
  * uniqueness has to be checked here.
+ *
+ * The rules about a profile's CONTENTS — that its `corpus` is the corpus whose
+ * file it is (AUDIT-20), and that its `defaultSources` belong to that corpus
+ * (AUDIT-10) — live in `@/corpus/validate-browser-defaults` and are folded in
+ * by {@link validateRepositoryWide}.
  */
 export function validateBrowserProfiles(
   manifests: readonly CorpusManifest[],
@@ -244,7 +255,15 @@ export function validateBrowserProfiles(
   return findings;
 }
 
-/** Run every repository-wide rule, in a stable order. */
+/**
+ * Run every repository-wide rule, in a stable order.
+ *
+ * CONFIG-ONLY by construction — nothing here reads the bibliography SSOT, which
+ * is what lets `validateCorporaConfig` run the whole set at startup (FR-010,
+ * see `@/cli/startup-validation`). The browser-defaults EXISTENCE rule is the
+ * one browser rule that needs the identity index, so it is deliberately absent
+ * here and is added by `validateCorpora` instead.
+ */
 export function validateRepositoryWide(
   manifests: readonly CorpusManifest[],
   profiles: readonly LoadedBrowserProfile[],
@@ -254,5 +273,6 @@ export function validateRepositoryWide(
     ...validatePrefixDisjointness(manifests),
     ...validateUniqueCaseIds(manifests),
     ...validateBrowserProfiles(manifests, profiles),
+    ...validateBrowserDefaultsConfig(manifests, profiles),
   ];
 }
