@@ -73,3 +73,47 @@ All six `removed-export` claims are false — every symbol still resolves from
 5. **cwd independence**: 22
 6. **Ambient-policy threading + the verify-member scope use**: 02/16/27
 7. **Path-guard hardening**: 31
+
+---
+
+## Remediation round 1 — what was fixed
+
+| Findings | Fix | Commit |
+|---|---|---|
+| 04, 05, 06, 29 (+30 incidentally) | filename/declared-id rule; corpus-id grammar + containment; derived-location claimants + override shape validation; scope-check made a required sub-object so a partial supply is unrepresentable | `509ec22` |
+| 12, 22, 31, 32, 33 | regex-literal scanning in the guard scanner; cwd-independent SSOT paths; `..` rejected before normalizing; record-anchored placement invariant; overlay cleared on policy install | `1ad7a59` |
+| 02, 16, 27, 22b | injected policy threaded through the four CLI wrappers and seven dispatch lambdas; four further cwd-derived SSOT paths | `aafa5ba` |
+| 10, 20, 24, 21, 25, 26 | three browser-defaults validator rules + `CORPUS_SOURCES` conformance; three doc-drift corrections | `f572a88` |
+
+Every fix carries a failing-first regression test. Suite: 2559 passing (up from 2488), the
+same 8 pre-existing unrelated failures, tsc clean, `validate-config` clean, and the FR-010
+characterization gate untouched since T024 and still green at 86 assertions.
+
+Two things the fix agents found that the audit did not, both fixed:
+- `summarize.ts` and four more sites had the same `process.cwd()` defect as `translate.ts`;
+  `defaultFetchDeps` in particular reproduced AUDIT-22's exact named consequence (a silently
+  dead Source Group guardrail when run from any other directory).
+- The browser-profile escape in AUDIT-29 is worse than triage described: profile ids are
+  deliberately untied to filenames, so no crafted file is needed.
+
+Two controller-brief errors the agents corrected rather than absorbed: `summarize.ts` does NOT
+resolve cwd-independently (I claimed it did), and `resolveArchiveRoot` uses `repoRoot` only as
+a non-empty guard, so the archive half of AUDIT-22b was never observably wrong.
+
+## Deliberately NOT fixed — open for operator decision
+
+- **Cross-corpus vs within-corpus duplicate detection.** `verify-member`/`promote` feed the
+  loaded Source set into `buildExistingMembers`, whose duplicate set drives a hard pass/fail.
+  The injected policy is now threaded (so the choice is visible at one site rather than hidden
+  in an ambient read), but the SEMANTICS are untouched and recorded in two code comments.
+  FR-010 says `bibliography/sources` is deliberately unscoped, which arguably makes
+  cross-corpus duplicate detection *wanted*; `checkHardDuplicate` aborting makes a wrong
+  widening a live false-positive risk. No evidence settles it, so it was not decided.
+- **AUDIT-23** — nothing pins the completeness of the *new* derived layout registry (82 ids
+  unpinned; 3 resolve on a fresh import where legacy threw). A real test-coverage gap with no
+  demonstrable wrong path today.
+- **AUDIT-32's residual** — a Source fetched but never summarized records no archive path
+  anywhere in the SSOT, so no cheap invariant catches its misplacement. Closing that needs the
+  acquired directory recorded at acquisition time, which Principle XV asks for anyway.
+- **Refuted / shape-only** (01, 03, 07, 08, 09, 11, 13, 14, 15, 17, 18, 19, 26, 28, 34) — no
+  action; reasoning recorded above.
